@@ -6,7 +6,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   mobsf_scan:
-    runs-on: macos-15
+    runs-on: ${{ vars.IOS_RUNNER_IMAGE || 'macos-15' }}
     timeout-minutes: 180
     permissions:
       contents: read

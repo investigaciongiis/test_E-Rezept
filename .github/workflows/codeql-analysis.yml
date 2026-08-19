@@ -7,7 +7,7 @@ jobs:
   xcode_sast:
     name: CodeQL Swift and Clang Analyzer
     if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref || github.ref_name || '', 'dependabot/') && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) }}
-    runs-on: macos-15
+    runs-on: ${{ vars.IOS_RUNNER_IMAGE || 'macos-15' }}
     permissions:
       actions: read
       contents: read

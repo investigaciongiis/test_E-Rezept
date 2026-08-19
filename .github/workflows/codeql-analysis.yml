@@ -143,12 +143,12 @@ jobs:
       contents: read
     steps:
       - name: Download Xcode SAST components
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: sast-xcode-components
           path: components/xcode
       - name: Download Semgrep component
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: sast-semgrep-component
           path: components/semgrep

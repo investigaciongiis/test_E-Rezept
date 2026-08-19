@@ -14,6 +14,12 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v6
+      - name: Set up project Ruby
+        if: ${{ vars.IOS_RUBY_VERSION != '' }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ vars.IOS_RUBY_VERSION }}
+          bundler-cache: false
       - name: Prepare iOS project
         if: ${{ vars.IOS_SETUP_CMD != '' }}
         shell: bash

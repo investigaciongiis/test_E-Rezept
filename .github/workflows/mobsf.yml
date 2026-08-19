@@ -19,6 +19,12 @@ jobs:
       IOS_SCHEME: ${{ vars.IOS_SCHEME }}
     steps:
       - uses: actions/checkout@v6
+      - name: Set up project Ruby
+        if: ${{ vars.IOS_RUBY_VERSION != '' && vars.USE_PREBUILT_IPA != '' && vars.USE_PREBUILT_IPA != 'true' }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ vars.IOS_RUBY_VERSION }}
+          bundler-cache: false
       - name: Prepare iOS project
         if: ${{ vars.IOS_SETUP_CMD != '' && vars.USE_PREBUILT_IPA != '' && vars.USE_PREBUILT_IPA != 'true' }}
         shell: bash

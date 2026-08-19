@@ -27,7 +27,7 @@ jobs:
           IOS_SETUP_CMD: ${{ vars.IOS_SETUP_CMD }}
         run: |
           set -euo pipefail
-          bash -lc "$IOS_SETUP_CMD"
+          bash -c "$IOS_SETUP_CMD"
       - name: Resolve Xcode project and scheme
         id: ios
         shell: bash

@@ -1,0 +1,27 @@
+# Requirements<% sorted_specs.each do |spec_name, afos| %>
+
+## [<%= spec_name %>](https://gemspec.gematik.de/docs/gemSpec/<%= spec_name %>/latest/index.html)<% afos.each do |afo_name, details| %>
+
+### [<%= afo_name %>](https://gemspec.gematik.de/docs/gemSpec/<%= spec_name %>/latest/index.html#<%= afo_name.sub("../", "") %>)
+
+#### Original Requirement
+
+<%= original_afos[afo_name] %>
+
+#### Implementation
+
+<% details.each do |details| %>
+<% if details['source'] == "intro" %>
+<%= details['description'] %>
+<% else %>
+#### <%= "#{details['part']} " if details['part'] %>`<%= details['file'] %>:<%= details['line'] %>`
+
+<%= details['description'] %>
+
+```
+<%= details['code'] %>
+```
+<% end %><% end # afos details %>
+
+<% end # afos %>
+<% end # specs %>

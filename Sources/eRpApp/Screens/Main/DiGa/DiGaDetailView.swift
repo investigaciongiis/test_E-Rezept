@@ -1,0 +1,283 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import ComposableArchitecture
+import eRpKit
+import eRpStyleKit
+import FeatureCardWall
+import SwiftUI
+
+struct DiGaDetailView: View {
+    @Bindable var store: StoreOf<DiGaDetailDomain>
+
+    var body: some View {
+        VStack {
+            ScrollView {
+                HeaderView(store: store)
+
+                Picker(selection: $store.selectedView.sending(\.changePickerView)) {
+                    ForEach(DiGaDetailDomain.DiGaDetailSegments.allCases, id: \.self) { viewOption in
+                        Text(viewOption.displayText).tag(viewOption)
+                    }
+                } label: {
+                    Text("")
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+                switch store.selectedView {
+                case .overview:
+                    OverviewView(store: store)
+                case .details:
+                    DetailsView(store: store)
+                }
+            }
+
+            if store.showMainButton {
+                Spacer()
+
+                GreyDivider()
+                    .padding(.bottom, 16)
+
+                if let available = store.isAvailabeOniOS, !available {
+                    NotAvailableIOSHint()
+                        .padding(.horizontal)
+                }
+
+                if !store.showSelectInsurance {
+                    if let buttonText = store.diGaInfo.diGaState.buttonText {
+                        Button {
+                            store.send(.mainButtonTapped)
+                        } label: {
+                            Label(buttonText)
+                        }
+                        .buttonStyle(.primary)
+                        .accessibilityIdentifier(A11y.diga.detail.digaDtlBtnMainAction)
+                        .padding(.bottom, 8)
+                    }
+                } else {
+                    Button {
+                        store.send(.setNavigation(tag: .insuranceList))
+                    } label: {
+                        Label(store.isLoading ? L10n.digaDtlBtnMainRequest : L10n
+                            .digaDtlBtnMainSelectInsurance)
+                    }
+                    .buttonStyle(.primary(isEnabled: !store.isLoading))
+                    .accessibilityIdentifier(A11y.diga.detail.digaDtlBtnMainSelectInsurance)
+                    .padding(.bottom, 8)
+
+                    if store.isLoading {
+                        HStack(spacing: 4) {
+                            Text(L10n.digaDtlTxtLoadingInsurance)
+                                .font(.subheadline)
+                                .foregroundColor(Colors.systemLabelSecondary)
+
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                        }.padding([.horizontal, .bottom], 16)
+                    }
+                }
+
+                if store.showRelatedInsurance {
+                    Button {
+                        store.send(.setNavigation(tag: .insuranceList))
+                    } label: {
+                        Text(store.relatedInsuranceText)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding([.horizontal, .bottom], 16)
+                    .accessibility(identifier: A11y.diga.detail.digaDtlBtnMainSelectedInsurance)
+                }
+            }
+        }.task {
+            store.send(.task)
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu(
+                    content: { ToolbarMenu(store: store) },
+                    label: { Image(systemName: SFSymbolName.ellipsis).foregroundStyle(Colors.primary700) }
+                )
+                .accessibility(identifier: A11y.diga.detail.digaDtlBtnToolbarItem)
+                .contentShape(Rectangle())
+            }
+        }
+        .destinations(store: $store)
+    }
+
+    private struct HeaderView: View {
+        @Bindable var store: StoreOf<DiGaDetailDomain>
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    if let image = store.bfArMDisplayInfo?.image {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .clipShape(Circle())
+                            .frame(width: 56, height: 56)
+                            .accessibilityHidden(true)
+                    } else {
+                        Image(decorative: Asset.Prescriptions.DiGa.diGaImage)
+                            .accessibilityHidden(true)
+                    }
+                    Spacer()
+                }
+
+                Text(store.diGaTask.appName ?? L10n.digaDtlTxtNa.text)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                    .font(Font.title.weight(.bold))
+                    .accessibility(identifier: A11y.diga.detail.digaDtlTxtNameHeader)
+
+                Text(store.diGaTask.patientName ?? L10n.digaDtlTxtNa.text)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                    .font(.subheadline)
+                    .foregroundColor(Colors.systemLabelSecondary)
+                    .accessibility(identifier: A11y.diga.detail.digaDtlTxtPatientHeader)
+            }.padding()
+        }
+    }
+
+    private struct NotAvailableIOSHint: View {
+        var body: some View {
+            HStack(spacing: 0) {
+                Image(systemName: SFSymbolName.exclamationMark)
+                    .foregroundColor(Colors.yellow900)
+                    .font(.title3)
+                    .padding(.trailing)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.digaDtlTxtNotAvailableHint)
+                        .font(Font.subheadline)
+                        .foregroundColor(Colors.yellow900)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Colors.yellow100))
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtHintNoIos)
+            .border(Colors.yellow300, width: 0.5, cornerRadius: 12)
+        }
+    }
+
+    private struct ToolbarMenu: View {
+        @Bindable var store: StoreOf<DiGaDetailDomain>
+
+        var body: some View {
+            VStack {
+                if case .archived = store.diGaTask.prescription.viewStatus {
+                } else {
+                    if store.diGaInfo.diGaState.archivable {
+                        Button(
+                            action: { store.send(.archive) },
+                            label: { Text(L10n.digaDtlBtnTbmArchive) }
+                        )
+                        .accessibility(identifier: A11y.diga.detail.digaDtlBtnArchiveToolbar)
+                    }
+                    if store.diGaInfo.diGaState.unarchivable {
+                        Button(
+                            action: { store.send(.unarchive) },
+                            label: { Text(L10n.digaDtlBtnTbmUnarchive) }
+                        )
+                        .accessibility(identifier: A11y.diga.detail.digaDtlBtnUnarchiveToolbar)
+                    }
+                }
+
+                if store.diGaInfo.diGaState == .insurance {
+                    Button(
+                        action: { store.send(.redeem) },
+                        label: { Text(L10n.digaDtlBtnTbmRedeemAgain) }
+                    )
+                    .accessibility(identifier: A11y.diga.detail.digaDtlBtnRedeemAgainToolbar)
+                }
+
+                if store.diGaTask.erxTask.status == .ready {
+                    Button(
+                        action: { store.send(.redeem) },
+                        label: { Text(L10n.digaDtlBtnTbmRequest) }
+                    )
+                    .accessibility(identifier: A11y.diga.detail.digaDtlBtnRequestToolbar)
+                }
+                Button(
+                    role: .destructive,
+                    action: { store.send(.delete) },
+                    label: { Text(L10n.digaDtlBtnTbmDelete) }
+                )
+                .accessibility(identifier: A11y.diga.detail.digaDtlBtnDeleteToolbar)
+            }
+        }
+    }
+}
+
+extension View {
+    func destinations(
+        store: Bindable<StoreOf<DiGaDetailDomain>>
+    ) -> some View {
+        navigationDestination(
+            item: store.scope(state: \.destination?.patient, action: \.destination.patient)
+        ) { store in
+            PrescriptionDetailView.PatientView(store: store)
+        }
+        .navigationDestination(
+            item: store.scope(state: \.destination?.practitioner, action: \.destination.practitioner)
+        ) { store in
+            PrescriptionDetailView.PractitionerView(store: store)
+        }
+        .navigationDestination(
+            item: store.scope(state: \.destination?.organization, action: \.destination.organization)
+        ) { store in
+            PrescriptionDetailView.OrganizationView(store: store)
+        }
+        .navigationDestination(
+            item: store.scope(state: \.destination?.technicalInformations, action: \.destination.technicalInformations)
+        ) { store in
+            PrescriptionDetailView.TechnicalInformationsView(store: store)
+        }
+        .fullScreenCover(
+            item: store.scope(state: \.destination?.cardWall, action: \.destination.cardWall)
+        ) { store in
+            CardWallIntroductionView(store: store)
+        }
+        .navigationDestination(
+            item: store.scope(state: \.destination?.insuranceList, action: \.destination.insuranceList)
+        ) { store in
+            DiGaInsuranceListView(store: store)
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        DiGaDetailView(store: DiGaDetailDomain.Dummies.store)
+    }
+}

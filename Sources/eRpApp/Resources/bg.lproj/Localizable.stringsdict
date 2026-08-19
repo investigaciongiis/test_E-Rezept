@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>auth_txt_failed_login_hint_msg</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Открит е неуспешен опит за влизане</string>
+			<key>other</key>
+			<string>Открити са %u неуспешни опита за влизане</string>
+		</dict>
+	</dict>
+	<key>auth_txt_password_failure_please_retry_with_delay</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Грешна парола. Моля, опитайте отново след 1 секунда.</string>
+			<key>other</key>
+			<string>Грешна парола. Моля, опитайте отново след %u секунди.</string>
+		</dict>
+	</dict>
+	<key>auth_txt_please_retry_with_delay</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Моля, опитайте отново след %u секунда.</string>
+			<key>other</key>
+			<string>Моля, опитайте отново след %u секунди.</string>
+		</dict>
+	</dict>
+	<key>dtl_txt_med_redeemed_on_direct_assignment</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Тази рецепта беше %%@ използвана като част от лечение за Вас.</string>
+			<key>other</key>
+			<string>Тази рецепта е издадена за Вас на % %@ като част от лечение.</string>
+		</dict>
+	</dict>
+	<key>erx_txt_accepted_until</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@v1_days_variable@</string>
+		<key>v1_days_variable</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Може да се използва само утре</string>
+			<key>other</key>
+			<string>Все още може да се използва за %u дни</string>
+		</dict>
+	</dict>
+	<key>erx_txt_deleted_at</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Изтрито: %% @</string>
+			<key>other</key>
+			<string>Изтрито на: %% @</string>
+		</dict>
+	</dict>
+	<key>erx_txt_expires_in</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Може да се изкупи само утре като самоплащащ</string>
+			<key>other</key>
+			<string>Все още може да бъде изкупен като самоплащащ за %u дни</string>
+		</dict>
+	</dict>
+	<key>ord_detail_txt_presc</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Рецепта</string>
+			<key>other</key>
+			<string>Рецепти</string>
+		</dict>
+	</dict>
+	<key>ord_list_status_count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>%lu рецепта</string>
+			<key>other</key>
+			<string>%lu рецепти</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_alert_title_failure</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Избраната рецепта не можа да бъде осребрена</string>
+			<key>other</key>
+			<string>%li рецепти не можаха да бъдат осребрени</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_txt_prescription_already_redeemed_error</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Рецептата не може да бъде осребрена</string>
+			<key>other</key>
+			<string>Рецептите не могат да бъдат осребрени</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_txt_prescription_already_redeemed_error_suggestion_format</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Рецептата %% @ вече не може да се използва. Може вече да сте го осребрили по друг начин или може да е изтрит.</string>
+			<key>other</key>
+			<string>Следните рецепти вече не могат да бъдат осребрени: %% @. Може вече да сте ги изкупили по друг начин или може да са били изтрити.</string>
+		</dict>
+	</dict>
+	<key>prsc_fd_txt_details_actual_medication_title</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Получено лекарство</string>
+			<key>other</key>
+			<string>Получено лекарство</string>
+		</dict>
+	</dict>
+	<key>scn_btn_scanning_done</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Готово, добавете рецепта</string>
+			<key>other</key>
+			<string>Готово, добавете рецепти</string>
+		</dict>
+	</dict>
+	<key>self_payer_warning_txt_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Вашата застраховка няма да покрие никакви разходи за %#@variable_0@ %@ . </string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>предписанието</string>
+			<key>other</key>
+			<string>предписанията</string>
+		</dict>
+	</dict>
+	<key>stg_txt_card_reset_rc_alert_wrong_pin_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Имате още един опит за въвеждане на текущия PIN.</string>
+			<key>other</key>
+			<string>Все още имате %u опита за въвеждане на текущия PIN.</string>
+		</dict>
+	</dict>
+	<key>stg_txt_card_reset_rc_alert_wrong_puk_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>one</key>
+			<string>Имате още един опит за въвеждане на PUK.</string>
+			<key>other</key>
+			<string>Все още имате %u опита за въвеждане на PUK.</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

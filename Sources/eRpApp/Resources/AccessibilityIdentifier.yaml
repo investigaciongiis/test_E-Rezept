@@ -1,0 +1,803 @@
+controls:
+  emojiPicker:
+    - ctl_btn_emoji_picker_edit_save
+    - ctl_btn_emoji_picker_edit
+  searchBar:
+    - ctl_txt_search_bar_field
+    - ctl_btn_search_bar_delete_text
+    - ctl_btn_search_bar_cancel
+  tooltips:
+    - ctl_tooltip_container
+  demoMode:
+    - bnr_txt_demo_mode
+  osDeprecationBanner:
+    - bnr_txt_os_deprecation
+migration:
+  - amg_txt_and_spinner
+scanner:
+  - scn_txt_scan_state
+  - scn_img_scan_alert
+  - scn_btn_scanning_done
+  - scn_btn_cancel_scan
+orderEGK:
+  - ogk_txt_headline
+  - ogk_btn_cancel
+  - ogk_btn_pinOnly
+  - ogk_btn_pinAndCard
+  - ogk_btn_phone
+  - ogk_btn_web
+  - ogk_btn_mail
+  - ogk_btn_egk_info
+  - ogk_txt_no_selection_hint
+  - ogk_txt_insurance_company_header
+  - ogk_txt_service_selection_header
+  - ogk_txt_contact_company_header
+cardWall:
+  select:
+    - cdw_btn_sel_continue
+    - cdw_btn_sel_egk
+    - cdw_btn_sel_kkapp
+  extAuthFallback:
+    - cdw_btn_extauth_fallback_orderegk
+    - cdw_btn_extauth_fallback_cancel
+  extAuthSelection:
+    - cdw_btn_extauth_selection_retry
+    - cdw_btn_extauth_selection_cancel
+    - cdw_btn_extauth_selection_confirm
+    - cdw_btn_extauth_selection_help
+  extAuthConfirmation:
+    - cdw_btn_extauth_confirm_send
+    - cdw_btn_extauth_confirm_cancel
+    - cdw_btn_extauth_confirm_contact
+  intro:
+    - cdw_btn_intro_later
+    - cdw_btn_intro_cancel
+    - cdw_btn_intro_more
+    - cdw_btn_intro_advance
+    - cdw_img_intro_main
+    - cdw_txt_intro_header_bottom
+    - cdw_txt_intro_description
+    - cdw_txt_intro_list_title
+    - cdw_txt_intro_requirement_card
+    - cdw_txt_intro_requirement_pin
+    - cdw_txt_intro_requirement_phone
+    - cdw_btn_intro_direct_gid
+  notForYou:
+    - cdw_btn_nfu_done
+    - cdw_btn_nfu_cancel
+    - cdw_txt_nfu_subtitle
+    - cdw_txt_nfu_description
+    - cdw_btn_nfu_more
+  canInput:
+    - cdw_txt_can_input
+    - cdw_tct_can_header
+    - cdw_txt_can_instruction
+    - cdw_img_can_card
+    - cdw_btn_can_cancel
+    - cdw_btn_can_done
+    - cdw_btn_can_more
+    - cdw_btn_can_scan
+  canScanner:
+    - cdw_scn_btn_close
+    - cdw_scn_btn_done
+    - cdw_scn_btn_flashlight
+  pinInput:
+    - cdw_txt_pin_subtitle
+    - cdw_txt_pin_description
+    - cdw_btn_pin_cancel
+    - cdw_btn_pin_done
+    - cdw_edt_pin_input
+    - cdw_btn_pin_no_pin
+    - cdw_hint_get_pin
+    - cdw_txt_pin_warning
+    - cdw_txt_pin_hint
+  loginOption:
+    - cdw_txt_loginOption_subtitle
+    - cdw_btn_loginOption_cancel
+    - cdw_btn_loginOption_back
+    - cdw_btn_loginOption_continue
+    - cdw_txt_loginOption_biometry
+    - cdw_txt_loginOption_without_biometry
+    - cdw_txt_loginOption_security_warning_title
+    - cdw_txt_loginOption_security_warning_description
+    - cdw_btn_loginOption_security_warning_accept
+  readCard:
+    - cdw_btn_rc_next
+    - cdw_btn_rc_cancel
+    - cdw_txt_rc_headline
+    - cdw_txt_rc_description
+    - cdw_btn_rc_help_next_tip
+    - cdw_btn_rc_help_next
+onboarding:
+  progress:
+    - onb_auth_img_progress
+  start:
+    - onb_txt_start_title
+    - onb_img_gematik_logo
+    - onb_img_man1
+    - onb_btn_start
+  welcome:
+    - onb_txt_welcome_title
+    - onb_img_frau1
+  features:
+    - onb_txt_features_title
+    - onb_img_hand_with_card
+  newProfile:
+    - onb_prf_txt_title
+    - onb_prf_txt_alert_empty
+    - onb_prf_txt_footnote
+    - onb_prf_txt_field
+  authentication:
+    - onb_auth_inp_passwordA
+    - onb_auth_inp_passwordB
+    - onb_auth_txt_password_recommendation
+    - onb_auth_txt_passwords_dont_match
+    - onb_auth_txt_no_selection
+    - onb_auth_txt_alt_description
+    - onb_auth_txt_no_biometrics
+    - onb_auth_txt_section_title
+    - onb_auth_txt_section_subtitle
+    - onb_auth_txt_password_strength
+    - onb_auth_btn_password
+    - onb_auth_btn_back
+    - onb_auth_btn_face_id
+    - onb_auth_btn_touch_id
+  analytics:
+    - onb_ana_txt_title
+    - onb_ana_txt_subtitle
+    - onb_ana_btn_allow
+    - onb_ana_btn_deny
+  legalInfo:
+    - onb_img_progress
+    - onb_txt_legal_info_title
+    - onb_btn_next
+    - onb_txt_terms_of_use
+    - onb_btn_accept_terms_of_use_and_privacy
+    - onb_txt_terms_of_privacy
+auth:
+  - auth_btn_biometrics_faceid
+  - auth_btn_biometrics_touchid
+  - auth_btn_password_continue
+  - auth_txt_password_failure
+  - auth_edt_password_input
+  - auth_txt_failed_login_hint
+  - auth_btn_bap_faceid
+  - auth_btn_bap_touchid
+  - auth_btn_bap_change
+settings:
+  demo:
+    - nav_done
+    - stg_txt_demo_mode
+    - stg_txt_header_demo_mode
+    - stg_txt_footnote_demo_mode
+  security:
+    - stg_txt_header_security
+    - stg_tgl_security_faceid
+    - stg_tgl_security_touchid
+    - stg_tgl_security_password
+    - stg_btn_security_change_password
+    - stg_txt_security_tokens
+    - stg_btn_device_security
+    - stg_btn_medication_reminder
+    - stg_btn_language_settings
+    - stg_hnt_biometrics_warning
+  createPassword:
+    - cpw_btn_save
+    - cpw_btn_update
+    - cpw_inp_current_password
+    - cpw_txt_current_password_wrong
+    - cpw_inp_passwordA
+    - cpw_inp_passwordB
+    - cpw_txt_password_recommendation
+    - cpw_txt_section_title
+    - cpw_txt_section_update_title
+    - cpw_txt_password_strength
+    - cpw_txt_password_strength_error_footer
+  profiles:
+    - stg_txt_header_profiles
+    - stg_btn_profile
+    - stg_con_profiles
+    - stg_btn_new_profile
+  chargeItemList:
+    - stg_btn_charge_item_list_navigation_bar_menu
+    - stg_txt_charge_item_list_menu_entry_connect
+    - stg_txt_charge_item_list_menu_entry_activate
+    - stg_txt_charge_item_list_menu_entry_deactivate
+    - stg_btn_charge_item_list_menu_entry_edit
+    - stg_btn_charge_item_list_menu_entry_editing_done
+    - stg_txt_charge_item_list_empty_list_replacement
+    - stg_txt_charge_item_list_bottom_banner_message
+    - stg_btn_charge_item_list_bottom_banner
+    - stg_btn_charge_item_list_container
+    - stg_btn_charge_item_list_section_header_title
+    - stg_btn_charge_item_list_section_header_sum
+    - stg_btn_charge_item_list_row
+    - stg_btn_charge_item_list_row_title
+    - stg_btn_charge_item_list_row_date
+    - stg_btn_charge_item_list_row_tag_container
+  card:
+    - stg_txt_card_forgot_pin
+    - stg_txt_card_custom_pin
+    - stg_txt_card_unlock_card
+    - stg_txt_card_order_new_card
+    - stg_btn_card_reset_advance
+    - stg_txt_card_reset_intro_headline
+    - stg_txt_card_reset_intro_need_your_card
+    - stg_txt_card_reset_intro_need_your_cards_pin
+    - stg_txt_card_reset_intro_need_your_cards_puk
+    - stg_txt_card_reset_puk_headline
+    - stg_txt_card_reset_puk_hint
+    - stg_edt_card_reset_puk_input
+    - stg_txt_card_reset_oldpin_headline
+    - stg_txt_card_reset_oldpin_hint
+    - stg_edt_card_reset_oldpin_input
+    - stg_txt_card_reset_pin_headline
+    - stg_txt_card_reset_pin_hint
+    - stg_txt_card_reset_pin_hint_message
+    - stg_txt_card_reset_pin_warning
+    - stg_edt_card_reset_pin_input_pin1
+    - stg_edt_card_reset_pin_input_pin2
+    - stg_btn_card_reset_read
+  editProfile:
+    - stg_txt_edit_profile_name_input
+    - stg_txt_edit_profile_bg_color_title
+    - stg_txt_edit_profile_bg_color_picker
+    - stg_btn_edit_profile_delete
+    - stg_btn_edit_profile_login
+    - stg_btn_edit_profile_logout
+    - stg_txt_edit_profile_logout_info
+    - stg_txt_edit_profile_name
+    - stg_txt_edit_profile_insurance_company
+    - stg_txt_edit_profile_can
+    - stg_txt_edit_profile_insurance_id
+    - stg_txt_edit_profile_charge_item_list_section_title
+    - stg_txt_edit_profile_charge_item_list_section_show_charge_item_list
+    - stg_txt_edit_profile_eu_redeem_list_section_title
+    - stg_btn_edit_profile_eu_redeem_change_consent
+    - stg_txt_edit_profile_login_section_title
+    - stg_txt_edit_profile_login_section_activate
+    - stg_txt_edit_profile_login_section_connected_devices
+    - stg_txt_edit_profile_login_section_show_hint
+    - stg_txt_edit_profile_security_section_title
+    - stg_btn_edit_profile_security_section_show_tokens
+    - stg_btn_edit_profile_security_section_show_audit_events
+    - stg_txt_edit_profile_security_show_tokens_hint
+    - stg_txt_edit_profile_my_area_title
+  newProfile:
+    - stg_txt_new_profile_bg_color_title
+    - stg_txt_new_profile_bg_color_picker
+    - stg_btn_new_profile_save
+    - stg_btn_new_profile_cancel
+    - stg_inp_new_profile_name
+  editProfilePictureFull:
+    - stg_epp_btn_reset_picture
+    - stg_epp_btn_choose_type
+    - stg_epp_btn_action_camera
+    - stg_epp_btn_action_library
+  auditEvents:
+    - stg_ctn_audit_events_events
+    - stg_ctn_audit_events_event_title
+    - stg_ctn_audit_events_event_description
+    - stg_ctn_audit_events_event_date
+    - stg_ctn_audit_events_event_telematik_id_info
+    - stg_txt_audit_events_last_updated
+    - stg_txt_audit_events_activity_indicator
+    - stg_txt_audit_events_no_protocol_title
+    - stg_txt_audit_events_no_protocol_description
+    - stg_txt_audit_events_bottom_banner_message
+    - stg_btn_audit_events_bottom_banner
+  notificationChannels:
+    - stg_txt_notification_channels_description
+  legalNotice:
+    - stg_lno_txt_header_legal_info
+    - stg_lno_txt_legal_notice
+    - stg_lno_link_contact
+    - stg_lno_mail_contact
+    - stg_lno_phone_contact
+  explore:
+    - stg_con_header_explore
+    - stg_con_btn_organ_donor
+    - stg_con_btn_gemmunity
+    - stg_con_btn_gesundbundde
+  contact:
+    - stg_con_header_contact
+    - stg_con_hotline_contact
+    - stg_con_txt_footnote
+    - stg_con_txt_mail
+    - stg_con_txt_survey
+    - stg_con_txt_diga_survey
+    - stg_con_btn_organ_donor
+  dataPrivacy:
+    - stg_dpr_txt_data_privacy
+    - stg_ww_data_privacy
+    - stg_btn_data_privacy_close
+  foss:
+    - stg_dpr_txt_foss
+  termsOfUse:
+    - stg_tou_txt_terms_of_use
+    - stg_ww_terms_of_use
+    - stg_btn_terms_of_use_close
+  accessibilityStatement:
+    - stg_btn_accessibility_statement
+  tracking:
+    - stg_trk_txt_title
+    - stg_trk_txt_explanation
+    - stg_trk_btn_title
+    - stg_trk_txt_footnote
+    - stg_trk_btn_yes
+    - stg_trk_btn_no
+  tokens:
+    - stg_tkn_txt_access_token
+    - stg_tkn_txt_sso_token
+redeem:
+  overview:
+    - rdm_txt_pharmacy_title
+    - rdm_txt_pharmacy_subtitle
+    - rdm_btn_pharmacy_tile
+    - rdm_btn_delivery_tile
+    - rdm_btn_redeem_eu_prsc
+    - rdm_btn_close_button
+  eu:
+    consent:
+      - eurdm_btn_consent_grant
+      - eurdm_btn_consent_revoke
+      - eurdm_txt_consent_title
+      - eurdm_txt_consent_description1
+      - eurdm_txt_consent_description2
+      - eurdm_txt_consent_info
+      - eurdm_btn_consent_accept
+      - eurdm_btn_consent_decline
+      - eurdm_btn_consent_abort
+    code:
+      - eurdm_code_toggle_display_mode_button
+      - eurdm_code_close_button
+      - eurdm_code_generate_new_button
+      - eurdm_code_take_receipt_button
+      - eurdm_code_speech_insurance_number_button
+      - eurdm_code_speech_exchange_code_button
+      - eurdm_code_manual_refresh_button
+      - eurdm_code_qr_refresh_button
+      - eurdm_code_txt_step2
+      - eurdm_code_txt_step_description
+      - eurdm_code_txt_insurance_number_label
+      - eurdm_code_txt_insurance_number
+      - eurdm_code_txt_exchange_code_label
+      - eurdm_code_txt_exchange_code
+      - eurdm_code_txt_validity_manual
+      - eurdm_code_txt_qr_expired
+      - eurdm_code_txt_validity_qr
+    selection:
+      - eurdm_txt_selection_title
+      - eurdm_txt_selection_subtitle
+      - eurdm_img_selection_banner
+      - eurdm_btn_selection_redeem
+      - eurdm_btn_selection_close
+      - eurdm_btn_selection_prescriptions
+      - eurdm_txt_selection_prescription_title
+      - eurdm_txt_selection_prescription_caption
+      - eurdm_btn_selection_country
+      - eurdm_txt_selection_country_title
+      - eurdm_txt_selection_country_no_selection
+      - eurdm_txt_selection_country_caption
+    countrySelection:
+      - eurdm_txt_country_title
+      - eurdm_txt_country_subtitle
+      - eurdm_btn_country_location
+      - eurdm_txt_country_empty_title
+      - eurdm_txt_country_empty_subtitle
+      - eurdm_txt_country_location_empty
+    prescriptionSelection:
+      - eurdm_txt_prsc_patient_name
+    instructions:
+      - eurdm_txt_instructions_title
+      - eurdm_txt_instructions_subtitle
+      - eurdm_txt_instructions_step1_title
+      - eurdm_txt_instructions_step2_title
+      - eurdm_txt_instructions_step3_title
+      - eurdm_txt_instructions_step4_title
+      - eurdm_txt_instructions_step5_title
+      - eurdm_txt_instructions_disclaimer
+      - eurdm_btn_instructions_generate_code
+      - eurdm_btn_instructions_close
+orders:
+  list:
+    - ord_txt_empty_list
+    - ord_txt_list
+    - msg_txt_title
+orderDetail:
+  list:
+    - ord_detail_title
+    - ord_detail_txt_msg_list
+    - ord_detail_txt_med_list
+    - ord_detail_btn_link
+    - ord_detail_btn_dmc
+    - ord_detail_btn_contact
+    - ord_detail_btn_contact_map
+    - ord_detail_btn_contact_phone
+    - ord_detail_btn_contact_email
+    - ord_detail_btn_refresh_code
+    - ord_detail_btn_revoke_accessCode
+    - ord_detail_btn_accessCode_revoked
+  pickupCode:
+    - puc_txt_title
+    - puc_txt_subtitle
+    - puc_txt_hrCode
+    - puc_btn_close
+  message:
+    - msg_txt_title
+    - msg_txt_chips
+mainScreen:
+  - erx_btn_login
+  - erx_btn_refresh
+  - erx_btn_redeem_prescriptions
+  - erx_detailed_prescription
+  - erx_detailed_prescription_name
+  - erx_detailed_prescription_validity
+  - erx_detailed_multiple_prescription_index
+  - erx_detailed_self_payer
+  - erx_detailed_diGa_bage
+  - erx_detailed_status
+  - erx_btn_profile
+  - erx_img_profile
+  - erx_img_profile_status
+  - erx_txt_empty_title
+  - erx_txt_empty_subtitle
+  - erx_btn_arc_prescription
+  - erx_btn_scn_prescription
+  - erx_hnt_demo_mode_tour
+  - erx_hnt_demo_mode_welcome
+  - erx_txt_tooltips_add_profile
+  - erx_txt_tooltips_profile_rename
+  - erx_txt_tooltips_scan
+  - erx_btn_consent_drawer_activate
+  - erx_btn_consent_drawer_cancel
+  - erx_btn_consent_drawer_close
+  - erx_txt_consent_drawer_title
+  - erx_txt_consent_drawer_message
+prescriptionArchive:
+  - arc_btn_segmented_control
+  - arc_btn_segmented_control_prescriptions
+  - arc_btn_segmented_control_digas
+welcomedrawer:
+  - wlcd_btn_pkv_user
+  - wlcd_btn_gkv_user
+  - wlcd_btn_federalkv_user
+profileSelection:
+  - pro_txt_selection_profile_list
+  - pro_txt_selection_profile_list_entry
+  - pro_btn_selection_edit
+  - pro_btn_selection_profile_entry
+  - pro_btn_selection_profile_row
+  - pro_btn_selection_profile_loading_spinner
+  - pro_btn_selection_add_profile
+editProfilePicture:
+    - epp_btn_reset_picture
+    - epp_btn_choose_type
+    - epp_btn_action_camera
+    - epp_btn_action_library
+    - epp_btn_emoji_use
+prescriptionDetails:
+  - prsc_dtl_txt_title
+  - prsc_dtl_txt_title_input
+  - prsc_dtl_txt_section_details_header
+  - prsc_dtl_btn_edit_title
+  - prsc_dtl_btn_toggle_redeem
+  - prsc_dtl_btn_toolbar_item
+  - prsc_dtl_toolbar_menu_btn_share
+  - prsc_dtl_toolbar_menu_btn_redeem
+  - prsc_dtl_toolbar_menu_btn_redeem_eu_prsc
+  - prsc_dtl_toolbar_menu_btn_delete
+  - prsc_dtl_btn_error_info
+  - prsc_dtl_btn_substitution_info
+  - prsc_dtl_btn_headline_substitution_info
+  - prsc_dtl_btn_scanned_prescription_info
+  - prsc_dtl_btn_direct_assignment_info
+  - prsc_dtl_btn_self_payer_info
+  - prsc_dtl_btn_t_prescription_info
+  - prsc_dtl_txt_prescription_validity
+  - prsc_dtl_btn_prescription_validity_info
+  - prsc_dtl_drawer_substitution_info
+  - prsc_dtl_drawer_error_info
+  - prsc_dtl_drawer_scanned_prescription_info
+  - prsc_dtl_drawer_prescription_validity_info
+  - prsc_dtl_drawer_title
+  - prsc_dtl_drawer_description
+  - prsc_dtl_btn_redeem
+  - prsc_dtl_btn_show_matrix_code
+  - prsc_dtl_btn_additional_fee
+  - prsc_dtl_btn_emergency_service_fee
+  - prsc_dtl_btn_medication
+  - prsc_dtl_btn_medication_reminder
+  - prsc_dtl_btn_insured_person
+  - prsc_dtl_btn_practitioner
+  - prsc_dtl_btn_institution
+  - prsc_dtl_btn_work_related_accident
+  - prsc_dtl_btn_teratogenic_info
+  - prsc_dtl_btn_technical_informations
+  - prsc_dtl_drawer_co_payment_info_title
+  - prsc_dtl_drawer_co_payment_info_description
+  - prsc_dtl_drawer_co_payment_info
+  - prsc_dtl_drawer_dosage_instructions_info_title
+  - prsc_dtl_drawer_dosage_instructions_info_description
+  - prsc_dtl_drawer_dosage_instructions_info
+  - prsc_dtl_drawer_emergency_service_fee_info
+  - prsc_dtl_drawer_self_payer_info
+  - prsc_dtl_drawer_t_prescription_info
+  - prsc_dtl_txt_authored_on
+  - prsc_dtl_txt_bvg
+  - prsc_dtl_txt_multi_prescription
+  - prsc_dtl_txt_dosage_instructions
+  - prsc_dtl_txt_quantity
+  - prsc_dtl_ti_access_code
+  - prsc_dtl_ti_task_id
+  - prsc_dtl_pa_name
+  - prsc_dtl_pa_insurance_id
+  - prsc_dtl_pa_address
+  - prsc_dtl_pa_birth_date
+  - prsc_dtl_pa_phone
+  - prsc_dtl_pa_insurance
+  - prsc_dtl_pa_status
+  - prsc_dtl_pr_name
+  - prsc_dtl_pr_qualification
+  - prsc_dtl_pr_lanr
+  - prsc_dtl_pr_address
+  - prsc_dtl_pr_email
+  - prsc_dtl_or_name
+  - prsc_dtl_or_identifier
+  - prsc_dtl_or_address
+  - prsc_dtl_or_phone
+  - prsc_dtl_or_email
+  - prsc_dtl_accident_reason
+  - prsc_dtl_accident_date
+  - prsc_dtl_accident_id
+  - prsc_dtl_med_amount
+  - prsc_dtl_med_name
+  - prsc_dtl_med_norm_size_code
+  - prsc_dtl_med_pzn
+  - prsc_dtl_med_dosage_form
+  - prsc_dtl_med_drug_category
+  - prsc_dtl_med_vaccine
+  - prsc_dtl_med_batch_expires_on
+  - prsc_dtl_med_batch_lot_number
+  - prsc_dtl_med_ingredient_name
+  - prsc_dtl_med_manufacturing_instructions
+  - prsc_dtl_med_packaging
+  - prsc_dtl_med_ingredient_strength
+  - prsc_dtl_med_ingredient_form
+  - prsc_dtl_med_ingredient_number
+  - prsc_dtl_med_btn_ingredient
+  - prsc_dtl_med_dosage_instructions
+  - prsc_dtl_med_note
+  - prsc_dtl_med_handed_over_date
+  - prsc_dtl_med_ov_subscribed_header
+  - prsc_dtl_med_ov_btn_subscribed_medication
+  - prsc_dtl_med_ov_dispensed_header
+  - prsc_dtl_med_ov_btn_dispensed_medication
+  - prsc_dtl_hint_pkv_activate
+  - prsc_dtl_hint_pkv_no_invoice
+  - prsc_dtl_img_hint_pkv_activate
+  - prsc_dtl_img_hint_pkv_no_invoice
+  - prsc_dtl_btn_pkv_invoice
+diga:
+ detail:
+    - diga_dtl_btn_main_action
+    - diga_dtl_btn_toolbar_item
+    - diga_dtl_txt_name_header
+    - diga_dtl_txt_patient_header
+    - diga_dtl_btn_archive_toolbar
+    - diga_dtl_btn_unarchive_toolbar
+    - diga_dtl_btn_redeem_again_toolbar
+    - diga_dtl_btn_request_toolbar
+    - diga_dtl_btn_delete_toolbar
+    - diga_dtl_btn_toolbar_menu
+    - diga_dtl_btn_refresh
+    - diga_dtl_txt_app_name
+    - diga_dtl_txt_languages
+    - diga_dtl_txt_platform
+    - diga_dtl_txt_medical_service
+    - diga_dtl_txt_additional_devices
+    - diga_dtl_txt_patient_cost
+    - diga_dtl_txt_production_cost
+    - diga_dtl_txt_patient
+    - diga_dtl_txt_practitioner
+    - diga_dtl_txt_organization
+    - diga_dtl_txt_authoredOn
+    - diga_dtl_txt_decline_note
+    - diga_dtl_btn_description
+    - diga_dtl_btn_support
+    - diga_dtl_btn_main_select_insurance
+    - diga_dtl_btn_main_selected_insurance
+    - diga_dtl_txt_hint_no_connection
+    - diga_dtl_txt_hint_no_ios
+ support:
+    - diga_dtl_support_txt_header
+    - diga_dtl_support_txt_provided_link
+    - diga_dtl_support_btn_open_link
+    - diga_dtl_support_btn_close
+    - diga_dtl_support_btn_open_pdf
+ description:
+    - diga_dtl_description_txt_header
+    - diga_dtl_description_txt_desc
+    - diga_dtl_description_btn_close
+ valid:
+    - diga_dtl_valid_txt_header
+    - diga_dtl_valid_txt_subheader
+    - diga_dtl_valid_txt_start_date
+    - diga_dtl_valid_txt_end_date
+diga_insurance_list:
+  - diga_insurance_list_txt_header
+  - diga_insurance_list_txt_subheader
+pharmacySearch:
+  - pha_search_txt_result_list
+  - pha_search_txt_result_list_entry
+  - pha_search_search_running
+  - pha_search_localizing_device
+  - pha_search_start
+  - pha_search_no_results
+  - pha_search_error
+  - pha_filter_bar
+  - pha_filter_open_filter
+  - pha_filter_filter_list
+  - pha_search_switch_result_map
+  - pha_search_hint_eu_redeem
+pharmacySearchFilter:
+  - psf_btn_close
+  - psf_service_section
+  - psf_btn_explain_toggle
+  - psf_service_list
+  - psf_service_footnote
+pharmacySearchStart:
+  - pha_search_txt_quick_filter_title
+  - pha_search_btn_quick_filter_nearby
+  - pha_search_btn_quick_filter_delivery
+  - pha_search_btn_quick_filter_shipment
+  - pha_search_btn_quick_filter_open
+  - pha_search_quick_filter_section
+  - pha_search_txt_local_pharm_title
+  - pha_search_txt_local_pharm_entry
+  - pha_search_local_pharm_section
+  - pha_search_txt_map_header
+  - pha_search_map
+  - pha_search_map_section
+pharmacySearchMap:
+  - pha_search_map_btn_filter
+  - pha_search_map_btn_close
+  - pha_search_map_btn_go_to_user
+  - pha_search_map_btn_search_here
+  - pha_search_map_map
+  - pha_search_map_txt_cluster_header
+  - pha_search_map_btn_cluster_pharmacy
+  - pha_search_map_btn_cluster_close
+pharmacyDetail:
+  - pha_detail_txt_subtitle
+  - pha_detail_btn_organization
+  - pha_detail_btn_healthcare_service
+  - pha_detail_btn_location
+  - pha_detail_btn_pickup
+  - pha_detail_btn_delivery
+  - pha_detail_btn_shipment
+  - pha_detail_btn_pickup_via_login
+  - pha_detail_btn_delivery_via_login
+  - pha_detail_btn_shipment_via_login
+  - pha_detail_btn_close
+  - pha_detail_btn_open_map
+  - pha_detail_btn_open_phone
+  - pha_detail_btn_open_mail
+  - pha_detail_hint_not_erx_ready
+  - pha_detail_contact
+  - pha_detail_web
+  - pha_detail_mail
+  - pha_detail_phone
+directAssignment:
+  - dav_txt_direct_assignment_title
+  - dav_txt_direct_assignment_hint
+  - dav_btn_close
+pharmacyRedeem:
+  - pha_redeem_txt_title
+  - pha_redeem_txt_subtitle
+  - pha_redeem_txt_address_title
+  - pha_redeem_txt_prescription_title
+  - pha_redeem_txt_missing_address
+  - pha_redeem_address_name
+  - pha_redeem_address_street
+  - pha_redeem_address_detail
+  - pha_redeem_address_zip
+  - pha_redeem_address_city
+  - pha_redeem_address_phone
+  - pha_redeem_address_mail
+  - pha_redeem_address_info
+  - pha_redeem_btn_add_address
+  - pha_redeem_btn_edit_address
+  - pha_redeem_txt_missing_phone
+  - pha_redeem_btn_redeem
+  - pha_redeem_btn_redeem_footnote
+  - pha_redeem_txt_header
+  - pha_redeem_txt_edit_prescription_count
+  - pha_redeem_txt_edit_prescription
+  - pha_redeem_btn_edit_prescription
+  - pha_redeem_txt_add_prescription
+  - pha_redeem_txt_edit_pharmacy
+  - pha_redeem_txt_edit_pharmacy_name
+  - pha_redeem_txt_edit_pharmacy_adress
+  - pha_redeem_btn_edit_pharmacy
+  - pha_redeem_txt_add_pharmacy
+  - pha_redeem_btn_add_pharmacy
+pharmacyPrescriptionList:
+  - pha_prescription_list_btn_select_all
+  - pha_prescription_list_btn_save
+pharmacyContact:
+  - pha_contact_address_name
+  - pha_contact_address_street
+  - pha_contact_address_zip
+  - pha_contact_address_city
+  - pha_contact_address_phone
+  - pha_contact_address_mail
+  - pha_contact_address_info
+  - pha_contact_btn_save
+security:
+  - sec_txt_system_pin_headline
+  - sec_txt_system_pin_title
+  - sec_txt_system_pin_message
+  - sec_txt_system_pin_selection
+  - sec_btn_system_pin_done
+  - sec_txt_system_root_detection_headline
+  - sec_txt_system_root_detection_title
+  - sec_txt_system_root_detection_message
+  - sec_txt_system_root_detection_selection
+  - sec_txt_system_root_detection_footnote
+  - sec_btn_system_root_detection_footnote_more
+  - sec_btn_system_root_detection_done
+matrixCode:
+  - dmc_txt_title
+  - dmc_txt_subtitle
+  - dmc_img_loading_indicator
+  - dmc_img_matrixcode
+  - dmc_btn_share
+  - dmc_btn_redeem_eu_prsc
+  - dmc_btn_segmented_control
+  - dmc_btn_segmented_control_grouped
+  - dmc_btn_segmented_control_single
+  - dmc_btn_previous_page
+  - dmc_btn_next_page
+medicationReminder:
+  - med_reminder_btn_activation_toggle
+  - med_reminder_btn_dosage_instruction
+  - med_reminder_txt_schedule_header
+  - med_reminder_btn_repetition_details
+  - med_reminder_txt_schedule_time_section_header
+  - med_reminder_btn_schedule_time_date_picker
+  - med_reminder_btn_schedule_time_textfield_amount
+  - med_reminder_btn_schedule_time_add_entry
+  - med_reminder_btn_schedule_time_list
+  - med_reminder_btn_save_schedule
+  - med_reminder_drawer_dosage_instruction_info
+  - med_reminder_drawer_dosage_instruction_info_title
+  - med_reminder_drawer_dosage_instruction_info_description
+  - med_reminder_btn_weekday_monday
+  - med_reminder_btn_weekday_tuesday
+  - med_reminder_btn_weekday_wednesday
+  - med_reminder_btn_weekday_thursday
+  - med_reminder_btn_weekday_friday
+  - med_reminder_btn_weekday_saturday
+  - med_reminder_btn_weekday_sunday
+  - med_reminder_btn_repetition_infinite
+  - med_reminder_btn_repetition_finite
+  - med_reminder_btn_repetition_date_start
+  - med_reminder_btn_repetition_date_end
+  - med_reminder_btn_one_day_summary_go_to_reminders_overview_button
+  - med_reminder_btn_one_day_summary_close_button
+medicationReminderList:
+  - med_reminder_list_cell
+selfPayerWarning:
+  - self_payer_warning_txt_message
+
+# ./Sources/eRpApp/Components/Tiles/FootnoteView.swift:                .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Tiles/SectionView.swift:                .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Tiles/ToggleCell.swift:        .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Controls/TertiaryListButton.swift:        .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Controls/NavigationTextButton.swift:        .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Controls/StickyTextButton.swift:        .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Controls/SecondaryTextButton.swift:            .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Controls/TertiaryButton.swift:            .accessibility(identifier: text)
+# ./Sources/eRpApp/Components/Controls/PrimaryTextButton.swift:        .accessibility(identifier: text)
+

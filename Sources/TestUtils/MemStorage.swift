@@ -1,0 +1,129 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import Combine
+import Foundation
+@testable import IDP
+import OpenSSL
+@testable import TrustStore
+@testable import VAUClient
+
+public class MemStorage: IDPStorage, SecureEGKCertificateStorage, TrustStoreStorage, VAUStorage {
+    public private(set) var tokenState: CurrentValueSubject<IDPToken?, Never> = CurrentValueSubject(nil)
+    public var token: AnyPublisher<IDPToken?, Never> {
+        tokenState
+            .eraseToAnyPublisher()
+    }
+
+    public init(token: IDPToken? = nil) {
+        tokenState.value = token
+    }
+
+    public convenience init(accessToken: String) {
+        self.init(token: IDPToken(
+            accessToken: accessToken,
+            expires: Date.distantFuture,
+            idToken: "",
+            ssoToken: "",
+            tokenType: "Bearer",
+            redirect: "redirect"
+        ))
+    }
+
+    public func set(token: IDPToken?) {
+        tokenState.value = token
+    }
+
+    @Published public private(set) var discoveryDocumentState: DiscoveryDocument?
+    public var discoveryDocument: AnyPublisher<DiscoveryDocument?, Never> {
+        $discoveryDocumentState.eraseToAnyPublisher()
+    }
+
+    public func set(discovery document: DiscoveryDocument?) {
+        discoveryDocumentState = document
+    }
+
+    @Published private(set) var pkiCertificatesState: PKICertificates?
+    public func getPKICertificates() -> PKICertificates? {
+        pkiCertificatesState
+    }
+
+    public func set(pkiCertificates: PKICertificates?) {
+        pkiCertificatesState = pkiCertificates
+    }
+
+    @Published private(set) var vauCertificateState: Data?
+    public func getVauCertificate() -> Data? {
+        vauCertificateState
+    }
+
+    public func set(vauCertificate: Data?) {
+        vauCertificateState = vauCertificate
+    }
+
+    @Published private(set) var ocspResponsesState: [String: [String: Data]] = [:]
+    public func getOcspResponse(issuerCn: String, serialNr: String) -> Data? {
+        ocspResponsesState[issuerCn]?[serialNr]
+    }
+
+    public func setOcspResponse(issuerCn: String, serialNr: String, ocspResponse: Data?) {
+        if ocspResponse == nil {
+            ocspResponsesState[issuerCn]?.removeValue(forKey: serialNr)
+        } else {
+            if ocspResponsesState[issuerCn] == nil {
+                ocspResponsesState[issuerCn] = [:]
+            }
+            ocspResponsesState[issuerCn]?[serialNr] = ocspResponse
+        }
+    }
+
+    public func resetOcspResponses() {
+        ocspResponsesState.removeAll()
+    }
+
+    @Published private(set) var userPseudonymState: String?
+    public var userPseudonym: AnyPublisher<String?, Never> {
+        $userPseudonymState.eraseToAnyPublisher()
+    }
+
+    public func set(userPseudonym: String?) {
+        userPseudonymState = userPseudonym
+    }
+
+    @Published private(set) var certificateState: IDPX509?
+    public var certificate: AnyPublisher<IDPX509?, Never> {
+        $certificateState.eraseToAnyPublisher()
+    }
+
+    public func set(certificate: IDPX509?) {
+        certificateState = certificate
+    }
+
+    @Published private(set) var keyIdentifierState: Data?
+    public var keyIdentifier: AnyPublisher<Data?, Never> {
+        $keyIdentifierState.eraseToAnyPublisher()
+    }
+
+    public func set(keyIdentifier: Data?) {
+        keyIdentifierState = keyIdentifier
+    }
+}

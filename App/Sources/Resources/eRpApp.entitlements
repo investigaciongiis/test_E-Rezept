@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(GEM_APP_GROUP_IDENTIFIER)</string>
+	</array>
+	<key>aps-environment</key>
+	<string>$(GEM_APS_ENVIRONMENT)</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:erezept.dev.gematik.solutions</string>
+		<string>applinks:das-e-rezept-fuer-deutschland.de</string>
+		<string>applinks:www.das-e-rezept-fuer-deutschland.de</string>
+		<string>webcredentials:das-e-rezept-fuer-deutschland.de</string>
+		<string>applinks:erezept.gematik.de</string>
+	</array>
+	<key>com.apple.developer.default-data-protection</key>
+	<string>NSFileProtectionCompleteUnlessOpen</string>
+	<key>com.apple.developer.nfc.readersession.formats</key>
+	<array>
+		<string>TAG</string>
+	</array>
+</dict>
+</plist>

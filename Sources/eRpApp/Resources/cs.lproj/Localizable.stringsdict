@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>auth_txt_failed_login_hint_msg</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Bylo zjištěno %u neúspěšných pokusů o přihlášení</string>
+			<key>many</key>
+			<string>Bylo zjištěno %u neúspěšných pokusů o přihlášení</string>
+			<key>one</key>
+			<string>Byl zjištěn neúspěšný pokus o přihlášení</string>
+			<key>other</key>
+			<string>Bylo zjištěno %u neúspěšných pokusů o přihlášení</string>
+		</dict>
+	</dict>
+	<key>auth_txt_password_failure_please_retry_with_delay</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Nesprávné heslo. Zkuste to prosím znovu za %u sekund.</string>
+			<key>many</key>
+			<string>Nesprávné heslo. Zkuste to prosím znovu za %u sekund.</string>
+			<key>one</key>
+			<string>Nesprávné heslo. Zkuste to prosím znovu za 1 sekundu.</string>
+			<key>other</key>
+			<string>Nesprávné heslo. Zkuste to prosím znovu za %u sekund.</string>
+		</dict>
+	</dict>
+	<key>auth_txt_please_retry_with_delay</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Zkuste to prosím znovu za %u sekund.</string>
+			<key>many</key>
+			<string>Zkuste to prosím znovu za %u sekund.</string>
+			<key>one</key>
+			<string>Zkuste to prosím znovu za %u sekundu.</string>
+			<key>other</key>
+			<string>Zkuste to prosím znovu za %u sekund.</string>
+		</dict>
+	</dict>
+	<key>dtl_txt_med_redeemed_on_direct_assignment</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Tento recept vám byl vydán dne % %@ jako součást léčby.</string>
+			<key>many</key>
+			<string>Tento recept vám byl vydán dne % %@ jako součást léčby.</string>
+			<key>one</key>
+			<string>Tento recept byl %%@ v rámci léčby pro vás uplatněn.</string>
+			<key>other</key>
+			<string>Tento recept vám byl vydán dne % %@ jako součást léčby.</string>
+		</dict>
+	</dict>
+	<key>erx_txt_accepted_until</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@v1_days_variable@</string>
+		<key>v1_days_variable</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Stále lze uplatnit %u dní</string>
+			<key>many</key>
+			<string>Stále lze uplatnit %u dní</string>
+			<key>one</key>
+			<string>Lze uplatnit pouze zítra</string>
+			<key>other</key>
+			<string>Stále lze uplatnit %u dní</string>
+		</dict>
+	</dict>
+	<key>erx_txt_deleted_at</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Smazáno dne: %% @</string>
+			<key>many</key>
+			<string>Smazáno dne: %% @</string>
+			<key>one</key>
+			<string>Smazáno: %% @</string>
+			<key>other</key>
+			<string>Smazáno dne: %% @</string>
+		</dict>
+	</dict>
+	<key>erx_txt_expires_in</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Stále lze uplatnit jako samoplátce po dobu %u dní</string>
+			<key>many</key>
+			<string>Stále lze uplatnit jako samoplátce po dobu %u dní</string>
+			<key>one</key>
+			<string>Lze uplatnit pouze zítra jako samoplátce</string>
+			<key>other</key>
+			<string>Stále lze uplatnit jako samoplátce po dobu %u dní</string>
+		</dict>
+	</dict>
+	<key>ord_detail_txt_presc</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Recepty</string>
+			<key>many</key>
+			<string>Recepty</string>
+			<key>one</key>
+			<string>Recept</string>
+			<key>other</key>
+			<string>Recepty</string>
+		</dict>
+	</dict>
+	<key>ord_list_status_count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>%lu receptů</string>
+			<key>many</key>
+			<string>%lu receptů</string>
+			<key>one</key>
+			<string>%lu recept</string>
+			<key>other</key>
+			<string>%lu receptů</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_alert_title_failure</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>%li receptů nebylo možné uplatnit</string>
+			<key>many</key>
+			<string>%li receptů nebylo možné uplatnit</string>
+			<key>one</key>
+			<string>Vybraný recept nelze uplatnit</string>
+			<key>other</key>
+			<string>%li receptů nebylo možné uplatnit</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_txt_prescription_already_redeemed_error</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Předpisy nelze uplatnit</string>
+			<key>many</key>
+			<string>Předpisy nelze uplatnit</string>
+			<key>one</key>
+			<string>Předpis nelze uplatnit</string>
+			<key>other</key>
+			<string>Předpisy nelze uplatnit</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_txt_prescription_already_redeemed_error_suggestion_format</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Následující recepty již nelze uplatnit: %% @. Možná jste je již uplatnili jinými prostředky nebo byly smazány.</string>
+			<key>many</key>
+			<string>Následující recepty již nelze uplatnit: %% @. Možná jste je již uplatnili jinými prostředky nebo byly smazány.</string>
+			<key>one</key>
+			<string>Recept %% @ již nelze uplatnit. Možná jste jej již uplatnili jiným způsobem nebo byl smazán.</string>
+			<key>other</key>
+			<string>Následující recepty již nelze uplatnit: %% @. Možná jste je již uplatnili jinými prostředky nebo byly smazány.</string>
+		</dict>
+	</dict>
+	<key>prsc_fd_txt_details_actual_medication_title</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Přijaté léky</string>
+			<key>many</key>
+			<string>Přijaté léky</string>
+			<key>one</key>
+			<string>Přijaté léky</string>
+			<key>other</key>
+			<string>Přijaté léky</string>
+		</dict>
+	</dict>
+	<key>scn_btn_scanning_done</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Hotovo, přidejte recepty</string>
+			<key>many</key>
+			<string>Hotovo, přidejte recepty</string>
+			<key>one</key>
+			<string>Hotovo, přidejte recept</string>
+			<key>other</key>
+			<string>Hotovo, přidejte recepty</string>
+		</dict>
+	</dict>
+	<key>self_payer_warning_txt_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Vaše pojištění nepokryje žádné náklady na %#@variable_0@ %@ . </string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>předpisy</string>
+			<key>many</key>
+			<string>předpisy</string>
+			<key>one</key>
+			<string>předpis</string>
+			<key>other</key>
+			<string>předpisy</string>
+		</dict>
+	</dict>
+	<key>stg_txt_card_reset_rc_alert_wrong_pin_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Stále máte %u pokusů o zadání aktuálního PIN.</string>
+			<key>many</key>
+			<string>Stále máte %u pokusů o zadání aktuálního PIN.</string>
+			<key>one</key>
+			<string>Máte ještě jeden pokus o zadání aktuálního PIN.</string>
+			<key>other</key>
+			<string>Stále máte %u pokusů o zadání aktuálního PIN.</string>
+		</dict>
+	</dict>
+	<key>stg_txt_card_reset_rc_alert_wrong_puk_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Stále máte %u pokusů o zadání kódu PUK.</string>
+			<key>many</key>
+			<string>Stále máte %u pokusů o zadání kódu PUK.</string>
+			<key>one</key>
+			<string>Máte ještě jeden pokus o zadání kódu PUK.</string>
+			<key>other</key>
+			<string>Stále máte %u pokusů o zadání kódu PUK.</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

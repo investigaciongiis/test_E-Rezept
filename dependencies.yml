@@ -1,0 +1,28 @@
+---
+purpose:
+  generic: >
+    This library contains convenience functions for creating the application ui.
+  specific:
+    openssl-swift: >
+      OpenSSL is used for all cryptographics that cannot be achieved with iOS standard crypto libraries (e.g. Brainpool ECC, PKCS#7).
+    asn1kit: >
+      This library contains convenience functions for handling asn1 data structures.
+    ref-openhealthcardkit: >
+      This library contains convenience functions for using eGK via NFC.
+    zxing-cpp: >
+      This library is used to create data matrix codes for redeeming prescriptions at a local pharmacy.
+    zxcvbn-ios: >
+      This library is used to rate the strength of passwords.
+    fhirmodels: >
+      This library is used to handle FHIR data structures and serialize/deserialize into/from JSON.
+    swift-protobuf: >
+      This library is used by fhirmodels as an unused dependency.
+exclude_identities_from_package_resolved:
+  - cs_ios_sdk
+  - cwlcatchexception
+  - cwlpreconditiontesting
+  - nimble
+  - ohhttpstubs
+  - plcrashreporter
+  - commandant
+  - swiftgenplugin

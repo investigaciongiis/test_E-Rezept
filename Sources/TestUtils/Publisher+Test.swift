@@ -1,0 +1,125 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import Combine
+import CombineSchedulers
+import Foundation
+import XCTest
+
+extension Publisher {
+    /// Convenience method for Combine Publisher tests that wait on the calling thread/queue and
+    /// subscribe and receive on the global queue and only return from the method when either the
+    /// Publisher has published (once) or the timeout time has been exceeded
+    ///
+    /// - Parameters:
+    ///   - timeout: time in seconds
+    ///   - file: filename
+    ///   - line: line number
+    ///   - expectations: assertion closure for the emitted/published Output
+    public func test(
+        timeout: TimeInterval = 2.0,
+        file: StaticString = #file,
+        line: UInt = #line,
+        failure: @escaping (Failure) -> Void = { error in
+            XCTFail("Publisher threw (unexpected) error: \(error)", file: #file, line: #line)
+        },
+        expectations: @escaping (Output) -> Void = { value in
+            XCTFail("Publisher did not expect to receive a value \(value)", file: #file, line: #line)
+        },
+        subscribeScheduler: AnySchedulerOf<DispatchQueue> = AnyScheduler.immediate,
+        receivingScheduler: AnySchedulerOf<DispatchQueue> = AnyScheduler.immediate
+    ) {
+        let semaphore = DispatchSemaphore(value: 0)
+        let cancellable = subscribe(on: subscribeScheduler)
+            .receive(on: receivingScheduler)
+            .sink(
+                receiveCompletion: { completion in
+                    if case let .failure(error) = completion {
+                        failure(error)
+                    }
+                    semaphore.signal()
+                },
+                receiveValue: { value in
+                    expectations(value)
+                }
+            )
+        let timeoutTime = DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))
+        if case .timedOut = semaphore.wait(timeout: timeoutTime) {
+            cancellable.cancel()
+            XCTFail("Test timed out", file: file, line: line)
+        }
+    }
+
+    /// XCTestExpectation-based variant of `test` that waits for the Publisher to complete or fail.
+    /// Uses XCTWaiter instead of a semaphore.
+    public func testWait(
+        timeout: TimeInterval = 2.0,
+        file: StaticString = #file,
+        line: UInt = #line,
+        failure: @escaping (Failure) -> Void = { error in
+            XCTFail("Publisher threw (unexpected) error: \(error)", file: #file, line: #line)
+        },
+        expectations: @escaping (Output) -> Void = { value in
+            XCTFail("Publisher did not expect to receive a value \(value)", file: #file, line: #line)
+        },
+        subscribeScheduler: AnySchedulerOf<DispatchQueue> = AnyScheduler.immediate,
+        receivingScheduler: AnySchedulerOf<DispatchQueue> = AnyScheduler.immediate
+    ) {
+        let completionExpectation = XCTestExpectation(description: "Publisher completion")
+        let cancellable = subscribe(on: subscribeScheduler)
+            .receive(on: receivingScheduler)
+            .sink(
+                receiveCompletion: { completion in
+                    if case let .failure(error) = completion {
+                        failure(error)
+                    }
+                    completionExpectation.fulfill()
+                },
+                receiveValue: { value in
+                    expectations(value)
+                }
+            )
+
+        // Ensure waiter runs on main thread so main-queue deliveries (receive(on: .main)) are processed.
+        let waiterResult: XCTWaiter.Result = {
+            if Thread.isMainThread {
+                return XCTWaiter.wait(for: [completionExpectation], timeout: timeout)
+            } else {
+                var result: XCTWaiter.Result = .completed
+                DispatchQueue.main.sync {
+                    result = XCTWaiter.wait(for: [completionExpectation], timeout: timeout)
+                }
+                return result
+            }
+        }()
+
+        if waiterResult != .completed {
+            cancellable.cancel()
+            switch waiterResult {
+            case .timedOut:
+                XCTFail("Test timed out", file: file, line: line)
+            default:
+                XCTFail("Unexpected wait result: \(waiterResult)", file: file, line: line)
+            }
+        }
+    }
+}

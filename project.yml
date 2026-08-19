@@ -1,0 +1,285 @@
+name: eRp-App
+options:
+  bundleIdPrefix: de.gematik.erp4ios.eRezept
+  createIntermediateGroups: true
+  developmentLanguage: en-GB
+  useBaseInternationalization: false
+  xcodeVersion: 26.4
+  deploymentTarget:
+    macOS: 13.0
+    iOS: 17.0
+schemes:
+  UITests_iOS:
+    build:
+      targets:
+        eRpApp: all
+    run:
+      environmentVariables:
+        - variable: UITEST.RECORD_MOCKS
+          value: 1
+          isEnabled: false
+        - variable: UITEST.RESET
+          value: 1
+          isEnabled: false
+        - variable: UITEST.DISABLE_ANIMATIONS
+          value: YES
+          isEnabled: false
+        - variable: UITEST.DISABLE_AUTHENTICATION
+          value: YES
+          isEnabled: false
+        - variable: UITEST.SCENARIO_NAME
+          value: <SCENARIO>UITests
+          isEnabled: false
+    test:
+      language: de
+      region: DE
+      gatherCoverageData: true
+      coverageTargets:
+        - eRpApp
+      targets:
+        - eRpAppUITests
+      testPlans:
+        - path: Tests/eRpAppUITests/Support/UITests_iOS.xctestplan
+          defaultPlan: true
+  AllTests_iOS:
+    build:
+      targets:
+        eRpApp: all
+    test:
+      language: de
+      region: DE
+      gatherCoverageData: true
+      coverageTargets:
+        - eRpApp
+      targets:
+        - eRpAppTests
+        - eRpAppStoreScreenshots
+        - package: eRpKit/eRpFeaturesTests
+        - package: eRpKit/eRpKitTests
+        - package: eRpKit/eRpLocalStorageTests
+        - package: eRpKit/eRpRemoteStorageTests
+        - package: eRpKit/eRpStyleKitTests
+        - package: eRpKit/FHIRClientTests
+        - package: eRpKit/FHIRVZDTests
+        - package: eRpKit/HTTPClientLiveTests
+        - package: eRpKit/IDPLiveTests
+        - package: eRpKit/IDPTests
+        - package: eRpKit/PharmacyTests
+        - package: eRpKit/PushNotificationCryptoTests
+        - package: eRpKit/TrustStoreTests
+        - package: eRpKit/VAUClientTests
+        - package: eRpKit/AsyncHelpersTests
+        - package: eRpKit/FeatureCardWallTests
+        - package: eRpKit/FeatureEURedeemTests
+        - package: eRpKit/FeatureCommunicationTests
+  AllTests_macOS:
+    build:
+      targets:
+        eRpDummy_macOS: test
+    test:
+      language: de
+      region: DE
+      gatherCoverageData: true
+      targets:
+        - package: eRpKit/eRpKitTests
+        - package: eRpKit/eRpLocalStorageTests
+        - package: eRpKit/eRpRemoteStorageTests
+        - package: eRpKit/FHIRClientTests
+        - package: eRpKit/FHIRVZDTests
+        - package: eRpKit/HTTPClientLiveTests
+        - package: eRpKit/IDPLiveTests
+        - package: eRpKit/IDPTests
+        - package: eRpKit/PharmacyTests
+        - package: eRpKit/PushNotificationCryptoTests
+        - package: eRpKit/TrustStoreTests
+        - package: eRpKit/VAUClientTests
+        - package: eRpKit/AsyncHelpersTests
+  AllIntegrationTests_iOS:
+    build:
+      targets:
+        IntegrationTests_iOS: test
+    test:
+      language: de
+      region: DE
+      targets:
+        - IntegrationTests_iOS
+      environmentVariables:
+        - variable: APP_CONF
+          value: $(APP_CONF)
+          isEnabled: true
+  StoreScreenshots_iOS:
+    build:
+      targets:
+        IntegrationTests_iOS: test
+    test:
+      language: de
+      region: DE
+      targets:
+        - eRpAppStoreScreenshots
+packages:
+  eRpKit:
+    path: .
+    group: "Packages"
+  Nimble:
+    url: https://github.com/Quick/Nimble
+    majorVersion: 14.0.0
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    majorVersion: 1.19.2
+settings:
+  base:
+    # for DISABLE_DIAMOND_PROBLEM_DIAGNOSTIC see: https://developer.apple.com/forums/thread/128806
+    DISABLE_DIAMOND_PROBLEM_DIAGNOSTIC: 1
+    CURRENT_PROJECT_VERSION: -1
+    CODE_SIGN_IDENTITY: ""
+    SWIFT_VERSION: 5.9
+    ALWAYS_SEARCH_USER_PATHS: NO
+    FRAMEWORK_SEARCH_PATHS: "$(inherited)"
+    SWIFT_STRICT_CONCURRENCY: complete
+  configs:
+    Release:
+      SWIFT_COMPILATION_MODE: wholemodule
+    Debug:
+      SWIFT_COMPILATION_MODE: incremental
+targets:
+  eRpDummy:
+    type: framework
+    platform: [macOS]
+    sources:
+      - Sources/eRpApp/Common/ProgressResponse.swift
+  eRpApp:
+    type: application
+    platform: iOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ${GEM_PRODUCT_BUNDLE_IDENTIFIER}
+        TARGETED_DEVICE_FAMILY: 1
+    configFiles:
+      Debug: App/Sources/Resources/debug.xcconfig
+      Release: App/Sources/Resources/release.xcconfig
+    sources:
+      - path: App/Sources
+        excludes:
+          - "Package.swift"
+    dependencies:
+      - package: eRpKit
+        product: eRpFeatures
+      - target: PushNotificationService
+        embed: true
+    scheme:
+      language: de
+      region: DE
+      testTargets:
+        - eRpAppTests
+      gatherCoverageData: false
+  PushNotificationService:
+    type: app-extension
+    platform: iOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ${GEM_PRODUCT_BUNDLE_IDENTIFIER}.notify
+        TARGETED_DEVICE_FAMILY: 1
+        INFOPLIST_FILE: Sources/PushNotificationService/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/PushNotificationService/PushNotificationService.entitlements
+        DEVELOPMENT_TEAM: A9FL89PFFL
+        PRODUCT_NAME: E-Rezept App Notifications
+      configs:
+        Release:
+          GEM_PROVISIONING_PROFILE_SPECIFIER: ${GEM_NOTIFY_PROVISIONING_PROFILE_SPECIFIER}
+    configFiles:
+      Debug: App/Sources/Resources/debug.xcconfig
+      Release: App/Sources/Resources/release.xcconfig
+    sources:
+      - path: Sources/PushNotificationService
+        excludes:
+          - "Info.plist"
+          - "PushNotificationService.entitlements"
+    dependencies:
+      - package: eRpKit
+        product: PushNotificationCrypto
+  EUPrescriptionPreview:
+    type: application
+    platform: iOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ${GEM_PRODUCT_BUNDLE_IDENTIFIER}.Preview.EUPrescription
+        TARGETED_DEVICE_FAMILY: 1
+    sources:
+      - path: App/Previews/EUPrescription
+        excludes:
+          - "Package.swift"
+    dependencies:
+      - package: eRpKit
+        product: FeatureEURedeem
+    scheme:
+      language: de
+      region: DE
+      gatherCoverageData: false
+  eRpAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    settings:
+      INFOPLIST_FILE: App/Tests/Resources/Info.plist
+    sources:
+      - path: App/Tests
+    dependencies:
+      - target: eRpApp
+      - package: eRpKit
+        product: eRpFeatures
+      - package: eRpKit
+        product: TestUtils
+      - package: Nimble
+  eRpAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    settings:
+      INFOPLIST_FILE: Tests/eRpAppUITests/Support/Info.plist
+      PRODUCT_BUNDLE_IDENTIFIER: de.gematik.eRpAppUITests
+      DEVELOPMENT_TEAM: A9FL89PFFL
+      CODE_SIGN_STYLE: Automatic
+      CODE_SIGN_IDENTITY: Apple Development
+    sources:
+      - path: Tests/eRpAppUITests/Support/empty.xcappdata
+        buildPhase: none
+        type: file
+      - path: Tests/eRpAppUITests/Support/UITests_iOS.xctestplan
+        buildPhase: none
+      - path: Tests/eRpAppUITests/Support/Info.plist
+        buildPhase: none
+      - path: Tests/eRpAppUITests/Tests
+    dependencies:
+      - target: eRpApp
+      - package: Nimble
+      - package: SnapshotTesting
+      - package: eRpKit
+        product: eRpFeatures
+  eRpAppStoreScreenshots:
+    type: bundle.unit-test
+    platform: iOS
+    settings:
+      INFOPLIST_FILE: Tests/eRpAppStoreScreenshots/Resources/Info.plist
+    sources:
+      - path: Tests/eRpAppStoreScreenshots
+        excludes:
+          - "**/__Snapshots__/**"
+    dependencies:
+      - package: eRpKit
+        product: eRpFeatures
+      - package: eRpKit
+        product: TestUtils
+      - package: Nimble
+      - package: SnapshotTesting
+  IntegrationTests:
+    type: bundle.unit-test
+    platform: [iOS]
+    settings:
+      INFOPLIST_FILE: Tests/IntegrationTests/Resources/Info.plist
+    sources:
+      - Tests/IntegrationTests
+    dependencies:
+      - target: eRpApp
+      - package: eRpKit
+        product: eRpFeatures
+      - package: eRpKit
+        product: TestUtils
+      - package: Nimble

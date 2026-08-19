@@ -1,0 +1,78 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import ComposableArchitecture
+import eRpKit
+import eRpStyleKit
+import SwiftUI
+
+struct DiGaValidView: View {
+    @Bindable var store: StoreOf<DiGaDetailDomain>
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                CloseButton {
+                    store.send(.setNavigation(tag: .none))
+                }
+            }
+            .padding([.top, .horizontal])
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.digaDtlValidTxtHeader)
+                        .font(.headline)
+                        .padding(.bottom, 8)
+                        .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtHeader)
+
+                    HStack {
+                        Text(store.diGaTask.authoredOn ?? L10n.digaDtlTxtNa.text)
+                            .foregroundColor(Colors.systemLabelSecondary)
+                            .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtStartDate)
+
+                        Image(systemName: SFSymbolName.arrowRight)
+                            .foregroundColor(Colors.primary700)
+
+                        Text(store.diGaTask.expiresOnDisplayDate)
+                            .foregroundColor(Colors.systemLabelSecondary)
+                            .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtEndDate)
+                    }
+
+                    Text(L10n.digaDtlValidTxtSubheader)
+                        .foregroundColor(Colors.systemLabelSecondary)
+                        .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtSubheader)
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(Colors.systemBackground.ignoresSafeArea())
+    }
+}
+
+#Preview {
+    NavigationStack {
+        DiGaValidView(store: DiGaDetailDomain.Dummies.store)
+    }
+}

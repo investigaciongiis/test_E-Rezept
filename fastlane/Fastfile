@@ -1,0 +1,1460 @@
+#
+#  Copyright (Change Date see Readme), gematik GmbH
+#
+#  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+#  European Commission – subsequent versions of the EUPL (the "Licence").
+#  You may not use this work except in compliance with the Licence.
+#
+#  You find a copy of the Licence in the "Licence" file or at
+#  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+#
+#  Unless required by applicable law or agreed to in writing,
+#  software distributed under the Licence is distributed on an "AS IS" basis,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+#  In case of changes by gematik find details in the "Readme" file.
+#
+#  See the Licence for the specific language governing permissions and limitations under the Licence.
+#
+#  *******
+#
+# For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+#
+
+require 'json'
+
+xcodes(
+  version: ENV["FL_XCODE_VERSION"] || "26.4.0",
+  select_for_current_build_only: true, 
+  update_list: false
+)
+
+fastlane_version "2.187.0"
+
+# Figure out if a setting is truthy
+def true?(obj)
+  if obj.nil?
+    raise "Object is nil. Not a valid boolean value"
+  end
+  obj.to_s.downcase == "true"
+end
+
+lane :resolve_dependencies do |options|
+  sh "rm -rf DerivedData/SourcePackages"
+  if File.exist? "../Package.swift"
+    spm(command: "resolve")
+  end
+end
+
+lane :generate_xcodeproj do |options|
+  sh("pushd ..; mint run xcodegen generate --spec project.yml; popd")
+end
+
+desc "Build and test (scan) the project for macOS"
+desc "The lane to run by ci on every commit."
+desc ""
+desc "###Example:"
+desc "```\nfastlane build_mac mac_schemes:ProjectScheme mac_sdk:\"macos11\" mac_destination:\"platform=macOS,arch=x86_64\" configuration:Release --env osx\n```"
+desc "###Options"
+desc " * **`project`**: The path to the Xcode project file. (`G_PROJECT`)"
+desc " * **`schemes`**: The (shared) schemes to build for the mac build. If only one Scheme exists you can omit this and specify a scheme in a Scanfile (`G_MAC_SCHEMES`)"
+desc " * **`mac_sdk`**: The SDK version to build against [default: macosx]. (`G_MAC_SDK`)"
+desc ""
+lane :build_mac do |options|
+  if options[:mac_sdk]
+    sdk = options[:mac_sdk]
+  elsif ENV["G_MAC_SDK"]
+    sdk = ENV["G_MAC_SDK"]
+  else
+    sdk = "macosx"
+  end
+
+  if options[:mac_destination]
+    destination = options[:mac_destination]
+  elsif ENV["G_MAC_DESTINATION"]
+    destination = ENV["G_MAC_DESTINATION"]
+  else
+    destination = "platform=macOS,arch=arm64"
+  end
+
+  if options[:schemes]
+    schemes = options[:schemes]
+  elsif ENV["G_MAC_SCHEMES"]
+    schemes = ENV["G_MAC_SCHEMES"]
+  else
+    scan(
+      sdk: sdk,
+      destination: destination,
+      output_directory: "./fastlane/test_output/mac"
+    )
+  end
+
+  if !schemes.nil?
+    schemes.split(",").each do |scheme|
+      scan(
+        scheme: scheme,
+        sdk: sdk,
+        destination: destination,
+        output_directory: "./fastlane/test_output/mac/#{scheme}"
+      )
+    end
+  end
+end
+
+desc "Build and test (scan) the project for iOS"
+desc "The lane to run by ci on every commit."
+desc ""
+desc "###Example:"
+desc "```\nbundle exec fastlane build_ios ios_schemes:ProjectScheme\n```"
+desc "###Options"
+desc " * **`schemes`**: The (shared) schemes to build for the iOS build. If only one Scheme exists you can omit this and specify a scheme in a Scanfile (`G_IOS_SCHEMES`)"
+desc ""
+lane :build_ios do |options|
+  reset_simulator_contents
+
+  if options[:schemes]
+    schemes = options[:schemes]
+  elsif ENV["G_IOS_SCHEMES"]
+    schemes = ENV["G_IOS_SCHEMES"]
+  else
+    scan(
+      output_directory: "./fastlane/test_output/ios"
+    )
+  end
+
+  if !schemes.nil?
+    schemes.split(",").each do |scheme|
+      scan(
+        scheme: scheme,
+        output_directory: "./fastlane/test_output/ios/#{scheme}"
+      )
+    end
+  end
+end
+
+lane :uitests_ios_setup do |options|
+  scheme = "UITests_iOS"
+
+  scan(
+    scheme: scheme,
+    configuration: "Debug",
+    build_for_testing: true,
+    output_directory: "./fastlane/test_output/uitests"
+  )
+end
+
+lane :uitests_ios do |options|
+  reset_simulator_contents
+
+  scan_result = scan(
+    scheme: "UITests_iOS",
+    configuration: "Debug",
+    prelaunch_simulator: true,
+    output_directory: "./fastlane/test_output/uitests",
+    number_of_retries: 2,
+    output_style: 'raw'
+  )
+  flaky_note_if_necessary(scan_result: scan_result)
+
+  trainer(
+    output_directory: "./fastlane/test_output/uitests",
+    output_remove_retry_attempts: true,
+    extension: ".junit"
+  )
+end
+
+desc "Pre-build AllIntegrationTest scheme."
+lane :integration_tests_setup do
+  puts "Build IntegrationTests scheme for testing."
+
+  scan(
+    scheme: "AllIntegrationTests_iOS",
+    configuration: "Debug",
+    build_for_testing: true,
+    output_directory: "./fastlane/test_output/integration_tests_setup" # default is ./fastlane/test_output
+  )
+end
+
+desc "Test the integration of the app with external dependencies e.g. IDP/FD."
+desc "Runs targets, that are excluded from normal CI builds."
+lane :integration_tests do |options|
+  reset_simulator_contents
+  reset_test_outputs
+
+  if options[:app_conf]
+    app_conf = options[:app_conf]
+  elsif ENV["APP_CONF"]
+    app_conf = ENV["APP_CONF"]
+  else
+    app_conf = "NO_APP_CONF_INJECTED_INTO_FASTFILE_INTEGRATION_TESTS_LANE"
+  end
+
+  # Set environment variable to be read from `Swift.ProcessInfo.processInfo.environment`
+  ENV["APP_CONF"] = "#{app_conf}"
+
+  puts "========== Run the tests for env: #{app_conf} =========="
+  scan_result = scan(
+    scheme: "AllIntegrationTests_iOS",
+    configuration: "Debug",
+    test_without_building: true,
+    number_of_retries: 3,
+    output_directory: "./fastlane/test_output/#{app_conf}", # default is ./fastlane/test_output
+    output_style: 'raw'
+  )
+
+  flaky_note_if_necessary(scan_result: scan_result)
+
+  trainer(
+    output_directory: "./fastlane/test_output/#{app_conf}",
+    output_remove_retry_attempts: true,
+    extension: ".junit"
+  )
+rescue => ex
+  jenkins_job_url = "https://jenkins.prod.ccs.gematik.solutions/job/e-Rezept-iOS-App-Integration_Tests/#{ENV['BUILD_NUMBER']}"
+  message = "Failed Integration Tests for configuration: #{app_conf} +++++ Reason: #{ex} +++++ Basic Junit report: #{jenkins_job_url}/artifact/fastlane/test_output/#{app_conf}/report.html +++++ Console log search for term: \\\"========== Run the tests for env: #{app_conf} ==========\\\" in: #{jenkins_job_url}/consoleFull"
+
+  notify_teams_channel(
+    channel_url: ENV["TEAMS_CHANNEL_URL_INT"],
+    stream: "Integration Tests",
+    success: false,
+    optional_message: message
+  ) if is_ci
+  UI.error(message)
+  raise
+end
+
+desc "Lane that builds for macOS and iOS by calling `build_mac` and `build_ios`"
+desc "See other lanes for configuration of options and/or ENV."
+desc ""
+desc "###Example:"
+desc "```\nfastlane build_all skip_ios:true skip_macos:false --env osx\n```"
+desc "###Options"
+desc " * **`skip_ios`**: Whether to skip the ios build [default: false]. (`G_BUILD_IOS_SKIP`)"
+desc " * **`skip_macos`**: Whether to skip the macos build [default: false]. (`G_BUILD_MAC_SKIP`)"
+desc ""
+lane :build_all do |options|
+  if !options[:skip_ios].nil?
+    skip_ios = options[:skip_ios]
+  elsif !ENV["G_BUILD_IOS_SKIP"].nil?
+    skip_ios = true?(ENV["G_BUILD_IOS_SKIP"])
+  else
+    skip_ios = false
+  end
+
+  if !options[:skip_macos].nil?
+    skip_macos = options[:skip_macos]
+  elsif !ENV["G_BUILD_MAC_SKIP"].nil?
+    skip_macos = true?(ENV["G_BUILD_MAC_SKIP"])
+  else
+    skip_macos = false
+  end
+
+  integration_tests_setup
+  uitests_ios_setup
+
+  build_mac options unless skip_macos
+  build_ios options unless skip_ios
+end
+
+desc "Lane that generates the CycloneDX SBOM (snyk) and stores it at doc/sbom.json."
+desc "Run whenever the dependency set changes (wired into the renovate lockfile-commit flow)."
+lane :generate_sbom do |options|
+  sh "cd .. && snyk sbom --file=Package.swift --format=cyclonedx1.6+json > doc/sbom.json"
+end
+
+desc "Lane that (auto) genarates API documentation from inline comments."
+lane :generate_documentation do |options|
+  list_errors
+  list_requirements
+
+  # copy committed sbom (maintained by the renovate flow via `generate_sbom`) into documentations
+  sh "cd .. && mkdir -p docs && cp doc/sbom.json docs/sbom.json"
+
+  output = sh "cd .. && swift package describe --type json | jq \".targets[]|select(.type == \\\"library\\\").name\" | grep -v Test | sed \"s/\\\"//g\" | sort"
+  schemes = output.split("\n").map { |e| e.strip }
+
+  sh "mkdir -p ../build/docs"
+  sh "mkdir -p ../docs/technical"
+
+  # docc build
+  sh "cd .. && xcrun xcodebuild -project eRp-App.xcodeproj -derivedDataPath build/docsData -scheme eRpFeatures -destination 'platform=iOS Simulator,name=iPhone 17' -parallelizeTargets docbuild | cd -"
+
+  paths = schemes.map { |scheme|
+    "../build/docsData/Build/Products/Debug-iphonesimulator/#{scheme}.doccarchive"
+  }.join(" ")
+
+  sh "rm -rf ../build/docs/AllSchemes.doccarchive"
+  sh "$(xcrun --find docc) merge #{paths}  --synthesized-landing-page-name \"E-Rezept App iOS Technical Dokumentation\" --output-path ../build/docs/AllSchemes.doccarchive"
+  sh "$(xcrun --find docc) process-archive transform-for-static-hosting \"../build/docs/AllSchemes.doccarchive\" --hosting-base-path /E-Rezept-App-iOS/technical/ --output-path ../docs/technical"
+
+  # generate landing page
+  generate_docs_index_html
+end
+
+desc "Lane that runs the static code analyzer for the project."
+desc "CI builds should run this lane on every commit and fail the build when"
+desc "the error/warning threshold exceeds the set limit."
+desc "Currently swiftlint is used as static analyzer"
+desc ""
+desc "###Example:"
+desc "```\nfastlane static_code_analysis swiftlint_config:\".swiftlint.yml\" code_analysis_fail_build:true code_analysis_strict:true --env ios12_xcode10\n```"
+desc "###Options"
+desc " * **`swiftlint_config`**: The SwiftLint configfile [default: .swiftlint.yml]. (`G_SWIFTLINT_CONFIG`)"
+desc " * **`code_analysis_fail_build`**: Whether errors/warnings should trigger build failures or not [default: true]. (`G_CODE_ANALYSIS_FAIL_BUILD`)"
+desc " * **`code_analysis_strict`**: Lint mode strict [default: true]. (`G_CODE_ANALYSIS_STRICT`)"
+desc ""
+lane :static_code_analysis do |options|
+  if options[:swiftlint_config]
+    config = options[:swiftlint_config]
+  elsif ENV["G_SWIFTLINT_CONFIG"]
+    config = ENV["G_SWIFTLINT_CONFIG"]
+  else
+    config = ".swiftlint.yml"
+  end
+
+  if !options[:code_analysis_fail_build].nil?
+    fail_build = options[:code_analysis_fail_build]
+  elsif !ENV["G_CODE_ANALYSIS_FAIL_BUILD"].nil?
+    fail_build = true?(ENV["G_CODE_ANALYSIS_FAIL_BUILD"])
+  else
+    fail_build = true
+  end
+
+  if !options[:code_analysis_strict].nil?
+    strict = options[:code_analysis_strict]
+  elsif !ENV["G_CODE_ANALYSIS_STRICT"].nil?
+    strict = true?(ENV["G_CODE_ANALYSIS_STRICT"])
+  else
+    strict = true
+  end
+
+  swiftlint(
+    config_file: config,
+    mode: :lint,
+    ignore_exit_status: !fail_build,
+    quiet: true,
+    strict: strict
+  )
+end
+
+desc "Lane that sets up the SPM dependencies and xcodeproj."
+desc "This lane calls `resolve_dependencies`, `generate_xcodeproj`"
+desc ""
+desc "###Example:"
+desc "```\nfastlane setup xcode:/Applications/Xcode-10.app configuration:Release --env ios12_xcode10\n```"
+desc "###Options"
+desc " * **`xcode`**: The path to the Xcode.app to use for this project [default: uses system xcodebuild configuration]. (`G_XCODE`)"
+desc ""
+lane :setup do |options|
+  resolve_dependencies options
+  pull_erp_shared_data
+  generate_xcodeproj options
+  pull_environment_variables options
+end
+
+desc "Lane that the ci build should invoke directly to do a complete build/test/analysis."
+desc "This lane calls `setup`, `static_code_analysis`, "
+desc "`build_all`, `generate_documentation`. See these sub-lanes for option parameters"
+desc "and ENV configuration options."
+desc ""
+desc "###Example:"
+desc "```\nfastlane cibuild --env ios12_xcode10\n```"
+desc ""
+lane :cibuild do |options|
+  desc "Build and test all platforms"
+  setup options
+  static_code_analysis options
+  build_all options
+  generate_documentation options
+end
+
+lane :list_errors do |options|
+  sh "mkdir -p ../docs/errors"
+
+  # Generate error documentation using our custom action
+  result = generate_error_documentation(
+    sources_dir: "./Sources",
+    output_dir: "./docs/errors"
+  )
+
+  UI.success("📊 Generated documentation for #{result[:total_enums]} error enums with #{result[:total_cases]} total cases")
+
+  # Generate SVG from DOT file using Graphviz
+  if File.exist?("../docs/errors/errors.dot")
+    sh "cd .. && dot -Tsvg -Kdot docs/errors/errors.dot > docs/errors/error_graph.svg"
+    UI.success("✅ Generated error graph SVG")
+  end
+
+  # Copy additional static files for the error documentation
+  sh "cd .. && cp doc/errors/error_graph.html docs/errors/error_graph.html" if File.exist?("../doc/errors/error_graph.html")
+  sh "cd .. && cp doc/errors/error_graph.css docs/errors/error_graph.css" if File.exist?("../doc/errors/error_graph.css")
+  sh "cd .. && cp Templates/ERB/style.css docs/errors/style.css" if File.exist?("../Templates/ERB/style.css")
+
+  # Report any missing expected error codes
+  if result[:missing_codes] && result[:missing_codes].any?
+    UI.important("⚠️  Missing expected error codes: #{result[:missing_codes].join(', ')}")
+  end
+
+  UI.success("🎉 Error documentation generation complete!")
+  UI.message("📁 Files generated in docs/errors/:")
+  UI.message("   • errors.json - Structured error data for search interface")
+  UI.message("   • errors.dot - Graphviz DOT format for visualization")
+  UI.message("   • error_graph.svg - Visual error relationship graph")
+  UI.message("   • search.html - Interactive search interface")
+end
+
+lane :list_requirements do |options|
+  template_dir = File.join(File.dirname(__FILE__), 'Templates', 'ERB')
+  output_dir = File.join(File.dirname(__FILE__), 'docs', 'requirements')
+  output_docs_dir = File.join(File.dirname(__FILE__), 'build', 'docs', 'generated')
+  
+  templates = [
+    'requirements.csv.erb',
+    'requirements.md.erb',
+    'requirements.html.erb',
+    'requirements_filtered.html.erb'
+  ].map { |file| File.join(template_dir, file) }
+
+  audit_generator(
+    audit_afos_json: './fastlane/audit_afos.json',
+    erb_templates: templates,
+    output_directory: output_dir,
+    source_file_globs: ["Sources/**/*.swift", "Tests/**/*.swift", "App/**/*.swift"],
+    requirement_notes_glob: "doc/manual/requirement-notes.md"
+  )
+  sh "cd .. && mkdir -p #{output_docs_dir}"
+  sh "cd .. && mv #{output_dir}/requirements.md #{output_docs_dir}"
+
+  sh "cd .. && cp Templates/ERB/style.css #{output_dir}"
+  sh "cd .. && cp Templates/ERB/audit_style.css #{output_dir}"
+  sh "cd .. && cp Templates/ERB/prism.css #{output_dir}"
+  sh "cd .. && cp Templates/ERB/prism.js #{output_dir}"
+
+  `which pandoc`
+  if $?.success?
+    UI.message("Generating html using `pandoc`...")
+    sh "cd .. && pandoc -s -f markdown -t html --toc --css Templates/ERB/style.css build/docs/generated/requirements.md > requirements.md.html"
+  else
+  UI.message("`pandoc` not found, skipping html generation. To install pandoc run `brew install pandoc`.")
+  end
+end
+
+desc "Refresh FOSS.html with data from Package.resolved"
+desc ""
+desc "###Hint:"
+desc "Generate a GitHub access token (Access public repositories) and call"
+desc "```\nGITHUB_API_TOKEN=token_goes_here bundle exec fastlane compile_foss\n```"
+desc ""
+lane :compile_foss do
+  dependencies_yaml = YAML.load_file("../dependencies.yml")
+
+  # Dependencies from /eRp-App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+  dependencies_package_resolved = dependencies_package_resolved()
+  exclude_identities_from_package_resolved = dependencies_yaml["exclude_identities_from_package_resolved"]
+  dependencies_package_resolved = dependencies_package_resolved.filter { |dependency| 
+    not exclude_identities_from_package_resolved.include? dependency[:identity]
+  }
+
+  # Merge all dependency arrays before proceeding
+  dependencies = dependencies_package_resolved
+
+  # Load license texts from respective repo URIs
+  dependencies.each { |entry|
+    UI.message("Load license text for #{entry[:name]}")
+    license = ""
+
+    if entry[:license_uri] && !entry[:license_uri].empty?
+      begin
+        URI.open(entry[:license_uri]).read().each_line{|line| license += "#{line.strip}\n" }
+        license = license.gsub(/\R{2}/, 'PARAGRAPH_BREAK')
+        license = license.gsub(/\R{1}/, ' ')
+        license = license.gsub(/PARAGRAPH_BREAK/, "</p>\n\n<p>")
+      rescue => e
+        UI.error("Failed to load license from #{entry[:license_uri]}: #{e.message}")
+      end
+    else
+      UI.important("IMPORTANT: No license URI available for #{entry[:name]}")
+    end
+
+    entry[:license] = "<p>#{license}</p>"
+
+    if dependencies_yaml["purpose"]["specific"][entry[:name]]
+      entry[:purpose] = dependencies_yaml["purpose"]["specific"][entry[:name]]
+    else
+      entry[:purpose] = dependencies_yaml["purpose"]["generic"]
+    end
+
+    entry 
+  }
+  
+  erb_path = File.join(File.dirname(__FILE__), '..', 'Templates', 'ERB', 'FOSS.html.erb')
+  erb_out_path = erb_path.sub('.erb','').sub('/Templates/ERB','/Sources/eRpApp/Resources/en-GB.lproj')
+  erb = ERB.new(File.read(erb_path))
+
+
+  File.open(erb_out_path, 'w+') do |file|
+    file.write(erb.result(binding))
+  end
+
+end
+
+def dependencies_package_resolved
+  require 'open-uri' 
+  require 'json'
+
+  file = File.read('../eRp-App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved')
+  data_hash = JSON.parse(file)
+
+  ENV['GITHUB_API_TOKEN'] = prompt(text: "GITHUB_API_TOKEN not set, please specify") unless ENV['GITHUB_API_TOKEN']
+
+  dependencies = data_hash['pins'].map do |pin|
+    UI.message("#{pin}")
+    identity = pin['identity']
+    location = pin['location']
+    version = pin['state']['version']
+    revision = pin['state']['revision']
+
+    dependency = {}
+    dependency[:name] = identity # TODO: better use repo_name here, it's often prettier than identity
+    dependency[:identity] = identity
+    dependency[:url] = location
+
+    # API curls for the license URI
+    license_uri = curl_license_url_from_github(location) if location.include? "github.com"
+    dependency[:license_uri] = license_uri
+    dependency[:version] = version||revision
+    if location.include? "github.com"
+      most_recent_version = curl_most_recent_tag(location)
+      if most_recent_version && most_recent_version != dependency[:version]
+        UI.important("Version mismatch for package #{identity}, NEW: '#{most_recent_version}' OLD: '#{dependency[:version]}'")
+      end
+    end
+
+    dependency
+  end
+
+  dependencies
+end
+
+require 'net/http'
+require 'uri'
+
+def make_github_api_request(repo_url)
+  uri = URI.parse(repo_url)
+  
+  # Follow redirects with a maximum of 5 redirects
+  max_redirects = 5
+  redirects = 0
+  
+  loop do
+    req = Net::HTTP::Get.new(uri)
+    req['Authorization'] = "Bearer #{ENV['GITHUB_API_TOKEN']}" if ENV['GITHUB_API_TOKEN']
+    response = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) { |http|
+      http.request(req)
+    }
+    
+    case response
+    when Net::HTTPRedirection
+      if redirects >= max_redirects
+        UI.error("Too many redirects (#{max_redirects}) for #{repo_url}")
+        return {}
+      end
+      
+      location = response['location']
+      uri = URI.parse(location)
+      redirects += 1
+      UI.message("Following redirect to: #{location}")
+    when Net::HTTPSuccess
+      UI.error("Bad credentials or authorisation") if response.body.include? "Bad credentials"
+      begin
+        return JSON.parse(response.body)
+      rescue JSON::ParserError => e
+        UI.error("Failed to parse JSON response from #{repo_url}: #{e.message}")
+        return {}
+      end
+    else
+      UI.error("HTTP error: #{response.code} #{response.message}")
+      return {}
+    end
+  end
+end
+
+def reset_test_outputs
+  sh "find ../DerivedData -iname \"*.xcresult\" -prune -exec rm -rf {} \\;"
+end
+
+def curl_license_url_from_github(repo_url)
+  repo_url = repo_url.gsub(".git", "")
+  repo_owner, repo_name = repo_url.split("/").last(2)
+
+  repo_url = "https://api.github.com/repos/#{repo_owner}/#{repo_name}/license"
+  
+  data_hash = make_github_api_request(repo_url)
+  
+  data_hash['download_url'] || ""
+end
+
+def curl_most_recent_tag(repo_url)
+  # Function to validate semver format
+  def valid_semver?(version)
+    version.match?(/^v?\d+\.\d+\.\d+$/)
+  end
+  # Function to compare semantic versions
+  def compare_versions(v1, v2)
+    segments1 = v1.split('.').map(&:to_i)
+    segments2 = v2.split('.').map(&:to_i)
+
+    segments1 <=> segments2
+  end
+
+  repo_url = repo_url.gsub(".git", "")
+  repo_owner, repo_name = repo_url.split("/").last(2)
+
+  download_url = ""
+  repo_url = "https://api.github.com/repos/#{repo_owner}/#{repo_name}/releases"
+  
+  puts("Parsing versions for #{repo_url}")
+  data_hash = make_github_api_request(repo_url)
+
+  # Check if the response is an error (contains a message field) or empty
+  if data_hash.is_a?(Hash) && (data_hash.has_key?('message') || data_hash.empty?)
+    UI.error("Failed to get releases for #{repo_url}: #{data_hash['message'] || 'Empty response'}")
+    return nil
+  end
+
+  # Ensure we have an array response
+  unless data_hash.is_a?(Array)
+    UI.error("Unexpected response format for #{repo_url}")
+    return nil
+  end
+
+  # Extract names and sort them as semantic versions
+  versions = data_hash.map { |item| item['tag_name'] }.compact
+
+  if versions.length == 0
+    puts("Repository contains no releases, trying tags instead")
+    repo_url = "https://api.github.com/repos/#{repo_owner}/#{repo_name}/tags"
+    data_hash = make_github_api_request(repo_url)
+    
+    # Check if the response is an error or empty
+    if data_hash.is_a?(Hash) && (data_hash.has_key?('message') || data_hash.empty?)
+      UI.error("Failed to get tags for #{repo_url}: #{data_hash['message'] || 'Empty response'}")
+      return nil
+    end
+
+    # Ensure we have an array response
+    unless data_hash.is_a?(Array)
+      UI.error("Unexpected response format for #{repo_url}")
+      return nil
+    end
+
+    # Extract names and sort them as semantic versions
+    versions = data_hash.map { |item| item['name'] }.compact
+  end
+
+  semantic_versions = versions.select { |name| valid_semver?(name) }.map { |name| name.sub(/^v/, '') }
+  sorted_versions = semantic_versions.sort { |a, b| compare_versions(b, a) }
+  sorted_versions.first
+end
+
+lane :build_test_version do |options|
+  build_archive_with_debug_screen
+
+  sign_adhoc
+
+  if is_ci
+    firebase_app_distribution(
+      ipa_path: "./distribution/eRPApp_#{build_version}_adhoc.ipa",
+      release_notes: "branch #{ENV['GIT_BRANCH']} - #{ENV['BUILD_NUMBER']}",
+      service_credentials_file: ENV["FIREBASE_SERVICE_ACCOUNT"]
+    )
+    add_mr_note_if_possible
+    notify_teams_channel(channel_url: ENV["TEAMS_CHANNEL_URL_CI"], stream: "CI Build")
+  end
+
+  sh "cd .. && mkdir -p artifacts/cibuild/ && rm -rf artifacts/cibuild/* && mv distribution artifacts/cibuild/; cd - "
+end
+
+lane :build_konnektathon_ru do |options|
+  clear_derived_data(derived_data_path: ENV['GYM_DERIVED_DATA_PATH'])
+
+  match(type: "appstore")
+
+  sh "cd .. && /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString \\\"$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' ./App/Sources/Resources/Info.plist)\\\"\" ./Sources/Konny/Resources/Info.plist; cd -"
+  sh "cp -vR ../Sources/Konny/Resources ../App/Sources"
+
+  gym(
+    skip_build_archive: false,
+    skip_package_ipa: true,
+    export_method: "app-store",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    xcargs: "GEMATIK_SOURCE_VERSION=\"#{git_version}\" GEMATIK_BUNDLE_VERSION=\"#{build_version}\" GEM_PRODUCT_BUNDLE_IDENTIFIER=\"de.gematik.konny\" GEM_APP_GROUP_IDENTIFIER=\"group.de.gematik.konny.pngroup\" SWIFT_ACTIVE_COMPILATION_CONDITIONS=\"\\$(inherited) ENABLE_DEBUG_VIEW DEFAULT_ENVIRONMENT_RU_DEV\"",
+    output_directory: "./distribution"
+  )
+  gym(
+    skip_build_archive: true,
+    export_method: "app-store",
+    output_name: "eRPApp_#{build_version}_store.ipa",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    output_directory: "./distribution"
+  )
+
+  match(type: "adhoc")
+  gym(
+    skip_build_archive: true,
+    export_method: "ad-hoc",
+    output_name: "eRPApp_#{build_version}_adhoc.ipa",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    output_directory: "./distribution",
+    include_bitcode: false,
+    export_options: {
+        uploadBitcode: false,
+        uploadSymbols: true,
+        compileBitcode: false
+    }
+  )
+
+  app_store_connect_api_key(
+    issuer_id: "69a6de92-74a9-47e3-e053-5b8c7c11a4d1"
+  )
+
+  upload_to_testflight(
+    ipa: "./distribution/eRPApp_#{build_version}_store.ipa",
+    skip_submission: true,
+    apple_id: '1575045048',
+    dev_portal_team_id: "A9FL89PFFL",
+    skip_waiting_for_build_processing: true
+  )
+
+  if is_ci
+    notify_teams_channel(channel_url: ENV["TEAMS_CHANNEL_URL_RELEASE"], stream: "Konny Version")
+  end
+end
+
+lane :build_drezept_ru do |options|
+  clear_derived_data(derived_data_path: ENV['GYM_DERIVED_DATA_PATH'])
+
+  match(type: "appstore")
+
+  sh "cd .. && /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString \\\"$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' ./App/Sources/Resources/Info.plist)\\\"\" ./Sources/DerivedApps/dRezept/Resources/Info.plist; cd -"
+  sh "cp -vR ../Sources/DerivedApps/dRezept/Resources ../App/Sources"
+
+  gym(
+    skip_build_archive: false,
+    skip_package_ipa: true,
+    export_method: "app-store",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    xcargs: "GEMATIK_SOURCE_VERSION=\"#{git_version}\" GEMATIK_BUNDLE_VERSION=\"#{build_version}\" GEM_PRODUCT_BUNDLE_IDENTIFIER=\"de.gematik.drezept\" GEM_APP_GROUP_IDENTIFIER=\"group.de.gematik.drezept.pngroup\" SWIFT_ACTIVE_COMPILATION_CONDITIONS=\"\\$(inherited) ENABLE_DEBUG_VIEW TEST_ENVIRONMENT DEFAULT_ENVIRONMENT_RU\"",
+    output_directory: "./distribution"
+  )
+  gym(
+    skip_build_archive: true,
+    export_method: "app-store",
+    output_name: "eRPApp_#{build_version}_store.ipa",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    output_directory: "./distribution"
+  )
+
+  match(type: "adhoc")
+  gym(
+    skip_build_archive: true,
+    export_method: "ad-hoc",
+    output_name: "eRPApp_#{build_version}_adhoc.ipa",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    output_directory: "./distribution",
+    include_bitcode: false,
+    export_options: {
+        uploadBitcode: false,
+        uploadSymbols: true,
+        compileBitcode: false
+    }
+  )
+
+  app_store_connect_api_key(
+    issuer_id: "69a6de92-74a9-47e3-e053-5b8c7c11a4d1"
+  )
+
+  upload_to_testflight(
+    ipa: "./distribution/eRPApp_#{build_version}_store.ipa",
+    skip_submission: true,
+    apple_id: '1589232632',
+    dev_portal_team_id: "A9FL89PFFL",
+    skip_waiting_for_build_processing: true
+  )
+
+  if is_ci
+    firebase_app_distribution(
+      app: "1:20059247872:ios:f38ae6092c9e2269f1cfe5",
+      ipa_path: "./distribution/eRPApp_#{build_version}_adhoc.ipa",
+      release_notes: "D-Rezept Version #{ENV['GIT_BRANCH']} - #{ENV['BUILD_NUMBER']}",
+      service_credentials_file: ENV["FIREBASE_SERVICE_ACCOUNT"]
+    )
+    notify_teams_channel(channel_url: ENV["TEAMS_CHANNEL_URL_INT"], stream: "D-Rezept Version")
+  end
+end
+
+lane :sign_adhoc do |options|
+  match(type: "adhoc")
+
+  gym(
+    skip_build_archive: true,
+    export_method: "ad-hoc",
+    output_name: "eRPApp_#{build_version}_adhoc.ipa",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    output_directory: "./distribution",
+    include_bitcode: false,
+    export_options: {
+        uploadBitcode: false,
+        uploadSymbols: true,
+        compileBitcode: false
+    }
+  )
+end
+
+lane :sign_appstore do |options|
+  match(type: "appstore")
+
+  gym(
+    skip_build_archive: true,
+    export_method: "app-store",
+    output_name: "eRPApp_#{build_version}_store.ipa",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    output_directory: "./distribution"
+  )
+end
+
+lane :build_archive do |options|
+  clear_derived_data(derived_data_path: ENV['GYM_DERIVED_DATA_PATH'])
+
+  match(type: "appstore")
+
+  gym(
+    skip_build_archive: false,
+    skip_package_ipa: true,
+    export_method: "app-store",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    xcargs: "GEMATIK_SOURCE_VERSION=\"#{git_version}\" GEMATIK_BUNDLE_VERSION=\"#{build_version}\""
+  )
+end
+
+lane :build_tu_archive do |options|
+  clear_derived_data(derived_data_path: ENV['GYM_DERIVED_DATA_PATH'])
+
+  match(type: "appstore")
+
+  gym(
+    skip_build_archive: false,
+    skip_package_ipa: true,
+    export_method: "app-store",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    xcargs: "GEMATIK_SOURCE_VERSION=\"#{git_version}\" GEMATIK_BUNDLE_VERSION=\"#{build_version}\" SWIFT_ACTIVE_COMPILATION_CONDITIONS=\"\\$(inherited) DEFAULT_ENVIRONMENT_TU\""
+  )
+end
+
+lane :build_ru_archive do |options|
+  clear_derived_data(derived_data_path: ENV['GYM_DERIVED_DATA_PATH'])
+
+  match(type: "appstore")
+
+  gym(
+    skip_build_archive: false,
+    skip_package_ipa: true,
+    export_method: "app-store",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    xcargs: "GEMATIK_SOURCE_VERSION=\"#{git_version}\" GEMATIK_BUNDLE_VERSION=\"#{build_version}\" SWIFT_ACTIVE_COMPILATION_CONDITIONS=\"\\$(inherited) DEFAULT_ENVIRONMENT_RU\""
+  )
+end
+
+lane :build_simulator_archive do |options|
+  clear_derived_data(derived_data_path: ENV['GYM_DERIVED_DATA_PATH'])
+
+  gym(
+    skip_codesigning: false,
+    skip_build_archive: false,
+    skip_package_ipa: true,
+    archive_path: "./distribution/eRPApp_simulator_#{build_version}.xcarchive",
+    xcargs: "GEMATIK_SOURCE_VERSION=\"#{git_version}\" GEMATIK_BUNDLE_VERSION=\"#{build_version}\" SWIFT_ACTIVE_COMPILATION_CONDITIONS=\"\\$(inherited) ENABLE_DEBUG_VIEW TEST_ENVIRONMENT\"",
+    destination: "generic/platform=iOS Simulator"
+  )
+end
+
+lane :build_archive_with_debug_screen do |options|
+  clear_derived_data(derived_data_path: ENV['GYM_DERIVED_DATA_PATH'])
+
+  # On CI if there is no match password available return with error
+  if is_ci and (ENV["MATCH_PASSWORD"].nil? or ENV["MATCH_PASSWORD"].empty?)
+    UI.error("No MATCH_PASSWORD available, cannot sign the app.")
+    return
+  end
+  
+  match(type: "appstore")
+
+  gym(
+    skip_build_archive: false,
+    skip_package_ipa: true,
+    export_method: "app-store",
+    archive_path: "./distribution/eRPApp_#{build_version}.xcarchive",
+    xcargs: "GEMATIK_SOURCE_VERSION=\"#{git_version}\" GEMATIK_BUNDLE_VERSION=\"#{build_version}\" SWIFT_ACTIVE_COMPILATION_CONDITIONS=\"\\$(inherited) ENABLE_DEBUG_VIEW TEST_ENVIRONMENT\""
+  )
+end
+
+before_all do |lane, options|
+  load_keychain
+
+  GEMATIK_INTERNAL_ENVIRONMENT = File.exist? File.expand_path("../Gemfile.internal.lock")
+end
+
+after_all do |lane, options|
+  remove_keychain
+end
+
+error do |lane, exception, options|
+  remove_keychain
+end
+
+def load_keychain
+  remove_keychain
+
+  create_keychain(
+    name: "gematik",
+    password: "gematikpassword",
+    unlock: true,
+    timeout: 0
+  )
+end
+
+def remove_keychain
+  if File.exist? File.expand_path("~/Library/Keychains/gematik-db")
+    delete_keychain(name: "gematik") 
+  end
+end
+
+def git_version()
+  short_hash = last_git_commit[:abbreviated_commit_hash]
+  dirty = sh("git diff --quiet || echo '-dirty'").strip!
+
+  "#{short_hash}#{dirty}"
+end
+
+def build_version()
+  ENV['BUILD_NUMBER'] || 'LOCAL_BUILD'
+end
+
+def jenkins_build_url()
+  ENV['BUILD_URL'] || 'NO_URL_AVAILABLE'
+end
+
+def randomWord(length)
+  return ('a'..'z').to_a.shuffle[0,length].join
+end
+
+def isDryRun(options)
+  if options[:dry_run]
+    dry_run = true
+  elsif !ENV['G_PUBLISH_DRY_RUN'].nil?
+    dry_run = true?(ENV['G_PUBLISH_DRY_RUN'])
+  else
+    dry_run = false
+  end
+  return dry_run
+end
+
+lane :update_changelog do |option|
+  from = option[:from]
+  new_version = option[:version]
+
+  new_version = current_version_number() unless new_version
+  old_version = sh("git tag | grep -E \"^[1-9]\\d*\.(?:0|[1-9]\\d*)\.(?:0|[1-9]\\d*)$\" | sort -Vr | head -n 1").strip! unless old_version
+
+  UI.message("Updating changelog from version '#{old_version}' to '#{new_version}'")
+
+  gitlab_login()
+  release_notes = sh("cd .. && glab changelog generate --from #{from} --version #{new_version}")
+  release_notes = release_notes.gsub(/^\#\# ([0-9\.]*) \(.*\)/, '# Release \1')
+
+  filename = "../ReleaseNotes.md"
+  lines = File.read(filename).lines
+  lines.unshift("\n")
+  lines.unshift(release_notes)
+
+  File.open(filename, "w") { |file| file.write(lines.join) }
+
+  UI.message("Release Notes:\n\n#{release_notes}")
+end
+
+lane :prepare_release do |option|
+  old_version = current_version_number()
+  if prompt(text: "bump minor version number?", boolean: true, ci_input: "false")
+    bump_minor_version
+  elsif prompt(text: "bump maintainance (patch) version number? (\"no\" means no bump at all)", boolean: true, ci_input: "false")
+    bump_patch_version
+  end
+
+  version = current_version_number()
+
+  # version changed -> generate changelog
+  if (old_version != version)
+    existing_tags = sh("git tag | grep -E \"^[1-9]\\d*\.(?:0|[1-9]\\d*)\.(?:0|[1-9]\\d*)$\" | sort -Vr").strip!
+    raise "Missing tag '#{old_version}'. Did you forget to tag the last version?" unless existing_tags.split("\n").include?(old_version)
+
+    update_changelog(
+      from: old_version,
+      version: version
+    )
+  end
+
+  compile_foss
+  pull_erp_shared_data
+  generate_sbom
+
+  update_localization
+
+  if prompt(text: "Is the changelog already available on lokalise?", boolean: true, ci_input: "false")
+    update_localization_internal_messages
+  end
+
+  build_ios # record updated screenshots
+
+end
+
+desc "Uploads the localization files to Lokalise"
+desc "A API key with write access to the project is required."
+lane :upload_localization do
+  lokalise_upload(
+    file_path: "./Sources/eRpApp/Resources/de.lproj/Localizable.strings",
+    lang_iso: "de",
+    filename: "Localizable.strings"
+  )
+  lokalise_upload(
+    file_path: "./Sources/eRpApp/Resources/de.lproj/Localizable.stringsdict",
+    lang_iso: "de",
+    filename: "Localizable.stringsdict"
+  )
+end
+
+# Localizable.strings and Localizable.stringsdict
+lane :update_localization do |option|
+  languages = ["de", "en_GB", "tr", "ru", "ar", "uk", "pl", "bg", "da", "he_IL", "cs", "nl", "it", "ro", "es", "ga_IE"]
+  language_dirs = languages.map { |lang| lang.gsub('_', '-') }
+  
+  lokalise(
+    destination: "./Sources/eRpApp/Resources/",
+    languages: languages,
+    include_comments: false,
+    use_original: true,
+    replace_breaks: true
+  )
+
+  for language_code in language_dirs
+    sh "sort ../Sources/eRpApp/Resources/#{language_code}.lproj/Localizable.strings -o ../Sources/eRpApp/Resources/#{language_code}.lproj/Localizable.strings"
+    sh "plutil -convert xml1 ../Sources/eRpApp/Resources/#{language_code}.lproj/Localizable.stringsdict"
+  end
+end
+
+# Internal Messages (Change log / Communications) 
+lane :update_localization_internal_messages do |option|
+  languages = ["de", "en_GB", "tr", "ru", "ar", "uk", "pl", "bg", "da", "he_IL", "cs", "nl", "it", "ro", "es", "ga_IE"]
+
+  sh "mkdir -p ../Sources/eRpApp/Resources_Internal_Messages"
+  lokalise(
+    project_identifier: ENV['CHANGELOG_LOKALISE_PROJECT_ID'],
+    destination: "./Sources/eRpApp/Resources_Internal_Messages/",
+    clean_destination: true,
+    languages: languages,
+    format: "json",
+    include_comments: false,
+    bundle_structure: "%LANG_ISO%.lproj/internal_messages.%FORMAT%",
+    use_original: false,
+    replace_breaks: false
+  )
+  for language_code in languages
+    sh "cp ../Sources/eRpApp/Resources_Internal_Messages/#{language_code}.lproj/internal_messages.json ../Sources/eRpApp/Resources/#{language_code.gsub('_', '-')}.lproj/"
+  end
+  sh "rm -rf ../Sources/eRpApp/Resources_Internal_Messages"
+end
+
+desc "Build AdHoc Version against TU Environment"
+lane :build_tu_version do |option|
+  build_tu_archive
+
+  sign_adhoc
+
+  if is_ci
+    firebase_app_distribution(
+      ipa_path: "./distribution/eRPApp_#{build_version}_adhoc.ipa",
+      release_notes: "TU Version #{ENV['GIT_BRANCH']} - #{ENV['BUILD_NUMBER']}",
+      service_credentials_file: ENV["FIREBASE_SERVICE_ACCOUNT"]
+    )
+    notify_teams_channel(channel_url: ENV["TEAMS_CHANNEL_URL_RELEASE"], stream: "TU Version")
+  end
+
+  sh "cd .. && mkdir -p artifacts/appstorebuild_tu/ && rm -rf artifacts/appstorebuild_tu/* && mv distribution artifacts/appstorebuild_tu/; cd - "
+end
+
+desc "Build AdHoc Version against RU Environment"
+lane :build_ru_version do |option|
+  build_ru_archive
+
+  sign_adhoc
+
+  if is_ci
+    firebase_app_distribution(
+      ipa_path: "./distribution/eRPApp_#{build_version}_adhoc.ipa",
+      release_notes: "RU Version #{ENV['GIT_BRANCH']} - #{ENV['BUILD_NUMBER']}",
+      service_credentials_file: ENV["FIREBASE_SERVICE_ACCOUNT"]
+    )
+    notify_teams_channel(channel_url: ENV["TEAMS_CHANNEL_URL_RELEASE"], stream: "RU Version")
+  end
+
+  sh "cd .. && mkdir -p artifacts/appstorebuild_ru/ && rm -rf artifacts/appstorebuild_ru/* && mv distribution artifacts/appstorebuild_ru/; cd - "
+end
+
+desc "Build, sign and upload the iOS eRezeptApp to Testflight"
+lane :publish do |options|
+  build_archive
+
+  sign_adhoc
+  if is_ci
+    firebase_app_distribution(
+      ipa_path: "./distribution/eRPApp_#{build_version}_adhoc.ipa",
+      release_notes: "PU Version #{ENV['GIT_BRANCH']} - #{ENV['BUILD_NUMBER']}",
+      service_credentials_file: ENV["FIREBASE_SERVICE_ACCOUNT"]
+    )
+    notify_teams_channel(channel_url: ENV["TEAMS_CHANNEL_URL_RELEASE"], stream: "PU Version")
+  end
+
+  sign_appstore
+
+  dry_run = isDryRun(options)
+  UI.message("Live run") unless dry_run
+  UI.message("Dry run") if dry_run
+  app_store_connect_api_key(
+    issuer_id: "69a6de92-74a9-47e3-e053-5b8c7c11a4d1"
+  )
+
+  upload_to_testflight(
+    ipa: "./distribution/eRPApp_#{build_version}_store.ipa",
+    skip_submission: true,
+    apple_id: '1511792179',
+    dev_portal_team_id: "A9FL89PFFL",
+    skip_waiting_for_build_processing: true
+  ) unless dry_run
+
+  sh "cd .. && mkdir -p artifacts/appstorebuild_pu/ && rm -rf artifacts/appstorebuild_pu/* && mv distribution artifacts/appstorebuild_pu/; cd - "
+end
+
+lane :publish_release_information do |options|
+  channel_url =  ENV["TEAMS_CHANNEL_URL_RELEASE"]
+
+  version = current_version_number()
+  release_notes = extract_release_notes_for_version(version)
+
+  message_card = {
+    'version' => "#{version} (#{ENV['BUILD_NUMBER']}##{git_version})",
+    'release_notes' => release_notes.to_json,
+    'builds' => [],
+    'jira' => "https://service.gematik.de/issues?jql=project%20%3D%20eRx-App%20AND%20fixVersion%20%3D%20%22iOS%20#{version}%22%20AND%20type%20not%20in%20(%27Test%27)%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC"
+  }
+
+  Dir.glob("../artifacts/appstorebuild_*/distribution/*_#{build_version}.json").each do |filepath|
+    file = File.open(filepath)
+    information = JSON.load(file)
+    message_card['builds'].append(
+      {
+        'stream' => information['stream'],
+        'url' => information['url']
+      }
+    )
+  end
+
+  if file = File.open("../artifacts/cibuild/distribution/build_info_#{build_version}.json") then
+    information = JSON.load(file)
+    message_card['devbuild'] = information['url']
+  end
+
+  erb_path = File.join(File.dirname(__FILE__), '..', 'Templates', 'ERB', 'release_teams_adaptive_card.json.erb')
+  erb = ERB.new(File.read(erb_path))
+  adaptive_card = erb.result(binding)
+
+  teams_send_adaptive_card(adaptive_card: adaptive_card, url: channel_url)
+end
+
+def add_mr_note_if_possible
+  firebase_app_distro = lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] rescue nil
+  return unless ENV['CHANGE_ID'] && !firebase_app_distro.nil? && firebase_app_distro[:testingUri]
+
+  mr = ENV['CHANGE_ID']
+  firebase_testing_uri = firebase_app_distro[:testingUri]
+  gitlab_login()
+  sh("glab mr note #{mr} --message \"[Download Test Version from Firebase](#{firebase_testing_uri}) or scan\n\n![QR-Code](https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=#{ERB::Util.url_encode(firebase_testing_uri)})\"")
+end
+
+def flaky_note_if_necessary(options)
+  scan_result = options[:scan_result]
+  return unless ENV['CHANGE_ID']
+  return unless scan_result[:number_of_failures_excluding_retries] == 0
+  return unless scan_result[:number_of_retries] != 0
+
+  mr = ENV['CHANGE_ID']
+  gitlab_login()
+  sh("glab mr note #{mr} --message \"⚠️ All tests passed but with #{scan_result[:number_of_retries]} retries. Test Results Flaky\"")
+end
+
+def update_minor_version(version)
+  major, minor, patch = version.split('.').map(&:to_i)
+  minor += 1 # Increment the minor part
+  "#{major}.#{minor}.0" # Return the updated version string
+end
+
+def update_patch_version(version)
+  major, minor, patch = version.split('.').map(&:to_i)
+  patch += 1 # Increment the minor part
+  "#{major}.#{minor}.#{patch}" # Return the updated version string
+end
+
+def current_version_number()
+  `/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" ../App/Sources/Resources/Info.plist`.strip!
+end
+
+def flatten_version(version)
+  major, minor, patch = version.split('.').map(&:to_i)
+  "#{major}.#{minor}.0" # Return the updated version string
+end
+
+lane :bump_patch_version do |options|
+  current_version = current_version_number
+  new_version = update_patch_version(current_version)
+
+  sh "cd .. && /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString \\\"#{new_version}\\\"\" ./Sources/Konny/Resources/Info.plist; cd -"
+  sh "cd .. && /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString \\\"#{new_version}\\\"\" ./App/Sources/Resources/Info.plist; cd -"
+end
+
+lane :bump_minor_version do |options|
+  current_version = current_version_number()
+  new_version = update_minor_version(current_version)
+
+  sh "cd .. && /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString \\\"#{new_version}\\\"\" ./Sources/Konny/Resources/Info.plist; cd -"
+  sh "cd .. && /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString \\\"#{new_version}\\\"\" ./App/Sources/Resources/Info.plist; cd -"
+
+  pull_environment_variables(version: new_version)
+end
+
+desc "Pull the API keys and the static shared environment variables the respective repositories."
+desc "This lane uses the **`pull_api_keys`** and **`pull_shared_environment_variables`** actions"
+desc "###Options"
+desc " * **`version`**: Version of the employed API keys. When not set, the version is read from the Info.plist file"
+desc " * **`puOnly`**: When set to true, only the API keys and environment variables for PU are pulled"
+desc ""
+lane :pull_environment_variables do |options|
+  if GEMATIK_INTERNAL_ENVIRONMENT # has been evaluated in `before_all`
+    pull_api_keys options
+    pull_shared_environment_variables options
+  end
+end
+
+desc "Pull the API keys from the restricted repositories and write them in a parseble format to a file"
+desc "This lane uses the **`erp_api_key_pull`** action"
+desc "###Options"
+desc " * **`version`**: Version of the employed API keys. When not set, the version is read from the Info.plist file"
+desc ""
+lane :pull_api_keys do |options|
+  version = options[:version]
+  puOnly = options[:puOnly] # when building for PU only, the API keys for RU and TU should not be included
+  output_file = './development.apikeys.env'
+
+  if version.nil? || version.empty?
+    version = current_version_number()
+  end
+
+  # remove patch version ("1.21.1" -> "1.21") since we use the same API key for all patch versions of a minor version
+  # and in the given document there are only versions like "1.21.0"
+  version = flatten_version(version)
+
+  if puOnly
+    fd_environments = 'PU' 
+  else
+    fd_environments = 'TU, RU, PU'
+  end
+
+  gitlab_api_token = nil
+  # For ci build nodes, the API Token is a separate one for accessing the restricted repository
+  # for local machines, the personal GITLAB_API_TOKEN has also access to the restricted repository
+  if is_ci
+    gitlab_api_token = ENV['RESTRICTED_REPO_API_TOKEN'] # injected via calling Fastfile/Jenkinsfile
+  else
+    gitlab_api_token = ENV['GITLAB_API_TOKEN']
+  end
+  raise "Error: environment varible RESTRICTED_REPO_API_TOKEN/GITLAB_API_TOKEN not set for process, please specify" unless gitlab_api_token
+
+  erp_api_key_pull(
+    version: "iOS #{version}",
+    fd_environments: fd_environments,
+    gitlab_api_token: gitlab_api_token,
+    output_file: output_file
+  )
+end
+
+desc "Pull the data from the ERP shared repository and replace the correspoding files with the updated ones"
+desc "Note: Incomplete (more actions/files needed)"
+desc ""
+lane :pull_erp_shared_data do
+  gitlab_api_token = ENV['GITLAB_API_TOKEN']
+  raise "Error: environment varible GITLAB_API_TOKEN not set for process, please specify" unless gitlab_api_token
+
+  erp_shared_data_insurance_contacts(
+    gitlab_api_token: gitlab_api_token,
+    replace_file_path: './Sources/FeatureCardWall/Resources/health_insurance_contacts.json',
+    transform_to_json_format: true
+  )
+
+  files_to_download = [
+    'erp-ios-app-resources/fastlane/audit_afos.json',
+    'erp-ios-app-resources/Tests/IntegrationTests/Resources/Certificates.bundle/109500969_X114428530_c.ch.aut-ecc-51.bin',
+    'erp-ios-app-resources/Tests/IntegrationTests/Resources/Certificates.bundle/109500969_X114428530_c.ch.aut-ecc-51.crt'
+  ]
+  files_to_download.each do |remote_file_path|
+    output_file = remote_file_path.sub('erp-ios-app-resources/', '')
+    next if File.exist?(File.expand_path("../#{output_file}", __dir__))
+    erp_shared_data_file_download(
+     gitlab_api_token: gitlab_api_token,
+     remote_file_path: remote_file_path,
+     output_file: output_file
+    )
+  end
+end
+
+desc "Pull the shared environment variables from the shared repositoriy and write them in a parseble format to a file"
+desc "This lane uses the **`erp_shared_data_env_vars`** action"
+desc ""
+lane :pull_shared_environment_variables do |options|
+  puOnly = options[:puOnly] # when building for PU only, the other environment variables should not be included
+  output_file = './development.static.env'
+
+  if puOnly
+    environments = 'PU' 
+  else
+    environments = 'TU, RU, PU, GEMATIK_DEV, GEMATIK_QS, GEMATIK_PROD'
+  end
+
+  gitlab_api_token = ENV['GITLAB_API_TOKEN']
+  raise "Error: environment varible GITLAB_API_TOKEN not set for process, please specify" unless gitlab_api_token
+
+  erp_shared_data_env_vars(
+    gitlab_api_token: gitlab_api_token,
+    environments: environments,
+    output_file: output_file
+  )
+end
+
+require 'fileutils'
+
+def notify_teams_channel(channel_url: "no_url_given", stream: "Unknown stream", success: true, optional_message: "")
+  # Create the message card / send body
+  message_card_content_data = {
+    "stream" => stream,
+    "success" => success,
+    "title" => "Notification from e-Rezept-App-iOS >> #{build_version} (#{git_version})",
+    "sub_title" => "#{success ? "Success" : "Failure"}: #{stream}",
+    "description" => "Build: #{ENV['JOB_NAME']} - #{ENV['BUILD_DISPLAY_NAME']} on worker #{ENV['NODE_NAME']} #{optional_message}",
+    "creator_name" => "e-Rezept-App-iOS",
+  }
+
+  image_url = teams_shiba_inu_provider(happy: success)
+  message_card_content_data["image_url"] = image_url
+
+  firebase_app_distro = lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] rescue nil
+  firebase_testing_uri = firebase_app_distro&.[](:testingUri) || ""
+
+  # Create the distribution directory if it doesn't exist
+  FileUtils.mkdir_p("../distribution") unless Dir.exist?("../distribution")
+
+  File.open("../distribution/build_info_#{ENV['BUILD_NUMBER']}.json", 'w+') do |file|
+    file.write({
+      "stream" => stream,
+      "url" => firebase_testing_uri,
+      "jenkins_build_url" => jenkins_build_url,
+    }.to_json)
+  end
+
+  qr_code_url = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=#{ERB::Util.url_encode(firebase_testing_uri)}"
+  install_facts = [
+    {"title" => "Build", "value"=> "[Firebase](#{firebase_testing_uri}) or scan [QR-Code](#{qr_code_url})"}
+  ]
+
+  facts = [
+    {
+      "title" => "Jenkins",
+      "value" => "[#{jenkins_build_url}](#{jenkins_build_url})"
+    },
+    {
+      "title" => "Branch (commit)",
+      "value" => "#{ENV['GIT_BRANCH']} (#{git_version})"
+    }
+  ] + install_facts
+
+  message_card_content_data["facts"] = facts.to_json
+  message_card_content_data["qr_code_url"] = qr_code_url if !qr_code_url.empty?
+
+  # Use template to create the adaptive card
+  erb_path = File.join(File.dirname(__FILE__), '..', 'Templates', 'ERB', 'ci_build_teams_adaptive_card.json.erb')
+  erb = ERB.new(File.read(erb_path))
+  adaptive_card = erb.result(binding)
+
+  teams_send_adaptive_card(adaptive_card: adaptive_card, url: channel_url)
+end
+
+def gitlab_login()
+  gitlab_api_token = ENV['GITLAB_API_TOKEN']
+  gitlab_api_token = prompt(text: "GITLAB_API_TOKEN not set, please specify") unless gitlab_api_token
+  gitlab_hostname = ENV['GITLAB_HOSTNAME']
+  gitlab_hostname = prompt(text: "GITLAB_HOSTNAME not set, please specify") unless gitlab_hostname
+
+  sh("glab auth login --token #{gitlab_api_token} --hostname #{gitlab_hostname}")
+end
+
+def extract_release_notes_for_version(version)
+  # Read and extract release notes for current version
+  release_notes_content = File.read("../ReleaseNotes.md")
+  lines = release_notes_content.lines
+  
+  # Find the start of the current version section
+  version_start = nil
+  lines.each_with_index do |line, index|
+    if line.match(/^#\s+Release\s+#{Regexp.escape(version)}/)
+      version_start = index
+      break
+    end
+  end
+  
+  if version_start
+    # Find the end of the current version section (next version header or end of file)
+    version_end = lines.length
+    ((version_start + 1)...lines.length).each do |index|
+      if lines[index].match(/^#\s+Release\s+\d+\.\d+\.\d+/)
+        version_end = index
+        break
+      end
+    end
+    
+    # Extract the release notes for the current version
+    return lines[version_start...version_end].join.strip
+  else
+    # Fallback if version not found
+    return "Release notes for version #{version} not found in ReleaseNotes.md"
+  end
+end
+
+lane :generate_docs_index_html do |options|
+  version = current_version_number()
+
+  # Load and render the ERB template
+  erb_path = File.join(File.dirname(__FILE__), '..', 'Templates', 'ERB', 'docs_index.html.erb')
+  erb = ERB.new(File.read(erb_path))
+  html_content = erb.result(binding)
+
+  # Write the HTML file
+  File.open("../docs/index.html", "w") do |file|
+    file.write(html_content)
+  end
+
+  UI.success("📄 Generated docs/index.html")
+end

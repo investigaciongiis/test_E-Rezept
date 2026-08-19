@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# scripts/cibuild: Setup environment for CI and run tests. This is primarily
+#                 designed to run on the continuous integration server.
+
+BUILD_TYPE=${1-Release}
+
+set -ev
+
+cd "$(dirname "$0")/.."
+
+echo "Prepare fortify scan started at…"
+date "+%H:%M:%S"
+
+for file in $(git grep -l "[g]ematik_private_code_block_begin")
+do
+    sed -i '' '/[g]ematik_private_code_block_begin/,/[g]ematik_private_code_block_end/ d' $file
+done
+
+# Setup project
+scripts/setup ${BUILD_TYPE}
+
+if [ -f ".githubignore" ]; then
+  if [ -f ".gitignore" ]; then
+    printf "\n" >> .gitignore
+    cat .githubignore >> .gitignore
+  fi
+  rm -f .githubignore
+fi
+
+# delete all files that are listed within .gitignore
+git ls-files -i -o --exclude-from=.gitignore | xargs rm -rf
+
+export SNYK_API=https://app.eu.snyk.io
+
+# `--remote-repo-url` is only overwriting the name visible in the backend, not altering what code is monitored/tested
+snyk monitor   --file=Package.swift --org="e-rezept-app-ios" --project-name=gematik/E-Rezept-App-iOS --report --remote-repo-url="https://github.com/gematik/E-Rezept-App-iOS.git" || true
+snyk test      --file=Package.swift --org="e-rezept-app-ios" --project-name=gematik/E-Rezept-App-iOS --report --remote-repo-url="https://github.com/gematik/E-Rezept-App-iOS.git" --severity-threshold=low --sarif-file-output=./reports/snyk-sca.sarif
+snyk code test --file=Package.swift --org="e-rezept-app-ios" --project-name=gematik/E-Rezept-App-iOS --report --remote-repo-url="https://github.com/gematik/E-Rezept-App-iOS.git" --severity-threshold=low --sarif-file-output=./reports/snyk-sast.sarif
+
+echo "Done"
+date "+%H:%M:%S"
+

@@ -1,0 +1,150 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import AsyncHelpers
+import Combine
+import Foundation
+import HTTPClient
+import IDP
+@testable import IDPLive
+import Nimble
+import TestUtils
+import TrustStore
+import XCTest
+
+let token = "test-token"
+
+final class IDPInterceptorTests: XCTestCase {
+    let trustStoreSessionMock: TrustStoreSessionMock = .init()
+
+    let extAuthRequestStorageMock = ExtAuthRequestStorageMock()
+
+    func testInterceptAddsAuthorizationHeader() async throws {
+        let idpClientMock = MockIDPClient()
+        let session = DefaultIDPSession(
+            client: idpClientMock,
+            storage: MemStorage(accessToken: token),
+            schedulers: Schedulers(computeScheduler: DispatchQueue.test.eraseToAnyScheduler()),
+            trustStoreSession: trustStoreSessionMock,
+            extAuthRequestStorage: extAuthRequestStorageMock
+        )
+        let request = try URLRequest(url: XCTUnwrap(URL(string: "http://www.url.com")))
+        let chain = PassThroughChain(request: request)
+
+        let sut = IDPInterceptor(session: session)
+        _ = try? await sut.intercept(chain: chain)
+        expect(chain.incomingProceedRequests.count) == 1
+        expect(chain.incomingProceedRequests[0].allHTTPHeaderFields?["Authorization"]) == "Bearer \(token)"
+    }
+
+    func testInterceptWithoutTokenFailsWithTokenUnavailable() throws {
+        let idpClientMock = MockIDPClient()
+        let session = DefaultIDPSession(
+            client: idpClientMock,
+            storage: MemStorage(token: nil),
+            schedulers: Schedulers.immediate,
+            trustStoreSession: trustStoreSessionMock,
+            extAuthRequestStorage: extAuthRequestStorageMock
+        )
+        let request = try URLRequest(url: XCTUnwrap(URL(string: "http://www.url.com")))
+        let chain = PassThroughChain(request: request)
+
+        let sut = IDPInterceptor(session: session)
+        waitUntil { done in
+            Task {
+                do {
+                    _ = try await sut.intercept(chain: chain)
+                    fail("Test should have failed")
+                } catch let err as HTTPClientError {
+                    expect(err.isIDPTokenUnavailable) == true
+                } catch {
+                    fail("Unexpected error type: \(error)")
+                }
+                done()
+            }
+        }
+    }
+
+    func testCallWith401UnauthorizedResponseInvalidatesAccessToken() async throws {
+        let idpClientMock = MockIDPClient()
+        let storage = MemStorage(accessToken: token)
+        let session = DefaultIDPSession(
+            client: idpClientMock,
+            storage: storage,
+            schedulers: Schedulers.immediate,
+            trustStoreSession: trustStoreSessionMock,
+            extAuthRequestStorage: extAuthRequestStorageMock
+        )
+        let request = try URLRequest(url: XCTUnwrap(URL(string: "http://www.url.com")))
+        let chain = PassThroughChain(request: request)
+        let sut = IDPInterceptor(session: session)
+
+        storage.token.first().test(expectations: { token in
+            expect(token).toNot(beNil())
+        })
+
+        chain.httpResponse = HTTPResponse(
+            data: Data(),
+            response: HTTPURLResponse(),
+            status: HTTPStatusCode.unauthorized
+        )
+
+        _ = try? await sut.intercept(chain: chain)
+        expect(chain.incomingProceedRequests.count) == 1
+        expect(chain.incomingProceedRequests[0].allHTTPHeaderFields?["Authorization"]) == "Bearer \(token)"
+
+        storage.token.first().test(expectations: { token in
+            expect(token).to(beNil())
+        })
+    }
+}
+
+class NoTokenStorage: IDPStorage {
+    var tokenState: CurrentValueSubject<IDPToken?, Never> = CurrentValueSubject(nil)
+
+    var token: AnyPublisher<IDPToken?, Never> {
+        tokenState.eraseToAnyPublisher()
+    }
+
+    func set(token _: IDPToken?) {
+        fail("set(token:) should not have been called")
+    }
+
+    @Published var discoveryDocumentState: DiscoveryDocument?
+    var discoveryDocument: AnyPublisher<DiscoveryDocument?, Never> {
+        $discoveryDocumentState.eraseToAnyPublisher()
+    }
+
+    func set(discovery doc: DiscoveryDocument?) {
+        discoveryDocumentState = doc
+    }
+}
+
+extension HTTPClientError {
+    var isIDPTokenUnavailable: Bool {
+        guard case let .authentication(err) = self, let idpError = err as? IDPError,
+              case IDPError.tokenUnavailable = idpError else {
+            return false
+        }
+        return true
+    }
+}

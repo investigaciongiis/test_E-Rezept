@@ -1,0 +1,88 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+@testable import eRpFeatures
+import eRpKit
+import Foundation
+
+extension UserProfile {
+    enum Fixtures {
+        static let theo = UserProfile(
+            profile: Profile(
+                name: "Theo Testprofil",
+                identifier: UUID(),
+                created: Date(),
+                insuranceId: nil,
+                color: .green,
+                lastAuthenticated: nil,
+                erxTasks: []
+            ),
+            connectionStatus: .connected,
+            activityIndicating: false
+        )
+
+        static let olafOffline = UserProfile(
+            profile: Profile(
+                name: "Olaf Offline",
+                identifier: UUID(),
+                created: Date(),
+                insuranceId: nil,
+                color: .red,
+                lastAuthenticated: nil,
+                erxTasks: []
+            ),
+            connectionStatus: .disconnected,
+            activityIndicating: false
+        )
+
+        static let profileA = UserProfile(
+            from: Profile(
+                name: "Spooky Dennis",
+                identifier: UUID(),
+                created: Date(),
+                givenName: "Dennis",
+                familyName: "Doe",
+                insurance: "Spooky BKK",
+                insuranceId: "X112233445",
+                insuranceIK: "AB123CD",
+                color: .blue,
+                lastAuthenticated: TestDate.createDate(.oneHourAgo, referenceDate: Date()),
+                erxTasks: []
+            ),
+            isAuthenticated: true
+        )
+
+        static let privatePaul = UserProfile(
+            from: Profile(
+                name: "Private Paul",
+                identifier: UUID(),
+                created: Date(),
+                insuranceId: nil,
+                insuranceType: .pKV,
+                color: .red,
+                lastAuthenticated: nil,
+                erxTasks: []
+            ),
+            isAuthenticated: true
+        )
+    }
+}

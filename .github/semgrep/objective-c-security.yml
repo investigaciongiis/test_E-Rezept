@@ -1,0 +1,60 @@
+rules:
+  - id: objective-c.insecure-md5
+    message: MD5 is cryptographically broken; use a modern digest such as SHA-256 when a cryptographic hash is required.
+    severity: ERROR
+    languages: [generic]
+    paths:
+      include: ["*.m", "*.mm", "*.h"]
+    pattern-regex: '\b(?:CC_MD5|CC_MD5_Init|CC_MD5_Update|CC_MD5_Final)\s*\('
+    metadata:
+      category: security
+      cwe: CWE-327
+      technology: [objective-c, commoncrypto]
+
+  - id: objective-c.insecure-sha1
+    message: SHA-1 is unsuitable for security-sensitive hashing; use SHA-256 or stronger.
+    severity: WARNING
+    languages: [generic]
+    paths:
+      include: ["*.m", "*.mm", "*.h"]
+    pattern-regex: '\b(?:CC_SHA1|CC_SHA1_Init|CC_SHA1_Update|CC_SHA1_Final)\s*\('
+    metadata:
+      category: security
+      cwe: CWE-327
+      technology: [objective-c, commoncrypto]
+
+  - id: objective-c.insecure-keychain-accessibility
+    message: This Keychain accessibility class permits access after first unlock and may expose secrets during background access or backups; prefer a device-only class appropriate to the threat model.
+    severity: WARNING
+    languages: [generic]
+    paths:
+      include: ["*.m", "*.mm", "*.h"]
+    pattern-regex: '\bkSecAttrAccessible(?:Always|AfterFirstUnlock)(?!ThisDeviceOnly)\b'
+    metadata:
+      category: security
+      cwe: CWE-922
+      technology: [objective-c, keychain]
+
+  - id: objective-c.unsafe-c-string-copy
+    message: An unbounded C string operation can overflow its destination; use a length-bounded API and validate the buffer size.
+    severity: ERROR
+    languages: [generic]
+    paths:
+      include: ["*.m", "*.mm", "*.h"]
+    pattern-regex: '\b(?:strcpy|strcat|sprintf|vsprintf|gets)\s*\('
+    metadata:
+      category: security
+      cwe: CWE-120
+      technology: [objective-c, c]
+
+  - id: objective-c.disabled-tls-certificate-validation
+    message: Accepting a server-trust challenge with a credential can disable normal TLS certificate validation; verify the trust or implement pinning before accepting it.
+    severity: ERROR
+    languages: [generic]
+    paths:
+      include: ["*.m", "*.mm"]
+    pattern-regex: 'completionHandler\s*\(\s*NSURLSessionAuthChallengeUseCredential\s*,\s*\[?NSURLCredential\s+credentialForTrust:'
+    metadata:
+      category: security
+      cwe: CWE-295
+      technology: [objective-c, urlsession]

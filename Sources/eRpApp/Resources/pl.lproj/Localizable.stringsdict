@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>auth_txt_failed_login_hint_msg</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Wykryto %u nieudanych prób logowania</string>
+			<key>many</key>
+			<string>Wykryto %u nieudanych prób logowania</string>
+			<key>one</key>
+			<string>Wykryto nieudaną próbę logowania</string>
+			<key>other</key>
+			<string>Wykryto %u nieudanych prób logowania</string>
+		</dict>
+	</dict>
+	<key>auth_txt_password_failure_please_retry_with_delay</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Nieprawidłowe hasło. Spróbuj ponownie za %u sekund.</string>
+			<key>many</key>
+			<string>Nieprawidłowe hasło. Spróbuj ponownie za %u sekund.</string>
+			<key>one</key>
+			<string>Nieprawidłowe hasło. Spróbuj ponownie za 1 sekundę.</string>
+			<key>other</key>
+			<string>Nieprawidłowe hasło. Spróbuj ponownie za %u sekund.</string>
+		</dict>
+	</dict>
+	<key>auth_txt_please_retry_with_delay</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Spróbuj ponownie za %u sekund.</string>
+			<key>many</key>
+			<string>Spróbuj ponownie za %u sekund.</string>
+			<key>one</key>
+			<string>Proszę spróbować ponownie za %u sekundę.</string>
+			<key>other</key>
+			<string>Spróbuj ponownie za %u sekund.</string>
+		</dict>
+	</dict>
+	<key>dtl_txt_med_redeemed_on_direct_assignment</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Ta recepta została zrealizowana dla Ciebie dnia % %@ w ramach leczenia.</string>
+			<key>many</key>
+			<string>Ta recepta została zrealizowana dla Ciebie dnia % %@ w ramach leczenia.</string>
+			<key>one</key>
+			<string>Ta recepta została zrealizowana %%@ w ramach leczenia dla Pana/Pani.</string>
+			<key>other</key>
+			<string>Ta recepta została zrealizowana dla Ciebie dnia % %@ w ramach leczenia.</string>
+		</dict>
+	</dict>
+	<key>erx_txt_accepted_until</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@v1_days_variable@</string>
+		<key>v1_days_variable</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Nadal można go wykorzystać przez %u dni</string>
+			<key>many</key>
+			<string>Nadal można go wykorzystać przez %u dni</string>
+			<key>one</key>
+			<string>Możliwość wykupienia dopiero jutro</string>
+			<key>other</key>
+			<string>Nadal można go wykorzystać przez %u dni</string>
+		</dict>
+	</dict>
+	<key>erx_txt_deleted_at</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Usunięto dnia: %% @</string>
+			<key>many</key>
+			<string>Usunięto dnia: %% @</string>
+			<key>one</key>
+			<string>Usunięto: %% @</string>
+			<key>other</key>
+			<string>Usunięto dnia: %% @</string>
+		</dict>
+	</dict>
+	<key>erx_txt_expires_in</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Można go nadal wykorzystać jako osoba samopłatna przez %u dni</string>
+			<key>many</key>
+			<string>Można go nadal wykorzystać jako osoba samopłatna przez %u dni</string>
+			<key>one</key>
+			<string>Można wykorzystać dopiero jutro jako osoba płacąca samodzielnie</string>
+			<key>other</key>
+			<string>Można go nadal wykorzystać jako osoba samopłatna przez %u dni</string>
+		</dict>
+	</dict>
+	<key>ord_detail_txt_presc</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Przepisy</string>
+			<key>many</key>
+			<string>Przepisy</string>
+			<key>one</key>
+			<string>Przepis</string>
+			<key>other</key>
+			<string>Przepisy</string>
+		</dict>
+	</dict>
+	<key>ord_list_status_count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>%lu przepisów</string>
+			<key>many</key>
+			<string>%lu przepisów</string>
+			<key>one</key>
+			<string>%lu przepis</string>
+			<key>other</key>
+			<string>%lu przepisów</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_alert_title_failure</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Nie można zrealizować %li recept</string>
+			<key>many</key>
+			<string>Nie można zrealizować %li recept</string>
+			<key>one</key>
+			<string>Nie można wykorzystać wybranego przepisu</string>
+			<key>other</key>
+			<string>Nie można zrealizować %li recept</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_txt_prescription_already_redeemed_error</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Recepty nie podlegają realizacji</string>
+			<key>many</key>
+			<string>Recepty nie podlegają realizacji</string>
+			<key>one</key>
+			<string>Recepty nie można zrealizować</string>
+			<key>other</key>
+			<string>Recepty nie podlegają realizacji</string>
+		</dict>
+	</dict>
+	<key>pha_redeem_txt_prescription_already_redeemed_error_suggestion_format</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Nie można już wykorzystać następujących przepisów: %% @. Być może wykorzystałeś je już w inny sposób lub mogły zostać usunięte.</string>
+			<key>many</key>
+			<string>Nie można już wykorzystać następujących przepisów: %% @. Być może wykorzystałeś je już w inny sposób lub mogły zostać usunięte.</string>
+			<key>one</key>
+			<string>Przepisu %% @ nie można już wykorzystać. Być może wykorzystałeś go już w inny sposób lub został on usunięty.</string>
+			<key>other</key>
+			<string>Nie można już wykorzystać następujących przepisów: %% @. Być może wykorzystałeś je już w inny sposób lub mogły zostać usunięte.</string>
+		</dict>
+	</dict>
+	<key>prsc_fd_txt_details_actual_medication_title</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Otrzymane leki</string>
+			<key>many</key>
+			<string>Otrzymane leki</string>
+			<key>one</key>
+			<string>Otrzymane leki</string>
+			<key>other</key>
+			<string>Otrzymane leki</string>
+		</dict>
+	</dict>
+	<key>scn_btn_scanning_done</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Gotowe, dodaj przepisy</string>
+			<key>many</key>
+			<string>Gotowe, dodaj przepisy</string>
+			<key>one</key>
+			<string>Gotowe, dodaj przepis</string>
+			<key>other</key>
+			<string>Gotowe, dodaj przepisy</string>
+		</dict>
+	</dict>
+	<key>self_payer_warning_txt_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Twoje ubezpieczenie nie pokryje żadnych kosztów %#@variable_0@ %@ . </string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>recepty</string>
+			<key>many</key>
+			<string>recepty</string>
+			<key>one</key>
+			<string>recepta</string>
+			<key>other</key>
+			<string>recepty</string>
+		</dict>
+	</dict>
+	<key>stg_txt_card_reset_rc_alert_wrong_pin_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Nadal masz %u prób wprowadzenia bieżącego kodu PIN.</string>
+			<key>many</key>
+			<string>Nadal masz %u prób wprowadzenia bieżącego kodu PIN.</string>
+			<key>one</key>
+			<string>Masz jeszcze jedną próbę wprowadzenia aktualnego PIN-u.</string>
+			<key>other</key>
+			<string>Nadal masz %u prób wprowadzenia bieżącego kodu PIN.</string>
+		</dict>
+	</dict>
+	<key>stg_txt_card_reset_rc_alert_wrong_puk_message</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@variable_0@</string>
+		<key>variable_0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>li</string>
+			<key>few</key>
+			<string>Nadal masz %u prób wprowadzenia kodu PUK.</string>
+			<key>many</key>
+			<string>Nadal masz %u prób wprowadzenia kodu PUK.</string>
+			<key>one</key>
+			<string>Masz jeszcze jedną próbę wpisania PUK.</string>
+			<key>other</key>
+			<string>Nadal masz %u prób wprowadzenia kodu PUK.</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

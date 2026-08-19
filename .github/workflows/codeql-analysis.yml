@@ -1,0 +1,180 @@
+name: iOS Static Analysis (CodeQL Swift + Clang Analyzer + Semgrep)
+on:
+  workflow_call:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+jobs:
+  xcode_sast:
+    name: CodeQL Swift and Clang Analyzer
+    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref || github.ref_name || '', 'dependabot/') && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) }}
+    runs-on: macos-15
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare iOS project
+        if: ${{ vars.IOS_SETUP_CMD != '' }}
+        shell: bash
+        env:
+          IOS_SETUP_CMD: ${{ vars.IOS_SETUP_CMD }}
+        run: |
+          set -euo pipefail
+          bash -lc "$IOS_SETUP_CMD"
+      - name: Resolve Xcode project and scheme
+        id: ios
+        shell: bash
+        run: |
+          set -euo pipefail
+          container="${{ vars.IOS_XCODE_CONTAINER }}"
+          scheme="${{ vars.IOS_SCHEME }}"
+          if [[ -z "$container" ]]; then
+            container="$(find . -maxdepth 3 \( -name '*.xcworkspace' -o -name '*.xcodeproj' \) -print | sort | head -n1)"
+          fi
+          if [[ -z "$container" || -z "$scheme" ]]; then
+            echo 'Set IOS_XCODE_CONTAINER (for example App.xcworkspace) and IOS_SCHEME.' >&2
+            exit 1
+          fi
+          if [[ "$container" == *.xcworkspace ]]; then kind=workspace; else kind=project; fi
+          echo "container=$container" >> "$GITHUB_OUTPUT"
+          echo "scheme=$scheme" >> "$GITHUB_OUTPUT"
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+      - name: Resolve Swift packages before CodeQL tracing
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' \
+            -scheme '${{ steps.ios.outputs.scheme }}' \
+            -resolvePackageDependencies
+      - name: Initialize CodeQL for Swift
+        uses: github/codeql-action/init@v4
+        with:
+          languages: swift
+          build-mode: manual
+          config-file: .github/codeql/codeql-security.yml
+      - name: Build for CodeQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' -scheme '${{ steps.ios.outputs.scheme }}' \
+            -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES COMPILER_INDEX_STORE_ENABLE=NO \
+            CODE_SIGNING_ALLOWED=NO -showBuildTimingSummary build | tee xcode-build.log
+      - name: Run Xcode Static Analyzer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p report/xcode-analyzer
+          xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' -scheme '${{ steps.ios.outputs.scheme }}' \
+            -configuration Debug -sdk iphonesimulator -destination '${{ vars.IOS_DESTINATION || 'generic/platform=iOS Simulator' }}' \
+            -resultBundlePath report/xcode-analyzer/Analyze.xcresult CODE_SIGNING_ALLOWED=NO analyze \
+            | tee report/xcode-analyzer.log
+          test -d report/xcode-analyzer/Analyze.xcresult
+          test -s report/xcode-analyzer.log
+          grep -q '\*\* ANALYZE SUCCEEDED \*\*' report/xcode-analyzer.log
+      - name: Convert Xcode Analyzer findings to SARIF
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun xcresulttool get --legacy \
+            --path report/xcode-analyzer/Analyze.xcresult \
+            --format json > report/xcode-analyzer.json
+          python3 scripts/xcresult_to_sarif.py \
+            --input report/xcode-analyzer.json \
+            --output report/xcode-analyzer.sarif
+          test -s report/xcode-analyzer.sarif
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          output: report/codeql
+          upload: ${{ vars.ENABLE_CODE_SCANNING_UPLOAD == 'true' }}
+      - name: Upload Xcode SAST components
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sast-xcode-components
+          path: |
+            report/**/*.sarif
+            report/xcode-analyzer.log
+            report/xcode-analyzer.json
+            report/xcode-analyzer/Analyze.xcresult
+          if-no-files-found: warn
+
+  semgrep:
+    name: Semgrep Swift and Objective-C
+    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref || github.ref_name || '', 'dependabot/') && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Python for Semgrep
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install and run Semgrep
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip semgrep
+          mkdir -p report
+          semgrep scan \
+            --config p/swift \
+            --config p/security-audit \
+            --config p/secrets \
+            --config .github/semgrep/objective-c-security.yml \
+            --sarif --output report/semgrep.sarif .
+          test -s report/semgrep.sarif
+      - name: Upload Semgrep component
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sast-semgrep-component
+          path: report/semgrep.sarif
+          if-no-files-found: warn
+
+  merge_sast:
+    name: Merge SAST findings
+    needs: [xcode_sast, semgrep]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Download Xcode SAST components
+        uses: actions/download-artifact@v6
+        with:
+          name: sast-xcode-components
+          path: components/xcode
+      - name: Download Semgrep component
+        uses: actions/download-artifact@v6
+        with:
+          name: sast-semgrep-component
+          path: components/semgrep
+      - name: Merge SARIF reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob, json, os
+          paths = glob.glob('components/**/*.sarif', recursive=True)
+          if not paths:
+              raise SystemExit('No SARIF reports were downloaded')
+          runs = []
+          for path in paths:
+              with open(path, encoding='utf-8') as source:
+                  runs.extend(json.load(source).get('runs', []))
+          os.makedirs('report', exist_ok=True)
+          with open('report/merged.sarif', 'w', encoding='utf-8') as target:
+              json.dump({'version': '2.1.0', 'runs': runs}, target)
+          PY
+          test -s report/merged.sarif
+      - name: Upload unified SAST findings
+        uses: actions/upload-artifact@v6
+        with:
+          name: sast-findings
+          path: |
+            report/merged.sarif
+            components/**/*.sarif
+          if-no-files-found: error

@@ -1,0 +1,84 @@
+// sourcery:file:eRpApp/Generated/Domains+ActionAnalytics
+
+import Foundation
+import FeatureEURedeem
+import FeatureCardWall
+import FeatureCommunication
+import eRpResources
+
+{% macro FindSubdomainActions actionType %}
+{% typed actionType as Enum %}
+    {% for case in actionType.cases %}
+        {% if case.hasAssociatedValue and not case.name|contains:"debug" %}
+            {% if case.associatedValues[0].typeName|default:"abc"|hasSuffix:"Domain.Action" or case.associatedValues[0].typeName|default:"abc"|hasPrefix:"Destination.Action" %}
+            case let .{{ case.name }}({% if case.associatedValues[0].localName %}{{ case.associatedValues[0].localName }}: {% endif %}action):
+                action.analytics(tracker: tracker)
+            {% endif %}
+        {% endif %}
+        {% if case.hasAssociatedValue and not case.name|contains:"debug" %}
+            {% if case.associatedValues[0].typeName|default:"abc"|hasPrefix:"PresentationAction<Destinations.Action>" or case.associatedValues[0].typeName|default:"abc"|hasPrefix:"PresentationAction<Destination.Action>" %}
+            case let .{{ case.name }}(.presented({% if case.associatedValues[0].localName %}{{ case.associatedValues[0].localName }}: {% endif %}action)):
+                action.analytics(tracker: tracker)
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro FindDestinationActions actionType %}
+{% typed actionType as Enum %}
+    {% for case in actionType.cases %}
+        {% if case.hasAssociatedValue and not case.name|contains:"debug" %}
+            {% if case.associatedValues[0].typeName|default:"abc"|hasSuffix:"Domain" or case.associatedValues[0].typeName|default:"abc"|hasPrefix:"PresentationAction" or case.associatedValues[0].typeName|default:"abc"|hasPrefix:"Destination.Action"  %}
+            case let .{{ case.name }}({% if case.associatedValues[0].localName %}{{ case.associatedValues[0].localName }}: {% endif %}action):
+                action.analytics(tracker: tracker)
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro TrackCase caseType %}
+{% typed caseType as EnumCase %}
+{% if caseType.annotations.AnalyticsEvent %}
+            case .{{ caseType.name }}: 
+                tracker.track(Analytics.Screens.{{ caseType.annotations.AnalyticsEvent }})    
+{% endif %}
+{% endmacro %}
+
+{% macro FindAnalyticsActions actionType %}
+{% typed actionType as Enum %}
+    {% for case in actionType.cases %}
+        {% if case.hasAssociatedValue %}
+            {% if not case.associatedValues[0].typeName|default:"abc"|hasSuffix:"Domain.Action"  %}
+            {% call TrackCase case %}
+            {% endif %}
+        {% else %}
+            {% call TrackCase case %}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro PrintAction actionType %}
+{% typed actionType as Enum %}
+    {% if not actionType.name|contains:"Debug" %} 
+extension {{ actionType.name }}{% if actionType.attributes.Reducer %}.Action{% endif %} {
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
+    func analytics(tracker: Tracker) {
+        switch self {
+            {% call FindAnalyticsActions actionType %}
+            {% call FindSubdomainActions actionType %}
+            {% if actionType.attributes.Reducer %}
+                {% call FindDestinationActions actionType %}
+            {% endif %}
+            case _: break
+        }
+    }
+}
+    {% endif %}
+{% endmacro %}
+
+{% for type in types.enums %}
+    {% if type.name|hasSuffix:"Action" and (type.parentName|default:"abc"|hasSuffix:"Domain" or type.parentName|default:"abc"|hasSuffix:"Destination" or type.parentName|default:"abc"|hasSuffix:"Destinations") and not type.parent.annotations.SkipSourcery or type.attributes.Reducer %}
+        {% call PrintAction type %}
+    {% endif %}
+{% endfor %}
+// sourcery:end

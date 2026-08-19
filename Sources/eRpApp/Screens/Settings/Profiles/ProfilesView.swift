@@ -1,0 +1,115 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import CasePaths
+import ComposableArchitecture
+import eRpStyleKit
+import SwiftUI
+
+struct ProfilesView: View {
+    @Bindable var store: StoreOf<ProfilesDomain>
+
+    var body: some View {
+        SectionContainer(
+            header: {
+                Label(title: {
+                    Text(L10n.stgTxtHeaderProfiles)
+                        .accessibilityAddTraits(.isHeader)
+                }, icon: {})
+                    .accessibility(identifier: A11y.settings.profiles.stgTxtHeaderProfiles)
+            }, content: {
+                ForEach(store.profiles) { profile in
+                    Button(action: {
+                        store.send(.editProfile(profile))
+                    }, label: {
+                        SingleProfileView(profile: profile, selectedProfileId: store.selectedProfileId)
+                    })
+                    .buttonStyle(.navigation)
+                    .accessibility(identifier: A11y.settings.profiles.stgBtnProfile)
+                }
+
+                .accessibilityElement(children: .contain)
+                .accessibility(identifier: A11y.settings.profiles.stgConProfiles)
+
+                Button(action: {
+                    store.send(.addNewProfile)
+                }, label: {
+                    Label(L10n.stgBtnAddProfile, systemImage: SFSymbolName.plus)
+                })
+                .buttonStyle(.simple)
+                .accessibility(identifier: A11y.settings.profiles.stgBtnNewProfile)
+            }
+        )
+        .task {
+            await store.send(.registerListener).finish()
+        }
+    }
+
+    private struct SingleProfileView: View {
+        let profile: UserProfile
+        let selectedProfileId: UUID?
+
+        var body: some View {
+            Label(title: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(profile.name)
+                    Group {
+                        if let date = profile.lastSuccessfulSync {
+                            RelativeTimerView(date: date)
+
+                        } else {
+                            Text(L10n.ctlTxtProfileCellNotConnected)
+                        }
+                    }
+                    .foregroundColor(Colors.systemLabelSecondary)
+                    .font(.subheadline)
+                }
+            }, icon: {
+                ProfilePictureView(
+                    image: profile.image,
+                    userImageData: profile.userImageData,
+                    color: profile.color,
+                    connection: nil,
+                    style: .small
+                ) {}.padding(.leading, 16)
+            })
+        }
+    }
+}
+
+struct ProfilesView_PreviewProvider: PreviewProvider {
+    static var previews: some View {
+        ProfilesView(store: .init(
+            initialState: .init(
+                profiles: [
+                    UserProfile.Dummies.profileA,
+                    UserProfile.Dummies.profileB,
+                    UserProfile.Dummies.profileC,
+                ],
+                selectedProfileId: UserProfile.Dummies.profileA.id
+            )
+        ) {
+            EmptyReducer()
+        })
+        .background(Color(.secondarySystemBackground).ignoresSafeArea())
+    }
+}

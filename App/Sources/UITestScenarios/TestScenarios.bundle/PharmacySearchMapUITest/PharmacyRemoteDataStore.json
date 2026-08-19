@@ -1,0 +1,270 @@
+{
+    "searchPharmaciesRecordings":
+    {
+        "type": "repeated",
+        "payload":
+        [
+            {
+                "id": "6bb01538-5924-4be3-98ff-7475d27aee4f",
+                "countUsage": 0,
+                "hoursOfOperation":
+                [
+                    {
+                        "closingTime": "18:00:00",
+                        "openingTime": "08:00:00",
+                        "daysOfWeek":
+                        [
+                            "mon",
+                            "tue",
+                            "wed",
+                            "thu",
+                            "fri"
+                        ]
+                    }
+                ],
+                "specialClosingHours": [],
+                "emergencyServiceHours": [],
+                "position":
+                {
+                    "longitude": 13.38762788,
+                    "latitude": 52.522012313
+                },
+                "isFavorite": false,
+                "telecom":
+                {},
+                "address":
+                {
+                    "street": "ZoTIstr. 01",
+                    "zip": "10117",
+                    "city": "ZoTI-Town"
+                },
+                "telematikID": "3-01.2.2023001.16.101",
+                "created": 714572335.407148,
+                "types":
+                [],
+                "status": "active",
+                "name": "ZoTI_01_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+            },
+            {
+                "id": "6bb02538-5924-4be3-98ff-7475d27aee4f",
+                "countUsage": 0,
+                "hoursOfOperation":
+                [
+                    {
+                        "closingTime": "18:00:00",
+                        "openingTime": "08:00:00",
+                        "daysOfWeek":
+                        [
+                            "mon",
+                            "tue",
+                            "wed",
+                            "thu",
+                            "fri"
+                        ]
+                    }
+                ],
+                "specialClosingHours": [],
+                "emergencyServiceHours": [],
+                "position":
+                {
+                    "longitude": 13.38762788,
+                    "latitude": 52.52642145
+                },
+                "isFavorite": false,
+                "telecom":
+                {},
+                "avsEndpoints":
+                {
+                    "onPremiseUrlAdditionalHeaders":
+                    {},
+                    "deliveryUrlAdditionalHeaders":
+                    {},
+                    "onPremiseUrl": "https://erp-pharmacy-serviceprovider.dev.gematik.solutions/pick_up/<ti_id>",
+                    "shipmentUrlAdditionalHeaders":
+                    {}
+                },
+                "address":
+                {
+                    "street": "ZoTIstr. 02",
+                    "zip": "10117",
+                    "city": "ZoTI-Town"
+                },
+                "telematikID": "3-01.2.2023001.16.102",
+                "created": 714572335.40719998,
+                "types":
+                [],
+                "status": "active",
+                "name": "ZoTI_02_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+            },
+            {
+                "id": "6bb03538-5924-4be3-98ff-7475d27aee4f",
+                "countUsage": 0,
+                "hoursOfOperation":
+                [
+                    {
+                        "closingTime": "18:00:00",
+                        "openingTime": "08:00:00",
+                        "daysOfWeek":
+                        [
+                            "mon",
+                            "tue",
+                            "wed",
+                            "thu",
+                            "fri"
+                        ]
+                    }
+                ],
+                "specialClosingHours": [],
+                "emergencyServiceHours": [],
+                "position":
+                {
+                    "longitude": 13.39762418,
+                    "latitude": 52.52642145
+                },
+                "isFavorite": false,
+                "telecom":
+                {},
+                "avsEndpoints":
+                {
+                    "deliveryUrl": "https://erp-pharmacy-serviceprovider.dev.gematik.solutions/local_delivery/?req=<transactionID>",
+                    "onPremiseUrlAdditionalHeaders":
+                    {},
+                    "deliveryUrlAdditionalHeaders":
+                    {},
+                    "shipmentUrlAdditionalHeaders":
+                    {}
+                },
+                "address":
+                {
+                    "street": "ZoTIstr. 03",
+                    "zip": "10117",
+                    "city": "ZoTI-Town"
+                },
+                "telematikID": "3-01.2.2023001.16.103",
+                "created": 714572335.40721595,
+                "types":
+                [],
+                "status": "active",
+                "name": "ZoTI_03_TEST-ONLY",
+                "physicalFeatures": [],
+                "specialities": []
+            },
+            {
+                "id": "6bb02538-5924-4be3-98ff-7475d27aee4f",
+                "countUsage": 0,
+                "hoursOfOperation":
+                [
+                    {
+                        "closingTime": "18:00:00",
+                        "openingTime": "08:00:00",
+                        "daysOfWeek":
+                        [
+                            "mon",
+                            "tue",
+                            "wed",
+                            "thu",
+                            "fri"
+                        ]
+                    }
+                ],
+                "specialClosingHours": [],
+                "emergencyServiceHours": [],
+                "position":
+                {
+                    "longitude": 13.37111841,
+                    "latitude": 52.522012313
+                },
+                "isFavorite": false,
+                "telecom":
+                {},
+                "avsEndpoints":
+                {
+                    "shipmentUrl": "https://erp-pharmacy-serviceprovider.dev.gematik.solutions/local_delivery/?req=<transactionID>",
+                    "onPremiseUrlAdditionalHeaders":
+                    {},
+                    "deliveryUrlAdditionalHeaders":
+                    {},
+                    "shipmentUrlAdditionalHeaders":
+                    {}
+                },
+                "address":
+                {
+                    "street": "ZoTIstr. 04",
+                    "zip": "10117",
+                    "city": "ZoTI-Town"
+                },
+                "telematikID": "3-01.2.2023001.16.104",
+                "created": 714572335.40723002,
+                "types":
+                [],
+                "status": "active",
+                "name": "ZoTI_04_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+            },
+            {
+                "id": "5bb04538-5924-4be3-98ff-7475d27aee4f",
+                "countUsage": 0,
+                "hoursOfOperation":
+                [
+                    {
+                        "closingTime": "18:00:00",
+                        "openingTime": "08:00:00",
+                        "daysOfWeek":
+                        [
+                            "mon",
+                            "tue",
+                            "wed",
+                            "thu",
+                            "fri"
+                        ]
+                    }
+                ],
+                "specialClosingHours": [],
+                "emergencyServiceHours": [],
+                "position":
+                {
+                    "longitude": 13.37111841,
+                    "latitude": 52.522012313
+                },
+                "isFavorite": false,
+                "telecom":
+                {},
+                "avsEndpoints":
+                {
+                    "shipmentUrl": "https://erp-pharmacy-serviceprovider.dev.gematik.solutions/local_delivery/?req=<transactionID>",
+                    "onPremiseUrlAdditionalHeaders":
+                    {},
+                    "deliveryUrlAdditionalHeaders":
+                    {},
+                    "shipmentUrlAdditionalHeaders":
+                    {}
+                },
+                "address":
+                {
+                    "street": "ZoTIstr. 04",
+                    "zip": "10117",
+                    "city": "ZoTI-Town"
+                },
+                "telematikID": "3-01.2.2023001.16.105",
+                "created": 714572335.40723002,
+                "types":
+                [],
+                "status": "active",
+                "name": "ZoTI_05_TEST-ONLY",
+                "physicalFeatures": [],
+                "specialities": []
+            }
+        ]
+    },
+    "fetchPharmacyRecordings":
+    {
+        "type": "queue",
+        "payload":
+        []
+    }
+}

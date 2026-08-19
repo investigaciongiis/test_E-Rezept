@@ -1,0 +1,337 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import CombineSchedulers
+import ComposableArchitecture
+@testable import eRpFeatures
+import eRpKit
+import SnapshotTesting
+import SwiftUI
+import XCTest
+
+final class OrderDetailViewSnapshotTests: ERPSnapshotTestCase {
+    let communicationDispRequest = ErxTask.Communication(
+        identifier: "1",
+        profile: .dispReq,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        timestamp: "2021-05-26T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"onPremise\",\"info_text\": \"You can come by and pick up your drugs.\", \"pickUpCodeHR\":\"4711\"}" // swiftlint:disable:this line_length
+    )
+
+    let communicationOnPremise = ErxTask.Communication(
+        identifier: "1",
+        profile: .reply,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        timestamp: "2021-05-26T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"onPremise\",\"info_text\": \"You can come by and pick up your drugs.\", \"pickUpCodeHR\":\"4711\"}" // swiftlint:disable:this line_length
+    )
+
+    let communicationShipment = ErxTask.Communication(
+        identifier: "2",
+        profile: .reply,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        timestamp: "2021-05-28T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"shipment\",\"info_text\": \"Checkout your shimpment in the shopping cart.\",\"url\": \"https://das-e-rezept-fuer-deutschland.de\"}",
+        // swiftlint:disable:previous line_length
+        isRead: true
+    )
+
+    let communicationDelivery = ErxTask.Communication(
+        identifier: "3",
+        profile: .reply,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        timestamp: "2021-05-29T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"delivery\",\"info_text\": \"Your prescription is on the way. Make sure you are at home. We will not come back and bring you more drugs! Just kidding ;)\", \"url\": \"https://das-e-rezept-fuer-deutschland.de\"}" // swiftlint:disable:this line_length
+    )
+
+    let communicationOnPremiseWithUrl = ErxTask.Communication(
+        identifier: "1",
+        profile: .reply,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        timestamp: "2021-05-29T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"onPremise\",\"info_text\": \"You can come by and pick up your drugs.\", \"pickUpCodeHR\":\"4711\", \"url\": \"https://das-e-rezept-fuer-deutschland.de\"}" // swiftlint:disable:this line_length
+    )
+
+    let communicationWithoutPayload = ErxTask.Communication(
+        identifier: "4",
+        profile: .reply,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        orderId: "orderId",
+        timestamp: "2021-05-26T10:59:37.098245933+00:00",
+        payloadJSON: "",
+        isRead: true
+    )
+
+    let communicationWithEmptyInfoText = ErxTask.Communication(
+        identifier: "1",
+        profile: .reply,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        timestamp: "2021-05-26T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"onPremise\",\"info_text\": \"\", \"pickUpCodeHR\":\"4711\", \"url\": \"https://das-e-rezept-fuer-deutschland.de\"}" // swiftlint:disable:this line_length
+    )
+
+    let communicationWithInfoTextPhoneNumber = ErxTask.Communication(
+        identifier: "1",
+        profile: .reply,
+        taskId: "taskID",
+        userId: "userID",
+        telematikId: "telematikID",
+        timestamp: "2021-05-26T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"onPremise\",\"info_text\": \"You can come by and pick up your drugs or call us at: +49 30 89 00 43 33.\", \"pickUpCodeHR\":\"4711\", \"url\": \"https://das-e-rezept-fuer-deutschland.de\"}" // swiftlint:disable:this line_length
+    )
+
+    let communicationForErxTask4 = ErxTask.Communication(
+        identifier: "1",
+        profile: .reply,
+        taskId: "1390f983-1e67-11b2-8555-63bf44e44fb8",
+        userId: "userID",
+        telematikId: "telematikID",
+        orderId: "orderId",
+        timestamp: "2021-05-26T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"onPremise\",\"info_text\": \"You can come by and pick up your drugs or call us at: +49 30 89 00 43 33.\", \"pickUpCodeHR\":\"4711\", \"url\": \"https://das-e-rezept-fuer-deutschland.de\"}" // swiftlint:disable:this line_length
+    )
+
+    let communicationForErxTask8 = ErxTask.Communication(
+        identifier: "2",
+        profile: .reply,
+        taskId: "6370f983-1e67-11b2-8555-63bf44e44fb8",
+        userId: "userID",
+        telematikId: "telematikID",
+        orderId: "orderId",
+        timestamp: "2021-05-26T10:59:37.098245933+00:00",
+        payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"onPremise\",\"info_text\": \"You can come by and pick up your drugs or call us at: +49 30 89 00 43 33.\", \"pickUpCodeHR\":\"4711\", \"url\": \"https://das-e-rezept-fuer-deutschland.de\"}" // swiftlint:disable:this line_length
+    )
+
+    func testOderDetailViewWithOneCommunicationDispRequest() {
+        let order = Order(
+            orderId: "test",
+            communications: [communicationDispRequest],
+            chargeItems: []
+        )
+        let sut = OrderDetailView(
+            store: StoreOf<OrderDetailDomain>(
+                initialState: .init(
+                    communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                    erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+                )
+            ) {
+                EmptyReducer()
+            }
+        )
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    func testOderDetailViewWithExpectedCommunicationsAndChargeItem() {
+        let order = Order(
+            orderId: "test",
+            communications: [communicationOnPremise,
+                             communicationShipment,
+                             communicationDelivery],
+            chargeItems: [ErxChargeItem.Fixtures.chargeItem]
+        )
+        let sut = OrderDetailView(
+            store: StoreOf<OrderDetailDomain>(
+                initialState: .init(
+                    communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                    erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+                )
+            ) {
+                EmptyReducer()
+            }
+        )
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    func testOderDetailViewWithUnexpectedCommunications() {
+        let order = Order(
+            orderId: "test",
+            communications: [communicationOnPremiseWithUrl,
+                             communicationWithoutPayload],
+            chargeItems: []
+        )
+        let sut = OrderDetailView(store:
+            StoreOf<OrderDetailDomain>(
+                initialState: .init(
+                    communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                    erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+                )
+            ) {
+                EmptyReducer()
+            })
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    func testOderDetailViewWithEmptyTextButPickupCode() {
+        let order = Order(
+            orderId: "test",
+            communications: [communicationWithEmptyInfoText],
+            chargeItems: []
+        )
+        let sut = OrderDetailView(store:
+            StoreOf<OrderDetailDomain>(
+                initialState: .init(
+                    communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                    erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+                )
+            ) {
+                EmptyReducer()
+            })
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    func testOderDetailViewWithInfoTextPhoneNumber() {
+        let order = Order(
+            orderId: "test",
+            communications: [communicationWithInfoTextPhoneNumber],
+            chargeItems: []
+        )
+        let sut = OrderDetailView(
+            store: StoreOf<OrderDetailDomain>(
+                initialState: .init(
+                    communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                    erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+                )
+            ) {
+                EmptyReducer()
+            }
+        )
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    func testOderDetailViewWithSingleChips() {
+        let order = Order(orderId: "test",
+                          communications: [communicationDispRequest],
+                          chargeItems: [],
+                          timelineEntries: [.dispReq(ErxTask.Communication.Unique(from: communicationDispRequest),
+                                                     pharmacy: nil,
+                                                     chipTexts: ["Saflorblüten-Extrakt Pulver Peroral"])])
+
+        let sut = OrderDetailView(
+            store: StoreOf<OrderDetailDomain>(
+                initialState: .init(
+                    communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                    erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+                )
+            ) {
+                EmptyReducer()
+            }
+        )
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    // TODO: Add Test with multiple rows of chips but view is broken for Snapshots // swiftlint:disable:this todo
+    func testOderDetailViewWithMultipleChips() {
+        let order = Order(orderId: "test",
+                          communications: [communicationForErxTask4, communicationForErxTask8],
+                          chargeItems: [])
+
+        let sut = OrderDetailView(
+            store: StoreOf<OrderDetailDomain>(
+                initialState: .init(
+                    communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                    erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask4,
+                                              ErxTask.Fixtures.erxTask8,
+                                              ErxTask.Fixtures.erxTask1)
+                )
+            ) {
+                EmptyReducer()
+            }
+        )
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    func testEuRevokeView_Valid() {
+        let order = Order(
+            orderId: "test",
+            communications: [communicationDispRequest],
+            chargeItems: []
+        )
+        let sut = NavigationStack {
+            EuRevokeView(
+                store: StoreOf<OrderDetailDomain>(
+                    initialState: .init(
+                        communicationMessage: Shared(value: CommunicationMessage.order(order)),
+                        erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+                    )
+                ) {
+                    EmptyReducer()
+                }
+            )
+        }
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+
+    func testEuRevokeView_Deleted() {
+        let order = Order(
+            orderId: "test",
+            communications: [communicationDispRequest],
+            chargeItems: []
+        )
+        var state = OrderDetailDomain.State(
+            communicationMessage: Shared(value: CommunicationMessage.order(order)),
+            erxTasks: IdentifiedArray(arrayLiteral: ErxTask.Fixtures.erxTask1)
+        )
+        state.isDeleted = true
+        let sut = NavigationStack {
+            EuRevokeView(
+                store: StoreOf<OrderDetailDomain>(
+                    initialState: state
+                ) {
+                    EmptyReducer()
+                }
+            )
+        }
+        assertSnapshots(of: sut, as: snapshotModiOnDevices())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
+        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
+    }
+}

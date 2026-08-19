@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+      <meta charset="utf-8">
+      <meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0'>
+      <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+      <h1>Free and OpenSource Software</h1>
+
+      <h2>Inhalt</h2>
+
+      <ul>
+      <% dependencies.each do |dependency| %>
+            <li><a href="#<%= dependency[:name] %>"><%= dependency[:name] %> <%= dependency[:version] %></a></li>
+      <% end %>
+            <li><a href="#OpenStreetMaps">OpenStreetMaps</a></li>
+      </ul>
+
+      <h2>Licences</h2>
+
+      <% dependencies.each do |dependency| %>
+
+      <h4 id="<%= dependency[:name] %>"><%= dependency[:name] %> <%= dependency[:version] %></h4>
+
+      <h5>Usage:</h5>
+      <p><%= dependency[:purpose] %></p>
+
+      <h5>Source:</h5>
+      <p><a href="<%= dependency[:url] %>"><%= dependency[:url] %></a></p>
+
+      <h5>Licence</h5>
+      <section class="license"><%= dependency[:license] %></section>
+
+      <% end %>
+
+      <h4 id="OpenStreetMaps">Open Street Maps</h4>
+      
+      <p>For searching pharmacies the pharmacy service uses geocoordinates which have been evaluated with the help of OpenStreetMap.</p>
+
+      <p><a href="www.openstreetmap.org/copyright">www.openstreetmap.org/copyright</a></p>
+      
+      <section class="license"><p>Open Data Commons Open Database License (ODbL)</p>
+
+      <p>Copyright (c) Open Street Maps</p>
+
+      </section>
+
+</body>

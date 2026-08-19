@@ -1,0 +1,241 @@
+{
+    "searchPharmaciesRecordings":
+    {
+        "type": "repeated",
+        "payload":
+            [
+                {
+                    "id": "6bb01538-5924-4be3-98ff-7475d27aee4f",
+                    "countUsage": 0,
+                    "hoursOfOperation":
+                    [
+                        {
+                            "closingTime": "18:00:00",
+                            "openingTime": "08:00:00",
+                            "daysOfWeek":
+                            [
+                                "mon",
+                                "tue",
+                                "wed",
+                                "thu",
+                                "fri"
+                            ]
+                        }
+                    ],
+                    "specialClosingHours": [],
+                    "emergencyServiceHours": [],
+                    "position":
+                    {
+                        "longitude": 52.5226398750957,
+                        "latitude": 13.38762788395671
+                    },
+                    "isFavorite": false,
+                    "telecom":
+                    {},
+                    "address":
+                    {
+                        "street": "ZoTIstr. 01",
+                        "zip": "10117",
+                        "city": "ZoTI-Town"
+                    },
+                    "telematikID": "3-01.2.2023001.16.102",
+                    "created": 714572335.407148,
+                    "types":
+                    [],
+                    "status": "active",
+                    "name": "ZoTI_01_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+                },
+                {
+                    "id": "6bb02538-5924-4be3-98ff-7475d27aee4f",
+                    "countUsage": 0,
+                    "hoursOfOperation":
+                    [
+                        {
+                            "closingTime": "18:00:00",
+                            "openingTime": "08:00:00",
+                            "daysOfWeek":
+                            [
+                                "mon",
+                                "tue",
+                                "wed",
+                                "thu",
+                                "fri"
+                            ]
+                        }
+                    ],
+                    "specialClosingHours": [],
+                    "emergencyServiceHours": [],
+                    "position":
+                    {
+                        "longitude": 52.5226398750957,
+                        "latitude": 13.38762788395671
+                    },
+                    "isFavorite": false,
+                    "telecom":
+                    {},
+                    "address":
+                    {
+                        "street": "ZoTIstr. 02",
+                        "zip": "10117",
+                        "city": "ZoTI-Town"
+                    },
+                    "telematikID": "3-01.2.2023001.16.102",
+                    "created": 714572335.40719998,
+                    "types":
+                    [
+                        "outpharm"
+                    ],
+                    "status": "active",
+                    "name": "ZoTI_02_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+                },
+                {
+                    "id": "6bb03538-5924-4be3-98ff-7475d27aee4f",
+                    "countUsage": 0,
+                    "hoursOfOperation":
+                    [
+                        {
+                            "closingTime": "18:00:00",
+                            "openingTime": "08:00:00",
+                            "daysOfWeek":
+                            [
+                                "mon",
+                                "tue",
+                                "wed",
+                                "thu",
+                                "fri"
+                            ]
+                        }
+                    ],
+                    "specialClosingHours": [],
+                    "emergencyServiceHours": [],
+                    "position":
+                    {
+                        "longitude": 52.5226398750957,
+                        "latitude": 13.38762788395671
+                    },
+                    "isFavorite": false,
+                    "telecom":
+                    {},
+                    "address":
+                    {
+                        "street": "ZoTIstr. 03",
+                        "zip": "10117",
+                        "city": "ZoTI-Town"
+                    },
+                    "telematikID": "3-01.2.2023001.16.102",
+                    "created": 714572335.40721595,
+                    "types":
+                    [
+                        "outpharm"
+                    ],
+                    "status": "active",
+                    "name": "ZoTI_03_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+                },
+                {
+                    "id": "6bb04538-5924-4be3-98ff-7475d27aee4f",
+                    "countUsage": 0,
+                    "hoursOfOperation":
+                    [
+                        {
+                            "closingTime": "18:00:00",
+                            "openingTime": "08:00:00",
+                            "daysOfWeek":
+                            [
+                                "mon",
+                                "tue",
+                                "wed",
+                                "thu",
+                                "fri"
+                            ]
+                        }
+                    ],
+                    "specialClosingHours": [],
+                    "emergencyServiceHours": [],
+                    "position":
+                    {
+                        "longitude": 52.5226398750957,
+                        "latitude": 13.38762788395671
+                    },
+                    "isFavorite": false,
+                    "telecom":
+                    {},
+                    "address":
+                    {
+                        "street": "ZoTIstr. 04",
+                        "zip": "10117",
+                        "city": "ZoTI-Town"
+                    },
+                    "telematikID": "3-01.2.2023001.16.102",
+                    "created": 714572335.40723002,
+                    "types":
+                    [
+                        "outpharm"
+                    ],
+                    "status": "active",
+                    "name": "ZoTI_04_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+                },
+                {
+                    "id": "6bb08538-5924-4be3-98ff-7475d27aee4f",
+                    "countUsage": 0,
+                    "hoursOfOperation":
+                    [
+                        {
+                            "closingTime": "18:00:00",
+                            "openingTime": "08:00:00",
+                            "daysOfWeek":
+                            [
+                                "mon",
+                                "tue",
+                                "wed",
+                                "thu",
+                                "fri"
+                            ]
+                        }
+                    ],
+                    "specialClosingHours": [],
+                    "emergencyServiceHours": [],
+                    "position":
+                    {
+                        "longitude": 52.5226398750957,
+                        "latitude": 13.38762788395671
+                    },
+                    "isFavorite": false,
+                    "telecom":
+                    {},
+                    "address":
+                    {
+                        "street": "ZoTIstr. 08",
+                        "zip": "10117",
+                        "city": "ZoTI-Town"
+                    },
+                    "telematikID": "3-01.2.2023001.16.102",
+                    "created": 714572335.40727901,
+                    "types":
+                    [
+                        "pharm",
+                        "outpharm",
+                        "mobl",
+                        "delivery"
+                    ],
+                    "status": "active",
+                    "name": "ZoTI_08_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+                }
+            ]
+    },
+    "fetchPharmacyRecordings":
+    {
+        "type": "queue",
+        "payload":
+        []
+    }
+}

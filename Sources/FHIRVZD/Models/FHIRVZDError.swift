@@ -1,0 +1,102 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import CodedError
+import Foundation
+import HTTPClient
+
+/// The specific error types for the IDP module
+@CodedError("300")
+public enum FHIRVZDError: Swift.Error {
+    /// In case of HTTP/Connection error
+    @ErrorCode("01")
+    case network(error: HTTPClientError)
+    /// When a token is being requested, but none can be found
+    @ErrorCode("02")
+    case tokenUnavailable
+    /// Message failed to decode/parse
+    @ErrorCode("03")
+    case decoding(error: Swift.Error)
+    /// Other error cases
+    @ErrorCode("04")
+    case unspecified(error: Swift.Error)
+}
+
+extension FHIRVZDError: Equatable {
+    public static func ==(lhs: FHIRVZDError, rhs: FHIRVZDError) -> Bool {
+        switch (lhs, rhs) {
+        case let (.network(error: lhsError), .network(error: rhsError)): return lhsError
+            .localizedDescription == rhsError.localizedDescription
+        case (.tokenUnavailable, .tokenUnavailable):
+            return true
+        case let (.decoding(error: lhsError), .decoding(error: rhsError)): return lhsError
+            .localizedDescription == rhsError.localizedDescription
+        case let (.unspecified(error: lhsError), .unspecified(error: rhsError)): return lhsError
+            .localizedDescription == rhsError.localizedDescription
+        default: return false
+        }
+    }
+}
+
+extension FHIRVZDError: Codable {
+    enum CodingKeys: String, CodingKey {
+        case type
+        case value
+    }
+
+    public enum LoadingError: Swift.Error {
+        case message(String?)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        let value = try? container.decode(String.self, forKey: .value)
+        switch type {
+        case "network":
+            self = .network(error: .unknown(LoadingError.message(value)))
+        case "tokenUnavailable":
+            self = .tokenUnavailable
+        case "decoding":
+            self = .decoding(error: LoadingError.message(value))
+        default:
+            self = .unspecified(error: LoadingError.message(value))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .network(error):
+            try container.encode("network", forKey: .type)
+            try container.encode(error.localizedDescription, forKey: .value)
+        case let .unspecified(error):
+            try container.encode("unspecified", forKey: .type)
+            try container.encode(error.localizedDescription, forKey: .value)
+        case let .decoding(error):
+            try container.encode("decoding", forKey: .type)
+            try container.encode(error.localizedDescription, forKey: .value)
+        case .tokenUnavailable:
+            try container.encode("tokenUnavailable", forKey: .type)
+        }
+    }
+}

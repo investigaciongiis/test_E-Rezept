@@ -1,0 +1,312 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import Combine
+import ComposableArchitecture
+@testable import eRpFeatures
+import eRpKit
+import FeatureCardWall
+import FeatureHelpers
+import IDP
+import Nimble
+import XCTest
+
+@MainActor
+final class RegisteredDevicesDomainTests: XCTestCase {
+    typealias TestStore = TestStoreOf<RegisteredDevicesDomain>
+
+    let testScheduler = DispatchQueue.test
+    var schedulers: Schedulers!
+    var mockUserSession: MockUserSession!
+    var mockUserSessionProvider: UserSessionProviderMock!
+    var mockSecureEnclaveSignatureProvider: SecureEnclaveSignatureProviderMock!
+    var mockRegisteredDevicesService: RegisteredDevicesServiceMock!
+    let uidateFormatter = UIDateFormatter(fhirDateFormatter: FHIRDateFormatter.shared)
+
+    override func setUp() {
+        super.setUp()
+
+        schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
+        mockUserSession = MockUserSession()
+        mockUserSessionProvider = UserSessionProviderMock()
+        mockSecureEnclaveSignatureProvider = SecureEnclaveSignatureProviderMock()
+        mockRegisteredDevicesService = RegisteredDevicesServiceMock()
+    }
+
+    private func testStore(for state: RegisteredDevicesDomain.State) -> TestStore {
+        TestStore(
+            initialState: state
+        ) {
+            RegisteredDevicesDomain()
+        } withDependencies: { dependencies in
+            dependencies.schedulers = schedulers
+            dependencies.registeredDevicesService = mockRegisteredDevicesService
+            dependencies.uiDateFormatter = uidateFormatter
+        }
+    }
+
+    let testProfileId = UUID()
+
+    func testLoadDevicesTriggersCardwall() async {
+        let store = testStore(for: .init(profileId: testProfileId))
+        let cardWallState = CardWallCANDomain.State(
+            profileId: testProfileId,
+            can: ""
+        )
+
+        mockRegisteredDevicesService
+            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
+            Fail(error: RegisteredDevicesServiceError.missingAuthentication)
+                .eraseToAnyPublisher()
+
+        mockRegisteredDevicesService.deviceIdForProfileIdUUIDAnyPublisherStringNeverReturnValue = Just(nil)
+            .eraseToAnyPublisher()
+
+        mockRegisteredDevicesService
+            .cardWallForProfileIdUUIDAnyPublisherCardWallCANDomainStateNeverReturnValue = Just(cardWallState)
+            .eraseToAnyPublisher()
+
+        await store.send(.loadDevices) { state in
+            state.content = .loading([])
+        }
+        await testScheduler.run()
+
+        await store.receive(.showCardWall(cardWallState)) { state in
+            state.content = .notLoaded
+            state.destination = .cardWallCAN(cardWallState)
+        }
+
+        await store.receive(.response(.deviceIdReceived(nil)))
+
+        // when returing from cardwall a refresh loading should occur
+    }
+
+    func testWhenReturningFromCardwallThatReloadIsTriggered() async {
+        let store = testStore(for: .init(profileId: testProfileId))
+        let cardWallState = CardWallCANDomain.State(
+            profileId: testProfileId,
+            can: ""
+        )
+
+        let expectedDevices = Fixtures.pairingEntriesSetB
+        mockRegisteredDevicesService
+            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
+            Just(expectedDevices)
+                .setFailureType(to: RegisteredDevicesServiceError.self)
+                .eraseToAnyPublisher()
+
+        mockRegisteredDevicesService.deviceIdForProfileIdUUIDAnyPublisherStringNeverReturnValue = Just(nil)
+            .eraseToAnyPublisher()
+
+        mockRegisteredDevicesService
+            .cardWallForProfileIdUUIDAnyPublisherCardWallCANDomainStateNeverReturnValue = Just(cardWallState)
+            .eraseToAnyPublisher()
+
+        await store.send(.showCardWall(cardWallState)) { state in
+            state.destination = .cardWallCAN(cardWallState)
+        }
+        await testScheduler.run()
+
+        // when returning from cardwall
+        await store.send(.destination(.presented(.cardWallCAN(.delegate(.close))))) {
+            $0.destination = nil
+        }
+
+        await testScheduler.run()
+
+        // then a refresh loading should occur
+        await store.receive(.task) { state in
+            state.content = .loading([])
+        }
+        await testScheduler.run()
+
+        await store.receive(.response(.taskReceived(.success(expectedDevices)))) {
+            $0.content = .loaded(
+                expectedDevices.pairingEntries
+                    .map { ($0, self.uidateFormatter.compactDateAndTimeFormatter) }
+                    .map(RegisteredDevicesDomain.State.Entry.init)
+            )
+        }
+        await store.receive(.response(.deviceIdReceived(nil)))
+    }
+
+    func testLoadDevicesAuthenticationErrorShows() async {
+        let store = testStore(for: .init(profileId: testProfileId))
+
+        mockRegisteredDevicesService
+            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
+            Fail(error: RegisteredDevicesServiceError.missingToken)
+                .eraseToAnyPublisher()
+
+        mockRegisteredDevicesService.deviceIdForProfileIdUUIDAnyPublisherStringNeverReturnValue = Just(nil)
+            .eraseToAnyPublisher()
+
+        await store.send(.loadDevices) { state in
+            state.content = .loading([])
+        }
+        await testScheduler.run()
+
+        await store
+            .receive(.response(.loadDevicesReceived(.failure(RegisteredDevicesServiceError.missingToken)))) { state in
+                state.content = .notLoaded
+                state.destination = .alert(.init(for: RegisteredDevicesServiceError.missingToken))
+            }
+
+        await store.receive(.response(.deviceIdReceived(nil)))
+    }
+
+    func testDeleteDeviceSuccess() async {
+        let store = testStore(
+            for: .init(profileId: UUID(),
+                       destination: nil,
+                       thisDeviceKeyIdentifier: nil,
+                       content: .loaded(Fixtures.loadedDataA))
+        )
+
+        let deviceId = "KEY234567890"
+
+        mockRegisteredDevicesService
+            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorReturnValue =
+            Just(true)
+                .setFailureType(to: RegisteredDevicesServiceError.self)
+                .eraseToAnyPublisher()
+
+        mockRegisteredDevicesService
+            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
+            Just(Fixtures.pairingEntriesSetB)
+                .setFailureType(to: RegisteredDevicesServiceError.self)
+                .eraseToAnyPublisher()
+
+        await store.send(RegisteredDevicesDomain.Action.deleteDevice(deviceId))
+
+        await testScheduler.run()
+
+        expect(self.mockRegisteredDevicesService
+            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorCalled).to(beTrue())
+
+        await store.receive(.response(.deleteDeviceReceived(.success(true))))
+
+        await testScheduler.run()
+
+        await store.receive(.response(.loadDevicesReceived(.success(Fixtures.pairingEntriesSetB)))) { state in
+            state.content = .loaded(Fixtures.loadedDataB)
+        }
+    }
+
+    func testDeleteDeviceFailure() async {
+        let store = testStore(
+            for: .init(profileId: UUID(),
+                       destination: nil,
+                       thisDeviceKeyIdentifier: nil,
+                       content: .loaded(Fixtures.loadedDataA))
+        )
+
+        let deviceId = "KEY234567890"
+
+        mockRegisteredDevicesService
+            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorReturnValue =
+            Fail(error: RegisteredDevicesServiceError.missingToken)
+                .eraseToAnyPublisher()
+
+        await store.send(RegisteredDevicesDomain.Action.deleteDevice(deviceId))
+
+        await testScheduler.run()
+
+        expect(self.mockRegisteredDevicesService
+            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorCalled).to(beTrue())
+
+        await store
+            .receive(.response(.deleteDeviceReceived(.failure(RegisteredDevicesServiceError.missingToken)))) { state in
+                state.destination = .alert(.init(for: RegisteredDevicesServiceError.missingToken))
+            }
+    }
+}
+
+extension RegisteredDevicesDomainTests {
+    enum Fixtures {
+        static let dateFormatter: DateFormatter = {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateStyle = .medium
+            dateFormatter.timeStyle = .short
+            return dateFormatter
+        }()
+
+        static let loadedDataA = [
+            RegisteredDevicesDomain.State.Entry(pairingEntryA, dateFormatter: Self.dateFormatter),
+            RegisteredDevicesDomain.State.Entry(pairingEntryB, dateFormatter: Self.dateFormatter),
+        ]
+        static let loadedDataB = [
+            RegisteredDevicesDomain.State.Entry(pairingEntryA, dateFormatter: Self.dateFormatter),
+        ]
+        static let pairingEntryA = PairingEntry(
+            name: "pairingEntryA",
+            signedPairingData: signedPairingDataA.serialize(),
+            creationTime: Date()
+        )
+        static let pairingEntryB = PairingEntry(
+            name: "pairingEntryB",
+            signedPairingData: signedPairingDataB.serialize(),
+            creationTime: Date()
+        )
+        static let pairingEntriesSetA = PairingEntries(pairingEntries: [
+            pairingEntryA,
+            pairingEntryB,
+        ])
+        static let pairingEntriesSetB = PairingEntries(pairingEntries: [
+            pairingEntryA,
+        ])
+
+        static let pairingDataA = PairingData(
+            authCertSubjectPublicKeyInfo: "",
+            notAfter: 0,
+            product: "Product",
+            serialnumber: "123456789",
+            keyIdentifier: "KEY123456789",
+            seSubjectPublicKeyInfo: "",
+            issuer: ""
+        )
+        static let pairingDataB = PairingData(
+            authCertSubjectPublicKeyInfo: "",
+            notAfter: 0,
+            product: "Product",
+            serialnumber: "234567890",
+            keyIdentifier: "KEY234567890",
+            seSubjectPublicKeyInfo: "",
+            issuer: ""
+        )
+
+        static let signedPairingDataA = SignedPairingData(
+            originalPairingData: pairingDataA,
+            signedPairingData: try! JWT(
+                header: .init(),
+                payload: pairingDataA
+            )
+        )
+        static let signedPairingDataB = SignedPairingData(
+            originalPairingData: pairingDataB,
+            signedPairingData: try! JWT(
+                header: .init(),
+                payload: pairingDataB
+            )
+        )
+    }
+}

@@ -1,0 +1,249 @@
+screens:
+  main:
+    name: "main"
+  main_createProfile:
+    name: "main:createProfile"
+  main_editProfilePicture:
+    name: "main:editProfilePicture"
+  main_editName:
+    name: "main:editName"
+  main_scanner:
+    name: "main:scanner"
+  main_deviceSecurity:
+    name: "main:deviceSecurity"
+  main_prescriptionArchive:
+    name: "main:prescriptionArchive"
+  main_welcomeDrawer:
+    name: "main:welcomeDrawer"
+  main_consentDrawer:
+    name: "main:consentDrawer" 
+  main_osDeprecationDrawer:
+    name: "main:osDeprecationDrawer"
+  main_medicationReminder:
+    name: "main:medicationReminder"
+  matrixCode_sharePrescription:
+    name: "matrixCode:sharePrescription"
+  medicationReminder_repetitionDetails:
+    name: "medicationReminder:repetitionDetails"
+  medicationReminder_dosageInstruction:
+    name: "medicationReminder:dosageInstructionsInfo"
+  prescriptionDetail:
+    name: "prescriptionDetail"
+  prescriptionDetail_medication:
+    name: "prescriptionDetail:medication"
+  prescriptionDetail_epaMedication:
+    name: "prescriptionDetail:epaMedication"
+  prescriptionDetail_patient:
+    name: "prescriptionDetail:patient"
+  prescriptionDetail_practitioner:
+    name: "prescriptionDetail:practitioner"
+  prescriptionDetail_organization:
+    name: "prescriptionDetail:organization"
+  prescriptionDetail_accidentInfo:
+    name: "prescriptionDetail:accidentInfo"
+  prescriptionDetail_teratogenicInfo:
+    name: "prescriptionDetail:teratogenicInfo"
+  prescriptionDetail_technicalInfo:
+    name: "prescriptionDetail:technicalInfo"
+  prescriptionDetail_sharePrescription:
+    name: "prescriptionDetail:sharePrescription"
+  prescriptionDetail_directAssignmentInfo:
+    name: "prescriptionDetail:directAssignmentInfo"
+  prescriptionDetail_substitutionInfo:
+    name: "prescriptionDetail:substitutionInfo"
+  prescriptionDetail_errorInfo:
+    name: "prescriptionDetail:errorInfo"
+  prescriptionDetail_prescriptionValidityInfo:
+    name: "prescriptionDetail:prescriptionValidityInfo"
+  prescriptionDetail_scannedPrescriptionInfo:
+    name: "prescriptionDetail:scannedPrescriptionInfo"
+  prescriptionDetail_coPaymentInfo:
+    name: "prescriptionDetail:coPaymentInfo"
+  prescriptionDetail_dosageInstructionsInfo:
+    name: "prescriptionDetail:dosageInstructionsInfo"
+  prescriptionDetail_emergencyServiceFeeInfo:
+    name: "prescriptionDetail:emergencyServiceFeeInfo"
+  prescriptionDetail_medicationOverview:
+    name: "prescriptionDetail:medicationOverview"
+  prescriptionDetail_medication_ingredients:
+    name: "prescriptionDetail:medication_ingredients"
+  prescriptionDetail_epa_medication_codable_ingredient:
+    name: "prescriptionDetail:epa_medication_codable_ingredient"
+  prescriptionDetail_epa_medication_ingredient:
+    name: "prescriptionDetail:epa_medication_ingredient"        
+  prescriptionDetail_selfPayerPrescriptionBottomSheet:
+    name: "prescriptionDetail:selfPayerPrescriptionBottomSheet"
+  prescriptionDetail_toast:
+    name: "prescriptionDetail:toast"
+  prescriptionDetail_setupMedicationSchedule:
+    name: "prescriptionDetail:setupMedicationSchedule"
+  prescriptionDetail_matrixCode:
+    name: "prescriptionDetail:matrixCode"
+  digasMain:
+    name: "digasMain"
+  digasMain_howLongDigaValidBottomSheetScreen:
+    name: "digasMain:howLongDigaValidBottomSheetScreen"
+  digasMain_digaSupportBottomSheetScreen:
+    name: "digasMain:digaSupportBottomSheetScreen"
+  digasMain_descriptionScreen:
+    name: "digasMain:descriptionScreen"
+  redeem_methodSelection:
+    name: "redeem:methodSelection"
+  redeem_overview:
+    name: "redeem:overview"
+  redeem_prescriptionAllOrSelection:
+    name: "redeem:prescriptionAllOrSelection"
+  redeem_prescriptionChooseSubset:
+    name: "redeem:prescriptionChooseSubset"
+  redeem_matrixCode:
+    name: "redeem:matrixCode"
+  redeem_viaAVS:
+    name: "redeem:viaAVS"
+  redeem_viaTI:
+    name: "redeem:viaTI"
+  redeem_success:
+    name: "redeem:success"
+  redeem_editContactInformation:
+    name: "redeem:editContactInformation"
+  redeem_prescriptionSelection:
+    name: "redeem:prescriptionSelection"
+  pharmacySearch:
+    name: "pharmacySearch"
+  pharmacySearch_detail:
+    name: "pharmacySearch:detail"
+  pharmacySearch_filter:
+    name: "pharmacySearch:filter"
+  pharmacySearch_map:
+    name: "pharmacySearch:map"
+  pharmacySearch_clusterAnnotation:
+   name: "pharmacySearch:clusterAnnotation"
+  cardWall:
+    name: "cardWall"
+  cardWall_introduction:
+    name: "cardWall:welcome"
+  cardWall_notCapable:
+    name: "cardWall:notCapable"
+  cardWall_CAN:
+    name: "cardWall:CAN"
+  cardWall_PIN:
+    name: "cardWall:PIN"
+  cardWall_scanCAN:
+    name: "cardWall:scanCAN"
+  cardWall_saveLogin:
+    name: "cardWall:saveCredentials:initial"
+  cardWall_saveLoginSecurityInfo:
+    name: "cardWall:saveCredentials:information"
+  cardWall_readCard:
+    name: "cardWall:connect"
+  cardWall_extAuth:
+    name: "cardWall:extAuth"
+  cardWall_extAuthConfirm:
+    name: "cardWall:extAuthConfirm"
+  cardWall_extAuthSelectionHelp:
+    name: "cardWall:extAuthSelectionHelp"
+  troubleShooting: # not used in iOS
+    name: "troubleShooting"
+  troubleShooting_readCardHelp1: # Troubleshooting is a section on it's own
+    name: "troubleShooting:readCardHelp1"
+  troubleShooting_readCardHelp2:
+    name: "troubleShooting:readCardHelp2"
+  troubleShooting_readCardHelp3:
+    name: "troubleShooting:readCardHelp3"
+  troubleShooting_readCardHelp4:
+    name: "troubleShooting:readCardHelp4"
+  contactInsuranceCompany:
+    name: "contactInsuranceCompany"
+  contactInsuranceCompany_selectKK: #not used in Android orderHealthCard2.0
+    name: "contactInsuranceCompany:selectKK"
+  contactInsuranceCompany_selectReason:
+    name: "contactInsuranceCompany:selectReason"
+  contactInsuranceCompany_selectMethod:
+    name: "contactInsuranceCompany:selectMethod"
+  orders:
+    name: "orders"
+  orders_detail:
+    name: "orders:detail"
+  orders_pickupCode:
+    name: "orders:pickupCode"
+  orders_pharmacyDetail:
+    name: "orders:pharmacyDetail"
+  alert:
+    name: "General Alert Dialog"
+  errorAlert:
+    name: "Error Alert"
+  healthCardPassword_forgotPin: #so far not used
+    name: "healthCardPassword:forgotPin"
+  healthCardPassword_setCustomPin: #so far not used
+    name: "healthCardPassword:setCustomPin"
+  healthCardPassword_unlockCard: #so far not used
+    name: "healthCardPassword:unlockCard"
+  healthCardPassword_introduction:
+    name: "healthCardPassword:introduction"
+  healthCardPassword_can:
+    name: "healthCardPassword:can"
+  healthCardPassword_puk:
+    name: "healthCardPassword:puk"
+  healthCardPassword_oldPin:
+    name: "healthCardPassword:oldPin"
+  healthCardPassword_pin:
+    name: "healthCardPassword:pin"
+  healthCardPassword_readCard:
+    name: "healthCardPassword:readCard"
+  healthCardPassword_scanner:
+    name: "healthCardPassword:scanner"
+  healthCardPassword_pin_alert:
+    name: "healthCardPassword:pinAlert"
+  scanner_imageGallery:
+    name: "scanner:imageGallery"
+  scanner_documentImporter:
+    name: "scanner:documentImporter"
+  settings:
+    name: "settings"
+  settings_accessibility: # not used in iOS
+    name: "settings:accessibility"
+  settings_authenticationMethods:
+    name: "settings:authenticationMethods"
+  settings_authenticationMethods_setAppPassword:
+    name: "settings:authenticationMethods:setAppPassword"
+  settings_productImprovements:
+    name: "settings:productImprovements"
+  settings_productImprovements_complyTracking:
+    name: "settings:productImprovements:complyTracking"
+  settings_legalNotice:
+    name: "settings:legalNotice"
+  settings_dataProtection:
+    name: "settings:dataProtection"
+  settings_openSourceLicence:
+    name: "settings:openSourceLicence"
+  settings_additionalLicence: # not used in iOS
+    name: "settings:additionalLicence"
+  settings_termsOfUse:
+    name: "settings:termsOfUse"
+  profile:
+    name: "profile"
+  profile_editPicture:
+    name: "profile:editPicture"
+  settings_newProfile:
+    name: "settings:newProfile"
+  settings_medicationReminderList:
+    name: "settings:medicationReminderList"
+  profile_token:
+    name: "profile:token"
+  profile_registeredDevices:
+    name: "profile:registeredDevices"
+  profile_auditEvents:
+    name: "profile:auditEvents"
+  profile_notificationChannels:
+    name: "profile:notificationChannels"
+  profile_insuranceDrawer:
+    name: "profile:insuranceDrawer"
+  chargeItemList:
+    name: "chargeItemList"
+  chargeItemDetails:
+    name: "chargeItemDetails"
+  chargeItemList_toast:
+    name: "chargeItemList:toast"  
+  mlKit: # not used in iOS
+    name: "mlKit"
+  mlKit_information: # not used in iOS
+    name: "mlKit:information"

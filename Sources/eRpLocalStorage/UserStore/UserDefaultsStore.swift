@@ -1,0 +1,347 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import Combine
+import eRpKit
+import Foundation
+
+/// Interface to access user specific data
+public class UserDefaultsStore: UserDataStore {
+    private var userDefaults: UserDefaults
+
+    public required init(userDefaults: UserDefaults = UserDefaults.standard) {
+        self.userDefaults = userDefaults
+    }
+
+    // MARK: - Onboarding
+
+    public var hideOnboarding: AnyPublisher<Bool, Never> {
+        userDefaults.publisher(for: \UserDefaults.shouldHideOnboarding)
+            .eraseToAnyPublisher()
+    }
+
+    public func set(hideOnboarding: Bool) {
+        userDefaults.shouldHideOnboarding = hideOnboarding
+    }
+
+    public var isOnboardingHidden: Bool {
+        userDefaults.shouldHideOnboarding
+    }
+
+    public var onboardingDate: AnyPublisher<Date?, Never> {
+        userDefaults.publisher(for: \UserDefaults.onboardingDate)
+            .eraseToAnyPublisher()
+    }
+
+    public func set(onboardingDate: Date?) {
+        userDefaults.onboardingDate = onboardingDate
+    }
+
+    public var onboardingVersion: AnyPublisher<String?, Never> {
+        userDefaults.publisher(for: \UserDefaults.onboardingVersion)
+            .eraseToAnyPublisher()
+    }
+
+    public func set(onboardingVersion: String?) {
+        userDefaults.onboardingVersion = onboardingVersion
+    }
+
+    // MARK: - CardWall
+
+    public var hideCardWallIntro: AnyPublisher<Bool, Never> {
+        userDefaults.publisher(for: \UserDefaults.shouldHideCardWallIntro)
+            .eraseToAnyPublisher()
+    }
+
+    public var isCardWallIntroHidden: Bool {
+        userDefaults.shouldHideCardWallIntro
+    }
+
+    public func set(hideCardWallIntro: Bool) {
+        userDefaults.shouldHideCardWallIntro = hideCardWallIntro
+    }
+
+    // MARK: - Server configuration name
+
+    public var serverEnvironmentName: String? {
+        userDefaults.serverEnvironmentConfiguration
+    }
+
+    public var serverEnvironmentConfiguration: AnyPublisher<String?, Never> {
+        userDefaults.publisher(for: \UserDefaults.serverEnvironmentConfiguration)
+            .eraseToAnyPublisher()
+    }
+
+    public func set(serverEnvironmentConfiguration: String?) {
+        userDefaults.serverEnvironmentConfiguration = serverEnvironmentConfiguration
+    }
+
+    // MARK: - App Security
+
+    public var appSecurityOption: AnyPublisher<AppSecurityOption, Never> {
+        userDefaults.publisher(for: \UserDefaults.appSecurityOption)
+            .map { AppSecurityOption(fromId: $0) }
+            .eraseToAnyPublisher()
+    }
+
+    public func set(appSecurityOption: AppSecurityOption) {
+        userDefaults.appSecurityOption = appSecurityOption.id
+    }
+
+    public var failedAppAuthentications: AnyPublisher<Int, Never> {
+        userDefaults.publisher(for: \UserDefaults.failedAppAuthentications)
+            .eraseToAnyPublisher()
+    }
+
+    public func set(failedAppAuthentications: Int) {
+        userDefaults.failedAppAuthentications = failedAppAuthentications
+    }
+
+    public var ignoreDeviceNotSecuredWarningPermanently: AnyPublisher<Bool, Never> {
+        userDefaults.publisher(for: \UserDefaults.ignoreDeviceNotSecuredWarningForSession)
+            .eraseToAnyPublisher()
+    }
+
+    public func set(ignoreDeviceNotSecuredWarningPermanently: Bool) {
+        userDefaults.ignoreDeviceNotSecuredWarningForSession = ignoreDeviceNotSecuredWarningPermanently
+    }
+
+    // MARK: - Profile Selection
+
+    public var selectedProfileId: AnyPublisher<UUID?, Never> {
+        userDefaults.publisher(for: \UserDefaults.selectedProfileId).eraseToAnyPublisher()
+    }
+
+    public func set(selectedProfileId: UUID) {
+        userDefaults.selectedProfileId = selectedProfileId
+    }
+
+    // MARK: - General
+
+    public var latestCompatibleModelVersion: ModelVersion {
+        get {
+            guard let modelVersion = ModelVersion(rawValue: userDefaults.latestCompatibleCoreDataModelVersion) else {
+                return ModelVersion.taskStatus
+            }
+            return modelVersion
+        }
+        set { userDefaults.latestCompatibleCoreDataModelVersion = newValue.rawValue }
+    }
+
+    public var appStartCounter: Int {
+        get { userDefaults.appStartCounter }
+        set { userDefaults.appStartCounter = newValue }
+    }
+
+    public func wipeAll() {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
+            for key in userDefaults.dictionaryRepresentation().keys {
+                userDefaults.removeObject(forKey: key)
+            }
+            return
+        }
+        userDefaults.removePersistentDomain(forName: bundleIdentifier)
+    }
+
+    // MARK: - Messages
+
+    public var readInternalCommunications: AnyPublisher<[String], Never> {
+        userDefaults.publisher(for: \UserDefaults.readInternalCommunications).eraseToAnyPublisher()
+    }
+
+    public func markInternalCommunicationAsRead(messageId: String) {
+        userDefaults.readInternalCommunications.append(messageId)
+    }
+
+    public var hideWelcomeMessage: AnyPublisher<Bool, Never> {
+        userDefaults.publisher(for: \UserDefaults.hideWelcomeMessage).eraseToAnyPublisher()
+    }
+
+    public func set(hideWelcomeMessage: Bool) {
+        userDefaults.hideWelcomeMessage = hideWelcomeMessage
+    }
+
+    public var hideEURedeemInstructions: AnyPublisher<Bool, Never> {
+        userDefaults.publisher(for: \UserDefaults.hideEURedeemInstructions).eraseToAnyPublisher()
+    }
+
+    public func set(hideEURedeemInstructions: Bool) {
+        userDefaults.hideEURedeemInstructions = hideEURedeemInstructions
+    }
+}
+
+extension String {
+    /// Name of the server environment to use. Only usable in non production builds
+    public static let kServerEnvironmentConfiguration = "kEnvironmentConfiguration"
+
+    /// Base URL Key (UserDefaults)
+    public static let kBaseURL = "kBaseURL"
+    /// VAU URL Key for `UserDefaults`
+    public static let kVauURL = "kVauURL"
+    /// DiscoveryDocument URL Key for `UserDefaults`
+    public static let kDiscoveryURL = "kIDPDiscoveryURL"
+    static let kShouldHideOnboarding = "kShouldHideOnboarding"
+    static let kOnboardingVersion = "kOnboardingVersion"
+    static let kShouldHideCardWallIntro = "kShouldHideCardWallIntro"
+    static let kAppSecurityOption = "kAppSecurityOption"
+    static let kIgnoreDeviceNotSecuredWarningForSession = "kIgnoreDeviceNotSecuredWarningForSession"
+    /// Key for storing if app-install event has been sent to tracking server in `UserDefaults`
+    public static let kAppInstallSent = "kAppInstallSent"
+    /// Key for storing failedAppAuthentications
+    public static let kFailedAppAuthentications = "kFailedAppAuthentications"
+    /// Key for storing the selectedProfileId
+    public static let kSelectedProfileId = "kSelectedProfileId"
+    /// Key for latest compatible core data model version
+    public static let kLatestCompatibleCoreDataModelVersion = "kLatestCompatibleCoreDataModelVersion"
+    /// Kex for storing the app start count
+    public static let kAppStartCounter = "kAppStartCounter"
+    ///
+    public static let kHasReadInternalCommunications = "kHasReadInternalCommunications"
+    ///
+    public static let kOnboardingDate = "kOnboardingDate"
+    ///
+    public static let kHideWelcomeMessage = "kHideWelcomeMessage"
+    ///
+    static let kHideEURedeemInstructions = "kHideEURedeemInstructions"
+}
+
+extension UserDefaults {
+    @objc var serverEnvironmentConfiguration: String? {
+        get {
+            string(forKey: .kServerEnvironmentConfiguration)
+        }
+        set {
+            setValue(newValue, forKey: .kServerEnvironmentConfiguration)
+        }
+    }
+
+    @objc var shouldHideOnboarding: Bool {
+        get { bool(forKey: .kShouldHideOnboarding) }
+        set { set(newValue, forKey: .kShouldHideOnboarding) }
+    }
+
+    @objc var onboardingVersion: String? {
+        get { string(forKey: .kOnboardingVersion) }
+        set { set(newValue, forKey: .kOnboardingVersion) }
+    }
+
+    @objc var shouldHideCardWallIntro: Bool {
+        get { bool(forKey: .kShouldHideCardWallIntro) }
+        set { set(newValue, forKey: .kShouldHideCardWallIntro) }
+    }
+
+    @objc var appSecurityOption: Int {
+        get { integer(forKey: .kAppSecurityOption) }
+        set { set(newValue, forKey: .kAppSecurityOption) }
+    }
+
+    @objc var ignoreDeviceNotSecuredWarningForSession: Bool {
+        get { bool(forKey: .kIgnoreDeviceNotSecuredWarningForSession) }
+        set { set(newValue, forKey: .kIgnoreDeviceNotSecuredWarningForSession) }
+    }
+
+    /// Store if app-install event has been sent to tracking server
+    @objc public var appInstallSent: Bool {
+        get { bool(forKey: .kAppInstallSent) }
+        set { set(newValue, forKey: .kAppInstallSent) }
+    }
+
+    /// Store number of failure app authentications
+    @objc public var failedAppAuthentications: Int {
+        get { integer(forKey: .kFailedAppAuthentications) }
+        set { set(newValue, forKey: .kFailedAppAuthentications) }
+    }
+
+    /// Store for the selected profile identifier
+    @objc public var selectedProfileId: UUID? {
+        get {
+            guard let uuidString = string(forKey: .kSelectedProfileId) else {
+                return nil
+            }
+            return UUID(uuidString: uuidString)
+        }
+        set { set(newValue?.uuidString, forKey: .kSelectedProfileId) }
+    }
+
+    /// Store number of failure app authentications
+    @objc public var latestCompatibleCoreDataModelVersion: Int {
+        get { integer(forKey: .kLatestCompatibleCoreDataModelVersion) }
+        set { set(newValue, forKey: .kLatestCompatibleCoreDataModelVersion) }
+    }
+
+    /// Store every app start in this counter
+    @objc public var appStartCounter: Int {
+        get { integer(forKey: .kAppInstallSent) }
+        set { set(newValue, forKey: .kAppInstallSent) }
+    }
+
+    /// Store for all read internal messages (Id)
+    @objc public var readInternalCommunications: [String] {
+        get {
+            guard let readIds = stringArray(forKey: .kHasReadInternalCommunications) else {
+                return []
+            }
+            return readIds
+        }
+        set { set(newValue, forKey: .kHasReadInternalCommunications) }
+    }
+
+    /// Store for the date when the onboarding finished
+    @objc public var onboardingDate: Date? {
+        get { object(forKey: .kOnboardingDate) as? Date }
+        set { set(newValue, forKey: .kOnboardingDate) }
+    }
+
+    /// Store if welcome message should be hidden
+    @objc public var hideWelcomeMessage: Bool {
+        get { bool(forKey: .kHideWelcomeMessage) }
+        set { set(newValue, forKey: .kHideWelcomeMessage) }
+    }
+
+    /// Store if EU redeem instructions should be hidden
+    @objc public var hideEURedeemInstructions: Bool {
+        get { bool(forKey: .kHideEURedeemInstructions) }
+        set { set(newValue, forKey: .kHideEURedeemInstructions) }
+    }
+}
+
+import Sharing
+
+extension SharedReaderKey
+    where Self == AppStorageKey<UUID>.Default {
+    /// C.CH.AUT public key for virtual EGK
+    public static var selectedProfileId: Self {
+        Self[.appStorage(.kSelectedProfileId), default: UUID()]
+    }
+}
+
+extension UUID: @retroactive RawRepresentable {
+    public var rawValue: String {
+        uuidString
+    }
+
+    public init?(rawValue: String) {
+        self.init(uuidString: rawValue)
+    }
+
+    public typealias RawValue = String
+}

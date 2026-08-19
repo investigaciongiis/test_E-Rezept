@@ -1,0 +1,631 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import AsyncHelpers
+import Combine
+import ComposableArchitecture
+import eRpKit
+import eRpLocalStorage
+import eRpResources
+import FeatureCardWall
+import FeatureHelpers
+import FHIRClient
+import HTTPClient
+import IdentifiedCollections
+import IDP
+import MapKit
+import OpenSSL
+import Pharmacy
+import SwiftUI
+
+// swiftlint:disable type_body_length file_length
+@Reducer
+struct PharmacyRedeemDomain {
+    @Reducer
+    enum Destination {
+        // sourcery: AnalyticsScreen = redeem_success
+        case redeemSuccess(RedeemSuccessDomain)
+        // sourcery: AnalyticsScreen = redeem_editContactInformation
+        case contact(PharmacyContactDomain)
+        // sourcery: AnalyticsScreen = cardWall
+        case cardWall(CardWallIntroductionDomain)
+        // sourcery: AnalyticsScreen = redeem_prescriptionSelection
+        case prescriptionSelection(PharmacyPrescriptionSelectionDomain)
+        @ReducerCaseEphemeral
+        // sourcery: AnalyticsScreen = alert
+        case alert(ErpAlertState<Alert>)
+
+        enum Alert {
+            case contact
+            case closeRedeem
+            case retryRedeem
+        }
+    }
+
+    @ObservableState
+    struct State: Equatable {
+        @Shared var prescriptions: [Prescription]
+        @Shared var selectedPrescriptions: [Prescription]
+        @Shared(.selectedProfileId) var profileId
+
+        var pharmacy: PharmacyLocation?
+        var serviceOption: RedeemServiceOption?
+        var redeemInProgress = false
+        var orderResponses: IdentifiedArrayOf<OrderResponse>
+        var selectedShipmentInfo: ShipmentInfo?
+        var profile: Profile?
+
+        var serviceOptionState: ServiceOptionDomain.State
+        @Presents var destination: Destination.State?
+
+        var orders: [OrderRequest] {
+            if let pharmacy, let redeemOption = serviceOptionState.selectedOption {
+                return selectedPrescriptions.map(\.erxTask)
+                    .asOrders(orderId: UUID(),
+                              option: redeemOption,
+                              for: pharmacy,
+                              with: selectedShipmentInfo)
+            }
+            return []
+        }
+
+        init(
+            prescriptions: Shared<[Prescription]>,
+            selectedPrescriptions: Shared<[Prescription]>,
+            pharmacy: PharmacyLocation? = nil,
+            serviceOption: RedeemServiceOption? = nil,
+            selectedShipmentInfo: ShipmentInfo? = nil,
+            redeemInProgress: Bool = false,
+            orderResponses: IdentifiedArrayOf<OrderResponse> = [],
+            profile: Profile? = nil,
+            serviceOptionState: ServiceOptionDomain.State? = nil,
+            destination: Destination.State? = nil,
+            hasCompleteContactData: Bool = false
+        ) {
+            _prescriptions = prescriptions
+            _selectedPrescriptions = selectedPrescriptions
+            self.pharmacy = pharmacy
+            self.serviceOption = serviceOption
+            self.selectedShipmentInfo = selectedShipmentInfo
+            self.redeemInProgress = redeemInProgress
+            self.orderResponses = orderResponses
+            self.profile = profile
+            self.serviceOptionState = serviceOptionState ?? .init(prescriptions: prescriptions)
+            self.destination = destination
+            self.hasCompleteContactData = hasCompleteContactData
+        }
+
+        var hasCompleteContactData = false
+        var readyToRedeem: Bool {
+            hasCompleteContactData
+                && !selectedPrescriptions.isEmpty
+                && serviceOptionState.selectedOption != nil
+                && !showTPrescriptionShipmentWarning
+        }
+
+        var showTPrescriptionShipmentInfo: Bool {
+            selectedPrescriptions.containsTPrescription() && serviceOptionState.availableOptions.contains(.shipment)
+        }
+
+        var showTPrescriptionShipmentWarning: Bool {
+            selectedPrescriptions.containsTPrescription() && serviceOptionState.selectedOption == .shipment
+        }
+
+        var accessibilityDisabledReason: String {
+            let noPrescription = !selectedPrescriptions.isEmpty ? nil : L10n.phaRedeemTxtNoSelectedPrescription.text
+            let missingContactData = hasCompleteContactData ? nil : L10n.phaRedeemTxtMissingContactData.text
+            let tPrescriptionShippingWarning = showTPrescriptionShipmentWarning ? L10n.phaRedeemTxtTprescriptionWarning
+                .text : nil
+            return [noPrescription, missingContactData, tPrescriptionShippingWarning].compactMap { $0 }
+                .joined(separator: ",")
+        }
+    }
+
+    enum Action: Equatable {
+        case task
+        /// Register observing `ShipmentInfo`
+        case registerSelectedShipmentInfoListener
+        /// Called when any shipment info has changed
+        case selectedShipmentInfoReceived(Result<ShipmentInfo?, LocalStoreError>)
+        /// Register selected profile listener
+        case registerSelectedProfileListener
+        /// Called when the selected profile changes
+        case selectedProfileReceived(Result<Profile, LocalStoreError>)
+        /// Redeem the selected prescriptions
+        case redeem
+        /// Called when redeem network call finishes
+        case redeemReceived(Result<IdentifiedArrayOf<OrderResponse>, RedeemServiceError>)
+        case redeemOptionProviderReceived(RedeemOptionProvider)
+        /// Navigation actions
+        case showContact
+        case showRedeemSuccess
+        case showCardWall
+        case showPrescriptionSelection
+        /// Actions for subdomains and navigation
+        case destination(PresentationAction<Destination.Action>)
+        case delegate(Delegate)
+        case resetNavigation
+        /// Child domain actions
+        case serviceOption(ServiceOptionDomain.Action)
+
+        enum Delegate: Equatable {
+            /// Close all
+            case close
+            /// Change selected pharmacy
+            case changePharmacy
+        }
+    }
+
+    @Dependency(\.schedulers) var schedulers: Schedulers
+    @Dependency(\.shipmentInfoDataStore) var shipmentInfoStore: ShipmentInfoDataStore
+    @Dependency(\.userSession) var userSession: UserSession
+    @Dependency(\.redeemOrderInputValidator) var validator: RedeemOrderInputValidator
+    @Dependency(\.redeemOrderService) var redeemOrderService: RedeemOrderService
+    @Dependency(\.serviceLocator) var serviceLocator: ServiceLocator
+    @Dependency(\.pharmacyRepository) var pharmacyRepository: PharmacyRepository
+    @Dependency(\.date) var date
+    @Dependency(\.calendar) var calendar
+
+    var body: some Reducer<State, Action> {
+        Scope(state: \State.serviceOptionState, action: \.serviceOption) {
+            ServiceOptionDomain()
+        }
+        Reduce(core)
+            .ifLet(\.$destination, action: \.destination)
+    }
+
+    // swiftlint:disable:next function_body_length cyclomatic_complexity
+    func core(into state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .task:
+            return .merge(
+                .send(.registerSelectedShipmentInfoListener),
+                .send(.registerSelectedProfileListener),
+                .run { [pharmacy = state.pharmacy] send in
+                    if let pharmacy {
+                        let provider = try await redeemOrderService.redeemOptionProvider(pharmacy: pharmacy)
+                        await send(.redeemOptionProviderReceived(provider))
+                    }
+                }
+            )
+        case let .serviceOption(.redeemOptionTapped(redeemOption)):
+            state.hasCompleteContactData = validateContactData(
+                shipmentInfo: state.selectedShipmentInfo,
+                redeemOption: redeemOption,
+                serviceOption: state.serviceOption
+            )
+            return .none
+        case .registerSelectedShipmentInfoListener:
+            return .publisher(
+                shipmentInfoStore.selectedShipmentInfo
+                    .catchToPublisher()
+                    .map(Action.selectedShipmentInfoReceived)
+                    .receive(on: schedulers.main)
+                    .eraseToAnyPublisher
+            )
+        case let .selectedShipmentInfoReceived(result):
+            if case let .success(shipmentInfo) = result, let selectedShipmentInfo = shipmentInfo {
+                state.selectedShipmentInfo = selectedShipmentInfo
+            } else {
+                state.selectedShipmentInfo = state.prescriptions.map(\.erxTask)
+                    .compactMap { $0.patient?.shipmentInfo() }.first
+            }
+            return .none
+        case .registerSelectedProfileListener:
+            return .publisher(
+                userSession.profile()
+                    .catchToPublisher()
+                    .map(Action.selectedProfileReceived)
+                    .receive(on: schedulers.main)
+                    .eraseToAnyPublisher
+            )
+        case .selectedProfileReceived(.failure):
+            return .none
+        case let .selectedProfileReceived(.success(profile)):
+            state.profile = profile
+            return .none
+        case let .redeemOptionProviderReceived(provider):
+            var options = Set<RedeemOption>()
+            if provider.reservationService.hasService {
+                options.insert(.onPremise)
+            }
+            if provider.deliveryService.hasService {
+                options.insert(.delivery)
+            }
+            var validOptions = options
+            if provider.shipmentService.hasService {
+                if state.selectedPrescriptions.filter(\.isShipmentAvailable).count
+                    == state.selectedPrescriptions.count {
+                    validOptions.insert(.shipment)
+                }
+                options.insert(.shipment)
+            }
+            state.serviceOptionState.availableOptions = options
+            state.serviceOptionState.validOptions = validOptions
+
+            guard let redeemOption = state.serviceOptionState.selectedOption
+            else { return .none }
+            var serviceOption: RedeemServiceOption?
+            switch redeemOption {
+            case .onPremise:
+                serviceOption = provider.reservationService
+            case .delivery:
+                serviceOption = provider.deliveryService
+            case .shipment:
+                serviceOption = provider.shipmentService
+            }
+            state.serviceOption = serviceOption
+
+            state.hasCompleteContactData = validateContactData(
+                shipmentInfo: state.selectedShipmentInfo,
+                redeemOption: state.serviceOptionState.selectedOption,
+                serviceOption: state.serviceOption
+            )
+
+            return .none
+        case .redeem,
+             .destination(.presented(.alert(.retryRedeem))):
+            state.orderResponses = []
+            guard let redeemOption = state.serviceOptionState.selectedOption,
+                  !state.selectedPrescriptions.isEmpty, !state.redeemInProgress
+            else { return .none }
+
+            if case let .invalid(error) = validator.type(state.serviceOption)?
+                .validate(state.selectedShipmentInfo, for: redeemOption) {
+                state.destination = .alert(.info(AlertStates.missingContactInfo(with: error)))
+                return .none
+            }
+            state.redeemInProgress = true
+
+            // swiftlint:disable closure_parameter_position
+            return .run { [
+                orderRequests = state.orders,
+                serviceOption = state.serviceOption,
+                profileId = state.profileId
+            ] send in
+                // swiftlint:enable closure_parameter_position
+                do {
+                    switch serviceOption {
+                    case .erxTaskRepository, .erxTaskRepositoryAvailable:
+                        let orderResponses = try await redeemOrderService
+                            .redeemViaErxTaskRepository(orderRequests, profileId)
+                        await send(.redeemReceived(.success(orderResponses)))
+                    case .noService, .none:
+                        break
+                    }
+                } catch RedeemServiceError.noTokenAvailable,
+                    RedeemOrderServiceError.redeem(.noTokenAvailable) {
+                    await send(.showCardWall)
+                } catch let RedeemOrderServiceError.redeem(error),
+                            let error as RedeemServiceError {
+                    await send(.redeemReceived(.failure(error)))
+                }
+            }
+        case let .redeemReceived(.success(orderResponses)):
+            guard let redeemOption = state.serviceOptionState.selectedOption,
+                  let pharmacy = state.pharmacy
+            else { return .none }
+
+            state.redeemInProgress = false
+            state.orderResponses = orderResponses
+            if orderResponses.arePartiallySuccessful || orderResponses.areFailing {
+                state.destination = .alert(.info(AlertStates.failingRequest(count: orderResponses.failedCount)))
+            } else if orderResponses.areSuccessful {
+                state.destination = .redeemSuccess(RedeemSuccessDomain.State(redeemOption: redeemOption))
+            }
+            return .run { _ in
+                _ = try await save(pharmacy: pharmacy)
+            }
+        case let .redeemReceived(.failure(error)):
+            guard let pharmacy = state.pharmacy
+            else { return .none }
+
+            state.redeemInProgress = false
+            if case let RedeemServiceError.prescriptionAlreadyRedeemed(prescriptions) = error {
+                let failedPrescriptionIds = prescriptions.map(\.id)
+                state.$selectedPrescriptions.withLock { $0 = state.selectedPrescriptions
+                    .filter { !failedPrescriptionIds.contains($0.id) }
+                }
+
+                if state.selectedPrescriptions.isEmpty {
+                    state.destination = .alert(ErpAlertState<Destination.Alert>(
+                        for: error,
+                        title: nil
+                    ) {
+                        ButtonState(action: .send(.closeRedeem)) {
+                            TextState(L10n.phaRedeemBtnPrescriptionAlreadyRedeemedAlertDismiss)
+                        }
+                        ButtonState(role: .cancel) {
+                            TextState(L10n.amgBtnAlertCancel)
+                        }
+                    })
+                } else {
+                    state.destination = .alert(ErpAlertState(for: error, title: nil) {
+                        ButtonState(action: .send(.retryRedeem)) {
+                            TextState(L10n.phaRedeemBtnPrescriptionAlreadyRedeemedAlertProceedWithout)
+                        }
+                        ButtonState(role: .cancel) {
+                            TextState(L10n.amgBtnAlertCancel)
+                        }
+                    })
+                }
+            } else {
+                state.destination = .alert(.init(for: error))
+            }
+
+            return .run { _ in
+                _ = try await save(pharmacy: pharmacy)
+            }
+        case .destination(.presented(.redeemSuccess(.delegate(.close)))),
+             .destination(.presented(.alert(.closeRedeem))):
+            state.destination = nil
+            return .run { send in
+                // allow the state.destination to be recognized by SwiftUI, otherwise the dialog pops up again after
+                // dismissal
+                try await schedulers.main.sleep(for: 1.0)
+
+                await send(.delegate(.close))
+            }
+        case .destination(.presented(.contact(.delegate(.close)))),
+             .destination(.presented(.cardWall(.delegate(.close)))):
+            state.destination = nil
+            return .none
+        case .showContact,
+             .destination(.presented(.alert(.contact))):
+            state.destination = .contact(.init(
+                shipmentInfo: state.selectedShipmentInfo,
+                serviceOption: state.serviceOption
+            ))
+            return .none
+        case .showRedeemSuccess:
+            guard let redeemOption = state.serviceOptionState.selectedOption
+            else { return .none }
+            state.destination = .redeemSuccess(RedeemSuccessDomain.State(redeemOption: redeemOption))
+            return .none
+        case .showCardWall:
+            state.redeemInProgress = false
+            state.destination = .cardWall(CardWallIntroductionDomain.State(
+                isNFCReady: serviceLocator.deviceCapabilities.isNFCReady,
+                profileId: userSession.profileId
+            ))
+            return .none
+        case .showPrescriptionSelection:
+            state.destination = .prescriptionSelection(PharmacyPrescriptionSelectionDomain
+                .State(prescriptions: state.$prescriptions,
+                       selectedPrescriptions: state.$selectedPrescriptions,
+                       profile: state.profile,
+                       // T-Prescription Warning within the subscreen is only visible if shipment is an option
+                       selectedOption: state.serviceOptionState.availableOptions.contains(.shipment) ? state
+                           .serviceOptionState.selectedOption : nil))
+            return .none
+        case .resetNavigation:
+            state.destination = nil
+            return .none
+        case .serviceOption,
+             .destination,
+             .delegate:
+            return .none
+        }
+    }
+}
+
+extension PharmacyRedeemDomain {
+    enum AlertStates {
+        static func alert(for error: RedeemServiceError) -> AlertState<Destination.Alert> {
+            guard let message = error.recoverySuggestion else {
+                return AlertState(
+                    title: { TextState(error.localizedDescriptionWithErrorList) },
+                    actions: {
+                        ButtonState(role: .cancel) {
+                            TextState(L10n.alertBtnOk)
+                        }
+                    }
+                )
+            }
+            return AlertState(
+                title: { TextState(error.localizedDescriptionWithErrorList) },
+                actions: {
+                    ButtonState(role: .cancel) {
+                        TextState(L10n.alertBtnOk)
+                    }
+                },
+                message: { TextState(message) }
+            )
+        }
+
+        static func missingContactInfo(with localizedMessage: String) -> AlertState<Destination.Alert> {
+            AlertState(
+                title: { TextState(L10n.phaRedeemAlertTitleMissingPhone) },
+                actions: {
+                    ButtonState(action: .send(.contact)) {
+                        TextState(L10n.phaRedeemBtnAlertComplete)
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState(L10n.phaRedeemBtnAlertCancel)
+                    }
+                },
+                message: { TextState(localizedMessage) }
+            )
+        }
+
+        static func failingRequest(count: Int) -> AlertState<Destination.Alert> {
+            AlertState(
+                title: { TextState(L10n.phaRedeemAlertTitleFailure(count)) },
+                actions: {
+                    ButtonState(role: .cancel) {
+                        TextState(L10n.alertBtnOk)
+                    }
+                },
+                message: { TextState(L10n.phaRedeemAlertMessageFailure) }
+            )
+        }
+    }
+}
+
+extension PharmacyRedeemDomain {
+    func save(pharmacy: PharmacyLocation) async throws -> Bool {
+        var pharmacy = pharmacy
+        pharmacy.lastUsed = Date()
+        pharmacy.countUsage += 1
+        return try await pharmacyRepository.save(pharmacy: pharmacy)
+    }
+
+    func validateContactData(
+        shipmentInfo: ShipmentInfo?,
+        redeemOption: RedeemOption?,
+        serviceOption: RedeemServiceOption?
+    ) -> Bool {
+        guard let shipmentInfo, let redeemOption, let validator = validator.type(serviceOption)
+        else { return false }
+        return validator.hasCompleteContactData(
+            shipmentInfo,
+            for: redeemOption
+        )
+    }
+}
+
+extension ErxPatient {
+    func shipmentInfo(with identifier: UUID = UUID()) -> ShipmentInfo {
+        guard let address else {
+            return ShipmentInfo(name: name)
+        }
+        var street: String?
+        var city: String?
+        var zip: String?
+        let splitAddress = address.split(separator: "\n")
+        if splitAddress.count == 2 {
+            street = String(splitAddress[0]).trimmed()
+            let zipAndStreet = splitAddress[1].split(separator: " ")
+            if zipAndStreet.count >= 2 {
+                zip = zipAndStreet[0].components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+                city = String(zipAndStreet.dropFirst().joined(separator: " ")).trimmed()
+            } else {
+                city = String(splitAddress[1]).trimmed()
+            }
+        } else {
+            street = String(address).trimmed()
+        }
+
+        return ShipmentInfo(identifier: identifier, name: name, street: street, zip: zip, city: city)
+    }
+}
+
+extension RedeemInputValidator {
+    func validate(_ shipmentInfo: ShipmentInfo?, for redeemOption: RedeemOption) -> Validity {
+        if isValid(name: shipmentInfo?.name) != .valid {
+            return isValid(name: shipmentInfo?.name)
+        }
+        if isValid(street: shipmentInfo?.street) != .valid {
+            return isValid(street: shipmentInfo?.street)
+        }
+        if isValid(zip: shipmentInfo?.zip) != .valid {
+            return isValid(zip: shipmentInfo?.zip)
+        }
+        if isValid(city: shipmentInfo?.city) != .valid {
+            return isValid(city: shipmentInfo?.city)
+        }
+        if isValid(hint: shipmentInfo?.deliveryInfo) != .valid {
+            return isValid(hint: shipmentInfo?.deliveryInfo)
+        }
+        // TODO: Ticket ERA-5598 //swiftlint:disable:this todo
+//        if isValid(text: shipmentInfo.text) != .valid {
+//            return isValid(text: shipmentInfo.text)
+//        }
+        if isValid(phone: shipmentInfo?.phone) != .valid {
+            return isValid(phone: shipmentInfo?.phone)
+        }
+        if isValid(mail: shipmentInfo?.mail) != .valid {
+            return isValid(mail: shipmentInfo?.mail)
+        }
+
+        if ifDeliveryOrShipmentThenIsNonEmptyPhoneOrNonEmptyMail(
+            optionType: redeemOption,
+            phone: shipmentInfo?.phone,
+            mail: shipmentInfo?.mail
+        ) != .valid {
+            return ifDeliveryOrShipmentThenIsNonEmptyPhoneOrNonEmptyMail(
+                optionType: redeemOption,
+                phone: shipmentInfo?.phone,
+                mail: shipmentInfo?.mail
+            )
+        }
+        return .valid
+    }
+
+    func hasCompleteContactData(_ shipmentInfo: ShipmentInfo?, for redeemOption: RedeemOption) -> Bool {
+        onPremiseOrElseIsNonEmptyContactData(
+            optionType: redeemOption,
+            name: shipmentInfo?.name,
+            street: shipmentInfo?.street,
+            zip: shipmentInfo?.zip,
+            city: shipmentInfo?.city,
+            phone: shipmentInfo?.phone
+        )
+    }
+}
+
+extension PharmacyRedeemDomain {
+    enum Dummies {
+        static let pharmacy = PharmacyLocation.Dummies.pharmacy
+        static let prescriptions = [Prescription.Dummies.prescriptionReady]
+
+        static let state = State(
+            prescriptions: Shared(value: prescriptions),
+            selectedPrescriptions: Shared(value: prescriptions),
+            pharmacy: pharmacy,
+            serviceOption: .erxTaskRepository,
+            selectedShipmentInfo: ShipmentInfo(
+                name: "Marta Maquise",
+                street: "Stahl und Holz Str.1",
+                addressDetail: "Postfach 11222",
+                zip: "12345",
+                city: "Mozard",
+                phone: "+117712345",
+                mail: "marta@gematik.de",
+                deliveryInfo: "Nicht im Treppenhaus oder bei Nachbarn abgeben"
+            ),
+            profile: Profile(name: "Marta Maquise"),
+            serviceOptionState: .init(
+                prescriptions: Shared(value: prescriptions),
+                selectedOption: .shipment
+            )
+        )
+
+        static let store = Store(
+            initialState: state
+        ) {
+            PharmacyRedeemDomain()
+        }
+
+        static func storeFor(_ state: State) -> StoreOf<PharmacyRedeemDomain> {
+            Store(
+                initialState: state
+            ) {
+                PharmacyRedeemDomain()
+            }
+        }
+    }
+}
+
+extension PharmacyRedeemDomain.Destination.State: Equatable {}
+extension PharmacyRedeemDomain.Destination.Action: Equatable {}
+// swiftlint:enable type_body_length file_length

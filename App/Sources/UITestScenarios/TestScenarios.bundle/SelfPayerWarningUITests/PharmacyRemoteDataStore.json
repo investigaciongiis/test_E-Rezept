@@ -1,0 +1,60 @@
+{
+    "searchPharmaciesRecordings":
+    {
+        "type": "repeated",
+        "payload":
+            [
+                {
+                    "id": "6bb04538-5924-4be3-98ff-7475d27aee4f",
+                    "countUsage": 0,
+                    "hoursOfOperation":
+                    [
+                        {
+                            "closingTime": "18:00:00",
+                            "openingTime": "08:00:00",
+                            "daysOfWeek":
+                            [
+                                "mon",
+                                "tue",
+                                "wed",
+                                "thu",
+                                "fri"
+                            ]
+                        }
+                    ],
+                    "specialClosingHours": [],
+                    "emergencyServiceHours": [],
+                    "position":
+                    {
+                        "longitude": 52.5226398750957,
+                        "latitude": 13.38762788395671
+                    },
+                    "isFavorite": false,
+                    "telecom":
+                    {},
+                    "address":
+                    {
+                        "street": "ZoTIstr. 04",
+                        "zip": "10117",
+                        "city": "ZoTI-Town"
+                    },
+                    "telematikID": "3-01.2.2023001.16.102",
+                    "created": 714572335.40723002,
+                    "types":
+                    [
+                       "mobl"
+                    ],
+                    "status": "active",
+                    "name": "ZoTI_04_TEST-ONLY",
+                    "physicalFeatures": [],
+                    "specialities": []
+                }
+            ]
+    },
+    "fetchPharmacyRecordings":
+    {
+        "type": "queue",
+        "payload":
+        []
+    }
+}

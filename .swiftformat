@@ -1,0 +1,21 @@
+--exclude Package.swift,.build,vendor,DerivedData,build,**/Generated,"Sources/eRpApp/UITestScenarios/SmartMock*.generated.swift"
+
+# format options
+--swiftversion 5.7
+
+--indent 4
+--ifdef no-indent
+--maxwidth 120
+--operatorfunc no-space
+--self remove
+--trimwhitespace always
+--wraparguments preserve
+--wrapcollections preserve
+--typeattributes prev-line
+--varattributes preserve
+# rules
+
+--enable isEmpty
+--allman false
+--elseposition same-line
+--disable elseOnSameLine, wrapMultilineStatementBraces, extensionAccessControl

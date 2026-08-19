@@ -1,0 +1,522 @@
+//
+//  Copyright (Change Date see Readme), gematik GmbH
+//
+//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
+//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  You may not use this work except in compliance with the Licence.
+//
+//  You find a copy of the Licence in the "Licence" file or at
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in writing,
+//  software distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
+//  In case of changes by gematik find details in the "Readme" file.
+//
+//  See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+//  *******
+//
+// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+//
+
+import Combine
+import eRpKit
+@testable import eRpRemoteStorage
+import FHIRClient
+import Foundation
+import HTTPClient
+import HTTPClientLive
+import ModelsR4
+import Nimble
+import OHHTTPStubs
+import OHHTTPStubsSwift
+import TestUtils
+import XCTest
+
+final class ErxTaskFHIRClientTests: XCTestCase {
+    var host: String!
+    var service: URL!
+    var fhirClient: FHIRClient!
+    var sut: FHIRClient!
+
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+
+        host = "some-fhir-service.com"
+        service = URL(string: "http://\(host ?? "")")!
+        fhirClient = FHIRClient(
+            server: service,
+            httpClient: DefaultHTTPClient(urlSessionConfiguration: .ephemeral)
+        )
+        sut = FHIRClient(
+            server: service,
+            httpClient: DefaultHTTPClient(urlSessionConfiguration: .ephemeral)
+        )
+    }
+
+    func testFHIRClientTaskByIdJson() {
+        let expectedResponse = load(
+            resource: "getTaskResponse_61704e3f-1e4f-11b2-80f4-b806a73c0cd0",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        var counter = 0
+        stub(
+            condition: isPath("/Task/61704e3f-1e4f-11b2-80f4-b806a73c0cd0") && isMethodGET() &&
+                hasHeaderNamed("X-AccessCode", value: "access-now") &&
+                hasHeaderNamed("Accept", value: "application/fhir+json")
+        ) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/fhir+json"])
+        }
+
+        sut.fetchTask(by: "61704e3f-1e4f-11b2-80f4-b806a73c0cd0", accessCode: "access-now")
+            .testWait(expectations: { erxTaskBundle in
+                expect(counter) == 1
+
+                expect(erxTaskBundle?.id) == "61704e3f-1e4f-11b2-80f4-b806a73c0cd0"
+                expect(erxTaskBundle?.status) == .ready
+                expect(erxTaskBundle?.flowType) == .pharmacyOnly
+                expect(erxTaskBundle?.accessCode) ==
+                    "7eccd529292631f6a7cd120b57ded23062c35932cc721bfd32b08c5fb188b642"
+                expect(erxTaskBundle?.fullUrl).to(beNil())
+                expect(erxTaskBundle?.medication?.name) == "Sumatriptan-1a Pharma 100 mg Tabletten"
+                expect(erxTaskBundle?.authoredOn) == "2021-03-24T08:35:32.311370977+00:00"
+                expect(erxTaskBundle?.lastModified) == "2021-03-24T08:35:32.311376627+00:00"
+                expect(erxTaskBundle?.expiresOn) == "2021-06-24"
+                expect(erxTaskBundle?.acceptedUntil) == "2021-04-23"
+                expect(erxTaskBundle?.author) == "Hausarztpraxis Dr. Topp-Glücklich"
+                expect(erxTaskBundle?.medication?.dosageForm) == "TAB"
+                expect(erxTaskBundle?.medication?.amount) ==
+                    .init(numerator: .init(value: "12", unit: "TAB"), denominator: .init(value: "1"))
+                expect(erxTaskBundle?.medication?.batch?.lotNumber) == "1234567890abcde"
+                expect(erxTaskBundle?.medication?.batch?.expiresOn) == "2020-02-03T00:00:00+00:00"
+                expect(erxTaskBundle?.medicationRequest.quantity) == .init(value: "1", unit: "{Package}")
+                expect(erxTaskBundle?.medicationRequest.dosageInstructions) == "1-0-1-0"
+                expect(erxTaskBundle?.medicationRequest.multiplePrescription?.mark) == true
+                expect(erxTaskBundle?.medicationRequest.multiplePrescription?.numbering) == 2
+                expect(erxTaskBundle?.medicationRequest.multiplePrescription?.totalNumber) == 4
+                expect(erxTaskBundle?.medicationRequest.multiplePrescription?.startPeriod) == "2021-01-02"
+                expect(erxTaskBundle?.medicationRequest.multiplePrescription?.endPeriod) == "2021-03-30"
+                expect(erxTaskBundle?.patient?.name) == "Ludger Ludger Königsstein"
+                expect(erxTaskBundle?.patient?.coverageType) == .GKV
+            })
+    }
+
+    func testFHIRClientTaskByIdInvalidFhirJson() {
+        let expectedResponse = load(
+            resource: "getTaskResponse_invalid_fhir_61704e3f-1e4f-11b2-80f4-b806a73c0cd0",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+        let expectedErxTaskStatusDecodeErrorMessage =
+            """
+            authoredOn: 2021-03-24T08:35:32.311370977+00:00
+            pvsPruefnummer: Y/400/1910/36/346
+            JSON codingPath: entry.1.resource.entry.2.resource.extension.0.url.
+            debug description: Invalid URL string.
+            """
+
+        var counter = 0
+        stub(
+            condition: isPath("/Task/61704e3f-1e4f-11b2-80f4-b806a73c0cd0") && isMethodGET() &&
+                hasHeaderNamed("X-AccessCode", value: "access-now") &&
+                hasHeaderNamed("Accept", value: "application/fhir+json")
+        ) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/fhir+json"])
+        }
+
+        sut.fetchTask(by: "61704e3f-1e4f-11b2-80f4-b806a73c0cd0", accessCode: "access-now")
+            .testWait(expectations: { erxTaskBundle in
+                expect(counter) == 1
+
+                expect(erxTaskBundle?.id) == "61704e3f-1e4f-11b2-80f4-b806a73c0cd0"
+                expect(erxTaskBundle?.status) == .error(.decoding(message: expectedErxTaskStatusDecodeErrorMessage))
+                expect(erxTaskBundle?.flowType) == .pharmacyOnly
+                expect(erxTaskBundle?.accessCode) == "7eccd529292631f6a7cd120b57ded23062c35932cc721bfd32b08c5fb188b642"
+                expect(erxTaskBundle?.fullUrl).to(beNil())
+                expect(erxTaskBundle?.medication).to(beNil())
+                expect(erxTaskBundle?.authoredOn) == "2021-03-24T08:35:32.311370977+00:00"
+                expect(erxTaskBundle?.lastModified).to(beNil())
+                expect(erxTaskBundle?.expiresOn).to(beNil())
+                expect(erxTaskBundle?.acceptedUntil).to(beNil())
+                expect(erxTaskBundle?.author).to(beNil())
+                expect(erxTaskBundle?.medication?.dosageForm).to(beNil())
+                expect(erxTaskBundle?.medication?.amount).to(beNil())
+                expect(erxTaskBundle?.medicationRequest.multiplePrescription?.mark).to(beNil())
+                expect(erxTaskBundle?.medicationRequest.multiplePrescription?.numbering).to(beNil())
+                expect(erxTaskBundle?.patient).to(beNil())
+            })
+    }
+
+    func testFHIRClientAllTaskIdsJson() {
+        let expectedResponse = load(
+            resource: "getTaskIdsWithTwoTasksResponse",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        var counter = 0
+        stub(condition: isPath("/Task")) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.fetchAllTasks(after: nil)
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { tasks in
+                expect(tasks.content.count) == 2
+                expect(tasks.content[0].identifier) == "61704e3f-1e4f-11b2-80f4-b806a73c0cd0"
+                expect(tasks.content[1].identifier) == "5e00e907-1e4f-11b2-80be-b806a73c0cd0"
+            }
+        expect(counter) == 1
+    }
+
+    func testFetchingTasksWithLastModifiedDate() throws {
+        let expectedResponse = load(
+            resource: "getTaskIdsWithTwoTasksResponse",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        let lastModified = "2021-03-24T08:35:26.548+00:00"
+        let dateString = try XCTUnwrap(FHIRDateFormatter.shared.date(from: lastModified)?
+            .fhirFormattedString(with: .yearMonthDayTime))
+
+        var counter = 0
+        stub(
+            condition: isPath("/Task")
+                && containsQueryParams(["modified": "ge\(dateString)"])
+                && isMethodGET()
+        ) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.fetchAllTasks(after: lastModified)
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { tasks in
+                expect(tasks.content.count) == 2
+            }
+        expect(counter) == 1
+    }
+
+    func testFHIRClientAllAuditEvents() {
+        let expectedResponse = load(
+            resource: "getAuditEventResponse_4_entries",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        var counter = 0
+        stub(condition: isPath("/AuditEvent")) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.fetchAllAuditEvents()
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { auditEvents in
+                expect(auditEvents.content.count) == 4
+                expect(auditEvents.content[0].identifier) == "64c4f143-1de0-11b2-80eb-443cac489883"
+                expect(auditEvents.content[1].identifier) == "64c4f1af-1de0-11b2-80ec-443cac489883"
+                expect(auditEvents.content[2].identifier) == "64c4f1cc-1de0-11b2-80ed-443cac489883"
+                expect(auditEvents.content[3].identifier) == "64c4f1ea-1de0-11b2-80ee-443cac489883"
+            }
+        expect(counter) == 1
+    }
+
+    func testFetchingAuditEventsWithDate() throws {
+        let expectedResponse = load(
+            resource: "getAuditEventResponse_4_entries",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        let timestamp = "2021-03-24T08:35:26.548+00:00"
+        let dateString = try XCTUnwrap(FHIRDateFormatter.shared.date(from: timestamp)?
+            .fhirFormattedString(with: .yearMonthDayTime))
+
+        var counter = 0
+        stub(
+            condition: isPath("/AuditEvent")
+                && containsQueryParams(["date": "ge\(dateString)"])
+                && isMethodGET()
+        ) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.fetchAllAuditEvents(after: timestamp)
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { auditEvents in
+                expect(auditEvents.content.count) == 4
+            }
+        expect(counter) == 1
+    }
+
+    /// Tests a failure delete, e.g. when task has already been deleted on the server.
+    /// The server can respond with a http status code of 404 but the delete operation should be successful.
+    func testDeleteTasks404() {
+        // given a response with a 404 (not found) failure
+        let errorResponsePath = load(
+            resource: "operationOutcomeNotFound",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        stub(condition: isHost(host) && pathEndsWith("$abort")) { _ in
+            fixture(filePath: errorResponsePath, status: 404, headers: ["Accept": "application/fhir+json"])
+        }
+
+        let erxTask = ErxTask(identifier: "1", status: .ready, flowType: .pharmacyOnly, accessCode: "12")
+
+        // when deleting a task
+        sut.deleteTask(by: erxTask.id, accessCode: erxTask.accessCode)
+            .testWait(failure: { error in
+                fail("unexpected error \(error)")
+            }, expectations: { success in
+                // then the operations should be successful even if the remote call returns a 404
+                expect(success) == true
+            })
+    }
+
+    /// Tests a failure delete, e.g. when task has already been deleted on the server.
+    /// The server can also respond with a http status code of 410 but the delete operation should be successful.
+    func testDeleteTasks410() {
+        // given a response with a 404 (not found) failure
+        let errorResponsePath = load(
+            resource: "operationOutcomeProcessing",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        stub(condition: isHost(host) && pathEndsWith("$abort")) { _ in
+            fixture(filePath: errorResponsePath, status: 410, headers: ["Accept": "application/fhir+json"])
+        }
+
+        let erxTask = ErxTask(identifier: "1", status: .ready, flowType: .pharmacyOnly, accessCode: "12")
+
+        // when deleting a task
+        sut.deleteTask(by: erxTask.id, accessCode: erxTask.accessCode)
+            .testWait(failure: { error in
+                fail("unexpected error \(error)")
+            }, expectations: { success in
+                // then the operations should be successful even if the remote call returns a 404
+                expect(success) == true
+            })
+    }
+
+    func testRedeemOrderWithSuccess() {
+        let responseFilePath = load(resource: "redeemOrderResponse", directory: .gem_wf_v1_4)
+
+        var counter = 0
+        stub(
+            condition: isPath("/Communication")
+                && isMethodPOST()
+                && hasBody(expectedRequestBody)
+        ) { _ in
+            counter += 1
+            // Note: this response is not validated nor used
+            return fixture(filePath: responseFilePath, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.redeem(order: inputOrder)
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { order in
+                expect(counter) == 1
+                expect(order).to(equal(self.inputOrder))
+            }
+    }
+
+    func testRedeemOrderWithNetworkError() {
+        let expectedError = URLError(.notConnectedToInternet)
+
+        var counter = 0
+        stub(
+            condition: isPath("/Communication")
+                && isMethodPOST()
+                && hasBody(expectedRequestBody)
+        ) { _ in
+            counter += 1
+            return HTTPStubsResponse(error: expectedError)
+        }
+
+        sut.redeem(order: inputOrder)
+            .testWait { error in
+                expect(counter) == 1
+                expect(error) == .http(.init(httpClientError: .httpError(expectedError), operationOutcome: nil))
+            } expectations: { _ in
+                fail("this test should raise an error instead")
+            }
+    }
+
+    func testCommunicationResourceWithSuccess() {
+        let expectedResponse = load(
+            resource: "erxCommunicationReplyResponse",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        var counter = 0
+        stub(
+            condition: isPath("/Communication")
+                && isMethodGET()
+        ) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.communicationResources(after: nil)
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { communications in
+                expect(counter) == 1
+                expect(communications.count) == 4
+                expect(communications.last?.identifier) == "86aa9d40-1dd2-11b2-80e5-dd3ddb83b539"
+            }
+    }
+
+    func testCommunicationResourceWithTimestamp() throws {
+        let expectedResponse = load(
+            resource: "erxCommunicationReplyResponse",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+
+        let timestamp = "2021-03-24T08:35:26.54834+00:00"
+        let dateString = try XCTUnwrap(FHIRDateFormatter.shared.date(from: timestamp)?
+            .fhirFormattedString(with: .yearMonthDayTime))
+
+        var counter = 0
+        stub(
+            condition: isPath("/Communication")
+                && containsQueryParams(["sent": "ge\(dateString)"])
+                && isMethodGET()
+        ) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.communicationResources(after: timestamp)
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { communications in
+                expect(counter) == 1
+                expect(communications.count) == 4
+            }
+    }
+
+    func testCommunicationResourceWithError() {
+        let expectedError = URLError(.notConnectedToInternet)
+
+        var counter = 0
+        stub(
+            condition: isPath("/Communication")
+                && isMethodGET()
+        ) { _ in
+            counter += 1
+            return HTTPStubsResponse(error: expectedError)
+        }
+
+        sut.communicationResources(after: nil)
+            .testWait { error in
+                expect(counter) == 1
+                expect(error) == .http(.init(httpClientError: .httpError(expectedError), operationOutcome: nil))
+            } expectations: { _ in
+                fail("this test should rase an error instead")
+            }
+    }
+
+    func testFetchMedicationDispensesForTask() {
+        let expectedResponse = load(
+            resource: "MedicationDispense_with_two_Medication_PZN",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
+        let taskId = "160.000.000.014.285.76"
+
+        var counter = 0
+        stub(
+            condition: isPath("/MedicationDispense")
+                && containsQueryParams(["identifier": "\(Workflow.Key.prescriptionIdKeys[.v1_2_0] ?? "")|\(taskId)"])
+                && isMethodGET()
+        ) { _ in
+            counter += 1
+            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        }
+
+        sut.fetchMedicationDispenses(for: taskId)
+            .testWait { error in
+                fail("unexpected fail with error: \(error)")
+            } expectations: { medicationDispenses in
+                expect(counter) == 1
+                expect(medicationDispenses.count) == 2
+                expect(medicationDispenses.last?.taskId) == "160.000.000.014.285.76"
+            }
+    }
+
+    func testFetchMedicationDispensesForTaskWithError() {
+        let expectedError = URLError(.notConnectedToInternet)
+
+        var counter = 0
+        stub(
+            condition: isPath("/MedicationDispense")
+                && isMethodGET()
+        ) { _ in
+            counter += 1
+            return HTTPStubsResponse(error: expectedError)
+        }
+
+        sut.fetchMedicationDispenses(for: "160.000.000.014.285.76")
+            .testWait { error in
+                expect(counter) == 1
+                expect(error) == .http(.init(httpClientError: .httpError(expectedError), operationOutcome: nil))
+            } expectations: { _ in
+                fail("this test should rase an error instead")
+            }
+    }
+
+    private var inputOrder: ErxTaskOrder = {
+        let payload = ErxTaskOrder.Payload(supplyOptionsType: .shipment,
+                                           name: "Graf Dracula",
+                                           address: ["Schloss Bran",
+                                                     "Strada General Traian Moșoiu 24",
+                                                     "Bran 507025",
+                                                     "Rumänien"],
+                                           hint: "Nur bei Tageslicht liefern!",
+                                           phone: "666 999 666")
+        return ErxTaskOrder(identifier: "d58894dd-c93c-4841-b6f6-4ac4cda4922f",
+                            erxTaskId: "39c67d5b-1df3-11b2-80b4-783a425d8e87",
+                            accessCode: "777bea0e13cc9c42ceec14aec3ddee2263325dc2c6c699db115f58fe423607ea",
+                            telematikId: "606358757",
+                            flowType: "160",
+                            payload: payload)
+    }()
+
+    // swiftlint:disable line_length
+    private var expectedRequestBody: Data = .init(
+        "{\"basedOn\":[{\"reference\":\"Task\\/39c67d5b-1df3-11b2-80b4-783a425d8e87\\/$accept?ac=777bea0e13cc9c42ceec14aec3ddee2263325dc2c6c699db115f58fe423607ea\"}],\"extension\":[{\"url\":\"https:\\/\\/gematik.de\\/fhir\\/erp\\/StructureDefinition\\/GEM_ERP_EX_PrescriptionType\",\"valueCoding\":{\"code\":\"160\",\"system\":\"https:\\/\\/gematik.de\\/fhir\\/erp\\/CodeSystem\\/GEM_ERP_CS_FlowType\"}}],\"identifier\":[{\"system\":\"https:\\/\\/gematik.de\\/fhir\\/NamingSystem\\/OrderID\",\"value\":\"d58894dd-c93c-4841-b6f6-4ac4cda4922f\"}],\"meta\":{\"profile\":[\"https:\\/\\/gematik.de\\/fhir\\/erp\\/StructureDefinition\\/GEM_ERP_PR_Communication_DispReq|1.5\"]},\"payload\":[{\"contentString\":\"{\\\"address\\\":[\\\"Schloss Bran\\\",\\\"Strada General Traian Moșoiu 24\\\",\\\"Bran 507025\\\",\\\"Rumänien\\\"],\\\"hint\\\":\\\"Nur bei Tageslicht liefern!\\\",\\\"name\\\":\\\"Graf Dracula\\\",\\\"phone\\\":\\\"666 999 666\\\",\\\"supplyOptionsType\\\":\\\"shipment\\\",\\\"version\\\":1}\"}],\"recipient\":[{\"identifier\":{\"system\":\"https:\\/\\/gematik.de\\/fhir\\/sid\\/telematik-id\",\"value\":\"606358757\"}}],\"resourceType\":\"Communication\",\"status\":\"unknown\"}"
+            .utf8
+    )
+
+    // swiftlint:enable line_length
+
+    private func load(
+        resource name: String,
+        directory: FHIRBundleDirectories
+    ) -> String {
+        guard let resource = Bundle.module.path(
+            forResource: name,
+            ofType: "json",
+            inDirectory: "Resources/\(directory.rawValue).bundle"
+        ) else {
+            fail("Bundle could not find resource \(name)")
+            return ""
+        }
+
+        return resource
+    }
+
+    override func tearDown() {
+        HTTPStubs.removeAllStubs()
+        super.tearDown()
+    }
+}

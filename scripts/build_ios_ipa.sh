@@ -50,6 +50,7 @@ xcodebuild "${container_arg[@]}" \
   -configuration Release \
   -sdk iphoneos \
   -destination 'generic/platform=iOS' \
+  -skipPackagePluginValidation \
   -derivedDataPath "$derived_data" \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \

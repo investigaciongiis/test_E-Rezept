@@ -72,6 +72,9 @@ jobs:
             arm64|x86_64) ;;
             *) echo "Unsupported macOS runner architecture: $runner_arch" >&2; exit 1 ;;
           esac
+          swift_host_lib="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host"
+          [[ -d "$swift_host_lib" ]] || { echo "Swift host libraries not found: $swift_host_lib" >&2; exit 1; }
+          export DYLD_LIBRARY_PATH="$swift_host_lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
           set +e
           xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' -scheme '${{ steps.ios.outputs.scheme }}' \
             -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
@@ -105,6 +108,9 @@ jobs:
             arm64|x86_64) ;;
             *) echo "Unsupported macOS runner architecture: $runner_arch" >&2; exit 1 ;;
           esac
+          swift_host_lib="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host"
+          [[ -d "$swift_host_lib" ]] || { echo "Swift host libraries not found: $swift_host_lib" >&2; exit 1; }
+          export DYLD_LIBRARY_PATH="$swift_host_lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
           mkdir -p report/xcode-analyzer
           xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' -scheme '${{ steps.ios.outputs.scheme }}' \
             -configuration Debug -sdk iphonesimulator -destination '${{ vars.IOS_DESTINATION || 'generic/platform=iOS Simulator' }}' \

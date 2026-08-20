@@ -130,7 +130,7 @@ jobs:
           upload: ${{ vars.ENABLE_CODE_SCANNING_UPLOAD == 'true' }}
       - name: Upload Xcode SAST components
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: sast-xcode-components
           path: |
@@ -167,7 +167,7 @@ jobs:
           test -s report/semgrep.sarif
       - name: Upload Semgrep component
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: sast-semgrep-component
           path: report/semgrep.sarif
@@ -210,7 +210,7 @@ jobs:
           PY
           test -s report/merged.sarif
       - name: Upload unified SAST findings
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: sast-findings
           path: |

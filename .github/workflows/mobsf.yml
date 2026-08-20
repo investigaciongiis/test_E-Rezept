@@ -76,7 +76,7 @@ jobs:
             open('mobsf_scan_metadata.json','w'), indent=2)
           PY
       - name: Upload MobSF IPA report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: mobsf-report
           path: |
@@ -85,7 +85,7 @@ jobs:
           if-no-files-found: error
       - name: Upload optional external iOS dynamic report
         if: ${{ vars.IOS_DYNAMIC_REPORT_PATH != '' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: mobsf-dynamic-report
           path: ${{ vars.IOS_DYNAMIC_REPORT_PATH }}

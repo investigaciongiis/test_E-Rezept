@@ -45,6 +45,7 @@ mkdir -p "$build_root/Payload" "$(dirname "$output_path")"
 output_dir="$(cd "$(dirname "$output_path")" && pwd)"
 output_abs="$output_dir/$(basename "$output_path")"
 
+set +e
 xcodebuild "${container_arg[@]}" \
   -scheme "$scheme" \
   -configuration Release \
@@ -57,6 +58,20 @@ xcodebuild "${container_arg[@]}" \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY='' \
   build
+build_status=$?
+set -e
+
+if (( build_status != 0 )); then
+  while IFS= read -r generated_file; do
+    echo "=== $generated_file ==="
+    nl -ba "$generated_file" | sed -n '1,120p'
+  done < <(find "$derived_data" -path '*BuildToolPluginIntermediates*' \
+    -name 'Accessibility+Generated.swift' -type f -print 2>/dev/null || true)
+  echo '=== SwiftGen accessibility inputs ==='
+  find . -type f \( -name 'AccessibilityIdentifier.yaml' -o -name 'accessibility.stencil' \) \
+    -not -path './.git/*' -print -exec sh -c 'nl -ba "$1" | sed -n "1,200p"' _ {} \;
+  exit "$build_status"
+fi
 
 app_path="$(find "$derived_data/Build/Products" -type d -path '*Release-iphoneos/*.app' -print | sort | head -n1)"
 [[ -n "$app_path" && -d "$app_path" ]] || {

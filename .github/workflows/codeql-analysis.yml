@@ -67,12 +67,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          set +e
           xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' -scheme '${{ steps.ios.outputs.scheme }}' \
             -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             ARCHS=arm64 ONLY_ACTIVE_ARCH=YES COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGNING_ALLOWED=NO -showBuildTimingSummary build | tee xcode-build.log
+          build_status=${PIPESTATUS[0]}
+          set -e
+          if (( build_status != 0 )); then
+            echo '::group::Generated Swift diagnostics'
+            while IFS= read -r generated_file; do
+              echo "=== $generated_file ==="
+              nl -ba "$generated_file" | sed -n '1,120p'
+            done < <(find "$HOME/Library/Developer/Xcode/DerivedData" \
+              -path '*BuildToolPluginIntermediates*' \
+              -name 'Accessibility+Generated.swift' -type f -print 2>/dev/null || true)
+            echo '::endgroup::'
+            echo '::group::SwiftGen accessibility inputs'
+            find . -type f \( -name 'AccessibilityIdentifier.yaml' -o -name 'accessibility.stencil' \) \
+              -not -path './.git/*' -print -exec sh -c 'nl -ba "$1" | sed -n "1,200p"' _ {} \;
+            echo '::endgroup::'
+            exit "$build_status"
+          fi
       - name: Run Xcode Static Analyzer
         shell: bash
         run: |

@@ -27,7 +27,7 @@ case "$container" in
 esac
 
 if [[ -z "$scheme" ]]; then
-  scheme="$(xcodebuild "${container_arg[@]}" -list -json | python3 -c '
+  scheme="$(xcodebuild "${container_arg[@]}" -skipPackagePluginValidation -skipMacroValidation -list -json | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 root = d.get("workspace") or d.get("project") or {}
@@ -51,6 +51,7 @@ xcodebuild "${container_arg[@]}" \
   -sdk iphoneos \
   -destination 'generic/platform=iOS' \
   -skipPackagePluginValidation \
+  -skipMacroValidation \
   -derivedDataPath "$derived_data" \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \

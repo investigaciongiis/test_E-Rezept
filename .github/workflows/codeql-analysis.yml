@@ -67,20 +67,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          runner_arch="$(uname -m)"
-          case "$runner_arch" in
-            arm64|x86_64) ;;
-            *) echo "Unsupported macOS runner architecture: $runner_arch" >&2; exit 1 ;;
-          esac
           swift_host_lib="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host"
           [[ -d "$swift_host_lib" ]] || { echo "Swift host libraries not found: $swift_host_lib" >&2; exit 1; }
           export DYLD_LIBRARY_PATH="$swift_host_lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
           set +e
           xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' -scheme '${{ steps.ios.outputs.scheme }}' \
-            -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \
             -skipPackagePluginValidation \
             -skipMacroValidation \
-            ARCHS="$runner_arch" ONLY_ACTIVE_ARCH=YES COMPILER_INDEX_STORE_ENABLE=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGNING_ALLOWED=NO -showBuildTimingSummary build | tee xcode-build.log
           build_status=${PIPESTATUS[0]}
           set -e
@@ -103,21 +98,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          runner_arch="$(uname -m)"
-          case "$runner_arch" in
-            arm64|x86_64) ;;
-            *) echo "Unsupported macOS runner architecture: $runner_arch" >&2; exit 1 ;;
-          esac
           swift_host_lib="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host"
           [[ -d "$swift_host_lib" ]] || { echo "Swift host libraries not found: $swift_host_lib" >&2; exit 1; }
           export DYLD_LIBRARY_PATH="$swift_host_lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
           mkdir -p report/xcode-analyzer
           xcodebuild -${{ steps.ios.outputs.kind }} '${{ steps.ios.outputs.container }}' -scheme '${{ steps.ios.outputs.scheme }}' \
-            -configuration Debug -sdk iphonesimulator -destination '${{ vars.IOS_DESTINATION || 'generic/platform=iOS Simulator' }}' \
+            -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             -resultBundlePath report/xcode-analyzer/Analyze.xcresult \
-            ARCHS="$runner_arch" ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO analyze \
+            CODE_SIGNING_ALLOWED=NO analyze \
             | tee report/xcode-analyzer.log
           test -d report/xcode-analyzer/Analyze.xcresult
           test -s report/xcode-analyzer.log

@@ -283,7 +283,7 @@
         "has_cert_signed_with_code_signing_cert",
         "has_production_code_signing",
         "has_cert_uses_sha1_signature_algorithm",
-        "has_permissions_protected_with_signature_level"
+        "has_secure_ios_ipc"
       ],
       "Target platform": "iOS"
     },
@@ -1010,8 +1010,8 @@
         "has_requests_only_minimum_permissions",
         "ios_sensitive_permissions_present",
         "has_enforces_data_minimization_on_client",
-        "has_blocks_screenshots_flag_secure",
-        "has_stores_ephi_on_external_storage"
+        "has_screen_capture_protection",
+        "has_no_public_file_storage"
       ],
       "Target platform": "iOS"
     },
@@ -1263,7 +1263,7 @@
       "Validation criteria": "These are as follows: Java Object Exposure Validation:\nEnsure that any Java objects exposed in WKWebView components are only callable by the JavaScript code within the application package.\nEnsure that untrusted JavaScript cannot access hooked Java objects.\nTesting Configuration of Secure WKWebView components\nEnsure WKWebView components are configured to mitigate sensitive data leakage and unauthorized access to app functionality.\nDo not create any inadvertent JS bridges between your native code and your WKWebView components.\nIdentity Pinning Testing:\nEnsure the application is pinning identities in communication channels to all remote endpoints accessed through WKWebView components.\nUsing JavaScript and WKWebView components — Code Review\nPerform a code review to validate the correct application of secure WKWebView components configurations and limitations on JavaScript sources.",
       "controles": "The WKWebView components must restrict JavaScript execution to only JS within the app package, and properly configured WKWebView components must not leak sensitive data or functionality.",
       "Flags": [
-        "has_webview_addjavascriptinterface_present",
+        "has_wkwebview_safe_message_handlers",
         "has_webview_components"
       ],
       "Target platform": "iOS"
@@ -1341,7 +1341,7 @@
         "has_webview_file_scheme",
         "has_insecure_http_based_webview_communication",
         "ios_ats_arbitrary_loads",
-        "has_webview_javascript_interface_limited_to_trusted_content",
+        "has_wkwebview_navigation_allowlist",
         "has_uses_os_level_update_mechanisms"
       ],
       "Target platform": "iOS"
@@ -3255,7 +3255,7 @@
       "Validation criteria": "UI Frame Release Testing:\nVerify that UI frames containing sensitive data are programmatically cleared or released immediately after use.\nRuntime Memory Inspection:\nConfirm that sensitive data displayed in UI components is no longer present in memory after the UI frame is released.\nStatic Code Analysis:\nAnalyze the application code to ensure that UI components displaying credentials or keys are promptly deallocated after use.\nSimulated Access Attempt:\nAttempt to access previously displayed sensitive data in the UI to confirm that it is inaccessible after the frame is released.\nUser Interface Review:\nEnsure the application does not cache or retain sensitive data in UI components once its intended use is completed.\nPenetration Testing:\nSimulate attacks to extract sensitive data from UI components to validate proper release mechanisms.",
       "controles": "The application must immediately release UI frames containing credentials or keys after their use to prevent unintended exposure.",
       "Flags": [
-        "has_blocks_screenshots_flag_secure",
+        "has_screen_capture_protection",
         "has_clears_ui_on_background"
       ],
       "Target platform": "iOS"
@@ -3331,7 +3331,7 @@
       "Validation criteria": "Signature-Level Access Control Testing:\nConfirm that signature-level protection is applied for IPC communication in place of user-permission prompts.\nAdditional Authentication Testing:\nValidate that sensitive operations within the application are protected by additional authentication mechanisms, such as biometrics or MFA.\nAdaptive Authentication Simulation:\nTest the implementation of adaptive authentication by simulating suspicious behavior, such as accessing unusual data or exceeding normal access thresholds.\nDynamic Authentication Behavior Validation:\nEnsure that adaptive authentication is triggered under defined conditions, such as suspicious network addresses or excessive data access.\nStatic Code Analysis:\nReview source code to verify that alternative access controls and adaptive authentication techniques are implemented securely.\nPenetration Testing:\nAttempt to bypass alternative access controls and adaptive authentication mechanisms to identify potential vulnerabilities.",
       "controles": "The application must implement alternative access controls, such as signature-level protection for inter-process communication (IPC) and adaptive authentication techniques, to enhance security without over-reliance on user-confirmed permissions.",
       "Flags": [
-        "has_permissions_protected_with_signature_level",
+        "has_secure_ios_ipc",
         "has_iaa_supports_mfa_for_sensitive_ephi_access",
         "has_iaa_supports_out_of_band_authentication"
       ],
@@ -3540,7 +3540,7 @@
       "Validation criteria": "Permission Validation Test:\nSimulate a request to an external service requiring permissions.\nConfirm that the application verifies the necessary permissions before initiating the request.\nDenied Request Handling Test:\nAttempt a request to an external service without the required permissions.\nVerify that the application fails gracefully by providing appropriate error messages or fallback mechanisms.\nUnauthorized Access Prevention:\nEnsure that unauthorized requests to external services are logged and prevented from execution.\nPermission Change Response Test:\nTest how the application reacts to changes in granted permissions during runtime.\nConfirm the application adjusts its behavior based on updated permission statuses.",
       "controles": "The application must verify permissions before accessing services provided by external applications and handle denied requests gracefully.",
       "Flags": [
-        "has_permissions_protected_with_signature_level"
+        "has_secure_ios_ipc"
       ],
       "Target platform": "iOS"
     },
@@ -3871,7 +3871,7 @@
       "controles": "The application must implement a clear separation of permissions for client-side and server-side components, ensuring accurate definition and enforcement of permissions for both invoking and granting applications.",
       "Flags": [
         "has_supports_runtime_permission_management",
-        "has_permissions_protected_with_signature_level"
+        "has_secure_ios_ipc"
       ],
       "Target platform": "iOS"
     },
@@ -4544,8 +4544,7 @@
       "Flags": [
         "has_webview_file_scheme",
         "has_webview_remote_content",
-        "has_webview_javascript_interface_exposes_sensitive_functionality",
-        "has_webview_javascript_interface_leaks_sensitive_data"
+        "has_wkwebview_safe_message_handlers"
       ],
       "Target platform": "iOS"
     },
@@ -4721,8 +4720,8 @@
       "controles": "The application must implement robust output sanitization measures to prevent cross-site scripting (XSS) attacks, ensuring all dynamic content displayed in WKWebView components, forms, or user interfaces is sanitized. This includes safeguarding against reflected, stored, and DOM-based XSS vulnerabilities by neutralizing untrusted input before it is used in dynamically generated content.",
       "Flags": [
         "has_webview_remote_content",
-        "has_webview_addjavascriptinterface_present",
-        "has_webview_javascript_interface_limited_to_trusted_content",
+        "has_wkwebview_safe_message_handlers",
+        "has_wkwebview_navigation_allowlist",
         "has_webview_components",
         "has_webview_javascript"
       ],
@@ -4870,7 +4869,7 @@
       "Flags": [
         "ios_file_sharing_enabled",
         "has_backend_input_validation",
-        "has_stores_ephi_on_external_storage"
+        "has_no_public_file_storage"
       ],
       "Target platform": "iOS"
     },
@@ -4968,7 +4967,7 @@
       "controles": "The application must disable keyboard caching for text inputs that handle sensitive data, such as credentials or personal information, to prevent unintended exposure or unauthorized access.",
       "Flags": [
         "has_ui_data_masking",
-        "has_blocks_screenshots_flag_secure",
+        "has_screen_capture_protection",
         "has_clears_ui_on_background",
         "has_displays_sensitive_data_unmasked"
       ],
@@ -4994,7 +4993,7 @@
       "controles": "The application must disable auto-correction and auto-suggestion features for input fields that handle sensitive data to prevent unintended disclosure or storage of sensitive information in predictive text systems.",
       "Flags": [
         "has_ui_data_masking",
-        "has_blocks_screenshots_flag_secure",
+        "has_screen_capture_protection",
         "has_clears_ui_on_background",
         "has_displays_sensitive_data_unmasked"
       ],
@@ -5135,7 +5134,7 @@
       "controles": "The application must avoid using SMS, MMS, or notifications to transfer sensitive data, opting instead for secure IP-based protocols such as Firebase Cloud Messaging (FCM) to ensure encrypted and authenticated communication.",
       "Flags": [
         "has_notification_leaks_sensitive_data",
-        "has_notification_uses_public_channels",
+        "has_notification_data_redaction",
         "has_secure_notifications",
         "has_uses_push_notifications_for_ephi",
         "has_uses_secure_push_channel_for_ephi",
@@ -6549,7 +6548,7 @@
         "has_hardcoded_credentials",
         "has_stores_keys_in_plaintext",
         "has_stores_auth_tokens_in_plaintext",
-        "has_stores_ephi_on_external_storage"
+        "has_no_public_file_storage"
       ],
       "Target platform": "iOS"
     },
@@ -6573,9 +6572,9 @@
       "controles": "The mobile application must implement security controls to prevent unauthorized and unintended information transfer via shared system resources. Data classification mechanisms should be utilized to manage sensitive information, ensuring that personal or confidential data is not exposed or shared without explicit justification and user consent.",
       "Flags": [
         "has_org_has_data_classification_policy",
-        "has_permissions_protected_with_signature_level",
+        "has_secure_ios_ipc",
         "ios_file_sharing_enabled",
-        "has_webview_javascript_interface_leaks_sensitive_data"
+        "has_wkwebview_safe_message_handlers"
       ],
       "Target platform": "iOS"
     },
@@ -6653,7 +6652,7 @@
       "Validation criteria": "Output Marking Test:\nTest: Verify that all sensitive or classified output is appropriately marked during storage or export.\nExpected Result: Sensitive data is clearly marked with appropriate classifications, such as \"Confidential\" or \"Restricted.\"\nThird-Party Data Sharing Test:\nTest: Analyze whether sensitive data is shared with third-party APIs or services without explicit necessity or user consent.\nExpected Result: Sensitive data is only shared with third parties when necessary and with user consent, accompanied by clear notifications.\nData Minimization Test:\nTest: Review the application’s API usage to ensure that sensitive data access is minimized and limited to essential functionality.\nExpected Result: APIs accessing sensitive data are only used where strictly necessary, with mechanisms to avoid data storage or transmission.\nUI Protection Test:\nTest: Check the user interface for secure handling of sensitive data, such as masking passwords and preventing sensitive data from being captured in screenshots.\nExpected Result: Sensitive data in the UI is protected from accidental exposure through platform mechanisms like masking or disabling screenshot functionality.\nData Storage Classification Test:\nTest: Evaluate whether the application applies proper controls based on data sensitivity classifications in storage.\nExpected Result: Sensitive data is stored securely, with controls appropriate to its classification, such as encryption or access restrictions.",
       "controles": "The mobile health application must have the capability to mark sensitive or classified output when required, ensuring that sensitive data is not unintentionally exposed or shared with unauthorized third parties. The application must minimize sensitive data access, adhere to the principle of minimal disclosure, and securely manage sensitive data in the UI and storage.",
       "Flags": [
-        "has_blocks_screenshots_flag_secure",
+        "has_screen_capture_protection",
         "has_ui_data_masking",
         "has_clears_ui_on_background",
         "has_org_has_data_classification_policy",
@@ -6707,7 +6706,7 @@
       "Validation criteria": "Screen Capture Prevention Test:\nTest: Verify that screen capture is disabled on interfaces displaying sensitive information.\nExpected Result: The application prevents screen captures for sensitive screens or notifies users of potential risks if platform constraints exist.\nUI Data Obfuscation Test:\nTest: Validate that sensitive data displayed in the UI (e.g., passwords) is obfuscated or masked.\nExpected Result: Sensitive data is displayed in a secure manner, such as masked characters (e.g., \"••••\") for passwords.\nScreenshot Leakage Test:\nTest: Check if sensitive information appears in auto-generated screenshots (e.g., task switcher thumbnails).\nExpected Result: Screens containing sensitive data are excluded from task switcher thumbnails or display generic content.\nSecure Notification Display Test:\nTest: Evaluate if sensitive data (e.g., OTP codes) appears in notification previews.\nExpected Result: Sensitive data is hidden or minimized in notification previews unless explicitly enabled by the user.\nPenetration Testing:\nTest: Conduct penetration tests to attempt data extraction from screenshots or UI components.\nExpected Result: No sensitive data is retrievable through screenshots or UI leaks during the tests.",
       "controles": "The mobile health application must prevent the unintentional exposure of sensitive data (e.g., passwords, credit card details) through the user interface or screenshots. Mechanisms such as disabling screen capture or notifying users of security implications must be implemented.",
       "Flags": [
-        "has_blocks_screenshots_flag_secure",
+        "has_screen_capture_protection",
         "has_ui_data_masking",
         "has_displays_sensitive_data_unmasked",
         "has_notification_leaks_sensitive_data"
@@ -6800,7 +6799,7 @@
       "Validation criteria": "Accessibility Exclusion Test:\nTest: Use an accessibility service to attempt access to sensitive UI elements in the application.\nExpected Result: Sensitive UI elements are inaccessible to accessibility services.\nUI Configuration Review Test:\nTest: Verify the code and configuration for sensitive UI elements to ensure proper use of attributes like importantForAccessibility=\"no\".\nExpected Result: Sensitive elements are properly marked to prevent exposure through accessibility features.\nPermission Abuse Test:\nTest: Simulate a malicious application with accessibility permissions attempting to extract sensitive data from the application.\nExpected Result: The malicious application cannot access sensitive information.\nPlatform-Specific Compliance Test:\nTest: Ensure the application follows platform-specific best practices to restrict sensitive data access via accessibility features (e.g., iOS and iPadOS's security guidelines for accessibility services).\nExpected Result: Application complies with platform-specific security requirements.\nDynamic Accessibility Audit:\nTest: Conduct a dynamic audit of the application's accessibility features during runtime to identify any unintended exposure of sensitive elements.\nExpected Result: No sensitive UI elements are exposed to accessibility services during runtime.",
       "controles": "The mobile application must exclude sensitive user interface elements from being accessed by custom accessibility applications, particularly on platforms like iOS and iPadOS that support such permissions. Sensitive data must not be exposed through accessibility features.",
       "Flags": [
-        "has_blocks_screenshots_flag_secure"
+        "has_screen_capture_protection"
       ],
       "Target platform": "iOS"
     },
@@ -6849,7 +6848,7 @@
       "controles": "The mobile application must require user re-authentication when transitioning from background to foreground if it contains sensitive data. Alternatively, the application must verify that the device is secured with a PIN, pattern, or password.",
       "Flags": [
         "has_clears_ui_on_background",
-        "has_blocks_screenshots_flag_secure"
+        "has_screen_capture_protection"
       ],
       "Target platform": "iOS"
     },
@@ -6899,7 +6898,7 @@
       "Flags": [
         "has_secure_notifications",
         "has_notification_leaks_sensitive_data",
-        "has_notification_uses_public_channels"
+        "has_notification_data_redaction"
       ],
       "Target platform": "iOS"
     },
@@ -6924,7 +6923,7 @@
       "Flags": [
         "has_secure_notifications",
         "has_notification_leaks_sensitive_data",
-        "has_notification_uses_public_channels"
+        "has_notification_data_redaction"
       ],
       "Target platform": "iOS"
     },
@@ -7474,8 +7473,7 @@
       "Validation criteria": "Code Review for Bridging API Usage\nTest: Perform a manual code review to identify and verify the absence of API calls that enable bridging between dynamic code and native code.\nExpected result: No instances of bridging APIs, such as evaluateJavaScript, are present in the application code.\nStatic Analysis for Code Injection Vulnerabilities\nTest: Use static analysis tools to detect potential injection vulnerabilities in the dynamic code that could lead to native code execution.\nExpected result: No vulnerabilities indicating possible code injection are reported.\nDynamic Testing with Malicious Payloads\nTest: Simulate malicious inputs in dynamic code (e.g., JavaScript) to observe if any unauthorized execution in the native layer occurs.\nExpected result: The application securely handles all dynamic code without affecting the native layer.\nReview of JavaScript and Native Code Interactions\nTest: Analyze all interactions between JavaScript and native code to ensure they are secure, controlled, and explicitly required for the application’s functionality.\nExpected result: All interactions are justified, secured, and do not allow injection-based exploitation.",
       "controles": "The mobile health application must avoid using API calls that enable bridging between dynamic code (e.g., JavaScript) and native code (e.g., Objective-C or Kotlin). This prevents potential security vulnerabilities where injection attacks in the dynamic code could lead to unauthorized execution of native code.",
       "Flags": [
-        "has_webview_addjavascriptinterface_present",
-        "has_webview_javascript_interface_exposes_sensitive_functionality",
+        "has_wkwebview_safe_message_handlers",
         "has_webview_components"
       ],
       "Target platform": "iOS"
@@ -7594,7 +7592,7 @@
       "controles": "The mobile health application must ensure that no sensitive data, such as location or other private information, is unintentionally transferred between the mobile device and web-server backends or other external interfaces. This includes data embedded within file metadata.",
       "Flags": [
         "has_tls_ssl_pinning_implemented",
-        "has_webview_javascript_interface_leaks_sensitive_data",
+        "has_wkwebview_safe_message_handlers",
         "has_notification_leaks_sensitive_data",
         "has_enforces_data_minimization_on_client",
         "has_sends_ephi_to_third_party_services",
@@ -7852,7 +7850,7 @@
         "has_runtime_global_kill_switch_for_security_incidents",
         "has_initializes_params_on_startup",
         "has_null_pointer_protection_implemented",
-        "has_workmanager_for_resilient_network_tasks"
+        "has_resilient_ios_background_tasks"
       ],
       "Target platform": "iOS"
     },
@@ -7952,7 +7950,7 @@
       "controles": "The application must not modify or request operating system parameters unless essential for its functionality, and privileged access must be restricted and managed to prevent integrity issues or privilege escalation.",
       "Flags": [
         "has_defined_privilege_management_policy",
-        "has_permissions_protected_with_signature_level",
+        "has_secure_ios_ipc",
         "has_requests_only_minimum_permissions",
         "ios_file_sharing_enabled",
         "has_supports_runtime_permission_management"
@@ -8318,7 +8316,7 @@
       "Validation criteria": "Permission Attribute Verification Test:\nTest: Inspect the app's iOS and iPadOSManifest.xml file to confirm that the iOS and iPadOS:protectionLevel attribute for relevant permissions is set to signature.\nExpected Result: The iOS and iPadOS:protectionLevel attribute is correctly configured for all applicable permissions.\nKey Match Test:\nTest: Validate that the applications sharing protected features are signed with the same key.\nExpected Result: The signing keys match for all apps accessing protected features.\nUnauthorized Access Test:\nTest: Attempt to access the protected feature or data from an app not signed with the same key.\nExpected Result: The attempt is blocked, and no unauthorized access is granted.\nUser Interaction Test:\nTest: Confirm that the signature-level permissions do not prompt users for confirmation during runtime.\nExpected Result: Access to protected features is seamless for authorized apps and does not require user intervention.\nStatic Analysis Test:\nTest: Perform static code analysis to verify that the signature-level protection is applied consistently across all defined permissions.\nExpected Result: The analysis confirms the use of signature protection level without misconfigurations.",
       "controles": "The mobile health application must implement signature-level protection for private data, ensuring that only applications signed with the same developer key can access sensitive features or data.",
       "Flags": [
-        "has_permissions_protected_with_signature_level"
+        "has_secure_ios_ipc"
       ],
       "Target platform": "iOS"
     },
@@ -9729,7 +9727,7 @@
         "has_org_protects_audit_tools_and_log_access",
         "has_defined_rbac_model",
         "has_rbac_enforced_on_api",
-        "has_permissions_protected_with_signature_level"
+        "has_secure_ios_ipc"
       ],
       "Target platform": "iOS"
     },
@@ -10128,7 +10126,7 @@
       "controles": "Ensure the mobile application does not write data to persistent memory that is accessible to other applications to prevent unauthorized data access or leakage.",
       "Flags": [
         "ios_file_sharing_enabled",
-        "has_stores_ephi_on_external_storage"
+        "has_no_public_file_storage"
       ],
       "Target platform": "iOS"
     },
@@ -10201,7 +10199,7 @@
       "controles": "Sensitive data must never be stored in publicly accessible locations, as external storage is globally readable, writable, and modifiable by other applications.",
       "Flags": [
         "ios_file_sharing_enabled",
-        "has_stores_ephi_on_external_storage"
+        "has_no_public_file_storage"
       ],
       "Target platform": "iOS"
     },
@@ -10351,7 +10349,7 @@
       "controles": "Mobile health applications must restrict data access to authorized applications as defined by predefined permissions. Shared data files must not be globally accessible. Access should be granted only to applications or entities with the appropriate private and corresponding public keys, ensuring secure and controlled data sharing.",
       "Flags": [
         "ios_file_sharing_enabled",
-        "has_permissions_protected_with_signature_level"
+        "has_secure_ios_ipc"
       ],
       "Target platform": "iOS"
     },
@@ -10375,7 +10373,7 @@
       "controles": "Mobile health applications must not retain sensitive data in memory for longer than necessary. Sensitive data must be explicitly cleared from memory after its use to reduce the risk of unauthorized access or memory dumps.",
       "Flags": [
         "has_clears_ui_on_background",
-        "has_blocks_screenshots_flag_secure"
+        "has_screen_capture_protection"
       ],
       "Target platform": "iOS"
     },
@@ -10635,7 +10633,7 @@
       "Validation criteria": "Access Control Validation:\nTest: Attempt to access user data and encrypted storage using interpreted code.\nExpected result: Access is denied, and appropriate security controls are enforced.\nIsolation Mechanism Testing:\nTest: Evaluate the implementation of isolation mechanisms for interpreted code.\nExpected result: Interpreted code operates in a sandboxed environment without direct access to sensitive storage.\nDynamic Code Analysis:\nTest: Conduct runtime testing to simulate potential exploitation attempts by interpreted code.\nExpected result: Exploitation attempts fail, and sensitive data remains protected.\nCode Review for Storage Access:\nTest: Analyze the codebase to ensure no direct storage access is granted to interpreted code.\nExpected result: Code complies with secure access principles, and interpreted code interactions are strictly controlled.\nPlatform-Specific Testing:\nTest: Verify that platform-specific security features, such as iOS and iPadOS Storage Access Framework, are used to manage data access.\nExpected result: Interpreted code leverages platform-approved methods for secure data interactions.",
       "controles": "Applications must prevent interpreted code from directly accessing user data and encrypted storage. Implement strict isolation and controlled access mechanisms to ensure that interpreted code cannot bypass security controls or interact with sensitive data storage areas.",
       "Flags": [
-        "has_webview_javascript_interface_limited_to_trusted_content",
+        "has_wkwebview_navigation_allowlist",
         "has_sensitive_data_encrypted_with_os_keystore"
       ],
       "Target platform": "iOS"

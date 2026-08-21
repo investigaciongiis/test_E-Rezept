@@ -101,9 +101,9 @@ MALWARE_FLAG_TOKENS = ["malware", "adware", "virus", "trojan", "spyware", "ranso
 
 OVERRIDE_SCOPE_FLAG_IDS = {
     "has_org_notifies_users_of_security_updates",
-    "has_ios_ats_arbitrary_loads",
+    "ios_ats_arbitrary_loads",
     "has_uses_os_level_update_mechanisms",
-    "has_ios_dynamic_code_loading",
+    "ios_dynamic_code_loading",
     "has_webview_remote_content",
     "has_soap_uses_mutual_tls",
     "has_defined_certificate_management_policy",
@@ -129,7 +129,7 @@ OVERRIDE_SCOPE_FLAG_IDS = {
 GATE_FLAG_IDS = {
     "has_webview_components",
     "has_webview_remote_content",
-    "has_ios_dynamic_code_loading",
+    "ios_dynamic_code_loading",
     "has_soap_api_usage",
     "has_saml_based_sso",
     "has_secure_ios_ipc",
@@ -313,7 +313,7 @@ class FlagEvidence:
 class RequirementAudit:
     puid: str
     description_en: str
-    result: str  # yes/no/n/a
+    result: str  # yes/no/n/a/unknown
     flags_used: List[str]
     justification_en: str
 
@@ -345,7 +345,9 @@ def build_flag_evidence(
     notes = str(app_verdict.get("notes", "") or "")
     evidence_count = int(app_verdict.get("evidence_count", 0) or 0)
 
-    if classification == "APPLICABILITY":
+    if state == "out_of_scope":
+        outcome = "OUT_OF_SCOPE"
+    elif classification == "APPLICABILITY":
         outcome = "NA_OR_GATE"
     else:
         assert expected in ("YES", "NO")
@@ -490,11 +492,15 @@ def audit_requirement(
         conditional_scenario_activated = compute_conditional_scenario_activated(flag_evs)
 
     non_app = [fe for fe in flag_evs if fe.classification != "APPLICABILITY"]
-    any_contradict = any(fe.outcome == "CONTRADICT" for fe in non_app)
-    all_support = (len(non_app) > 0) and all(fe.outcome == "SUPPORT" for fe in non_app)
-    any_unknown = any(fe.outcome in ("UNKNOWN", "MISSING") for fe in non_app)
+    assessed = [fe for fe in non_app if fe.outcome != "OUT_OF_SCOPE"]
+    all_out_of_scope = bool(non_app) and not assessed
+    any_contradict = any(fe.outcome == "CONTRADICT" for fe in assessed)
+    all_support = bool(assessed) and all(fe.outcome == "SUPPORT" for fe in assessed)
+    any_unknown = any(fe.outcome in ("UNKNOWN", "MISSING") for fe in assessed)
 
-    if any_contradict:
+    if all_out_of_scope:
+        result = "n/a"
+    elif any_contradict:
         result = "no"
     elif all_support and not any_unknown:
         result = "yes"
@@ -502,7 +508,7 @@ def audit_requirement(
         if conditional and (conditional_scenario_activated is False):
             result = "yes" if prohibitive else "n/a"
         else:
-            result = "n/a"
+            result = "unknown"
 
     meta = dict(
         prohibitive=prohibitive,
@@ -772,7 +778,7 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
             f"(state={fe.state}, evidence_count={fe.evidence_count}{_note_hint(fe)}{exp})"
         )
 
-    result = req.result  # yes/no/n/a
+    result = req.result  # yes/no/n/a/unknown
     present = [fe for fe in flag_evidences if fe.outcome != "MISSING"]
     missing = [fe for fe in flag_evidences if fe.outcome == "MISSING"]
 
@@ -795,11 +801,15 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
             "Based on the fingerprint and the flags mapped to this requirement, the application is not compliant "
             "because at least one mapped signal contradicts the expected outcome."
         )
-    else:
-        # n/a
+    elif result == "n/a":
         s2 = (
-            "Based on the fingerprint and the flags mapped to this requirement, the result is n/a because the available "
-            "signals are insufficient, not applicable under the detected scenario, or contain unknown/NA coverage for the mapped flags."
+            "Based on the fingerprint and the flags mapped to this requirement, the result is n/a because the relevant "
+            "feature or conditional scenario was not detected."
+        )
+    else:
+        s2 = (
+            "Based on the fingerprint and the flags mapped to this requirement, the result is unknown because the supplied "
+            "artifacts do not contain enough conclusive evidence to determine compliance."
         )
 
     # Sentence 3: key signals (prioritize contradictions for 'no', supports for 'yes')
@@ -923,7 +933,7 @@ def main() -> None:
     batch_size = 25 if batch_size <= 0 else batch_size
 
     audits: List[RequirementAudit] = []
-    counts = {"yes": 0, "no": 0, "n/a": 0}
+    counts = {"yes": 0, "no": 0, "n/a": 0, "unknown": 0}
 
     total = len(requirements)
     n_batches = (total + batch_size - 1) // batch_size if total else 0
@@ -1031,7 +1041,10 @@ def main() -> None:
     wb.save(OUTPUT_XLSX_PATH)
 
     print(f"[OK] Excel generated: {OUTPUT_XLSX_PATH}")
-    print(f"[SUMMARY] total={len(audits)} yes={counts['yes']} no={counts['no']} n/a={counts['n/a']}")
+    print(
+        f"[SUMMARY] total={len(audits)} yes={counts['yes']} no={counts['no']} "
+        f"n/a={counts['n/a']} unknown={counts['unknown']}"
+    )
 
 
 if __name__ == "__main__":

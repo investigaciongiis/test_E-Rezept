@@ -158,9 +158,18 @@ signals = {
     "webview_javascript": source_has(r"javaScriptEnabled|allowsContentJavaScript"),
     "webview_file_access": source_has(r"allowingReadAccessTo|file://"),
     "webview_remote_content": source_has(r"WKWebView.{0,1000}https?://|load\s*\(\s*URLRequest"),
-    "secure_webview_configuration": source_has(r"WKWebViewConfiguration|WKContentWorld|WKWebsiteDataStore\.nonPersistent"),
-    "webview_navigation_validation": source_has(r"WKNavigationDelegate|decidePolicyFor"),
-    "safe_webview_message_handlers": source_has(r"WKScriptMessageHandler|WKScriptMessageHandlerWithReply"),
+    "secure_webview_configuration": (
+        source_has(r"WKWebViewConfiguration")
+        and source_has(r"WKContentWorld|WKWebsiteDataStore\.nonPersistent|limitsNavigationsToAppBoundDomains|javaScriptEnabled\s*=\s*false|allowsContentJavaScript\s*=\s*false")
+    ),
+    "webview_navigation_validation": (
+        source_has(r"WKNavigationDelegate|decidePolicyFor")
+        and source_has(r"decidePolicyFor.{0,1800}(allowlist|allowed|host|scheme|cancel)")
+    ),
+    "safe_webview_message_handlers": (
+        source_has(r"WKScriptMessageHandler|WKScriptMessageHandlerWithReply")
+        and source_has(r"(didReceive|replyHandler).{0,1800}(guard|JSONDecoder|allowed|validate|is\s+String|as\?)")
+    ),
     "logout": source_has(r"logout|logOut|signOut"),
     "logout_cleanup": source_has(r"(logout|signOut).{0,1500}(SecItemDelete|removeObject|delete|clear|nil)"),
     "cookie_cleanup": source_has(r"(logout|signOut).{0,1500}(HTTPCookieStorage|WKWebsiteDataStore).{0,500}(remove|delete)"),

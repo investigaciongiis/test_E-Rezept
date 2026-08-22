@@ -99,6 +99,25 @@ MALWARE_REQ_TOKENS = [
 ]
 MALWARE_FLAG_TOKENS = ["malware", "adware", "virus", "trojan", "spyware", "ransomware", "malicious"]
 
+WEBVIEW_SCOPE_FLAG_IDS = {
+    "has_webview_components",
+    "has_webview_remote_content",
+    "has_webview_javascript",
+    "has_webview_file_scheme",
+    "has_insecure_http_based_webview_communication",
+    "has_secure_wkwebview_configuration",
+    "has_wkwebview_navigation_allowlist",
+    "has_wkwebview_safe_message_handlers",
+    "ios_ats_arbitrary_loads",
+    "has_uses_os_level_update_mechanisms",
+}
+
+WEBVIEW_RISK_FLAG_IDS = {
+    "has_webview_file_scheme",
+    "has_insecure_http_based_webview_communication",
+    "ios_ats_arbitrary_loads",
+}
+
 OVERRIDE_SCOPE_FLAG_IDS = {
     "has_org_notifies_users_of_security_updates",
     "ios_ats_arbitrary_loads",
@@ -231,6 +250,17 @@ def classify_flag_for_requirement(flag_id: str, flag_title: str, req_desc: str) 
     """
     fid = (flag_id or "").lower()
     title = (flag_title or "").lower()
+
+    # WKWebView feature flags need requirement-aware semantics. Component and
+    # remote-content flags activate the scenario; insecure configuration flags
+    # are risks, while explicitly safe configuration flags remain controls.
+    if fid == "has_webview_components" or fid == "has_webview_remote_content":
+        return "APPLICABILITY"
+    if fid == "has_webview_javascript":
+        javascript_prohibited = is_prohibitive(req_desc) or "disable javascript" in req_desc.lower()
+        return "NEGATIVE_RISK" if javascript_prohibited else "APPLICABILITY"
+    if fid in WEBVIEW_RISK_FLAG_IDS:
+        return "APPLICABILITY" if is_conditional(req_desc) else "NEGATIVE_RISK"
 
     # 1) PASSWORD HASHING OVERRIDE
     if flag_id in PASSWORD_HASHING_POSITIVE_IDS:
@@ -459,6 +489,28 @@ def audit_requirement(
         fe = build_flag_evidence(fobj, fid, classification, expected)
         flag_evs.append(fe)
 
+    desc_lower = desc.lower()
+    mentions_webview = any(term in desc_lower for term in ("wkwebview", "webview", "embedded browsing"))
+    webview_scoped = (
+        bool(flag_ids)
+        and set(flag_ids).issubset(WEBVIEW_SCOPE_FLAG_IDS)
+        and (mentions_webview or "has_webview_components" in flag_ids)
+    )
+    if webview_scoped:
+        component = flags_by_id.get("has_webview_components")
+        component_summary = parse_summary_normalized(((component or {}).get("app_verdict") or {}).get("summary"))
+        if component_summary != "YES":
+            meta = dict(
+                prohibitive=prohibitive,
+                conditional=conditional,
+                override_used=True,
+                override_scenario_activated=False,
+                gate_flags=["has_webview_components"],
+                conditional_scenario_activated=False,
+                webview_scoped=True,
+            )
+            return "n/a", flag_evs, meta
+
     override_used = bool(flag_ids) and set(flag_ids).issubset(OVERRIDE_SCOPE_FLAG_IDS)
     override_scenario_activated: Optional[bool] = None
     gate_flags: List[FlagEvidence] = []
@@ -517,6 +569,7 @@ def audit_requirement(
         override_scenario_activated=override_scenario_activated,
         gate_flags=[ge.id for ge in gate_flags],
         conditional_scenario_activated=conditional_scenario_activated,
+        webview_scoped=webview_scoped,
     )
     return result, flag_evs, meta
 

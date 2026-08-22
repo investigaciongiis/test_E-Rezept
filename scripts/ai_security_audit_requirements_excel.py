@@ -313,7 +313,7 @@ class FlagEvidence:
 class RequirementAudit:
     puid: str
     description_en: str
-    result: str  # yes/no/n/a/unknown
+    result: str  # yes/no/n/a
     flags_used: List[str]
     justification_en: str
 
@@ -508,7 +508,7 @@ def audit_requirement(
         if conditional and (conditional_scenario_activated is False):
             result = "yes" if prohibitive else "n/a"
         else:
-            result = "unknown"
+            result = "n/a"
 
     meta = dict(
         prohibitive=prohibitive,
@@ -778,7 +778,7 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
             f"(state={fe.state}, evidence_count={fe.evidence_count}{_note_hint(fe)}{exp})"
         )
 
-    result = req.result  # yes/no/n/a/unknown
+    result = req.result  # yes/no/n/a
     present = [fe for fe in flag_evidences if fe.outcome != "MISSING"]
     missing = [fe for fe in flag_evidences if fe.outcome == "MISSING"]
 
@@ -801,15 +801,11 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
             "Based on the fingerprint and the flags mapped to this requirement, the application is not compliant "
             "because at least one mapped signal contradicts the expected outcome."
         )
-    elif result == "n/a":
-        s2 = (
-            "Based on the fingerprint and the flags mapped to this requirement, the result is n/a because the relevant "
-            "feature or conditional scenario was not detected."
-        )
     else:
         s2 = (
-            "Based on the fingerprint and the flags mapped to this requirement, the result is unknown because the supplied "
-            "artifacts do not contain enough conclusive evidence to determine compliance."
+            "Based on the fingerprint and the flags mapped to this requirement, the result is n/a because the relevant "
+            "feature or conditional scenario was not detected, the check is outside the unsigned-IPA scope, or the "
+            "available evidence is insufficient to issue a yes/no result."
         )
 
     # Sentence 3: key signals (prioritize contradictions for 'no', supports for 'yes')
@@ -933,7 +929,7 @@ def main() -> None:
     batch_size = 25 if batch_size <= 0 else batch_size
 
     audits: List[RequirementAudit] = []
-    counts = {"yes": 0, "no": 0, "n/a": 0, "unknown": 0}
+    counts = {"yes": 0, "no": 0, "n/a": 0}
 
     total = len(requirements)
     n_batches = (total + batch_size - 1) // batch_size if total else 0
@@ -1041,10 +1037,7 @@ def main() -> None:
     wb.save(OUTPUT_XLSX_PATH)
 
     print(f"[OK] Excel generated: {OUTPUT_XLSX_PATH}")
-    print(
-        f"[SUMMARY] total={len(audits)} yes={counts['yes']} no={counts['no']} "
-        f"n/a={counts['n/a']} unknown={counts['unknown']}"
-    )
+    print(f"[SUMMARY] total={len(audits)} yes={counts['yes']} no={counts['no']} n/a={counts['n/a']}")
 
 
 if __name__ == "__main__":

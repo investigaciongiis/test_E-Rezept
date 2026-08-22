@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
 import plistlib
 import re
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATA = Path("/mnt/data")
+from ios_vision360_rules import evaluate_flag, rule_for
+
+DATA = Path(os.getenv("VISION360_DATA_DIR", "/mnt/data"))
 
 
 def zip_json(archive: str, member: str):
@@ -27,7 +30,10 @@ def source_files():
     result = {}
     with zipfile.ZipFile(DATA / "app.zip") as zf:
         for name in zf.namelist():
-            if name.lower().endswith((".swift", ".m", ".mm", ".h", ".plist", ".entitlements", ".pbxproj", ".xcconfig")):
+            if name.lower().endswith((
+                ".swift", ".m", ".mm", ".h", ".plist", ".entitlements",
+                ".pbxproj", ".xcconfig", ".xcprivacy", ".yml", ".yaml",
+            )) or name.lower().endswith("package.swift"):
                 try:
                     result[name] = zf.read(name).decode("utf-8", "replace")
                 except Exception:
@@ -41,6 +47,20 @@ def sarif_results(doc):
 
 def evidence(source, location, rule, excerpt):
     return {"source": source, "location": location, "rule_id": rule, "excerpt": excerpt[:500]}
+
+
+def matching_source_evidence(pattern, rule, limit=3):
+    found = []
+    regex = re.compile(pattern, re.I | re.S)
+    for path, text in src.items():
+        match = regex.search(text)
+        if match:
+            start = max(0, match.start() - 100)
+            end = min(len(text), match.end() + 180)
+            found.append(evidence("SOURCE_CODE_APP", path, rule, text[start:end].replace("\n", " ")))
+            if len(found) >= limit:
+                break
+    return found
 
 
 src = source_files()
@@ -82,6 +102,14 @@ def plist_value(key):
             return found
     return None
 
+def source_has(pattern):
+    return bool(re.search(pattern, joined, re.I | re.S))
+
+
+privacy_files = [path for path in src if path.lower().endswith("privacyinfo.xcprivacy")]
+entitlement_files = [path for path in src if path.lower().endswith(".entitlements")]
+swift_files = [path for path in src if path.lower().endswith(".swift")]
+
 signals = {
     "ats_arbitrary_loads": bool(plist_value("NSAllowsArbitraryLoads")) or bool(re.search(r"NSAllowsArbitraryLoads.{0,100}<true", joined, re.I | re.S)),
     "insecure_http": "http://" in lower,
@@ -93,9 +121,10 @@ signals = {
     "weak_crypto": bool(re.search(r"(?i)\b(md5|sha1|des|rc4)\b", joined)),
     "certificate_pinning": any(x in lower for x in ("servertrust", "secpolicyevaluateservertrust", "pinnedcertificates", "publickeys")),
     "insecure_random": bool(re.search(r"(?i)\b(rand|random|srandom|drand48|arc4random)\s*\(", joined)),
-    "debuggable": bool(plist_value("get-task-allow")),
+    "get_task_allow": bool(plist_value("get-task-allow")),
     "dynamic_code_loading": bool(re.search(r"(?i)\b(dlopen|dlsym|nsbundle\s*\([^)]*path|javascriptcore)\b", joined)),
     "file_sharing": bool(plist_value("UIFileSharingEnabled")),
+    "no_public_file_storage": not bool(plist_value("UIFileSharingEnabled")),
     # Backup exposure requires file-level evidence and remains unknown unless a
     # dedicated scanner or runtime test provides it.
     "backup_enabled": False,
@@ -105,6 +134,60 @@ signals = {
     )),
     "gitleaks_current": int(gitleaks_summary.get("current") or 0) > 0,
     "gitleaks_any": int(gitleaks_summary.get("total") or 0) > 0,
+    "privacy_manifest": bool(privacy_files),
+    "required_reason_apis": source_has(r"NSPrivacyAccessedAPITypes|NSPrivacyAccessedAPITypeReasons"),
+    "third_party_privacy_manifest": None,
+    "keychain_accessibility": source_has(r"kSecAttrAccessible"),
+    "keychain_device_only": source_has(r"kSecAttrAccessible\w*ThisDeviceOnly"),
+    "secure_enclave": source_has(r"kSecAttrTokenIDSecureEnclave|SecureEnclave"),
+    "biometric_keychain_binding": source_has(r"SecAccessControlCreateWithFlags.{0,500}(biometry|userPresence)"),
+    "app_attest": source_has(r"DCAppAttestService|generateKey|attestKey"),
+    "device_check": source_has(r"DCDevice|DeviceCheck"),
+    "environment_configuration": source_has(r"\.xcconfig|#if\s+(DEBUG|STAGING)|ProcessInfo\.processInfo\.environment"),
+    "secure_secret_injection": source_has(r"ProcessInfo\.processInfo\.environment|keychain|SecItem"),
+    "entitlements_present": bool(entitlement_files),
+    "app_groups": source_has(r"com\.apple\.security\.application-groups|containerURL\s*\(\s*forSecurityApplicationGroupIdentifier"),
+    "secure_ios_ipc": source_has(r"application-groups|keychain-access-groups|NSXPCConnection|NSExtension"),
+    "universal_links_validation": source_has(r"associated-domains|NSUserActivityTypeBrowsingWeb|continue\s+userActivity"),
+    "url_scheme_validation": source_has(r"CFBundleURLSchemes|openURLContexts|application\s*\([^)]*open\s+url"),
+    "secure_pasteboard": source_has(r"UIPasteboard.{0,500}(localOnly|expirationDate)|detectPatterns"),
+    "background_redaction": source_has(r"sceneWillResignActive|applicationDidEnterBackground|sceneDidEnterBackground.{0,800}(hidden|blur|overlay|redact)"),
+    "screen_capture_protection": source_has(r"UIScreen\.capturedDidChangeNotification|isCaptured"),
+    "notification_redaction": source_has(r"UNNotification(Content|ServiceExtension)|hiddenPreviewsBodyPlaceholder|showPreviews"),
+    "notification_sensitive_data": source_has(r"UNMutableNotificationContent.{0,500}(token|password|patient|health|secret)"),
+    "webview_javascript": source_has(r"javaScriptEnabled|allowsContentJavaScript"),
+    "webview_file_access": source_has(r"allowingReadAccessTo|file://"),
+    "webview_remote_content": source_has(r"WKWebView.{0,1000}https?://|load\s*\(\s*URLRequest"),
+    "secure_webview_configuration": source_has(r"WKWebViewConfiguration|WKContentWorld|WKWebsiteDataStore\.nonPersistent"),
+    "webview_navigation_validation": source_has(r"WKNavigationDelegate|decidePolicyFor"),
+    "safe_webview_message_handlers": source_has(r"WKScriptMessageHandler|WKScriptMessageHandlerWithReply"),
+    "logout": source_has(r"logout|logOut|signOut"),
+    "logout_cleanup": source_has(r"(logout|signOut).{0,1500}(SecItemDelete|removeObject|delete|clear|nil)"),
+    "cookie_cleanup": source_has(r"(logout|signOut).{0,1500}(HTTPCookieStorage|WKWebsiteDataStore).{0,500}(remove|delete)"),
+    "server_logout": None,
+    "token_auth": source_has(r"Authorization.{0,100}Bearer|accessToken|refreshToken"),
+    "jwt": source_has(r"\bJWT\b|JSONWebToken|eyJ[A-Za-z0-9_-]+\."),
+    "oauth": source_has(r"OAuth|ASWebAuthenticationSession|OIDAuthState"),
+    "plaintext_token_storage": source_has(r"UserDefaults.{0,500}(token|credential|password)"),
+    "plaintext_key_storage": source_has(r"UserDefaults.{0,500}(key|secret)|write.{0,300}(key|secret).{0,100}toFile"),
+    "plaintext_pii_storage": source_has(r"UserDefaults.{0,500}(patient|email|address|health|medical)"),
+    "encrypted_database": source_has(r"SQLCipher|Realm\.Configuration.{0,300}encryptionKey|NSPersistentStoreFileProtectionKey"),
+    "data_protection": source_has(r"FileProtectionType|NSFileProtection|completeFileProtection"),
+    "backup_exclusion": source_has(r"isExcludedFromBackup|NSURLIsExcludedFromBackupKey"),
+    "strict_concurrency": source_has(r"SWIFT_STRICT_CONCURRENCY|StrictConcurrency|swift-tools-version:\s*6|swiftLanguageModes?.{0,100}v6"),
+    "resilient_background_tasks": source_has(r"BGTaskScheduler|BGProcessingTaskRequest|BGAppRefreshTaskRequest|URLSessionConfiguration\.background"),
+    "race_protection": None,
+    "swift_sources": bool(swift_files),
+    "ats_secure_configuration": not (bool(plist_value("NSAllowsArbitraryLoads")) or source_has(r"NSAllowsArbitraryLoads.{0,100}<true")),
+    "get_task_allow_disabled": not bool(plist_value("get-task-allow")),
+    "no_dynamic_code_loading": not source_has(r"\b(dlopen|dlsym|NSBundle\s*\([^)]*path|JavaScriptCore)\b"),
+    "no_gitleaks_current": int(gitleaks_summary.get("current") or 0) == 0,
+    "backup_exposure": None,
+    "valid_signature": None,
+    "production_signing": None,
+    "aslr": None,
+    "nx": None,
+    "stack_canary": None,
 }
 
 sast_items = sarif_results(sast)
@@ -122,6 +205,32 @@ for item in sast_items:
     elif len(sast_evidence) < 500:
         sast_evidence.append(converted)
 
+sarif_text = "\n".join(
+    f"{item.get('ruleId', '')} {(item.get('message') or {}).get('text', '')}".lower()
+    for item in sast_items
+)
+signals.update({
+    "race_findings": bool(re.search(r"race|concurren|thread safety", sarif_text)),
+    "memory_findings": bool(re.search(r"buffer|out.of.bounds|memory corrupt|use.after.free|overflow", sarif_text)),
+    "integer_findings": bool(re.search(r"integer.{0,30}(overflow|underflow)|arithmetic overflow", sarif_text)),
+    "error_disclosure_findings": bool(re.search(r"information exposure|error.{0,30}disclos", sarif_text)),
+    "log_injection_findings": bool(re.search(r"log.{0,30}inject", sarif_text)),
+    "malware_findings": bool(re.search(r"malware|trojan|spyware|ransomware", json.dumps(mobsf).lower())),
+})
+
+evidence_by_signal = {}
+for signal, observed in signals.items():
+    evidence_by_signal[signal] = [evidence(
+        "DERIVED_SCAN_SIGNAL", "combined artifacts", signal,
+        f"Deterministic signal {signal}={observed}."
+    )] if observed is not None else []
+evidence_by_signal["gitleaks_current"] = gitleaks_current_evidence[:3]
+evidence_by_signal["gitleaks_any"] = gitleaks_evidence[:3]
+evidence_by_signal["no_gitleaks_current"] = gitleaks_current_evidence[:3]
+for signal in ("race_findings", "memory_findings", "integer_findings", "error_disclosure_findings", "log_injection_findings"):
+    if signals[signal]:
+        evidence_by_signal[signal] = sast_evidence[:3]
+
 reqs = json.loads(Path("scripts/requirements.json").read_text(encoding="utf-8"))
 if isinstance(reqs, dict):
     reqs = reqs.get("requirements", [])
@@ -133,57 +242,42 @@ for req in reqs:
     flag_ids.update(str(fid) for fid in value)
 flag_ids = sorted(flag_ids)
 
-def verdict(flag_id):
-    fid = flag_id.lower()
-    mapping = {
-        "api_keys_in_version_control": "gitleaks_any",
-        "secrets_generic_found": "gitleaks_any",
-        "secrets_count": "gitleaks_any",
-        "hardcoded_credentials": "gitleaks_current",
-        "ios_certificate_pinning": "certificate_pinning",
-        "ios_insecure_random": "insecure_random",
-        "ios_get_task_allow": "debuggable",
-        "ios_dynamic_code_loading": "dynamic_code_loading",
-        "ios_file_sharing_enabled": "file_sharing",
-        "ios_sensitive_permissions_present": "sensitive_permissions",
-        "ios_ats_arbitrary_loads": "ats_arbitrary_loads",
-        "ios_sensitive_backup_exposure": "backup_enabled",
-        "clear_text": "ats_arbitrary_loads", "cleartext": "ats_arbitrary_loads",
-        "insecure_http": "insecure_http", "webview": "webview", "keychain": "keychain",
-        "biometric": "biometric", "jailbreak": "jailbreak_detection",
-        "hardcoded": "hardcoded_secret", "weak_crypto": "weak_crypto", "ssl_pinning": "certificate_pinning",
-    }
-    key = next((value for token, value in mapping.items() if token in fid), None)
-    if key:
-        found = bool(signals[key])
-        selected_gitleaks_evidence = gitleaks_current_evidence if key == "gitleaks_current" else gitleaks_evidence
-        ev = (selected_gitleaks_evidence[:3] if key in {"gitleaks_current", "gitleaks_any"} and selected_gitleaks_evidence
-              else [evidence("SOURCE_CODE_APP", "app.zip", key, f"iOS source heuristic {key}={found}")])
-        negative = {"ats_arbitrary_loads", "insecure_http", "hardcoded_secret", "weak_crypto", "insecure_random", "debuggable", "dynamic_code_loading", "file_sharing", "sensitive_permissions", "gitleaks_current", "gitleaks_any"}
-        note = f"iOS heuristic: {key}={found}."
-        return ("fail" if found and key in negative else
-                "pass" if found else "unknown"), ("YES" if found else "UNKNOWN"), note, ev
-    if sast_evidence:
-        return "unknown", "UNKNOWN", "SAST evidence exists but cannot be mapped deterministically to this control.", sast_evidence[:3]
-    return "unknown", "UNKNOWN", "No conclusive iOS evidence was found for this control.", []
-
 flags = []
 output_flags = {}
+capabilities = {
+    # build_ios_ipa.sh intentionally uses CODE_SIGNING_ALLOWED=NO.
+    "signed_ipa": False,
+    "source_code": True,
+    "static_analysis": True,
+    "runtime_device_test": False,
+    "backend_access": False,
+    "organizational_documents": False,
+}
+coverage = {"evaluated": 0, "fallback": 0, "manual": 0, "out_of_scope": 0}
 for fid in flag_ids:
-    state, summary, notes, ev = verdict(fid)
+    state, summary, notes, ev, method = evaluate_flag(fid, signals, evidence_by_signal, capabilities)
+    bucket = (
+        "out_of_scope" if method.startswith("out_of_scope:")
+        else "manual" if method.startswith("manual:")
+        else "fallback" if method.startswith("fallback:")
+        else "evaluated"
+    )
+    coverage[bucket] += 1
     obj = {"id": fid, "title": fid.replace("_", " "), "description": "iOS security signal",
            "severity": "info", "expected_state": "good",
-           "app_verdict": {"state": state, "summary": summary, "notes": notes, "evidence": ev, "evidence_count": len(ev)}}
+           "app_verdict": {"state": state, "summary": summary, "notes": notes, "evidence": ev,
+                           "evidence_count": len(ev), "evaluation_method": method}}
     flags.append(obj)
     output_flags[fid] = obj["app_verdict"]
 
 project = {"name": "iOS app", "platform": "ios", "generated_at": datetime.now(timezone.utc).isoformat(),
            "tools": ["CodeQL Swift", "Xcode/Clang Static Analyzer", "Semgrep Swift/Objective-C", "Gitleaks", "MobSF IPA", "Trivy"]}
-fingerprint = {"schema_version": 1, "project": project, "flags": flags}
+fingerprint = {"schema_version": 2, "project": project, "capabilities": capabilities,
+               "coverage": coverage, "flags": flags}
 output = {"schema_version": 1, "project": project, "flags": output_flags,
           "raw": {"ios_signals": signals, "info_plists": [p for p, _ in plist_docs], "mobsf_static_full": mobsf,
                   "sast_merged_full": sast, "trivy_full": trivy,
                   "agent_payload_full": agent_payload, "gitleaks_summary": gitleaks_summary}}
 (DATA / "vision360_fingerprint.json").write_text(json.dumps(fingerprint, ensure_ascii=False, indent=2), encoding="utf-8")
 (DATA / "vision360_output.json").write_text(json.dumps(output, ensure_ascii=False), encoding="utf-8")
-print(f"Generated iOS fingerprint with {len(flags)} flags and {len(sast_items)} SAST results")
+print(f"Generated iOS fingerprint with {len(flags)} flags and {len(sast_items)} SAST results; coverage={coverage}")

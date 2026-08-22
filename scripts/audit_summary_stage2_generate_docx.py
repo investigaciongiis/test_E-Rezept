@@ -392,7 +392,7 @@ def _stacked_counts(cat_stats: Dict[str, Any], out_path: str) -> None:
     plt.close(fig)
 
 
-def _likelihood_from_count(cnt: int) -> str:
+def _prevalence_from_count(cnt: int) -> str:
     if cnt >= 50:
         return "High"
     if cnt >= 20:
@@ -419,7 +419,7 @@ def _extract_json_object(text: str) -> str:
     return m.group(0)
 
 
-def _call_llm_for_style(patterns: List[Dict[str, Any]], likelihood_rubric: Dict[str, str], max_takeaways: int = 7) -> Dict[str, Any]:
+def _call_llm_for_style(patterns: List[Dict[str, Any]], prevalence_rubric: Dict[str, str], max_takeaways: int = 7) -> Dict[str, Any]:
     """
     Uses LLM only to improve prose and provide richer recommendation bullet sets.
     Does NOT generate any numeric metrics. Counts and rubrics are provided as constraints.
@@ -445,7 +445,7 @@ def _call_llm_for_style(patterns: List[Dict[str, Any]], likelihood_rubric: Dict[
             "pattern": p.get("pattern", ""),
             "count": cnt,
             "severity": p.get("severity", "Low"),
-            "likelihood": _likelihood_from_count(cnt),
+            "prevalence": _prevalence_from_count(cnt),
             "owner": p.get("recommended_owner", "Engineering"),
             "anchors": (p.get("description_anchors", []) or [])[:2],
         })
@@ -466,7 +466,7 @@ def _call_llm_for_style(patterns: List[Dict[str, Any]], likelihood_rubric: Dict[
             "no_long_id_lists": True,
             "recommendations_no_time_headings": True,
             "max_key_takeaways": max_takeaways,
-            "likelihood_rubric": likelihood_rubric,
+            "prevalence_rubric": prevalence_rubric,
         },
         "input_patterns": inp,
         "required_output_schema": {
@@ -476,7 +476,7 @@ def _call_llm_for_style(patterns: List[Dict[str, Any]], likelihood_rubric: Dict[
                     "pattern": "<exact pattern name from input>",
                     "expected": "<1-2 sentences>",
                     "impact": "<1-2 sentences; CIA + privacy/regulatory context where relevant>",
-                    "recommendations": ["<6-10 bullets; practical; may include MFA/biometric step-up if appropriate>"]
+                    "recommendations": ["<6-10 bullets; practical and specific to this pattern; do not recommend authentication controls for unrelated patterns>"]
                 }
             ]
         }
@@ -516,7 +516,7 @@ def main() -> None:
     actors = pack["actors"]
     patterns = pack["weakness_patterns"]
     pos_controls = pack.get("positive_controls_candidates", [])[:7]
-    likelihood_rubric = pack.get("likelihood_rubric", {})
+    prevalence_rubric = pack.get("prevalence_rubric", pack.get("likelihood_rubric", {}))
 
     audit_dt = datetime.utcnow().date()
     audit_date_str = audit_dt.strftime("%d %b %Y")
@@ -553,7 +553,7 @@ def main() -> None:
     prose: Dict[str, Any] = {}
     if USE_LLM and os.getenv("LLM_API_KEY", "").strip():
         try:
-            prose = _call_llm_for_style(patterns, likelihood_rubric, max_takeaways=7)
+            prose = _call_llm_for_style(patterns, prevalence_rubric, max_takeaways=7)
         except Exception:
             prose = {}
 
@@ -596,21 +596,24 @@ def main() -> None:
     _add_two_col_table(doc, [["Auditor", actors["Auditor"]], ["Requirement Engineering team", "\n".join(actors["Requirement Engineering team"])], ["Engineering Group (EN)", "\n".join(actors["Engineering Group (EN)"])]])
 
     add_nav_heading("3. Scope and limitations", 1)
-    doc.add_paragraph("This Audit Summary consolidates the compliance determinations recorded in the audit workbook. The results reflect the assessed application version and the workbook-defined scope. Controls not evidenced as implemented in the workbook are reported as non-compliant for summary purposes.")
+    doc.add_paragraph("This Audit Summary consolidates the compliance determinations recorded in the audit workbook. The results reflect the assessed application version and the evidence available to the pipeline. By default, the pipeline analyses source code and an unsigned IPA. Effective production signing, provisioning profiles, certificate properties and final signed-product entitlements therefore remain outside the assessed scope and are reported as not applicable unless a signed IPA is explicitly supplied.")
+    doc.add_paragraph("For applicable controls, absence of supporting evidence is handled conservatively as non-compliant. Such a result means that implementation was not demonstrated by the supplied artifacts; it is not, by itself, proof that the application lacks the control.")
 
     add_nav_heading("4. Evidence criteria", 1)
-    doc.add_paragraph("- Compliant: the workbook provides sufficient evidence that the control is implemented and effective for the assessed scope.\n- Non-compliant: the workbook indicates the control is missing, insufficient, or not evidenced.\n- Not applicable: the control is recorded as out of scope or not relevant for the assessed context.")
+    doc.add_paragraph("- Compliant: the workbook provides supporting evidence for every essential obligation that can be assessed in the supplied scope.\n- Non-compliant (evidenced): one or more observed signals contradict the control.\n- Non-compliant (conservative): the control is applicable, but the supplied artifacts do not contain sufficient supporting evidence; manual or runtime verification may change this determination.\n- Not applicable: the control or an essential obligation is outside the supplied scope, including checks that require a signed production IPA.")
 
     add_nav_heading("5. Audit summary", 1)
     doc.add_paragraph("The audit was carried out using the i-mSEC-AT (mobile SECurity Audit Tool).")
-    doc.add_paragraph(f"Overall, {int(metrics['total_assessed'])} requirements were assessed. {applicable} were applicable controls and {not_applicable} were recorded as not applicable. Of the applicable controls, {compliant} were compliant and {non_compliant} were non-compliant, resulting in an overall compliance rate of {overall_pct:.2f}% (applicable controls only).")
-    doc.add_paragraph("This report summarizes the dominant weakness patterns evidenced by non-compliant requirements and proposes actionable remediations suitable for mHealth/EMR environments handling sensitive health information.")
+    evidenced_no = int(metrics.get("evidenced_non_compliant", 0))
+    conservative_no = int(metrics.get("evidence_not_found_non_compliant", max(0, non_compliant - evidenced_no)))
+    doc.add_paragraph(f"Overall, {int(metrics['total_assessed'])} requirements were assessed. {applicable} were applicable controls and {not_applicable} were recorded as not applicable. Of the applicable controls, {compliant} had supporting evidence and {non_compliant} were classified as non-compliant: {evidenced_no} from contradicting evidence and {conservative_no} from insufficient supporting evidence. The resulting {overall_pct:.2f}% is an automated evidence-coverage rate under the conservative policy, not a definitive measure of the application's complete security posture.")
+    doc.add_paragraph("This report summarizes recurring control-gap patterns and proposes actionable remediations suitable for mHealth/EMR environments handling sensitive health information. Conservative determinations should be verified before being treated as confirmed defects.")
 
     add_nav_heading("5.1 Key takeaways (Top findings)", 2)
     _add_callout(doc, "Key takeaways (Top findings)", key_takeaways[:7])
 
-    add_nav_heading("5.2 Positive controls observed", 2)
-    doc.add_paragraph("All statements below are derived exclusively from controls recorded as Compliant in the audit workbook and include supporting signals (flags and/or evidence). Verification traceability is provided in Appendix B.")
+    add_nav_heading("5.2 Representative positive controls observed", 2)
+    doc.add_paragraph("The representative statements below are derived exclusively from controls recorded as Compliant in the audit workbook and include supporting signals (flags and/or evidence). Verification traceability is provided in Appendix B.")
     if pos_controls:
         for pc in pos_controls:
             doc.add_paragraph(pc["declarative_statement"], style="List Bullet")
@@ -618,20 +621,20 @@ def main() -> None:
         doc.add_paragraph("No compliant controls with supporting evidence/flags were available for verification in the workbook.", style="List Bullet")
 
     add_nav_heading("5.3 Risk scoring approach", 2)
-    doc.add_paragraph("Severity and likelihood ratings in this report follow a qualitative rubric grounded in the audit workbook:\n- Severity reflects potential impact on confidentiality, integrity, and availability of health information, including regulatory exposure.\n- Likelihood is derived from workbook prevalence: the count of non-compliant controls mapped to a weakness pattern as a proxy for exposure.\nLikelihood mapping: High (>=50), Medium-High (20-49), Medium (10-19), Low-Medium (<10).")
+    doc.add_paragraph("Severity and prevalence ratings in this report follow a qualitative prioritization rubric grounded in the audit workbook:\n- Severity reflects potential impact on confidentiality, integrity, and availability of health information, including regulatory exposure.\n- Workbook prevalence is the count of non-compliant controls mapped to a weakness pattern. It is a prioritization aid and must not be interpreted as exploit likelihood or probability.\nPrevalence bands: High (>=50), Medium-High (20-49), Medium (10-19), Low-Medium (<10).")
 
     add_nav_heading("5.4 Risk triage (prioritized)", 2)
     rt = doc.add_table(rows=1, cols=7)
     rt.style = "Table Grid"
     h = rt.rows[0].cells
-    for idx, txt in enumerate(["Weakness pattern", "Severity (rubric)", "Impact", "Likelihood (workbook prevalence)", "Workbook basis", "Recommended owner", "Target timeline"]):
+    for idx, txt in enumerate(["Weakness pattern", "Severity (rubric)", "Impact", "Workbook prevalence", "Workbook basis", "Recommended owner", "Target timeline"]):
         h[idx].text = txt
         _set_cell_shading(h[idx], "D9E1F2")
         for run in h[idx].paragraphs[0].runs:
             run.bold = True
     for p in patterns[:10]:
         cnt = int(p["mapped_noncompliant_count"])
-        lik = _likelihood_from_count(cnt)
+        lik = _prevalence_from_count(cnt)
         sev = p["severity"]
         owner = p["recommended_owner"]
         impact = writeups.get(p["pattern"], {}).get("impact", "The weakness pattern can compromise confidentiality/integrity/availability of health information and increase regulatory exposure.")
@@ -640,13 +643,15 @@ def main() -> None:
         row[1].text = sev
         row[2].text = impact
         row[3].text = lik
-        row[4].text = f"{cnt} mapped non-compliant control(s) in the workbook."
+        confirmed = int(p.get("evidenced_noncompliant_count", 0))
+        unverified = int(p.get("evidence_not_found_count", max(0, cnt - confirmed)))
+        row[4].text = f"{cnt} mapped controls: {confirmed} evidenced contradiction(s), {unverified} conservative determination(s)."
         row[5].text = owner
         row[6].text = _target_timeline(sev)
     doc.add_paragraph()
 
     add_nav_heading("6. Main deficiencies", 1)
-    doc.add_paragraph("The following deficiencies are synthesized as common weakness patterns based on non-compliant requirements. They are not grouped by category; instead they represent cross-cutting gaps evidenced in the audit workbook.")
+    doc.add_paragraph("The following deficiencies are synthesized as common weakness patterns based on non-compliant requirements. They include both evidenced contradictions and conservative determinations caused by insufficient evidence; the latter require verification before being treated as confirmed implementation defects.")
     for p in patterns[:10]:
         pat = p["pattern"]
         cnt = int(p["mapped_noncompliant_count"])
@@ -655,11 +660,13 @@ def main() -> None:
         ex_ids = p.get("example_puids", [])[:4]
         anchors = p.get("description_anchors", [])[:2]
         doc.add_paragraph(f"{pat} ({sev})", style="Heading 2")
-        doc.add_paragraph(f"Workbook basis: {cnt} related non-compliant control(s) mapped to this pattern.")
+        confirmed = int(p.get("evidenced_noncompliant_count", 0))
+        unverified = int(p.get("evidence_not_found_count", max(0, cnt - confirmed)))
+        doc.add_paragraph(f"Workbook basis: {cnt} related controls ({confirmed} evidenced contradiction(s), {unverified} conservative determination(s)).")
         expected = writeups.get(pat, {}).get("expected", "Controls in this area should provide robust, consistently enforced safeguards appropriate to health data processing.")
         impact = writeups.get(pat, {}).get("impact", "Deficiencies can increase the likelihood and impact of security incidents affecting confidentiality, integrity, or availability.")
         doc.add_paragraph(f"Expected: {expected}")
-        doc.add_paragraph("Observed: The audit workbook indicates the related controls are missing, insufficient, or not evidenced for the assessed scope.")
+        doc.add_paragraph("Observed: The audit workbook contains either contradicting evidence or insufficient evidence for the related controls; consult the workbook justification for the determination basis of each control.")
         doc.add_paragraph(f"Impact: {impact}")
         doc.add_paragraph(f"Recommended owner: {owner}")
         if ex_ids:
@@ -669,17 +676,16 @@ def main() -> None:
 
     doc.add_page_break()
     add_nav_heading("7. Recommendations", 1)
-    doc.add_paragraph("Recommendations are organized by the same weakness patterns presented in the Main deficiencies section. They target remediation of workbook-evidenced gaps and may include strengthening controls to improve security posture.")
+    doc.add_paragraph("Recommendations are organized by the same weakness patterns presented in the Main deficiencies section. Confirm conservative determinations through the required manual, backend, runtime or signed-artifact evidence before scheduling implementation work.")
     for p in patterns[:10]:
         pat = p["pattern"]
         doc.add_paragraph(pat, style="Heading 2")
         recs = writeups.get(pat, {}).get("recommendations", [])
         if not recs:
             recs = [
-                "Define and document secure-by-default requirements for this control area, and implement automated tests to prevent regressions.",
-                "Apply least-privilege, defense-in-depth, and secure configuration baselines aligned with mHealth/EMR risk profiles.",
-                "Introduce step-up authentication, such as MFA, TOTP, passkeys, or LocalAuthentication, for sensitive actions where feasible.",
-                "Validate effectiveness through security testing and re-assessment of the mapped non-compliant controls.",
+                "Review the mapped requirements and collect the specific source, runtime, backend, organizational, or signed-artifact evidence required by each control.",
+                "Remediate confirmed contradictions using a secure configuration appropriate to this control area and add focused regression tests.",
+                "Re-run the assessment and manually verify any controls that static analysis cannot determine conclusively.",
             ]
         for r in recs[:12]:
             doc.add_paragraph(str(r).strip(), style="List Bullet")
@@ -694,11 +700,11 @@ def main() -> None:
 
     doc.add_page_break()
     add_nav_heading("9. Management Action Plan (MAP)", 1)
-    doc.add_paragraph("Severity and likelihood nomenclature follow the rubric in Section 5.3. Likelihood is supported by workbook prevalence counts recorded in the Workbook basis column.")
+    doc.add_paragraph("Severity and prevalence nomenclature follow the rubric in Section 5.3. Workbook prevalence is a prioritization count, not an estimate of exploit likelihood.")
     mp = doc.add_table(rows=1, cols=9)
     mp.style = "Table Grid"
     mh = mp.rows[0].cells
-    headers = ["Finding / weakness pattern", "Severity", "Likelihood", "Workbook basis", "Owner", "Management action", "Target window", "Target date", "Acceptance criteria / KPI"]
+    headers = ["Finding / weakness pattern", "Severity", "Prevalence", "Workbook basis", "Owner", "Management action", "Target window", "Target date", "Acceptance criteria / KPI"]
     for idx, txt in enumerate(headers):
         mh[idx].text = txt
         _set_cell_shading(mh[idx], "D9E1F2")
@@ -708,7 +714,7 @@ def main() -> None:
         pat = p["pattern"]
         cnt = int(p["mapped_noncompliant_count"])
         sev = p["severity"]
-        lik = _likelihood_from_count(cnt)
+        lik = _prevalence_from_count(cnt)
         owner = p["recommended_owner"]
         target_window = _target_timeline(sev)
         target_date = _target_date_str(audit_dt, sev)
@@ -718,7 +724,9 @@ def main() -> None:
         row[0].text = pat
         row[1].text = sev
         row[2].text = lik
-        row[3].text = f"{cnt} mapped non-compliant control(s) in workbook."
+        confirmed = int(p.get("evidenced_noncompliant_count", 0))
+        unverified = int(p.get("evidence_not_found_count", max(0, cnt - confirmed)))
+        row[3].text = f"{cnt} mapped controls: {confirmed} evidenced, {unverified} conservative."
         row[4].text = owner
         row[5].text = action
         row[6].text = target_window
@@ -735,7 +743,7 @@ def main() -> None:
 
     doc.add_page_break()
     add_nav_heading("Appendix B - Positive controls verification (workbook traceability)", 1)
-    doc.add_paragraph("This appendix verifies each Positive controls observed statement by providing the originating PUID, flags used, and an evidence excerpt when available.")
+    doc.add_paragraph("This appendix verifies each representative positive-control statement shown in Section 5.2 by providing the originating PUID, flags used, and an evidence excerpt when available.")
     vb = doc.add_table(rows=1, cols=4)
     vb.style = "Table Grid"
     vh = vb.rows[0].cells

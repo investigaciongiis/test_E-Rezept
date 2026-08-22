@@ -1289,7 +1289,9 @@
       "Flags": [
         "has_webview_components",
         "has_webview_remote_content",
-        "ios_ats_arbitrary_loads"
+        "ios_ats_arbitrary_loads",
+        "has_wkwebview_navigation_allowlist",
+        "has_secure_wkwebview_configuration"
       ],
       "Target platform": "iOS"
     },
@@ -3231,8 +3233,7 @@
       "Validation criteria": "Memory Purge Testing:\nVerify that credentials or keys are explicitly removed from memory after their use.\nStatic Code Analysis:\nEnsure no automatic memory management mechanisms are used for handling sensitive data like credentials or keys.\nRuntime Memory Inspection:\nTest the application during runtime to confirm that sensitive data is not left in memory after it has been used.\nImmediate Zeroing Verification:\nValidate that the memory allocated for credentials or keys is overwritten with zeros immediately after use.\nSecurity Review of Key Handling:\nConfirm that immutable objects are avoided when dealing with sensitive data to prevent unintentional persistence in memory.\nPenetration Testing:\nSimulate attacks to extract credentials or keys from application memory to validate that sensitive information is properly purged.",
       "controles": "The application must purge credentials or keys from memory immediately after use to minimize exposure, using explicit memory management rather than relying on automatic garbage collection.",
       "Flags": [
-        "has_clears_local_session_data_on_logout",
-        "has_clears_auth_data_on_logout"
+        "has_sensitive_memory_cleanup"
       ],
       "Target platform": "iOS"
     },
@@ -3540,7 +3541,7 @@
       "Validation criteria": "Permission Validation Test:\nSimulate a request to an external service requiring permissions.\nConfirm that the application verifies the necessary permissions before initiating the request.\nDenied Request Handling Test:\nAttempt a request to an external service without the required permissions.\nVerify that the application fails gracefully by providing appropriate error messages or fallback mechanisms.\nUnauthorized Access Prevention:\nEnsure that unauthorized requests to external services are logged and prevented from execution.\nPermission Change Response Test:\nTest how the application reacts to changes in granted permissions during runtime.\nConfirm the application adjusts its behavior based on updated permission statuses.",
       "controles": "The application must verify permissions before accessing services provided by external applications and handle denied requests gracefully.",
       "Flags": [
-        "has_secure_ios_ipc"
+        "has_ios_ipc_authorization_checks"
       ],
       "Target platform": "iOS"
     },

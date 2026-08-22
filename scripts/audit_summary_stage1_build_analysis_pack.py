@@ -124,7 +124,7 @@ PATTERNS = [
     },
 ]
 
-LIKELIHOOD_RUBRIC = {
+PREVALENCE_RUBRIC = {
     "High": "≥50",
     "Medium–High": "20–49",
     "Medium": "10–19",
@@ -205,19 +205,15 @@ def _to_declarative(desc: str) -> str:
     t = re.sub(r"^\d+[\.\)]\s*", "", t)
     # Remove example parentheses if any
     t = re.sub(r"\(e\.g\.,.*?\)", "", t, flags=re.IGNORECASE)
-    # Remove must/shall/should wording
-    t = re.sub(r"\b(must|shall|should)\b", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\s+", " ", t).strip()
 
-    if not t.lower().startswith("the application"):
+    if t.lower().startswith("application "):
+        t = "The " + t
+    elif not t.lower().startswith("the application"):
         if t:
-            t = "The application " + t[0].lower() + t[1:]
+            t = "The application must " + t[0].lower() + t[1:]
         else:
             t = "The application implements security controls."
-
-    # Basic grammar smoothing
-    t = t.replace(" and prevent ", " and prevents ")
-    t = t.replace(" as well as disallow the ", " as well as disallowing the ")
     t = t.strip().rstrip(".") + "."
     return t
 
@@ -231,7 +227,7 @@ def _match_pattern(desc: str, flags: str) -> str:
     return "Other control gaps"
 
 
-def _likelihood_from_count(cnt: int) -> str:
+def _prevalence_from_count(cnt: int) -> str:
     if cnt >= 50:
         return "High"
     if cnt >= 20:
@@ -271,12 +267,26 @@ def main() -> None:
     df["Evidence"] = df[col_evid].astype(str).fillna("").str.strip() if col_evid else ""
 
     df["Status"] = df[col_result].apply(_norm_status)
+    df["DeterminationBasis"] = df.apply(
+        lambda r: (
+            "evidenced_noncompliance"
+            if r["Status"] == "Non-compliant" and "contradicting signals:" in str(r["Evidence"]).lower()
+            else "evidence_not_found"
+            if r["Status"] == "Non-compliant"
+            else "supporting_evidence"
+            if r["Status"] == "Compliant"
+            else "not_applicable"
+        ),
+        axis=1,
+    )
     df["CategoryCode"] = df["PUID"].apply(lambda x: _cat_from_puid(x)["code"])
     df["CategoryName"] = df["PUID"].apply(lambda x: _cat_from_puid(x)["name"])
 
     total_assessed = int(len(df))
     compliant = int((df["Status"] == "Compliant").sum())
     non_compliant = int((df["Status"] == "Non-compliant").sum())
+    evidenced_non_compliant = int((df["DeterminationBasis"] == "evidenced_noncompliance").sum())
+    evidence_not_found = int((df["DeterminationBasis"] == "evidence_not_found").sum())
     not_applicable = int((df["Status"] == "Not applicable").sum())
     applicable = int(compliant + non_compliant)
     overall_compliance_pct = float((compliant / applicable * 100.0) if applicable else 0.0)
@@ -332,15 +342,17 @@ def main() -> None:
         meta = next((p for p in PATTERNS if p["name"] == pat), None)
         severity = meta["severity"] if meta else "Low"
         owner = meta["owner"] if meta else "Engineering"
-        likelihood = _likelihood_from_count(cnt)
+        prevalence = _prevalence_from_count(cnt)
         pattern_summary.append({
             "pattern": pat,
             "mapped_noncompliant_count": cnt,
+            "evidenced_noncompliant_count": int((sub["DeterminationBasis"] == "evidenced_noncompliance").sum()),
+            "evidence_not_found_count": int((sub["DeterminationBasis"] == "evidence_not_found").sum()),
             "example_puids": ex,
             "description_anchors": anchors,
             "severity": severity,
             "recommended_owner": owner,
-            "likelihood": likelihood,
+            "prevalence": prevalence,
         })
 
     # Sort by severity then count (deterministic)
@@ -373,11 +385,13 @@ def main() -> None:
             "applicable": applicable,
             "compliant": compliant,
             "non_compliant": non_compliant,
+            "evidenced_non_compliant": evidenced_non_compliant,
+            "evidence_not_found_non_compliant": evidence_not_found,
             "not_applicable": not_applicable,
             "overall_compliance_pct": overall_compliance_pct,
         },
         "category_metrics": cat_stats,
-        "likelihood_rubric": LIKELIHOOD_RUBRIC,
+        "prevalence_rubric": PREVALENCE_RUBRIC,
         "positive_controls_candidates": positive_controls[:12],  # cap
         "weakness_patterns": pattern_summary,
         "notes": {

@@ -146,8 +146,14 @@ signals = {
     "environment_configuration": source_has(r"\.xcconfig|#if\s+(DEBUG|STAGING)|ProcessInfo\.processInfo\.environment"),
     "secure_secret_injection": source_has(r"ProcessInfo\.processInfo\.environment|keychain|SecItem"),
     "entitlements_present": bool(entitlement_files),
+    # Effective/minimal entitlements must be read from the signed product.
+    "minimal_entitlements": None,
     "app_groups": source_has(r"com\.apple\.security\.application-groups|containerURL\s*\(\s*forSecurityApplicationGroupIdentifier"),
     "secure_ios_ipc": source_has(r"application-groups|keychain-access-groups|NSXPCConnection|NSExtension"),
+    "ios_ipc_authorization_checks": (
+        source_has(r"application-groups|keychain-access-groups|NSXPCConnection|NSExtension|canOpenURL|openURLContexts")
+        and source_has(r"(authorization|authorized|permission|entitlement|accessGroup|canOpenURL|denied|notAllowed|cancel|guard).{0,800}(deny|denied|allow|allowed|error|throw|return|cancel)|guard.{0,800}(authorization|permission|entitlement|accessGroup|canOpenURL)")
+    ),
     "universal_links_validation": source_has(r"associated-domains|NSUserActivityTypeBrowsingWeb|continue\s+userActivity"),
     "url_scheme_validation": source_has(r"CFBundleURLSchemes|openURLContexts|application\s*\([^)]*open\s+url"),
     "secure_pasteboard": source_has(r"UIPasteboard.{0,500}(localOnly|expirationDate)|detectPatterns"),
@@ -172,6 +178,9 @@ signals = {
     ),
     "logout": source_has(r"logout|logOut|signOut"),
     "logout_cleanup": source_has(r"(logout|signOut).{0,1500}(SecItemDelete|removeObject|delete|clear|nil)"),
+    "sensitive_memory_cleanup": source_has(
+        r"explicit_bzero|memset_s|resetBytes\s*\(|withUnsafeMutableBytes.{0,800}(initialize|assign|update)\s*\(\s*repeating:\s*0"
+    ),
     "cookie_cleanup": source_has(r"(logout|signOut).{0,1500}(HTTPCookieStorage|WKWebsiteDataStore).{0,500}(remove|delete)"),
     "server_logout": None,
     "token_auth": source_has(r"Authorization.{0,100}Bearer|accessToken|refreshToken"),

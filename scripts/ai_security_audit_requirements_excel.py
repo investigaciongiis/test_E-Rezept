@@ -546,14 +546,18 @@ def audit_requirement(
     non_app = [fe for fe in flag_evs if fe.classification != "APPLICABILITY"]
     assessed = [fe for fe in non_app if fe.outcome != "OUT_OF_SCOPE"]
     all_out_of_scope = bool(non_app) and not assessed
+    any_out_of_scope = any(fe.outcome == "OUT_OF_SCOPE" for fe in non_app)
     any_contradict = any(fe.outcome == "CONTRADICT" for fe in assessed)
     all_support = bool(assessed) and all(fe.outcome == "SUPPORT" for fe in assessed)
     any_unknown = any(fe.outcome in ("UNKNOWN", "MISSING") for fe in assessed)
 
-    if all_out_of_scope:
-        result = "n/a"
-    elif any_contradict:
+    if any_contradict:
         result = "no"
+    elif all_out_of_scope or any_out_of_scope:
+        # A supporting signal for one part of a compound requirement cannot
+        # prove another essential obligation that the supplied artifacts do
+        # not permit us to evaluate (for example, production signing).
+        result = "n/a"
     elif all_support and not any_unknown:
         result = "yes"
     else:

@@ -144,16 +144,19 @@ signals = {
     "app_attest": source_has(r"DCAppAttestService|generateKey|attestKey"),
     "device_check": source_has(r"DCDevice|DeviceCheck"),
     "environment_configuration": source_has(r"\.xcconfig|#if\s+(DEBUG|STAGING)|ProcessInfo\.processInfo\.environment"),
+    # These obligations depend on backend/runtime configuration and cannot be
+    # proven merely by finding an xcconfig file or an IPC API name in source.
+    "separate_environment_credentials": None,
+    "authenticated_scoped_ios_ipc": None,
+    "unique_api_key_per_app_instance": None,
+    "api_key_usage_restrictions": None,
     "secure_secret_injection": source_has(r"ProcessInfo\.processInfo\.environment|keychain|SecItem"),
     "entitlements_present": bool(entitlement_files),
     # Effective/minimal entitlements must be read from the signed product.
     "minimal_entitlements": None,
     "app_groups": source_has(r"com\.apple\.security\.application-groups|containerURL\s*\(\s*forSecurityApplicationGroupIdentifier"),
     "secure_ios_ipc": source_has(r"application-groups|keychain-access-groups|NSXPCConnection|NSExtension"),
-    "ios_ipc_authorization_checks": (
-        source_has(r"application-groups|keychain-access-groups|NSXPCConnection|NSExtension|canOpenURL|openURLContexts")
-        and source_has(r"(authorization|authorized|permission|entitlement|accessGroup|canOpenURL|denied|notAllowed|cancel|guard).{0,800}(deny|denied|allow|allowed|error|throw|return|cancel)|guard.{0,800}(authorization|permission|entitlement|accessGroup|canOpenURL)")
-    ),
+    "ios_ipc_authorization_checks": None,
     "universal_links_validation": source_has(r"associated-domains|NSUserActivityTypeBrowsingWeb|continue\s+userActivity"),
     "url_scheme_validation": source_has(r"CFBundleURLSchemes|openURLContexts|application\s*\([^)]*open\s+url"),
     "secure_pasteboard": source_has(r"UIPasteboard.{0,500}(localOnly|expirationDate)|detectPatterns"),

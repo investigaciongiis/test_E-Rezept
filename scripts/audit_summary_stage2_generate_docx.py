@@ -35,6 +35,69 @@ HEADER_TEXT = "i-mSEC-AT Audit Summary - " + literals["header_text"]
 
 COVER_PAGE = literals["cover_page_text"]
 
+PATTERN_RECOMMENDATIONS = {
+    "Hardcoded credentials / embedded secrets": [
+        "Remove confirmed embedded secrets, rotate exposed values, and retrieve credentials through an approved secrets service or authenticated backend exchange.",
+        "Run secret scanning on commits and release artifacts, and block merges when a verified credential is detected.",
+        "Verify that mobile clients receive only revocable, least-privilege credentials and never a shared backend secret.",
+    ],
+    "Weak authentication lifecycle / brute-force protections": [
+        "Verify server-enforced throttling, lockout, session expiry, revocation, and reauthentication for sensitive actions.",
+        "Add integration tests for repeated failures, concurrent sessions, logout, account recovery, and expired credentials.",
+        "Use phishing-resistant or step-up authentication only where the authentication risk assessment requires it.",
+    ],
+    "Authorization / RBAC / least privilege gaps": [
+        "Document the authorization matrix and enforce access decisions on the trusted backend rather than in the mobile UI alone.",
+        "Add negative authorization tests for horizontal access, vertical privilege escalation, and cross-tenant identifiers.",
+        "Review App Groups, Keychain Access Groups and external entry points for least-privilege access.",
+    ],
+    "Input validation & injection weaknesses (XSS/SQLi/command/log injection)": [
+        "Validate untrusted input at each trust boundary using allowlists, typed parsers, canonicalization, and context-appropriate output encoding.",
+        "Use parameterized data access and structured logging; do not construct commands, queries, HTML, or log records through string concatenation.",
+        "Add focused tests for URL schemes, Universal Links, WKWebView navigation, decoded payloads, and malformed server responses.",
+    ],
+    "Embedded browser / WKWebView hardening gaps": [
+        "Restrict WKWebView navigation to an explicit scheme and host allowlist, and cancel every navigation that does not match it.",
+        "Disable JavaScript, file access, persistent website data, message handlers, and other browser features unless the use case requires them.",
+        "Validate script-message payloads and test redirects, custom schemes, untrusted links, phishing layouts, and ATS behavior.",
+    ],
+    "Transport security / certificate validation weaknesses": [
+        "Remove confirmed ATS exceptions and certificate-validation bypasses, then validate the effective release configuration.",
+        "Use platform trust evaluation correctly and test rejection of expired, mismatched, untrusted, and intercepted certificates.",
+        "Apply certificate or public-key pinning only when justified by the threat model and supported by a safe rotation strategy.",
+    ],
+    "Insecure local storage / key management gaps": [
+        "Inventory locally persisted sensitive data and protect it with Keychain, iOS Data Protection, device-only accessibility, and backup exclusion as appropriate.",
+        "Remove confirmed plaintext tokens, keys, health data, caches, logs, and temporary files.",
+        "Test device-lock, backup/restore, logout, account deletion, and migration behavior for residual sensitive data.",
+    ],
+    "Supply chain governance & outdated components": [
+        "Pin and review dependencies, generate an SBOM, and define remediation targets for exploitable vulnerabilities.",
+        "Enable automated dependency monitoring and verify package provenance, checksums, signatures, and approved registries where available.",
+        "Remove unsupported components and document exceptions with an owner and expiration date.",
+    ],
+    "Tampering / reverse engineering protections missing": [
+        "Validate hardening against the final release artifact, including production signing, effective entitlements, debug settings, and compiler protections.",
+        "Keep authorization and sensitive business decisions on trusted services so client tampering cannot grant access.",
+        "Use App Attest or DeviceCheck only where the service threat model benefits from device/app integrity signals.",
+    ],
+    "Audit logging completeness / retention / alerting gaps": [
+        "Define security events, required fields, retention, access controls, alert thresholds, and incident ownership.",
+        "Keep sensitive values out of mobile logs and send authoritative audit events to a protected backend system.",
+        "Test event completeness, timestamp consistency, tamper resistance, alert delivery, and forensic retrieval.",
+    ],
+    "Privacy notice / consent / governance gaps": [
+        "Map collected data and purposes to notices, consent or another lawful basis, retention, deletion, and user rights.",
+        "Review the privacy manifest and third-party SDK declarations against actual API and data use.",
+        "Test consent withdrawal, data export/deletion, notification redaction, and minimization of health information.",
+    ],
+    "Security misconfiguration / insecure defaults": [
+        "Establish an iOS release baseline covering ATS, entitlements, URL schemes, file sharing, backups, logging, and debug options.",
+        "Automate configuration checks for every release and fail the pipeline on confirmed insecure settings.",
+        "Review environment-specific differences and verify secure failure behavior with integration and runtime tests.",
+    ],
+}
+
 def _wrap_label(s: str, width: int = 30) -> str:
     s = str(s)
     if len(s) <= width:
@@ -624,10 +687,10 @@ def main() -> None:
     doc.add_paragraph("Severity and prevalence ratings in this report follow a qualitative prioritization rubric grounded in the audit workbook:\n- Severity reflects potential impact on confidentiality, integrity, and availability of health information, including regulatory exposure.\n- Workbook prevalence is the count of non-compliant controls mapped to a weakness pattern. It is a prioritization aid and must not be interpreted as exploit likelihood or probability.\nPrevalence bands: High (>=50), Medium-High (20-49), Medium (10-19), Low-Medium (<10).")
 
     add_nav_heading("5.4 Risk triage (prioritized)", 2)
-    rt = doc.add_table(rows=1, cols=7)
+    rt = doc.add_table(rows=1, cols=5)
     rt.style = "Table Grid"
     h = rt.rows[0].cells
-    for idx, txt in enumerate(["Weakness pattern", "Severity (rubric)", "Impact", "Workbook prevalence", "Workbook basis", "Recommended owner", "Target timeline"]):
+    for idx, txt in enumerate(["Weakness pattern", "Severity / prevalence", "Workbook basis", "Recommended owner", "Target timeline"]):
         h[idx].text = txt
         _set_cell_shading(h[idx], "D9E1F2")
         for run in h[idx].paragraphs[0].runs:
@@ -637,17 +700,14 @@ def main() -> None:
         lik = _prevalence_from_count(cnt)
         sev = p["severity"]
         owner = p["recommended_owner"]
-        impact = writeups.get(p["pattern"], {}).get("impact", "The weakness pattern can compromise confidentiality/integrity/availability of health information and increase regulatory exposure.")
         row = rt.add_row().cells
         row[0].text = p["pattern"]
-        row[1].text = sev
-        row[2].text = impact
-        row[3].text = lik
+        row[1].text = f"{sev} / {lik}"
         confirmed = int(p.get("evidenced_noncompliant_count", 0))
         unverified = int(p.get("evidence_not_found_count", max(0, cnt - confirmed)))
-        row[4].text = f"{cnt} mapped controls: {confirmed} evidenced contradiction(s), {unverified} conservative determination(s)."
-        row[5].text = owner
-        row[6].text = _target_timeline(sev)
+        row[2].text = f"{cnt} mapped: {confirmed} evidenced, {unverified} conservative."
+        row[3].text = owner
+        row[4].text = _target_timeline(sev)
     doc.add_paragraph()
 
     add_nav_heading("6. Main deficiencies", 1)
@@ -680,7 +740,7 @@ def main() -> None:
     for p in patterns[:10]:
         pat = p["pattern"]
         doc.add_paragraph(pat, style="Heading 2")
-        recs = writeups.get(pat, {}).get("recommendations", [])
+        recs = writeups.get(pat, {}).get("recommendations", []) or PATTERN_RECOMMENDATIONS.get(pat, [])
         if not recs:
             recs = [
                 "Review the mapped requirements and collect the specific source, runtime, backend, organizational, or signed-artifact evidence required by each control.",
@@ -701,10 +761,10 @@ def main() -> None:
     doc.add_page_break()
     add_nav_heading("9. Management Action Plan (MAP)", 1)
     doc.add_paragraph("Severity and prevalence nomenclature follow the rubric in Section 5.3. Workbook prevalence is a prioritization count, not an estimate of exploit likelihood.")
-    mp = doc.add_table(rows=1, cols=9)
+    mp = doc.add_table(rows=1, cols=6)
     mp.style = "Table Grid"
     mh = mp.rows[0].cells
-    headers = ["Finding / weakness pattern", "Severity", "Prevalence", "Workbook basis", "Owner", "Management action", "Target window", "Target date", "Acceptance criteria / KPI"]
+    headers = ["Finding / weakness pattern", "Severity / prevalence", "Workbook basis", "Owner", "Management action and acceptance", "Target"]
     for idx, txt in enumerate(headers):
         mh[idx].text = txt
         _set_cell_shading(mh[idx], "D9E1F2")
@@ -718,20 +778,17 @@ def main() -> None:
         owner = p["recommended_owner"]
         target_window = _target_timeline(sev)
         target_date = _target_date_str(audit_dt, sev)
-        recs = writeups.get(pat, {}).get("recommendations", [])
+        recs = writeups.get(pat, {}).get("recommendations", []) or PATTERN_RECOMMENDATIONS.get(pat, [])
         action = " ".join([r.strip() for r in recs[:3]]) if recs else "Implement remediation actions aligned to the weakness pattern and validate effectiveness."
         row = mp.add_row().cells
         row[0].text = pat
-        row[1].text = sev
-        row[2].text = lik
+        row[1].text = f"{sev} / {lik}"
         confirmed = int(p.get("evidenced_noncompliant_count", 0))
         unverified = int(p.get("evidence_not_found_count", max(0, cnt - confirmed)))
-        row[3].text = f"{cnt} mapped controls: {confirmed} evidenced, {unverified} conservative."
-        row[4].text = owner
-        row[5].text = action
-        row[6].text = target_window
-        row[7].text = target_date
-        row[8].text = "Evidence recorded (tests/configs/release refs); mapped controls can be re-tested and re-scored as compliant."
+        row[2].text = f"{cnt} mapped: {confirmed} evidenced, {unverified} conservative."
+        row[3].text = owner
+        row[4].text = action + " Acceptance: evidence is recorded and mapped controls can be re-tested."
+        row[5].text = f"{target_window}\n{target_date}"
 
     doc.add_page_break()
     add_nav_heading("Appendix A - Traceability index (non-exhaustive)", 1)

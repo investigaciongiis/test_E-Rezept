@@ -133,8 +133,8 @@
       "Validation criteria": "Inspect the iOS implementation and built IPA for the Apple mechanisms named in this requirement. Test authorized and unauthorized use, malformed input, least-privilege configuration, and secure failure behavior.",
       "controles": "The application must use separate credentials and API keys for development, testing, and production, and must use authenticated, explicitly scoped iOS communication mechanisms for inter-component communication.",
       "Flags": [
-        "has_environment_specific_api_keys",
-        "has_secure_ios_ipc"
+        "has_separate_environment_credentials",
+        "has_authenticated_scoped_ios_ipc"
       ],
       "Target platform": "iOS"
     },
@@ -468,7 +468,7 @@
     },
     {
       "PUID": "SECM-CAT-ISU-015",
-      "Requirement description": "OS-provided file encryption APIs and secure key storage should be used to encrypt sensitive data (e.g., passwords, authorization tokens) and keep keys secure on the device.",
+      "Requirement description": "The application should use OS-provided file encryption APIs and secure key storage to encrypt sensitive data (e.g., passwords and authorization tokens) and keep keys secure on the device.",
       "Source": "Apple Platform Security; Apple Developer Documentation; OWASP MASVS/MASTG.",
       "Priority": "Not described",
       "Rationale": "Sensitive data stored on an iOS device must remain protected if application files are copied, backed up, or the device is lost. Secrets and cryptographic keys should use Keychain with an accessibility class appropriate to the use case; files and databases should use iOS Data Protection, and Secure Enclave-backed keys should be used where the threat model and cryptographic operation justify it.",
@@ -483,7 +483,7 @@
       "Current state": "To_be_determined",
       "Verification method": "Demonstration/Analysis",
       "Validation criteria": "Local Storage Review:\nIdentify sensitive files, databases, cached data, credentials, tokens and cryptographic keys.\nKeychain Verification:\nVerify that credentials and long-lived secrets use Keychain with the strongest accessibility class compatible with the use case and device-only protection where synchronization or migration is not required.\nData Protection Verification:\nVerify that sensitive files and databases use an appropriate iOS Data Protection class and are excluded from backup when recovery from backup is not required.\nCryptographic Key Review:\nVerify use of CryptoKit/Security framework APIs and Secure Enclave-backed keys where appropriate. Confirm that cryptographic keys are not stored in plaintext in application files, preferences or source code.",
-      "controles": "OS-provided file encryption APIs and secure key storage should be used to encrypt sensitive data (e.g., passwords, authorization tokens) and keep keys secure on the device.",
+      "controles": "The application should use OS-provided file encryption APIs and secure key storage to encrypt sensitive data (e.g., passwords and authorization tokens) and keep keys secure on the device.",
       "Flags": [
         "has_uses_encrypted_local_database",
         "has_uses_encrypted_filesystem_storage",
@@ -4395,8 +4395,7 @@
       "Validation criteria": "Unique Key Generation Test:\nVerify that the system generates unique API keys for each application instance upon registration.\nKey Association Test:\nConfirm that each API key is correctly associated with a single application instance and cannot be reused across multiple instances.\nCompromised Key Isolation Test:\nSimulate the compromise of an API key and validate that it can be revoked without affecting other application instances.\nKey Expiry and Rotation Test:\nValidate that the application enforces periodic expiration and secure rotation of API keys.\nUnauthorized Access Test:\nAttempt to use an API key from a different application instance and confirm that access is denied.",
       "controles": "The application must generate unique API keys for each application instance to ensure efficient identification and isolation of compromised or unauthorized access.",
       "Flags": [
-        "has_api_keys_in_version_control",
-        "has_env_specific_api_credentials_configured"
+        "has_unique_api_key_per_app_instance"
       ],
       "Target platform": "iOS"
     },
@@ -4419,8 +4418,7 @@
       "Validation criteria": "IP Restriction Test:\nValidate that API keys are restricted to specific IP addresses or ranges, denying requests from unauthorized IPs.\nApp Certificate Association Test:\nConfirm that API keys can only be used by applications with valid certificates associated with the key.\nPlatform Restriction Test:\nEnsure that the API key access is limited to specified platforms or services (e.g., Google Maps API restricted by package name and signing key).\nUnauthorized Usage Test:\nAttempt to use the API key from an unauthorized IP, app certificate, or platform and verify that access is denied.\nAudit Log Verification Test:\nConfirm that all API key access requests and denials are logged, with details on IP addresses, app certificates, and platforms.\nKey Configuration Review Test:\nValidate that the key restriction configurations are correctly set and align with the organization’s security policies.",
       "controles": "The application must enforce IP-based and service-level restrictions on API key usage, associating keys with specific mobile applications, certificates, or platforms to prevent unauthorized access and misuse.",
       "Flags": [
-        "has_api_keys_in_version_control",
-        "has_env_specific_api_credentials_configured"
+        "has_api_key_usage_restrictions"
       ],
       "Target platform": "iOS"
     },

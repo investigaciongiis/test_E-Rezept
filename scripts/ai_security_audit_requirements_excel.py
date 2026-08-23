@@ -842,6 +842,12 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
     contradicts = [fe for fe in present if fe.outcome == "CONTRADICT"]
     supports = [fe for fe in present if fe.outcome == "SUPPORT"]
     unknowns = [fe for fe in present if fe.outcome == "UNKNOWN"]
+    conservative = [
+        fe for fe in present
+        if "conservative fallback:" in (fe.notes or "").lower()
+        or (fe.state == "not_detected" and fe.evidence_count == 0)
+    ]
+    evidenced_contradicts = [fe for fe in contradicts if fe not in conservative]
 
     # Sentence 1: mandatory anchor
     s1 = f"Result: {result} for requirement {req.puid}."
@@ -854,10 +860,16 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
             "were observed among the mapped flags."
         )
     elif result == "no":
-        s2 = (
-            "Based on the fingerprint and the flags mapped to this requirement, the application is not compliant "
-            "because at least one mapped signal contradicts the expected outcome."
-        )
+        if evidenced_contradicts:
+            s2 = (
+                "Based on the fingerprint and the flags mapped to this requirement, the application is not compliant "
+                "because at least one evidenced signal contradicts the expected outcome."
+            )
+        else:
+            s2 = (
+                "Conservative determination: the requirement is applicable, but the supplied artifacts do not "
+                "contain sufficient supporting evidence to confirm the expected secure outcome."
+            )
     else:
         s2 = (
             "Based on the fingerprint and the flags mapped to this requirement, the result is n/a because the relevant "
@@ -866,10 +878,14 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
         )
 
     # Sentence 3: key signals (prioritize contradictions for 'no', supports for 'yes')
-    if result == "no" and contradicts:
-        top = contradicts[:3]
+    if result == "no" and evidenced_contradicts:
+        top = evidenced_contradicts[:3]
         details = "; ".join(_brief(fe) for fe in top)
         s3 = f"Contradicting signals: {details}."
+    elif result == "no" and conservative:
+        top = conservative[:3]
+        details = "; ".join(_brief(fe) for fe in top)
+        s3 = f"Evidence not found for mapped controls: {details}."
     elif supports:
         top = supports[:3]
         details = "; ".join(_brief(fe) for fe in top)

@@ -58,7 +58,7 @@ CAT_MAP = {
 PATTERNS = [
     {
         "name": "Hardcoded credentials / embedded secrets",
-        "keywords": [r"hardcoded", r"embedded", r"secret", r"api\s*key", r"token", r"credential", r"password.*code"],
+        "keywords": [r"hardcoded", r"embedded\s+(?:secret|credential|api\s*key)", r"secret", r"api\s*key", r"auth(?:orization)?\s+token", r"credential", r"password.*code"],
         "severity": "High",
         "owner": "Mobile Engineering / Security Engineering",
     },
@@ -77,6 +77,12 @@ PATTERNS = [
     {
         "name": "Input validation & injection weaknesses (XSS/SQLi/command/log injection)",
         "keywords": [r"input validation", r"injection", r"xss", r"cross[-\s]?site scripting", r"sql", r"command injection", r"log injection", r"sanitize", r"encoding"],
+        "severity": "High",
+        "owner": "Mobile Engineering",
+    },
+    {
+        "name": "Embedded browser / WKWebView hardening gaps",
+        "keywords": [r"wkwebview", r"\bwebview", r"embedded\s+brows"],
         "severity": "High",
         "owner": "Mobile Engineering",
     },

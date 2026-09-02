@@ -1,32 +1,26 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import CombineSchedulers
 import Dependencies
 import Foundation
-import HTTPClient
 import IDP
-import IDPLive
 
 class DemoIDPSession: IDPSession {
     @Dependency(\.schedulers) var schedulers
@@ -71,8 +65,8 @@ class DemoIDPSession: IDPSession {
     func requestChallenge() -> AnyPublisher<IDPChallengeSession, IDPError> {
         Future { promise in
             promise(Result {
-                try IDPChallengeSession(
-                    challenge: IDPChallenge(
+                IDPChallengeSession(
+                    challenge: try IDPChallenge(
                         challenge: JWT(header: JWT.Header(), payload: DemoPayload())
                     ),
                     verifierCode: "code_verifier",
@@ -109,14 +103,11 @@ class DemoIDPSession: IDPSession {
                 redirect: ""
             )
         )
-        return currentValue
+        return currentValue // swiftlint:disable:this trailing_closure
             .compactMap { $0 }
-            .handleEvents(
-                receiveOutput: { token in
-                    self.storage.set(token: token)
-                },
-                receiveRequest: nil
-            )
+            .handleEvents(receiveOutput: { token in
+                self.storage.set(token: token)
+            })
             .eraseToAnyPublisher()
     }
 
@@ -128,9 +119,9 @@ class DemoIDPSession: IDPSession {
             ssoToken: "SSO TOKEN",
             redirect: ""
         ))
-        .setFailureType(to: IDPError.self)
-        .delay(for: 1.5, scheduler: uiScheduler)
-        .eraseToAnyPublisher()
+            .setFailureType(to: IDPError.self)
+            .delay(for: 1.5, scheduler: uiScheduler)
+            .eraseToAnyPublisher()
     }
 
     func pairDevice(with _: RegistrationData, token _: IDPToken) -> AnyPublisher<PairingEntry, IDPError> {

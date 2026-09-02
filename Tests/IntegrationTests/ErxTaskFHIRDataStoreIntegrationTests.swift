@@ -1,41 +1,31 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
 import Combine
-import Dependencies
 @testable import eRpFeatures
 import eRpKit
 import eRpLocalStorage
 import eRpRemoteStorage
-import ErxTaskRepository
-import FeatureCardWall
 import FHIRClient
 import Foundation
 import HTTPClient
-import HTTPClientLive
 import IdentifiedCollections
 import IDP
-import IDPLive
 import Nimble
 import Pharmacy
 import TestUtils
@@ -60,21 +50,23 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
     }
 
     let memStorage = MemStorage()
-    lazy var trustStoreSession: TrustStoreSession = DefaultTrustStoreSession(
-        serverURL: environment.appConfiguration.erp,
-        trustAnchor: environment.appConfiguration.trustAnchor,
-        trustStoreStorage: memStorage,
-        httpClient: DefaultHTTPClient(
-            urlSessionConfiguration: .ephemeral,
-            interceptors: [
-                AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
-                LoggingInterceptor(log: .body),
-            ]
+    lazy var trustStoreSession: TrustStoreSession = {
+        DefaultTrustStoreSession(
+            serverURL: environment.appConfiguration.erp,
+            trustAnchor: environment.appConfiguration.trustAnchor,
+            trustStoreStorage: memStorage,
+            httpClient: DefaultHTTPClient(
+                urlSessionConfiguration: .ephemeral,
+                interceptors: [
+                    AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
+                    LoggingInterceptor(log: .body),
+                ]
+            )
         )
-    )
+    }()
 
     lazy var idpSession: IDPSession = {
-        let schedulers = Schedulers(computeScheduler: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
+        let schedulers = TestSchedulers(compute: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
 
         // IDP Session
         let idpSessionConfiguration = DefaultIDPSession.Configuration(
@@ -107,9 +99,9 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
             urlSessionConfiguration: .ephemeral,
             interceptors: [
                 AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
-                IDPInterceptor(session: idpSession),
+                idpSession.httpInterceptor(delegate: nil),
                 LoggingInterceptor(log: .body),
-                VAUInterceptor(vauSession: vauSession),
+                vauSession.provideInterceptor(),
                 AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
                 LoggingInterceptor(log: .body),
             ]
@@ -125,14 +117,14 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         return ErxTaskFHIRDataStore(fhirClient: fhirClient)
     }()
 
-    let testProfileId = UUID()
-
-    lazy var vauSession: VAUSession = .init(
-        vauServer: environment.appConfiguration.erp,
-        vauAccessTokenProvider: idpSession.asVAUAccessTokenProvider(),
-        vauStorage: memStorage,
-        trustStoreSession: trustStoreSession
-    )
+    lazy var vauSession: VAUSession = {
+        VAUSession(
+            vauServer: environment.appConfiguration.erp,
+            vauAccessTokenProvider: idpSession.asVAUAccessTokenProvider(),
+            vauStorage: memStorage,
+            trustStoreSession: trustStoreSession
+        )
+    }()
 
     func testLoadingDataFromRemote() throws {
         guard let signer = environment.brainpool256r1Signer else {
@@ -160,7 +152,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         expect(didLogin).to(beTrue())
 
         // trying to revoke consent precautiously in case test failed before
-        cloudStorage.revokeConsent(.chargcons, profileId: testProfileId)
+        cloudStorage.revokeConsent(.chargcons)
             .first()
             .replaceError(with: false)
             .test(timeout: 60.0, expectations: { _ in })
@@ -187,10 +179,10 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
             urlSessionConfiguration: .ephemeral,
             interceptors: [
                 AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
-                IDPInterceptor(session: idpSession),
+                idpSession.httpInterceptor(delegate: nil),
                 LoggingInterceptor(log: .body),
                 ExceptionInterceptor(order: order),
-                VAUInterceptor(vauSession: vauSession),
+                vauSession.provideInterceptor(),
                 AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
                 LoggingInterceptor(log: .body),
             ]
@@ -203,7 +195,16 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
             receiveQueue: DispatchQueue.global().eraseToAnyScheduler()
         )
         let cloud = ErxTaskFHIRDataStore(fhirClient: fhirClient)
+
+        let erxTaskRepository = DefaultErxTaskRepository(
+            disk: MockErxLocalDataStore(),
+            cloud: cloud,
+            medicationScheduleRepository: .testValue,
+            profile: Just(Profile(name: "Test User")).setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
+        )
+
         let redeemService = ErxTaskRepositoryRedeemService(
+            erxTaskRepository: erxTaskRepository,
             loginHandler: DefaultLoginHandler(
                 idpSession: idpSession,
                 signatureProvider: DefaultSecureEnclaveSignatureProvider(storage: memStorage)
@@ -213,45 +214,32 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var receivedOrderResponses: [IdentifiedArrayOf<OrderResponse>] = []
         // Actual redeem call
         var success = false
-        withDependencies {
-            let profile = Profile(name: "Test User")
-            let profileDataStoreMock = ProfileDataStoreMock()
-            profileDataStoreMock
-                .fetchProfileByIdentifierProfileIDAnyPublisherProfileLocalStoreErrorReturnValue = Just(profile)
-                .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
-            $0.profileDataStore = profileDataStoreMock
-            $0.erxRemoteDataStore = cloud
-            $0.erxLocalDataStore = ErxLocalDataStoreMock()
-            $0.medicationScheduleRepository = .testValue
-        } operation: {
-            let cancellable = redeemService.redeem([order], profileId: UUID())
-                .first()
-                .sink(receiveCompletion: { completion in
-                    switch completion {
-                    case let .failure(error):
-                        fail("expected to receive a response ")
-                        success = false
-                        Swift.print(error)
-                    default: break
-                    }
-                    Swift.print(completion)
-                }, receiveValue: { orderResponses in
-                    receivedOrderResponses.append(orderResponses)
-                    Swift.print("✅ Sent \(orderResponses.count) erxTask orders")
-                })
+        let cancellable = redeemService.redeem([order])
+            .first()
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case let .failure(error):
+                    fail("expected to receive a response ")
+                    success = false
+                    Swift.print(error)
+                default: break
+                }
+                Swift.print(completion)
+            }, receiveValue: { orderResponses in
+                receivedOrderResponses.append(orderResponses)
+                Swift.print("✅ Sent \(orderResponses.count) erxTask orders")
+            })
 
-            expect(receivedOrderResponses.count).toEventually(equal(1))
-            if let orderResponses = receivedOrderResponses.first {
-                expect(orderResponses.count) == 1
-                expect(orderResponses.first) == OrderResponse(requested: order, result: ProgressResponse.success(true))
-                success = true
-            } else {
-                fail("expected to have an orderResponse in the received order Resposes array")
-            }
-
-            cancellable.cancel()
+        expect(receivedOrderResponses.count).toEventually(equal(1))
+        if let orderResponses = receivedOrderResponses.first {
+            expect(orderResponses.count) == 1
+            expect(orderResponses.first) == OrderResponse(requested: order, result: ProgressResponse.success(true))
+            success = true
+        } else {
+            fail("expected to have an orderResponse in the received order Resposes array")
         }
 
+        cancellable.cancel()
         return success
     }
 
@@ -282,7 +270,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var success = false
         var finished = false
         var receivedErxTasks: [ErxTask] = []
-        cloudStorage.listAllTasks(after: nil, profileId: testProfileId)
+        cloudStorage.listAllTasks(after: nil)
             .first()
             .test(
                 timeout: 300,
@@ -308,7 +296,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var finished = false
         var success = false
 
-        let cancellable = cloudStorage.listAllAuditEvents(after: nil, for: nil, profileId: testProfileId)
+        let cancellable = cloudStorage.listAllAuditEvents(after: nil, for: nil)
             .first()
             .sink(receiveCompletion: { completion in
                 switch completion {
@@ -333,7 +321,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var finished = false
         var success = false
 
-        let cancellable = cloudStorage.listAllCommunications(after: nil, for: .all, profileId: testProfileId)
+        let cancellable = cloudStorage.listAllCommunications(after: nil, for: .all)
             .first()
             .sink(receiveCompletion: { completion in
                 switch completion {
@@ -359,7 +347,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var success = false
         var receivedConsents = [ErxConsent]()
 
-        cloudStorage.fetchConsents(profileId: testProfileId)
+        cloudStorage.fetchConsents()
             .first()
             .test(
                 timeout: 300,
@@ -395,7 +383,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
             policyRule: .optIn
         )
 
-        cloudStorage.grantConsent(consent, profileId: testProfileId)
+        cloudStorage.grantConsent(consent)
             .first()
             .test(
                 timeout: 300,
@@ -422,7 +410,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
 
         let consentCategory = ErxConsent.Category.chargcons
 
-        cloudStorage.revokeConsent(consentCategory, profileId: testProfileId)
+        cloudStorage.revokeConsent(consentCategory)
             .first()
             .test(
                 timeout: 300,
@@ -450,9 +438,8 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
             self.order = order
         }
 
-        func intercept(chain: Chain) async throws -> HTTPResponse {
-            if let url = chain.request.url,
-               url.absoluteString.contains("Communication"),
+        func intercept(chain: Chain) -> AnyPublisher<HTTPResponse, HTTPClientError> {
+            if chain.request.url!.absoluteString.contains("Communication"),
                let body = chain.request.httpBody,
                let bodyString = String(data: body, encoding: .utf8) {
                 expect(bodyString) == """
@@ -463,20 +450,26 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
                     .rawValue)\\",\\"version\\":1}"}],"recipient":[{"identifier":{"system":"https:\\/\\/gematik.de\\/fhir\\/sid\\/telematik-id","value":"3-SMC-B-Testkarte-883110000094055"}}],"resourceType":"Communication","status":"unknown"}
                 """
             }
-            let response = try await chain.proceed(request: chain.request)
-            if let url = response.response.url,
-               url.absoluteString.contains("Communication"),
-               response.status.rawValue == 201,
-               let dataString = String(data: response.data, encoding: .utf8) {
-                expect(
-                    dataString.contains(
-                        """
-                        "payload":[{"contentString":"{\\"address\\":[\\"Intergation Test Str. 1\\",\\"Address Details\\",\\"12345\\",\\"Berlin\\"],\\"hint\\":\\"Please use the key\\",\\"name\\":\\"Integration Test\\",\\"phone\\":\\"01772345674\\",\\"supplyOptionsType\\":\\"shipment\\",\\"version\\":1}"}]
-                        """
-                    )
-                ).to(beTrue())
-            }
-            return response
+            return chain.proceed(request: chain.request)
+                .map { response in
+                    if response.response.url!.absoluteString.contains("Communication"),
+                       response.status.rawValue == 201,
+                       let dataString = String(data: response.data, encoding: .utf8) {
+                        expect(
+                            dataString.contains(
+                                """
+                                "payload":[{"contentString":"{\\"address\\":[\\"Intergation Test Str. 1\\",\\"Address Details\\",\\"12345\\",\\"Berlin\\"],\\"hint\\":\\"Please use the key\\",\\"name\\":\\"Integration Test\\",\\"phone\\":\\"01772345674\\",\\"supplyOptionsType\\":\\"shipment\\",\\"version\\":1}"}]
+                                """
+                            )
+                        ).to(beTrue())
+                    }
+                    return response
+                }
+                .eraseToAnyPublisher()
+        }
+
+        func interceptAsync(chain _: Chain) async throws -> HTTPResponse {
+            throw HTTPClientError.internalError("notImplemented")
         }
     }
 

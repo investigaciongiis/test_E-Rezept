@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -27,7 +23,7 @@ import ModelsR4
 import Nimble
 import XCTest
 
-/// FHIRBundle tests with different workflow and kbv versions
+// FHIRBundle tests with different workflow and kbv versions
 final class FHIR_GEM_Workflow_v1_1_with_KBV_v1_0_2_Tests: XCTestCase {
     /// FHIRBundle test with
     /// - workflow bundle version: 1.0.0 and
@@ -96,7 +92,7 @@ final class FHIR_GEM_Workflow_v1_1_with_KBV_v1_0_2_Tests: XCTestCase {
             date: "2020-05-01"
         )
         expect(task.medicationRequest.coPaymentStatus) == .subjectToCharge
-        expect(task.medicationRequest.ser) == true
+        expect(task.medicationRequest.bvg) == true
     }
 
     /// FHIRBundle test with
@@ -147,7 +143,7 @@ final class FHIR_GEM_Workflow_v1_1_with_KBV_v1_0_2_Tests: XCTestCase {
             date: "2021-04-01"
         )
         expect(task.medicationRequest.coPaymentStatus) == .noSubjectToCharge
-        expect(task.medicationRequest.ser) == true
+        expect(task.medicationRequest.bvg) == true
         expect(task.medicationRequest.quantity) == .init(value: "1", unit: "{Package}")
         // patient
         expect(task.patient?.name) == "Prof. Dr. Karl-Friederich Graf Freiherr von Schaumberg"

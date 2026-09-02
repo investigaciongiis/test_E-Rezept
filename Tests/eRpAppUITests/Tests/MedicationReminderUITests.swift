@@ -1,44 +1,39 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import eRpResources
 import Foundation
 import Nimble
 import XCTest
 
-@MainActor
 final class MedicationReminderUITests: XCTestCase {
     var app: XCUIApplication!
 
-    override func tearDown() async throws {
-        try await super.tearDown()
+    override func tearDown() {
+        super.tearDown()
 
         notificationAlertMonitor.map { [self] in removeUIInterruptionMonitor($0) }
     }
 
     var notificationAlertMonitor: NSObjectProtocol?
 
-    override func setUp() async throws {
-        try await super.setUp()
+    @MainActor
+    override func setUp() {
+        super.setUp()
 
         app = XCUIApplication()
 
@@ -70,8 +65,7 @@ final class MedicationReminderUITests: XCTestCase {
         }
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-        // swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 
@@ -88,7 +82,7 @@ final class MedicationReminderUITests: XCTestCase {
         // Check "Off"
         expect(details.medicationReminderCell().value as? String).to(equal("Aus"))
         // Abgabehinweise korrekt auf 1-1-1-1
-        expect(details.dosageInstructionCell().label).to(beginWith("Einnahmehinweise, 1-1-1-1"))
+        expect(details.dosageInstructionCell().label).to(beginWith("1-1-1-1"))
 
         let reminderSetup = details.tapSetupMedicationReminder()
 
@@ -182,7 +176,7 @@ final class MedicationReminderUITests: XCTestCase {
         reminderSetup.toggleActive()
 
         // Validate Wiederholen is by default unbegrenzt->
-        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("Täglich"))
+        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("Unbegrenzt"))
 
         // Validate no time is added by default->
         expect(reminderSetup.numberOfSetupTimes()).to(equal(0))
@@ -217,7 +211,7 @@ final class MedicationReminderUITests: XCTestCase {
             .to(equal("Ein"))
     }
 
-    /// Rezept DJ | Begrenzt
+    // Rezept DJ | Begrenzt
     @MainActor
     func testMedicationReminderSetupLimited() {
         // create a Rezept (DJ)->
@@ -250,7 +244,7 @@ final class MedicationReminderUITests: XCTestCase {
         reminderSetup.toggleActive()
 
         // Validate Wiederholen is by default unbegrenzt->
-        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("Täglich"))
+        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("Unbegrenzt"))
 
         // Validate no time is added by default->
         expect(reminderSetup.numberOfSetupTimes()).to(equal(0))
@@ -283,7 +277,7 @@ final class MedicationReminderUITests: XCTestCase {
         repetitionSetup.tapBackButton()
 
         // Validate Zeit wiederholen is set to Begrenzt bis {heute date}->
-        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("Täglich"))
+        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("bis Heute"))
 
         reminderSetup.tapAddTimeButton()
         expect(reminderSetup.numberOfSetupTimes()).to(equal(1))
@@ -299,7 +293,7 @@ final class MedicationReminderUITests: XCTestCase {
         expect(details2.medicationReminderCell().value as? String).to(equal("Ein"))
     }
 
-    /// Rezept Keine Angabe | Begrenzt - start date in future
+    // Rezept Keine Angabe | Begrenzt - start date in future
     @MainActor
     func testMedicationReminderSetupForFuture() {
         // create a Rezept (Keine Angabe)->
@@ -337,7 +331,7 @@ final class MedicationReminderUITests: XCTestCase {
         reminderSetup.toggleActive()
 
         // Validate Wiederholen is by default unbegrenzt->
-        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("Täglich"))
+        expect(reminderSetup.repetitionDetailsCell().value as? String).to(equal("Unbegrenzt"))
 
         // Validate no time is added by default->
         expect(reminderSetup.numberOfSetupTimes()).to(equal(0))
@@ -393,7 +387,7 @@ final class MedicationReminderUITests: XCTestCase {
 
         // Validate Zeit wiederholen is set to Begrenzt bis {heute +10 date}->
         expect(repetitionSetup2.repetitionDetailsCell().value as? String)
-            .to(equal("Täglich"))
+            .to(equal("bis \(todayPlus10.datePickerLabelFormatted())"))
 
         // Add a new time->
         repetitionSetup2.tapAddTimeButton()
@@ -407,7 +401,7 @@ final class MedicationReminderUITests: XCTestCase {
         expect(details.medicationReminderCell().value as? String).to(equal("Ein"))
     }
 
-    /// Multiple Rezepts sorting | Settings screen
+    // Multiple Rezepts sorting | Settings screen
     @MainActor
     func testMedicationReminderSetupSortTest() {
         let medicationName1 = "Ibuprofen"

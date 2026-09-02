@@ -1,29 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import CryptoKit
 import Foundation
+import OpenSSL
 
 /// JSON Web Encryption (JWE) - Container format holding a payload and the corresponding
 /// ciphertext along with encryption information.
@@ -60,9 +56,9 @@ public struct JWE {
     ///   - payload: The payload of the JWE that will be encrypted
     ///   - nonceGenerator: Nonce used for generating the shared secret
     /// - Throws: If JWE encryption fails
-    public init(header: Header,
-                payload: Data,
-                nonceGenerator: () throws -> Data) throws {
+    init(header: Header,
+         payload: Data,
+         nonceGenerator: () throws -> Data) throws {
         self.payload = payload
         backing = try header.encryption.encrypt(payload: payload,
                                                 header: header,
@@ -127,19 +123,19 @@ public struct JWE {
 }
 
 extension JWE {
-    @CodedError("103")
+    // sourcery: CodedError = "103"
     public enum Error: Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case invalidJWE // Must contain 5 parts (4 dots)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case encodingError
     }
 }
 
 extension JWE {
-    public struct Header: Encodable {
+    struct Header: Encodable {
         /// algorithm used for encrypting the JWE
-        public var alg: String
+        var alg: String
         /// Encryption type
         var enc: String {
             switch encryption {
@@ -149,22 +145,40 @@ extension JWE {
         }
 
         /// expiry date of the payload (the original challenge)
-        public let exp: Date?
+        let exp: Date?
         /// Content type of the JWE (e.g. JWT, NJWT)
-        public let cty: String
+        let cty: String
         /// Token Type, e.g. JWT
-        public let typ: String?
+        let typ: String?
         /// Ephemeral public key that is used by the server for decryption
         var epk: JWK {
             encryptionContext.ephemeralPublicKey
         }
 
         /// Encryption object which performs the actual encryption
-        public let encryption: Encryption
+        let encryption: Encryption
         /// Key material used for encryption
-        public let encryptionContext: EncryptionContext
+        let encryptionContext: EncryptionContext
 
-        public init(
+        init(
+            algorithm: Algorithm,
+            encryption: Encryption,
+            expiry: Date? = nil,
+            contentType: String,
+            type: String? = nil
+        ) throws {
+            self.encryption = encryption
+            encryptionContext = try algorithm.encryptionContext()
+            exp = expiry
+            cty = contentType
+            typ = type
+            switch algorithm {
+            case .ecdh_es:
+                alg = "ECDH-ES"
+            }
+        }
+
+        init(
             encryptionContext: EncryptionContext,
             alg: String,
             encryption: Encryption,
@@ -189,7 +203,7 @@ extension JWE {
             case epk
         }
 
-        public func encode(to encoder: Encoder) throws {
+        func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
 
             try container.encode(enc, forKey: .enc)
@@ -202,12 +216,34 @@ extension JWE {
     }
 }
 
+extension JWK {
+    /// Initializer for creating a  JWK (JSON web key) from a brainpool curve's public key
+    /// - Parameter publicKey: A brainpoolP256r1 public key
+    /// - Throws: When encoding the coordinates from the public key fails
+    /// - Returns: A JWK
+    static func from(brainpoolP256r1 publicKey: BrainpoolP256r1.KeyExchange.PublicKey) throws -> Self {
+        // Contains  04 || x || y
+        let raw = publicKey.x962Value
+
+        // index 0 contains 04, representing `uncompressed`
+        let rangeX: Range<Data.Index> = 1 ..< 33
+        let rangeY: Range<Data.Index> = 33 ..< 65
+
+        guard let base64x = try raw().subdata(in: rangeX).encodeBase64UrlSafe(),
+              let xCoordinate = String(data: base64x, encoding: .utf8),
+              let base64y = try raw().subdata(in: rangeY).encodeBase64UrlSafe(),
+              let yCoordinate = String(data: base64y, encoding: .utf8) else {
+            throw JWE.Error.encodingError
+        }
+
+        return JWK(kty: "EC", crv: "BP-256", x: xCoordinate, y: yCoordinate)
+    }
+}
+
 extension JWE {
     private static let delimiter = UInt8(0x2E)
 
-    /// Encode the JWE to its compact serialization format
-    /// - Returns: Data containing the encoded JWE
-    public func encoded() -> Data {
+    func encoded() -> Data {
         backing.encoded()
     }
 }
@@ -215,8 +251,6 @@ extension JWE {
 extension JWE.Backing {
     private static let dot = Data([0x2E]) // "."
 
-    /// Encode the JWE backing data to compact serialization format
-    /// - Returns: Data containing the encoded JWE components
     func encoded() -> Data {
         let encodedHeader = header.encodeBase64UrlSafe() ?? Data()
         let encodedWrappedKey = wrappedKey.encodeBase64UrlSafe() ?? Data()
@@ -228,12 +262,5 @@ extension JWE.Backing {
             encodedIV + Self.dot +
             encodedCiphertext + Self.dot +
             encodedTag
-    }
-}
-
-extension JWE {
-    /// Decryption algorithm for JWE
-    enum DecryptionAlgorithm {
-        case plain(SymmetricKey)
     }
 }

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -26,7 +22,7 @@ import eRpStyleKit
 import SwiftUI
 
 struct PrescriptionListView<StickyHeader: View>: View {
-    @Bindable var store: StoreOf<PrescriptionListDomain>
+    @Perception.Bindable var store: StoreOf<PrescriptionListDomain>
 
     let header: StickyHeader
 
@@ -36,136 +32,132 @@ struct PrescriptionListView<StickyHeader: View>: View {
     }
 
     var body: some View {
-        RefreshScrollView(
-            store: store,
-            content: {
-                if store.openPrescriptions.isEmpty {
-                    PrescriptionListEmptyView(store: store)
-                        .transition(.opacity.animation(.easeOut(duration: 0.2)))
-                } else {
-                    ListView(store: store)
-                        .transition(.opacity.animation(.easeOut(duration: 0.2)))
+        WithPerceptionTracking {
+            RefreshScrollView(
+                store: store,
+                content: {
+                    if store.openPrescriptions.isEmpty {
+                        PrescriptionListEmptyView(store: store)
+                    } else {
+                        ListView(store: store)
+                    }
+                },
+                header: {
+                    header
+                }, action: {
+                    store.send(.redeemButtonTapped(
+                        openPrescriptions: store.openPrescriptions
+                    ))
                 }
-            },
-            header: {
-                header
-            }, action: {
-                store.send(.redeemButtonTapped(
-                    openPrescriptions: store.openPrescriptions
-                ))
+            )
+            .onAppear {
+                store.send(.registerActiveUserProfileListener)
+                store.send(.registerSelectedProfileIDListener)
             }
-        )
-        .onAppear {
-            store.send(.registerActiveUserProfileListener)
-        }
-        .onDisappear {
-            store.send(.unregisterActiveUserProfileListener)
-        }
-        .alert(
-            L10n.alertErrorTitle.key,
-            isPresented: .init(get: {
-                store.showError
-            }, set: { show in
-                if !show {
-                    store.send(.alertDismissButtonTapped)
-                }
-            }),
-            actions: {
-                Button(L10n.alertBtnOk) {
-                    store.send(.alertDismissButtonTapped)
-                }
-            },
-            message: {
-                Text(store.loadingState.error?
-                    .localizedDescriptionWithErrorList ?? "alert_error_message_unknown")
+            .onDisappear {
+                store.send(.unregisterActiveUserProfileListener)
+                store.send(.unregisterSelectedProfileIDListener)
             }
-        )
+            .alert(
+                L10n.alertErrorTitle.key,
+                isPresented: .init(get: {
+                    store.showError
+                }, set: { show in
+                    if !show {
+                        store.send(.alertDismissButtonTapped)
+                    }
+                }),
+                actions: {
+                    Button(L10n.alertBtnOk) {
+                        store.send(.alertDismissButtonTapped)
+                    }
+                },
+                message: {
+                    Text(store.loadingState.error?
+                        .localizedDescriptionWithErrorList ?? "alert_error_message_unknown")
+                }
+            )
+        }
     }
 
     private struct ListView: View {
-        @Bindable var store: StoreOf<PrescriptionListDomain>
+        @Perception.Bindable var store: StoreOf<PrescriptionListDomain>
 
         var body: some View {
-            VStack(spacing: 0) {
-                ListHeaderView(store: store)
-                    .padding(.bottom, 4)
+            WithPerceptionTracking {
+                VStack(spacing: 0) {
+                    ListHeaderView(store: store)
+                        .padding(.bottom, 4)
 
-                VStack(spacing: 16) {
-                    ForEach(store.openPrescriptions) { prescription in
-                        PrescriptionView(
-                            prescription: prescription
-                        ) {
-                            if prescription.isDiGaPrescription {
-                                store.send(.diGaDetailViewTapped(selectedPrescription: prescription,
-                                                                 profile: store.profile))
-                            } else {
+                    VStack(spacing: 16) {
+                        ForEach(store.openPrescriptions) { prescription in
+                            PrescriptionView(
+                                prescription: prescription
+                            ) {
                                 store.send(.prescriptionDetailViewTapped(selectedPrescription: prescription))
                             }
                         }
                     }
-                }
-                .padding()
+                    .padding()
 
-                if let date = store.profile?.lastSuccessfulSync {
-                    RelativeTimerView(date: date)
-                        .font(.footnote)
-                        .foregroundColor(Colors.systemLabelSecondary)
-                }
+                    if let date = store.profile?.lastSuccessfulSync {
+                        RelativeTimerView(date: date)
+                            .font(.footnote)
+                            .foregroundColor(Colors.textSecondary)
+                    }
 
-                if store.hasArchivedPrescriptions {
-                    Button {
-                        store.send(.showArchivedButtonTapped)
-                    } label: {
-                        Label {
+                    if store.hasArchivedPrescriptions {
+                        Button {
+                            store.send(.showArchivedButtonTapped)
+                        } label: {
                             Text(L10n.mainBtnArchivedPresc)
                                 .font(.subheadline.weight(.semibold))
-                        } icon: {
-                            Image(systemName: SFSymbolName.archivebox)
                         }
+                        .accessibilityIdentifier(A11y.mainScreen.erxBtnArcPrescription)
+                        .padding(.top, 28)
+                        .padding(.bottom)
                     }
-                    .accessibilityIdentifier(A11y.mainScreen.erxBtnArcPrescription)
-                    .padding(.top, 28)
-                    .padding(.bottom)
-                    .buttonStyle(.quartary)
                 }
             }
         }
     }
 
     private struct ListHeaderView: View {
-        @Bindable var store: StoreOf<PrescriptionListDomain>
+        @Perception.Bindable var store: StoreOf<PrescriptionListDomain>
 
         var body: some View {
-            HStack {
-                ProfilePictureView(
-                    image: store.profile?.image,
-                    userImageData: store.profile?.userImageData,
-                    color: store.profile?.color,
-                    connection: store.profile?.connectionStatus,
-                    style: .small
-                ) {
-                    if let profile = store.profile {
-                        store.send(.profilePictureViewTapped(profile))
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            WithPerceptionTracking {
+                HStack {
+                    ProfilePictureView(
+                        image: store.profile?.image,
+                        userImageData: store.profile?.userImageData,
+                        color: store.profile?.color,
+                        connection: store.profile?.connectionStatus,
+                        style: .small
+                    ) {
+                        if let profile = store.profile {
+                            store.send(.profilePictureViewTapped(profile))
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
                     }
-                }
-                Spacer()
+                    Spacer()
 
-                Button {
-                    store.send(.refresh)
-                } label: {
-                    if store.isConnected {
-                        Image(systemName: SFSymbolName.refresh)
-                    } else {
-                        Text(L10n.mainBtnLogin)
+                    Button {
+                        store.send(.refresh)
+                    } label: {
+                        if store.isConnected {
+                            Image(systemName: SFSymbolName.refresh)
+                        } else {
+                            Text(L10n.mainBtnLogin)
+                        }
                     }
+                    .buttonStyle(.quartary)
+                    .accessibilityIdentifier(store.isConnected ? A11y.mainScreen.erxBtnRefresh : A11y.mainScreen
+                        .erxBtnLogin)
                 }
-                .buttonStyle(.secondarySmall)
-                .accessibilityIdentifier(store.isConnected ? A11y.mainScreen.erxBtnRefresh : A11y.mainScreen
-                    .erxBtnLogin)
+                .padding(.top, 38)
+                .padding(.horizontal)
             }
-            .padding(.top, 14)
-            .padding(.horizontal)
         }
     }
 }
@@ -209,7 +201,9 @@ struct PrescriptionListView_Previews: PreviewProvider {
             VStack {
                 PrescriptionListView(
                     store: PrescriptionListDomain.Dummies.storeFor(
-                        PrescriptionListDomain.State()
+                        PrescriptionListDomain.State(
+                            prescriptions: Prescription.Dummies.prescriptions
+                        )
                     )
                 ) {
                     Text("Header")
@@ -220,7 +214,9 @@ struct PrescriptionListView_Previews: PreviewProvider {
             VStack {
                 PrescriptionListView(
                     store: PrescriptionListDomain.Dummies.storeFor(
-                        PrescriptionListDomain.State()
+                        PrescriptionListDomain.State(
+                            prescriptions: Prescription.Dummies.prescriptions
+                        )
                     )
                 ) {
                     Text("Header")

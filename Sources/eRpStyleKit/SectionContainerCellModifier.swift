@@ -1,104 +1,39 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import SwiftUI
 
-struct SectionContainerElementInformation {
-    var isRootElement = false
-    var isLastElement = false
-    var isSectionContainerElement = false
-    var isNavigationLinkElement = false
-
-    static func defaultElement(isLastElement: Bool = false) -> Self {
-        SectionContainerElementInformation(
-            isRootElement: true,
-            isLastElement: isLastElement,
-            isSectionContainerElement: true,
-            isNavigationLinkElement: false
-        )
-    }
-
-    func disableRoot() -> Self {
-        var copy = self
-        copy.isRootElement = false
-        return copy
-    }
-
-    func disableNavigationLink() -> Self {
-        var copy = self
-        copy.isNavigationLinkElement = false
-        return copy
-    }
-
-    func enableNavigationLink() -> Self {
-        guard isSectionContainerElement else { return self }
-
-        var copy = self
-        copy.isNavigationLinkElement = true
-        return copy
-    }
-
-    func enableLastElement() -> Self {
-        guard isSectionContainerElement else { return self }
-
-        var copy = self
-        copy.isLastElement = true
-        return copy
-    }
-
-    func disableLastElement() -> Self {
-        var copy = self
-        copy.isLastElement = false
-        return copy
-    }
-}
-
-private struct SectionContainerElementInformationKey: EnvironmentKey {
-    static let defaultValue = SectionContainerElementInformation()
+private struct SectionContainerCellLastElementKey: EnvironmentKey {
+    static let defaultValue = false
 }
 
 extension EnvironmentValues {
-    var sectionContainerElementInformation: SectionContainerElementInformation {
-        get { self[SectionContainerElementInformationKey.self] }
-        set { self[SectionContainerElementInformationKey.self] = newValue }
+    var sectionContainerIsLastElement: Bool {
+        get { self[SectionContainerCellLastElementKey.self] }
+        set { self[SectionContainerCellLastElementKey.self] = newValue }
     }
 }
 
 extension View {
-    func sectionContainerElementInformation(_ info: SectionContainerElementInformation) -> some View {
-        environment(\.sectionContainerElementInformation, info)
-    }
-
     /// Use on the content of a `SectionContainer` and pass `true` if the element is the last Element in list
     /// This will remove the separator from the last element in the section.
     public func sectionContainerIsLastElement(_ sectionContainerIsLastElement: Bool) -> some View {
-        environment(\.sectionContainerElementInformation.isLastElement, sectionContainerIsLastElement)
-    }
-
-    /// Use on the content of a `SectionContainer` and pass `true` if the element is the root most Element in the view
-    /// hierachy. Styles of elements will call this method using `false` if they "consume" the root information by
-    /// applying the appropriate styling.
-    public func rootSectionContainerElement(_ isRootSectionContainerElement: Bool) -> some View {
-        environment(\.sectionContainerElementInformation.isRootElement, isRootSectionContainerElement)
+        environment(\.sectionContainerIsLastElement, sectionContainerIsLastElement)
     }
 }
 
@@ -111,14 +46,14 @@ public struct SectionContainerCellModifier: ViewModifier {
 
     public func body(content: Content) -> some View {
         content
-            .labelStyle(SectionContainerLabelStyle())
-            .buttonStyle(SectionContainerButtonStyle())
-            .toggleStyle(FormToggleStyle())
-            .subTitleStyle(SectionContainerSubTitleStyle())
-            .keyValuePairStyle(SeparatedKeyValuePairStyle())
+            .labelStyle(SectionContainerLabelStyle(showSeparator: !last))
+            .buttonStyle(SectionContainerButtonStyle(showSeparator: !last))
+            .toggleStyle(FormToggleStyle(showSeparator: !last))
+            .subTitleStyle(SectionContainerSubTitleStyle(showSeparator: !last))
+            .keyValuePairStyle(SeparatedKeyValuePairStyle(showSeparator: !last))
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .labeledContentStyle(.vertical)
-            .sectionContainerElementInformation(.defaultElement(isLastElement: last))
+            .labeledContentStyle(SectionContainerLabeledContentStyle(showSeparator: !last))
+            .sectionContainerIsLastElement(last)
     }
 }
 
@@ -158,7 +93,7 @@ struct ListsAtoms_Preview: PreviewProvider {
                                 Image(systemName: SFSymbolName.info)
                             }
                         }
-                        .buttonStyle(.navigation)
+                        .buttonStyle(.navigation(showSeparator: false))
                     }
 
                     SectionContainer {

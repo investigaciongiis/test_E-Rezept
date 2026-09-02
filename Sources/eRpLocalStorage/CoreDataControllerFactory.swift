@@ -1,94 +1,72 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CoreData
-import Dependencies
-import DependenciesMacros
 import Foundation
-import Sharing
 
 /// Instance of conforming type know how to instantiate a `CoreDataController`.
-@DependencyClient
-public struct CoreDataControllerFactory {
+public protocol CoreDataControllerFactory {
     /// The database location on device
-    public var databaseUrl: @Sendable () -> URL = { defaultDatabaseUrl }
+    var databaseUrl: URL { get }
     /// Provides an instance of  `CoreDataController`
-    public var loadCoreDataController: @Sendable () throws -> CoreDataController
+    func loadCoreDataController() throws -> CoreDataController
 }
 
 /// Factory for all public `eRpLocalStorage` instances.
 /// Guarantees to always return the same instance of `CoreDataController` during it's lifetime
-extension CoreDataControllerFactory: DependencyKey {
-    public static let liveValue: CoreDataControllerFactory = Self(
-        databaseUrl: {
-            NSPersistentContainer.defaultDirectoryURL()
-        },
-        loadCoreDataController: {
-            @Shared(.coreDataController) var coreDataController
+public class LocalStoreFactory: CoreDataControllerFactory {
+    private let fileProtection: FileProtectionType
+    public let databaseUrl: URL
+    private var coreDataController: CoreDataController?
 
-            if let controller = coreDataController {
-                return controller
-            }
+    /// Initialize a CoreDataControllerFactory
+    /// - Parameters:
+    ///   - databaseUrl: The database location on device
+    ///   - fileProtection:The file protection level
+    public init(
+        url databaseUrl: URL = defaultDatabaseUrl,
+        fileProtection: FileProtectionType = .completeUnlessOpen
+    ) {
+        self.databaseUrl = databaseUrl
+        // [REQ:BSI-eRp-ePA:O.Purp_8#2] CoreData databases are protected
+        self.fileProtection = fileProtection
+    }
 
-            guard Thread.isMainThread else {
-                return try DispatchQueue.main.sync {
-                    try loadCoreDataController()
-                }
-            }
-
-            func loadCoreDataController() throws -> CoreDataController {
-                let controller = try CoreDataController(
-                    url: defaultDatabaseUrl,
-                    fileProtection: .completeUnlessOpen
-                )
-                $coreDataController.withLock { $0 = controller }
-                return controller
-            }
-            return try loadCoreDataController()
+    /// Lazy initializer for the CoreDataController
+    /// - Throws: When store can not be initialized
+    /// - Returns: The same instance of `CoreDataController` during the lifetime of `CoreDataControllerFactory`
+    public func loadCoreDataController() throws -> CoreDataController {
+        if let coreDataController = coreDataController {
+            return coreDataController
         }
-    )
 
-    public static let testValue: CoreDataControllerFactory = Self()
-}
+        guard Thread.isMainThread else {
+            return try DispatchQueue.main.sync {
+                try loadCoreDataController()
+            }
+        }
 
-extension SharedReaderKey
-    where Self == InMemoryKey<CoreDataController?>.Default {
-    /// cached CoreDataController stored in memory
-    public static var coreDataController: Self {
-        Self[.inMemory("cached_coredata_dontroller"), default: nil]
+        let controller = try CoreDataController(url: databaseUrl, fileProtection: fileProtection)
+        coreDataController = controller
+        return controller
     }
-}
 
-extension DependencyValues {
-    /// Access to the coreDataControllerFactory dependency.
-    public var coreDataControllerFactory: CoreDataControllerFactory {
-        get { self[CoreDataControllerFactory.self] }
-        set { self[CoreDataControllerFactory.self] = newValue }
-    }
-}
-
-extension CoreDataControllerFactory {
-    /// The database location on device
-    public static let defaultDatabaseUrl: URL = {
+    /// Default Local FHIR data store url
+    public static var defaultDatabaseUrl: URL = {
         guard let filePath = try? FileManager.default.url(
             for: .documentDirectory,
             in: .userDomainMask,
@@ -100,14 +78,19 @@ extension CoreDataControllerFactory {
         }
         return filePath
     }()
+}
 
-    /// Failing version of `CoreDataController`
-    public static let failing = CoreDataControllerFactory(
-        databaseUrl: { URL(fileURLWithPath: "") },
-        loadCoreDataController: {
-            struct LoadError: Error {}
+extension LocalStoreFactory {
+    public struct Failing: CoreDataControllerFactory {
+        public var databaseUrl = URL(fileURLWithPath: "")
+        private var coreDataController: CoreDataController!
+
+        public func loadCoreDataController() throws -> CoreDataController {
             assertionFailure("should not have been called")
-            throw LoadError()
+            return coreDataController
         }
-    )
+    }
+
+    /// Returns a factory which fails returning a CoreDataController
+    public static let failing = Failing()
 }

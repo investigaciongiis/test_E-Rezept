@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 // The following is heavily inspired by https://github.com/pointfreeco/isowords ❤️
@@ -25,7 +21,7 @@
 import SnapshotTesting
 import SwiftUI
 
-struct Snapshot<Content: View>: View {
+struct Snapshot<Content>: View where Content: View {
     private let content: () -> Content
     @State private var image: Image?
     private let snapshotting: Snapshotting<AnyView, UIImage>
@@ -39,14 +35,14 @@ struct Snapshot<Content: View>: View {
 
     var body: some View {
         ZStack {
-            image?
+            self.image?
                 .resizable()
                 .aspectRatio(contentMode: .fit)
         }
         .onAppear {
-            snapshotting
-                .snapshot(AnyView(content()))
-                .run { image = Image(uiImage: $0) }
+            self.snapshotting
+                .snapshot(AnyView(self.content()))
+                .run { self.image = Image(uiImage: $0) }
         }
     }
 }
@@ -71,9 +67,9 @@ struct AppStorePreview<SnapshotContent: View>: View {
     var body: some View {
         ZStack {
             Group {
-                Snapshot(snapshotting) {
+                Snapshot(self.snapshotting) {
                     ZStack(alignment: .top) {
-                        snapshotContent()
+                        self.snapshotContent()
 
                         StatusBar()
                     }
@@ -84,7 +80,7 @@ struct AppStorePreview<SnapshotContent: View>: View {
             .background(Color.black)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(backgroundColor.ignoresSafeArea())
+        .background(self.backgroundColor.ignoresSafeArea())
         .ignoresSafeArea()
     }
 }
@@ -100,7 +96,7 @@ struct StatusBar: View {
                 Text("\(Image(systemName: "wifi")) \(Image(systemName: "battery.100"))")
             }
             .font(Font.system(size: 14).monospacedDigit().bold())
-            .foregroundColor(colorScheme == .dark ? .white : .black)
+            .foregroundColor(self.colorScheme == .dark ? .white : .black)
             .padding(.top, 2)
             .padding(.leading, 6)
             .padding(.trailing, 3)

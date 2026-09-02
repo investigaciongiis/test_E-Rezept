@@ -10,8 +10,6 @@ controls:
     - ctl_tooltip_container
   demoMode:
     - bnr_txt_demo_mode
-  osDeprecationBanner:
-    - bnr_txt_os_deprecation
 migration:
   - amg_txt_and_spinner
 scanner:
@@ -53,7 +51,6 @@ cardWall:
     - cdw_btn_intro_later
     - cdw_btn_intro_cancel
     - cdw_btn_intro_more
-    - cdw_btn_intro_advance
     - cdw_img_intro_main
     - cdw_txt_intro_header_bottom
     - cdw_txt_intro_description
@@ -80,7 +77,6 @@ cardWall:
   canScanner:
     - cdw_scn_btn_close
     - cdw_scn_btn_done
-    - cdw_scn_btn_flashlight
   pinInput:
     - cdw_txt_pin_subtitle
     - cdw_txt_pin_description
@@ -109,13 +105,11 @@ cardWall:
     - cdw_btn_rc_help_next_tip
     - cdw_btn_rc_help_next
 onboarding:
-  progress:
-    - onb_auth_img_progress
   start:
     - onb_txt_start_title
     - onb_img_gematik_logo
     - onb_img_man1
-    - onb_btn_start
+    - onb_btn_next
   welcome:
     - onb_txt_welcome_title
     - onb_img_frau1
@@ -136,21 +130,14 @@ onboarding:
     - onb_auth_txt_alt_description
     - onb_auth_txt_no_biometrics
     - onb_auth_txt_section_title
-    - onb_auth_txt_section_subtitle
-    - onb_auth_txt_password_strength
+    - onb_auth_btn_faceid
+    - onb_auth_btn_touchid
     - onb_auth_btn_password
-    - onb_auth_btn_back
-    - onb_auth_btn_face_id
-    - onb_auth_btn_touch_id
   analytics:
-    - onb_ana_txt_title
-    - onb_ana_txt_subtitle
-    - onb_ana_btn_allow
-    - onb_ana_btn_deny
+    - onb_ana_btn_continue
   legalInfo:
-    - onb_img_progress
     - onb_txt_legal_info_title
-    - onb_btn_next
+    - onb_btn_confirm
     - onb_txt_terms_of_use
     - onb_btn_accept_terms_of_use_and_privacy
     - onb_txt_terms_of_privacy
@@ -252,8 +239,6 @@ settings:
     - stg_txt_edit_profile_insurance_id
     - stg_txt_edit_profile_charge_item_list_section_title
     - stg_txt_edit_profile_charge_item_list_section_show_charge_item_list
-    - stg_txt_edit_profile_eu_redeem_list_section_title
-    - stg_btn_edit_profile_eu_redeem_change_consent
     - stg_txt_edit_profile_login_section_title
     - stg_txt_edit_profile_login_section_activate
     - stg_txt_edit_profile_login_section_connected_devices
@@ -262,7 +247,6 @@ settings:
     - stg_btn_edit_profile_security_section_show_tokens
     - stg_btn_edit_profile_security_section_show_audit_events
     - stg_txt_edit_profile_security_show_tokens_hint
-    - stg_txt_edit_profile_my_area_title
   newProfile:
     - stg_txt_new_profile_bg_color_title
     - stg_txt_new_profile_bg_color_picker
@@ -279,15 +263,12 @@ settings:
     - stg_ctn_audit_events_event_title
     - stg_ctn_audit_events_event_description
     - stg_ctn_audit_events_event_date
-    - stg_ctn_audit_events_event_telematik_id_info
     - stg_txt_audit_events_last_updated
     - stg_txt_audit_events_activity_indicator
     - stg_txt_audit_events_no_protocol_title
     - stg_txt_audit_events_no_protocol_description
     - stg_txt_audit_events_bottom_banner_message
     - stg_btn_audit_events_bottom_banner
-  notificationChannels:
-    - stg_txt_notification_channels_description
   legalNotice:
     - stg_lno_txt_header_legal_info
     - stg_lno_txt_legal_notice
@@ -305,7 +286,6 @@ settings:
     - stg_con_txt_footnote
     - stg_con_txt_mail
     - stg_con_txt_survey
-    - stg_con_txt_diga_survey
     - stg_con_btn_organ_donor
   dataPrivacy:
     - stg_dpr_txt_data_privacy
@@ -317,8 +297,6 @@ settings:
     - stg_tou_txt_terms_of_use
     - stg_ww_terms_of_use
     - stg_btn_terms_of_use_close
-  accessibilityStatement:
-    - stg_btn_accessibility_statement
   tracking:
     - stg_trk_txt_title
     - stg_trk_txt_explanation
@@ -335,70 +313,7 @@ redeem:
     - rdm_txt_pharmacy_subtitle
     - rdm_btn_pharmacy_tile
     - rdm_btn_delivery_tile
-    - rdm_btn_redeem_eu_prsc
     - rdm_btn_close_button
-  eu:
-    consent:
-      - eurdm_btn_consent_grant
-      - eurdm_btn_consent_revoke
-      - eurdm_txt_consent_title
-      - eurdm_txt_consent_description1
-      - eurdm_txt_consent_description2
-      - eurdm_txt_consent_info
-      - eurdm_btn_consent_accept
-      - eurdm_btn_consent_decline
-      - eurdm_btn_consent_abort
-    code:
-      - eurdm_code_toggle_display_mode_button
-      - eurdm_code_close_button
-      - eurdm_code_generate_new_button
-      - eurdm_code_take_receipt_button
-      - eurdm_code_speech_insurance_number_button
-      - eurdm_code_speech_exchange_code_button
-      - eurdm_code_manual_refresh_button
-      - eurdm_code_qr_refresh_button
-      - eurdm_code_txt_step2
-      - eurdm_code_txt_step_description
-      - eurdm_code_txt_insurance_number_label
-      - eurdm_code_txt_insurance_number
-      - eurdm_code_txt_exchange_code_label
-      - eurdm_code_txt_exchange_code
-      - eurdm_code_txt_validity_manual
-      - eurdm_code_txt_qr_expired
-      - eurdm_code_txt_validity_qr
-    selection:
-      - eurdm_txt_selection_title
-      - eurdm_txt_selection_subtitle
-      - eurdm_img_selection_banner
-      - eurdm_btn_selection_redeem
-      - eurdm_btn_selection_close
-      - eurdm_btn_selection_prescriptions
-      - eurdm_txt_selection_prescription_title
-      - eurdm_txt_selection_prescription_caption
-      - eurdm_btn_selection_country
-      - eurdm_txt_selection_country_title
-      - eurdm_txt_selection_country_no_selection
-      - eurdm_txt_selection_country_caption
-    countrySelection:
-      - eurdm_txt_country_title
-      - eurdm_txt_country_subtitle
-      - eurdm_btn_country_location
-      - eurdm_txt_country_empty_title
-      - eurdm_txt_country_empty_subtitle
-      - eurdm_txt_country_location_empty
-    prescriptionSelection:
-      - eurdm_txt_prsc_patient_name
-    instructions:
-      - eurdm_txt_instructions_title
-      - eurdm_txt_instructions_subtitle
-      - eurdm_txt_instructions_step1_title
-      - eurdm_txt_instructions_step2_title
-      - eurdm_txt_instructions_step3_title
-      - eurdm_txt_instructions_step4_title
-      - eurdm_txt_instructions_step5_title
-      - eurdm_txt_instructions_disclaimer
-      - eurdm_btn_instructions_generate_code
-      - eurdm_btn_instructions_close
 orders:
   list:
     - ord_txt_empty_list
@@ -415,9 +330,6 @@ orderDetail:
     - ord_detail_btn_contact_map
     - ord_detail_btn_contact_phone
     - ord_detail_btn_contact_email
-    - ord_detail_btn_refresh_code
-    - ord_detail_btn_revoke_accessCode
-    - ord_detail_btn_accessCode_revoked
   pickupCode:
     - puc_txt_title
     - puc_txt_subtitle
@@ -425,7 +337,6 @@ orderDetail:
     - puc_btn_close
   message:
     - msg_txt_title
-    - msg_txt_chips
 mainScreen:
   - erx_btn_login
   - erx_btn_refresh
@@ -435,7 +346,6 @@ mainScreen:
   - erx_detailed_prescription_validity
   - erx_detailed_multiple_prescription_index
   - erx_detailed_self_payer
-  - erx_detailed_diGa_bage
   - erx_detailed_status
   - erx_btn_profile
   - erx_img_profile
@@ -451,24 +361,17 @@ mainScreen:
   - erx_txt_tooltips_scan
   - erx_btn_consent_drawer_activate
   - erx_btn_consent_drawer_cancel
-  - erx_btn_consent_drawer_close
   - erx_txt_consent_drawer_title
   - erx_txt_consent_drawer_message
-prescriptionArchive:
-  - arc_btn_segmented_control
-  - arc_btn_segmented_control_prescriptions
-  - arc_btn_segmented_control_digas
 welcomedrawer:
-  - wlcd_btn_pkv_user
-  - wlcd_btn_gkv_user
-  - wlcd_btn_federalkv_user
+  - wlcd_btn_login
+  - wlcd_btn_decline
 profileSelection:
   - pro_txt_selection_profile_list
   - pro_txt_selection_profile_list_entry
   - pro_btn_selection_edit
   - pro_btn_selection_profile_entry
   - pro_btn_selection_profile_row
-  - pro_btn_selection_profile_loading_spinner
   - pro_btn_selection_add_profile
 editProfilePicture:
     - epp_btn_reset_picture
@@ -483,9 +386,9 @@ prescriptionDetails:
   - prsc_dtl_btn_edit_title
   - prsc_dtl_btn_toggle_redeem
   - prsc_dtl_btn_toolbar_item
+  - prsc_dtl_toolbar_menu
   - prsc_dtl_toolbar_menu_btn_share
   - prsc_dtl_toolbar_menu_btn_redeem
-  - prsc_dtl_toolbar_menu_btn_redeem_eu_prsc
   - prsc_dtl_toolbar_menu_btn_delete
   - prsc_dtl_btn_error_info
   - prsc_dtl_btn_substitution_info
@@ -493,7 +396,6 @@ prescriptionDetails:
   - prsc_dtl_btn_scanned_prescription_info
   - prsc_dtl_btn_direct_assignment_info
   - prsc_dtl_btn_self_payer_info
-  - prsc_dtl_btn_t_prescription_info
   - prsc_dtl_txt_prescription_validity
   - prsc_dtl_btn_prescription_validity_info
   - prsc_dtl_drawer_substitution_info
@@ -512,7 +414,6 @@ prescriptionDetails:
   - prsc_dtl_btn_practitioner
   - prsc_dtl_btn_institution
   - prsc_dtl_btn_work_related_accident
-  - prsc_dtl_btn_teratogenic_info
   - prsc_dtl_btn_technical_informations
   - prsc_dtl_drawer_co_payment_info_title
   - prsc_dtl_drawer_co_payment_info_description
@@ -522,7 +423,6 @@ prescriptionDetails:
   - prsc_dtl_drawer_dosage_instructions_info
   - prsc_dtl_drawer_emergency_service_fee_info
   - prsc_dtl_drawer_self_payer_info
-  - prsc_dtl_drawer_t_prescription_info
   - prsc_dtl_txt_authored_on
   - prsc_dtl_txt_bvg
   - prsc_dtl_txt_multi_prescription
@@ -578,55 +478,6 @@ prescriptionDetails:
   - prsc_dtl_img_hint_pkv_activate
   - prsc_dtl_img_hint_pkv_no_invoice
   - prsc_dtl_btn_pkv_invoice
-diga:
- detail:
-    - diga_dtl_btn_main_action
-    - diga_dtl_btn_toolbar_item
-    - diga_dtl_txt_name_header
-    - diga_dtl_txt_patient_header
-    - diga_dtl_btn_archive_toolbar
-    - diga_dtl_btn_unarchive_toolbar
-    - diga_dtl_btn_redeem_again_toolbar
-    - diga_dtl_btn_request_toolbar
-    - diga_dtl_btn_delete_toolbar
-    - diga_dtl_btn_toolbar_menu
-    - diga_dtl_btn_refresh
-    - diga_dtl_txt_app_name
-    - diga_dtl_txt_languages
-    - diga_dtl_txt_platform
-    - diga_dtl_txt_medical_service
-    - diga_dtl_txt_additional_devices
-    - diga_dtl_txt_patient_cost
-    - diga_dtl_txt_production_cost
-    - diga_dtl_txt_patient
-    - diga_dtl_txt_practitioner
-    - diga_dtl_txt_organization
-    - diga_dtl_txt_authoredOn
-    - diga_dtl_txt_decline_note
-    - diga_dtl_btn_description
-    - diga_dtl_btn_support
-    - diga_dtl_btn_main_select_insurance
-    - diga_dtl_btn_main_selected_insurance
-    - diga_dtl_txt_hint_no_connection
-    - diga_dtl_txt_hint_no_ios
- support:
-    - diga_dtl_support_txt_header
-    - diga_dtl_support_txt_provided_link
-    - diga_dtl_support_btn_open_link
-    - diga_dtl_support_btn_close
-    - diga_dtl_support_btn_open_pdf
- description:
-    - diga_dtl_description_txt_header
-    - diga_dtl_description_txt_desc
-    - diga_dtl_description_btn_close
- valid:
-    - diga_dtl_valid_txt_header
-    - diga_dtl_valid_txt_subheader
-    - diga_dtl_valid_txt_start_date
-    - diga_dtl_valid_txt_end_date
-diga_insurance_list:
-  - diga_insurance_list_txt_header
-  - diga_insurance_list_txt_subheader
 pharmacySearch:
   - pha_search_txt_result_list
   - pha_search_txt_result_list_entry
@@ -639,13 +490,6 @@ pharmacySearch:
   - pha_filter_open_filter
   - pha_filter_filter_list
   - pha_search_switch_result_map
-  - pha_search_hint_eu_redeem
-pharmacySearchFilter:
-  - psf_btn_close
-  - psf_service_section
-  - psf_btn_explain_toggle
-  - psf_service_list
-  - psf_service_footnote
 pharmacySearchStart:
   - pha_search_txt_quick_filter_title
   - pha_search_btn_quick_filter_nearby
@@ -716,6 +560,7 @@ pharmacyRedeem:
   - pha_redeem_txt_edit_prescription
   - pha_redeem_btn_edit_prescription
   - pha_redeem_txt_add_prescription
+  - pha_redeem_btn_add_prescription
   - pha_redeem_txt_edit_pharmacy
   - pha_redeem_txt_edit_pharmacy_name
   - pha_redeem_txt_edit_pharmacy_adress
@@ -723,7 +568,6 @@ pharmacyRedeem:
   - pha_redeem_txt_add_pharmacy
   - pha_redeem_btn_add_pharmacy
 pharmacyPrescriptionList:
-  - pha_prescription_list_btn_select_all
   - pha_prescription_list_btn_save
 pharmacyContact:
   - pha_contact_address_name
@@ -753,12 +597,6 @@ matrixCode:
   - dmc_img_loading_indicator
   - dmc_img_matrixcode
   - dmc_btn_share
-  - dmc_btn_redeem_eu_prsc
-  - dmc_btn_segmented_control
-  - dmc_btn_segmented_control_grouped
-  - dmc_btn_segmented_control_single
-  - dmc_btn_previous_page
-  - dmc_btn_next_page
 medicationReminder:
   - med_reminder_btn_activation_toggle
   - med_reminder_btn_dosage_instruction
@@ -773,13 +611,6 @@ medicationReminder:
   - med_reminder_drawer_dosage_instruction_info
   - med_reminder_drawer_dosage_instruction_info_title
   - med_reminder_drawer_dosage_instruction_info_description
-  - med_reminder_btn_weekday_monday
-  - med_reminder_btn_weekday_tuesday
-  - med_reminder_btn_weekday_wednesday
-  - med_reminder_btn_weekday_thursday
-  - med_reminder_btn_weekday_friday
-  - med_reminder_btn_weekday_saturday
-  - med_reminder_btn_weekday_sunday
   - med_reminder_btn_repetition_infinite
   - med_reminder_btn_repetition_finite
   - med_reminder_btn_repetition_date_start

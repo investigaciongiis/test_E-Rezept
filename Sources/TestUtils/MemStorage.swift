@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -62,6 +58,24 @@ public class MemStorage: IDPStorage, SecureEGKCertificateStorage, TrustStoreStor
         discoveryDocumentState = document
     }
 
+    @Published public private(set) var certListState: CertList?
+    public var certList: AnyPublisher<CertList?, Never> {
+        $certListState.eraseToAnyPublisher()
+    }
+
+    public func set(certList: CertList?) {
+        certListState = certList
+    }
+
+    @Published public private(set) var ocspListState: OCSPList?
+    public var ocspList: AnyPublisher<OCSPList?, Never> {
+        $ocspListState.eraseToAnyPublisher()
+    }
+
+    public func set(ocspList: OCSPList?) {
+        ocspListState = ocspList
+    }
+
     @Published private(set) var pkiCertificatesState: PKICertificates?
     public func getPKICertificates() -> PKICertificates? {
         pkiCertificatesState
@@ -80,24 +94,13 @@ public class MemStorage: IDPStorage, SecureEGKCertificateStorage, TrustStoreStor
         vauCertificateState = vauCertificate
     }
 
-    @Published private(set) var ocspResponsesState: [String: [String: Data]] = [:]
-    public func getOcspResponse(issuerCn: String, serialNr: String) -> Data? {
-        ocspResponsesState[issuerCn]?[serialNr]
+    @Published private(set) var vauCertificateOcspResponseState: Data?
+    public func getVauCertificateOcspResponse() -> Data? {
+        vauCertificateOcspResponseState
     }
 
-    public func setOcspResponse(issuerCn: String, serialNr: String, ocspResponse: Data?) {
-        if ocspResponse == nil {
-            ocspResponsesState[issuerCn]?.removeValue(forKey: serialNr)
-        } else {
-            if ocspResponsesState[issuerCn] == nil {
-                ocspResponsesState[issuerCn] = [:]
-            }
-            ocspResponsesState[issuerCn]?[serialNr] = ocspResponse
-        }
-    }
-
-    public func resetOcspResponses() {
-        ocspResponsesState.removeAll()
+    public func set(vauCertificateOcspResponse: Data?) {
+        vauCertificateOcspResponseState = vauCertificateOcspResponse
     }
 
     @Published private(set) var userPseudonymState: String?
@@ -109,12 +112,12 @@ public class MemStorage: IDPStorage, SecureEGKCertificateStorage, TrustStoreStor
         userPseudonymState = userPseudonym
     }
 
-    @Published private(set) var certificateState: IDPX509?
-    public var certificate: AnyPublisher<IDPX509?, Never> {
+    @Published private(set) var certificateState: X509?
+    public var certificate: AnyPublisher<X509?, Never> {
         $certificateState.eraseToAnyPublisher()
     }
 
-    public func set(certificate: IDPX509?) {
+    public func set(certificate: X509?) {
         certificateState = certificate
     }
 

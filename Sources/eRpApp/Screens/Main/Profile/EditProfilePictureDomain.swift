@@ -1,30 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 import eRpKit
-import eRpResources
-import FeatureHelpers
 import PhotosUI
 import SwiftUI
 
@@ -32,7 +26,7 @@ import SwiftUI
 struct EditProfilePictureDomain {
     typealias Store = StoreOf<Self>
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
@@ -172,24 +166,26 @@ struct EditProfilePictureDomain {
         }
     }
 
-    static var importAlert: ErpAlertState<EditProfilePictureDomain.Destination.Alert> = .init(
-        title: L10n.eppTxtAlertHeaderProfile,
-        actions: {
-            ButtonState(action: .photoPicker) {
-                .init(L10n.eppBtnAlertLibrary)
-            }
-            ButtonState(action: .cameraPicker) {
-                .init(L10n.eppBtnAlertCamera)
-            }
-            ButtonState(action: .memojiPicker) {
-                .init(L10n.eppBtnAlertEmoji)
-            }
-            ButtonState(role: .cancel, action: .none) {
-                .init(L10n.eppBtnAlertAbort)
-            }
-        },
-        message: L10n.eppTxtAlertSubheaderChoose
-    )
+    static var importAlert: ErpAlertState<EditProfilePictureDomain.Destination.Alert> = {
+        .init(
+            title: L10n.eppTxtAlertHeaderProfile,
+            actions: {
+                ButtonState(action: .photoPicker) {
+                    .init(L10n.eppBtnAlertLibrary)
+                }
+                ButtonState(action: .cameraPicker) {
+                    .init(L10n.eppBtnAlertCamera)
+                }
+                ButtonState(action: .memojiPicker) {
+                    .init(L10n.eppBtnAlertEmoji)
+                }
+                ButtonState(role: .cancel, action: .none) {
+                    .init(L10n.eppBtnAlertAbort)
+                }
+            },
+            message: L10n.eppTxtAlertSubheaderChoose
+        )
+    }()
 }
 
 extension EditProfilePictureDomain {
@@ -226,6 +222,3 @@ extension EditProfilePictureDomain {
         }
     }
 }
-
-extension EditProfilePictureDomain.Destination.State: Equatable {}
-extension EditProfilePictureDomain.Destination.Action: Equatable {}

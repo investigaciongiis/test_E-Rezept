@@ -1,33 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
-import ConsentService
 @testable import eRpFeatures
 import eRpKit
-import ErxTaskRepository
-import FeatureCardWall
-import FeatureHelpers
 @testable import IDP
 import Nimble
 import XCTest
@@ -37,24 +29,26 @@ final class MainDomainTests: XCTestCase {
     typealias TestStore = TestStoreOf<MainDomain>
 
     let testScheduler = DispatchQueue.immediate
-    var mockUserSessionContainer: UsersSessionContainerMock!
-    var mockRouter: RoutingMock!
+    var mockUserDataStore: MockUserDataStore!
+    var mockUserSessionContainer: MockUsersSessionContainer!
+    var mockRouter: MockRouting!
     var mockUserSession: MockUserSession!
     var mockDeviceSecurityManager: MockDeviceSecurityManager!
-    var mockPrescriptionRepository: PrescriptionRepositoryMock!
-    var mockProfileDataWiper: ProfileSecureDataWiperMock!
-    var mockProfileDataStore: ProfileDataStoreMock!
+    var mockPrescriptionRepository: MockPrescriptionRepository!
+    var mockProfileDataWiper: MockProfileSecureDataWiper!
+    var mockProfileDataStore: MockProfileDataStore!
 
     override func setUp() {
         super.setUp()
 
-        mockUserSessionContainer = UsersSessionContainerMock()
-        mockRouter = RoutingMock()
+        mockUserDataStore = MockUserDataStore()
+        mockUserSessionContainer = MockUsersSessionContainer()
+        mockRouter = MockRouting()
         mockUserSession = MockUserSession()
         mockDeviceSecurityManager = MockDeviceSecurityManager()
-        mockPrescriptionRepository = PrescriptionRepositoryMock()
-        mockProfileDataWiper = ProfileSecureDataWiperMock()
-        mockProfileDataStore = ProfileDataStoreMock()
+        mockPrescriptionRepository = MockPrescriptionRepository()
+        mockProfileDataWiper = MockProfileSecureDataWiper()
+        mockProfileDataStore = MockProfileDataStore()
     }
 
     func testStore() -> TestStore {
@@ -67,8 +61,10 @@ final class MainDomainTests: XCTestCase {
         } withDependencies: { dependencies in
             dependencies.userSession = mockUserSession
             dependencies.changeableUserSessionContainer = mockUserSessionContainer
+            dependencies.erxTaskRepository = DummySessionContainer().erxTaskRepository
             dependencies.schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
             dependencies.fhirDateFormatter = FHIRDateFormatter.testValue
+            dependencies.userDataStore = mockUserDataStore
             dependencies.deviceSecurityManager = mockDeviceSecurityManager
             dependencies.router = mockRouter
             dependencies.prescriptionRepository = mockPrescriptionRepository
@@ -78,12 +74,32 @@ final class MainDomainTests: XCTestCase {
         }
     }
 
+    func testDemoModeChange() async {
+        // given
+        let sut = testStore()
+
+        // when
+        mockUserSessionContainer.underlyingIsDemoMode = Just(true).eraseToAnyPublisher()
+        await sut.send(.subscribeToDemoModeChange)
+        await sut.receive(.response(.demoModeChangeReceived(true))) { sut in
+            // then
+            sut.isDemoMode = true
+        }
+
+        // when
+        mockUserSessionContainer.underlyingIsDemoMode = Just(false).eraseToAnyPublisher()
+        await sut.send(.response(.demoModeChangeReceived(false))) { sut in
+            // then
+            sut.isDemoMode = false
+        }
+    }
+
     func testTurnOffDemoMode() async {
         // given
         let sut = testStore()
 
         await sut.send(.turnOffDemoMode)
-        expect(self.mockRouter.routeToEndpointEndpointVoidCalled).to(beTrue())
+        expect(self.mockRouter.routeToCalled).to(beTrue())
     }
 
     func testShowScanner() async {
@@ -137,127 +153,91 @@ final class MainDomainTests: XCTestCase {
     }
 
     func testWelcomeDrawerRoute() async {
-        await withDependencies { dependencies in
-            dependencies.drawerEvaluation = DrawerEvaluation.liveValue
-        } operation: {
-            // given
-            let sut = testStore(for: .init(prescriptionListState: .init(),
-                                           horizontalProfileSelectionState: .init()))
-            mockProfileDataStore
-                .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorReturnValue =
-                Just(true)
-                    .setFailureType(to: LocalStoreError.self)
-                    .eraseToAnyPublisher()
-            // no drawer was shown yet
-            mockUserSession.profileReturnValue = Just(Self.Fixtures.newProfile)
-                .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
+        // given
+        let sut = testStore(for: .init(prescriptionListState: .init(),
+                                       horizontalProfileSelectionState: .init()))
+        // when
+        mockUserDataStore.underlyingHideWelcomeDrawer = false
+        await sut.send(.showDrawer)
 
-            // when
-            await sut.send(.showDrawer)
-
-            // then
-            await sut.receive(.response(.showDrawer(.welcomeDrawer))) { state in
-                state.destination = .welcomeDrawer
-            }
-
-            // when
-            await sut.send(.showDrawer)
-            // then
-            expect(self.mockProfileDataStore
-                .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorCalled) == true
-            expect(self.mockProfileDataStore
-                .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorCallsCount) == 1
+        // then
+        await sut.receive(.response(.showDrawer(.welcomeDrawer))) { state in
+            state.destination = .welcomeDrawer
         }
+        expect(self.mockUserDataStore.hideWelcomeDrawer).to(beTrue())
+
+        // when
+        await sut.send(.showDrawer)
+        // then
+        expect(self.mockUserDataStore.hideWelcomeDrawer).to(beTrue())
     }
 
     func testWelcomeDrawerNotPresentedWhileRouteSet() async {
-        await withDependencies { dependencies in
-            dependencies.drawerEvaluation = DrawerEvaluation.liveValue
-        } operation: {
-            // given
-            let sut = testStore(for: .init(
-                destination: .deviceSecurity(DeviceSecurityDomain.State(warningType: .devicePinMissing)),
-                prescriptionListState: .init(),
-                horizontalProfileSelectionState: .init()
-            ))
-            // no drawer was shown yet
-            mockUserSession.profileReturnValue = Just(Self.Fixtures.newProfile)
-                .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
+        // given
+        let sut = testStore(for: .init(
+            destination: .deviceSecurity(DeviceSecurityDomain.State(warningType: .devicePinMissing)),
+            prescriptionListState: .init(),
+            horizontalProfileSelectionState: .init()
+        ))
+        // when
+        mockUserDataStore.underlyingHideWelcomeDrawer = false
 
-            // when
-            await sut.send(.showDrawer)
-            // then no further action
-        }
+        await sut.send(.showDrawer)
+        // then
+        expect(self.mockUserDataStore.hideWelcomeDrawer).to(beFalse())
     }
 
     func testConsentDrawerRoute_consentHasNotBeenGranted() async {
-        await withDependencies { dependencies in
-            dependencies.drawerEvaluation = DrawerEvaluation.liveValue
-        } operation: {
-            // given
-            let sut = testStore(for: .init(
-                prescriptionListState: .init(),
-                horizontalProfileSelectionState: .init()
-            ))
-            mockProfileDataStore
-                .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorReturnValue =
-                Just(true)
-                    .setFailureType(to: LocalStoreError.self)
-                    .eraseToAnyPublisher()
+        // given
+        let sut = testStore(for: .init(
+            prescriptionListState: .init(),
+            horizontalProfileSelectionState: .init()
+        ))
+        mockUserDataStore.underlyingHideWelcomeDrawer = true
+        mockProfileDataStore.updateProfileIdMutatingReturnValue = Just(true).setFailureType(to: LocalStoreError.self)
+            .eraseToAnyPublisher()
 
-            // when profile has already seen both drawers before
-            mockUserSession
-                .profileReturnValue = Just(Self.Fixtures
-                    .privateProfileWithHidden(welcomeDrawer: true, consentDrawer: true))
-                .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
-            sut.dependencies.consentService.checkForConsent = { _, _ in .notGranted }
-            await sut.send(.showDrawer)
+        // when profile has already seen the drawer before
+        mockUserSession.profileReturnValue = Just(Self.Fixtures.privateProfileHideConsentDrawer)
+            .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
+        sut.dependencies.chargeItemConsentService.checkForConsent = { _ in .notGranted }
+        await sut.send(.showDrawer)
 
-            // then nothing happens
-            await sut.receive(.response(.showDrawer(.none)))
-            expect(self.mockProfileDataStore
-                .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorCalled) == false
+        // then nothing happens
+        await sut.receive(.response(.showDrawer(.none)))
+        expect(self.mockProfileDataStore.updateProfileIdMutatingCalled) == false
 
-            // when profile hasn't seen the drawer before
-            mockUserSession.profileReturnValue = Just(Self.Fixtures.privateProfile)
-                .setFailureType(to: LocalStoreError.self)
-                .eraseToAnyPublisher()
-            sut.dependencies.consentService.checkForConsent = { _, _ in .notGranted }
-            await sut.send(.showDrawer)
+        // when profile hasn't seen the drawer before
+        mockUserSession.profileReturnValue = Just(Self.Fixtures.privateProfile).setFailureType(to: LocalStoreError.self)
+            .eraseToAnyPublisher()
+        sut.dependencies.chargeItemConsentService.checkForConsent = { _ in .notGranted }
+        await sut.send(.showDrawer)
 
-            // then
-            await sut.receive(.response(.showDrawer(.consentDrawer))) { state in
-                state.destination = .grantChargeItemConsentDrawer
-            }
-
-            expect(self.mockProfileDataStore
-                .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorCalled) == true
-            expect(self.mockProfileDataStore
-                .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorCallsCount) == 1
+        // then
+        await sut.receive(.response(.showDrawer(.consentDrawer))) { state in
+            state.destination = .grantChargeItemConsentDrawer
         }
+
+        expect(self.mockProfileDataStore.updateProfileIdMutatingCalled) == true
+        expect(self.mockProfileDataStore.updateProfileIdMutatingCallsCount) == 1
     }
 
     func testConsentDrawerRoute_consentHasAlreadyBeenGranted() async {
-        await withDependencies { dependencies in
-            dependencies.drawerEvaluation = DrawerEvaluation.liveValue
-        } operation: {
-            // given
-            let sut = testStore(for: .init(
-                prescriptionListState: .init(),
-                horizontalProfileSelectionState: .init()
-            ))
-            // welcome drawer was shown
-            mockUserSession.profileReturnValue = Just(Self.Fixtures.privateProfileWithHidden(welcomeDrawer: true))
-                .setFailureType(to: LocalStoreError.self)
-                .eraseToAnyPublisher()
+        // given
+        let sut = testStore(for: .init(
+            prescriptionListState: .init(),
+            horizontalProfileSelectionState: .init()
+        ))
+        mockUserDataStore.underlyingHideWelcomeDrawer = true
+        mockUserSession.profileReturnValue = Just(Self.Fixtures.privateProfile).setFailureType(to: LocalStoreError.self)
+            .eraseToAnyPublisher()
 
-            // when
-            sut.dependencies.consentService.checkForConsent = { _, _ in .granted }
-            await sut.send(.showDrawer)
+        // when
+        sut.dependencies.chargeItemConsentService.checkForConsent = { _ in .granted }
+        await sut.send(.showDrawer)
 
-            // then
-            await sut.receive(.response(.showDrawer(.none)))
-        }
+        // then
+        await sut.receive(.response(.showDrawer(.none)))
     }
 
     func testShowingLoginNecessaryAlertAfterIDPErrorServerResponse() async {
@@ -273,9 +253,8 @@ final class MainDomainTests: XCTestCase {
             code: "2041"
         )))
         mockPrescriptionRepository
-            .forcedLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            Fail(error: PrescriptionRepositoryError.loginHandler(expectedError))
-                .eraseToAnyPublisher()
+            .forcedLoadRemoteForReturnValue = Fail(error: PrescriptionRepositoryError.loginHandler(expectedError))
+            .eraseToAnyPublisher()
 
         await sut.send(.refreshPrescription)
         await sut.receive(.prescriptionList(action: .refresh)) {
@@ -300,26 +279,20 @@ final class MainDomainTests: XCTestCase {
             code: "2000"
         )))
         mockPrescriptionRepository
-            .forcedLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            Fail(error: PrescriptionRepositoryError.loginHandler(expectedError))
-                .eraseToAnyPublisher()
-        mockProfileDataWiper.wipeSecureDataOfProfileIdUUIDAnyPublisherVoidNeverReturnValue = Just(())
+            .forcedLoadRemoteForReturnValue = Fail(error: PrescriptionRepositoryError.loginHandler(expectedError))
             .eraseToAnyPublisher()
+        mockProfileDataWiper.wipeSecureDataOfReturnValue = Just(()).eraseToAnyPublisher()
 
-        await withDependencies {
-            $0.drawerEvaluation.showDrawerEvaluationOnRefresh = { .none }
-        } operation: {
-            await sut.send(.refreshPrescription)
-            await sut.receive(.prescriptionList(action: .refresh)) {
-                $0.prescriptionListState.loadingState = .loading(nil)
-            }
-            await sut.receive(.prescriptionList(action: .response(.errorReceived(expectedError)))) {
-                $0.prescriptionListState.loadingState = .idle
-                $0.destination = .alert(MainDomain.AlertStates.devicePairingInvalid())
-            }
+        await sut.send(.refreshPrescription)
+        await sut.receive(.prescriptionList(action: .refresh)) {
+            $0.prescriptionListState.loadingState = .loading(nil)
+        }
+        await sut.receive(.prescriptionList(action: .response(.errorReceived(expectedError)))) {
+            $0.prescriptionListState.loadingState = .idle
+            $0.destination = .alert(MainDomain.AlertStates.devicePairingInvalid())
         }
 
-        expect(self.mockProfileDataWiper.wipeSecureDataOfProfileIdUUIDAnyPublisherVoidNeverCalled).to(beTrue())
+        expect(self.mockProfileDataWiper.wipeSecureDataOfCalled).to(beTrue())
     }
 
     func testInvalidateAccessTokenGetsCalledWhenShowingCardWall() async {
@@ -335,16 +308,42 @@ final class MainDomainTests: XCTestCase {
         expect(self.mockUserSession.mockIDPSession.invalidateAccessToken_Called).to(beTrue())
     }
 
+    func testRedeemPrescriptionsOnlyWithReadyStatus() async {
+        await withDependencies {
+            $0.date = DateGenerator { Date() }
+        } operation: {
+            // given
+            let sut = testStore(for: .init(
+                prescriptionListState: .init(),
+                horizontalProfileSelectionState: .init()
+            ))
+            let expectedPrescription = Prescription(erxTask: ErxTask.Fixtures.erxTask1,
+                                                    dateFormatter: UIDateFormatter.testValue)
+            let nonReadyPrescriptions = [
+                Prescription(erxTask: ErxTask.Fixtures.erxTask9, dateFormatter: UIDateFormatter.testValue),
+                Prescription(erxTask: ErxTask.Fixtures.erxTask10, dateFormatter: UIDateFormatter.testValue),
+                Prescription(erxTask: ErxTask.Fixtures.erxTask11, dateFormatter: UIDateFormatter.testValue),
+            ]
+            // when
+            await sut
+                .send(.prescriptionList(action: .redeemButtonTapped(openPrescriptions: nonReadyPrescriptions +
+                        [expectedPrescription]))) { state in
+                        state.destination = .redeemMethods(.init(prescriptions: Shared([expectedPrescription])))
+                }
+        }
+    }
+
     func testGrantChargeItemConsentActivate_happyPath() async {
         // given
         let sut = testStore(
             for: .init(
+                isDemoMode: false,
                 destination: .grantChargeItemConsentDrawer,
                 prescriptionListState: .init(),
                 horizontalProfileSelectionState: .init()
             )
         )
-        sut.dependencies.consentService.grantConsent = { _, _ in .success }
+        sut.dependencies.chargeItemConsentService.grantConsent = { _ in .success }
 
         // when
         await sut.send(.grantChargeItemsConsentActivate) { state in
@@ -361,6 +360,7 @@ final class MainDomainTests: XCTestCase {
         // given
         let sut = testStore(
             for: .init(
+                isDemoMode: false,
                 destination: .toast(MainDomain.ToastStates.grantConsentSuccess),
                 prescriptionListState: .init(),
                 horizontalProfileSelectionState: .init()
@@ -378,14 +378,15 @@ final class MainDomainTests: XCTestCase {
         // given
         let sut = testStore(
             for: .init(
+                isDemoMode: false,
                 destination: .grantChargeItemConsentDrawer,
                 prescriptionListState: .init(),
                 horizontalProfileSelectionState: .init()
             )
         )
-        let error = ConsentService.Error.unexpectedGrantConsentResponse
-        sut.dependencies.consentService
-            .grantConsent = { _, _ in ConsentService.GrantResult.error(error)
+        let error = ChargeItemConsentService.Error.unexpectedGrantConsentResponse
+        sut.dependencies.chargeItemConsentService
+            .grantConsent = { _ in ChargeItemConsentService.GrantResult.error(error)
             }
 
         // when
@@ -404,6 +405,7 @@ final class MainDomainTests: XCTestCase {
         // given
         let sut = testStore(
             for: .init(
+                isDemoMode: false,
                 destination: .grantChargeItemConsentDrawer,
                 prescriptionListState: .init(),
                 horizontalProfileSelectionState: .init()
@@ -424,14 +426,12 @@ final class MainDomainTests: XCTestCase {
         // given
         let sut = testStore(
             for: .init(
+                isDemoMode: false,
                 destination: .none,
                 prescriptionListState: .init(),
                 horizontalProfileSelectionState: .init()
             )
         )
-        sut.dependencies.updateChecker.isUpdateAvailable = {
-            false
-        }
 
         // when
         await sut.send(.checkForForcedUpdates)
@@ -443,16 +443,18 @@ final class MainDomainTests: XCTestCase {
 
     func testForcedUpdateAlertUpdateAvailable() async {
         // given
+        mockUserSession = MockUserSession(mockUpdateChecker: UpdateChecker {
+            true
+        })
+
         let sut = testStore(
             for: .init(
+                isDemoMode: false,
                 destination: .none,
                 prescriptionListState: .init(),
                 horizontalProfileSelectionState: .init()
             )
         )
-        sut.dependencies.updateChecker.isUpdateAvailable = {
-            true
-        }
 
         // when
         await sut.send(.checkForForcedUpdates)
@@ -465,16 +467,18 @@ final class MainDomainTests: XCTestCase {
 
     func testForcedUpdateAlertUpdateAvailableButNavigationInProgress() async {
         // given
+        mockUserSession = MockUserSession(mockUpdateChecker: UpdateChecker {
+            true
+        })
+
         let sut = testStore(
             for: .init(
+                isDemoMode: false,
                 destination: .cardWall(.init(isNFCReady: true, profileId: UUID())),
                 prescriptionListState: .init(),
                 horizontalProfileSelectionState: .init()
             )
         )
-        sut.dependencies.updateChecker.isUpdateAvailable = {
-            true
-        }
 
         // when
         await sut.send(.checkForForcedUpdates)
@@ -487,17 +491,12 @@ final class MainDomainTests: XCTestCase {
 
 extension MainDomainTests {
     enum Fixtures {
-        static let newProfile: Profile = .init(name: "SomeName", insuranceType: .unknown)
-
         static let privateProfile: Profile = .init(name: "SomeName", insuranceType: .pKV)
 
-        static func privateProfileWithHidden(welcomeDrawer: Bool = false, consentDrawer: Bool = false) -> Profile {
-            .init(
-                name: "SomeName",
-                insuranceType: .pKV,
-                hideWelcomeDrawerOnMainView: welcomeDrawer,
-                hidePkvConsentDrawerOnMainView: consentDrawer
-            )
-        }
+        static let privateProfileHideConsentDrawer: Profile = .init(
+            name: "SomeName",
+            insuranceType: .pKV,
+            hidePkvConsentDrawerOnMainView: true
+        )
     }
 }

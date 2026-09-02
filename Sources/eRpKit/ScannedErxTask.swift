@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Foundation
 
 /// Represents a scanned eRx task holding the information of its ID and accessCode
@@ -32,16 +27,19 @@ public struct ScannedErxTask: Identifiable, Hashable {
     public let accessCode: String
 
     private static let taskIdPattern = "^Task\\/([A-Za-z0-9-.]{1,64})\\/"
-    private static let taskIdRegex =
+    private static let taskIdRegex = {
         try! NSRegularExpression(pattern: taskIdPattern) // swiftlint:disable:this force_try
+    }()
 
     private static let accessCodePattern = "([0-9a-fA-F]{64})$"
-    private static let accessCodeRegex =
+    private static let accessCodeRegex = {
         try! NSRegularExpression(pattern: accessCodePattern) // swiftlint:disable:this force_try
+    }()
 
     private static let taskStringPattern = "\(taskIdPattern)\\$accept\\?ac=\(accessCodePattern)"
-    private static let taskStringRegex =
+    private static let taskStringRegex = {
         try! NSRegularExpression(pattern: taskStringPattern) // swiftlint:disable:this force_try
+    }()
 
     init(id: String, accessCode: String) {
         self.id = id
@@ -72,16 +70,16 @@ public struct ScannedErxTask: Identifiable, Hashable {
 }
 
 extension ScannedErxTask {
+    // sourcery: CodedError = "205"
     /// Error cases for the ScannedErxTask
-    @CodedError("205")
     public enum Error: Swift.Error, LocalizedError, Equatable {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case format
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case invalidID
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case invalidAccessCode
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case invalidJSON(Swift.Error)
 
         public var errorDescription: String? {

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -29,45 +25,46 @@ import SwiftUI
 struct RedeemSuccessView: View {
     let store: StoreOf<RedeemSuccessDomain>
 
+    init(store: StoreOf<RedeemSuccessDomain>) {
+        self.store = store
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                if let url = videoURLforSource(store.redeemOption) {
-                    LoopingVideoPlayerContainerView(withURL: url)
-                        .frame(
-                            minWidth: 160,
-                            idealWidth: 240,
-                            maxWidth: 300,
-                            minHeight: 160,
-                            idealHeight: 240,
-                            maxHeight: 300
-                        )
-                        .clipShape(Circle())
-                        .padding(.vertical, 8)
-                        .padding(.horizontal)
+        WithPerceptionTracking {
+            ScrollView {
+                VStack(spacing: 16) {
+                    if let url = videoURLforSource(store.redeemOption) {
+                        LoopingVideoPlayerContainerView(withURL: url)
+                            .frame(
+                                minWidth: 160,
+                                idealWidth: 240,
+                                maxWidth: 300,
+                                minHeight: 160,
+                                idealHeight: 240,
+                                maxHeight: 300
+                            )
+                            .clipShape(Circle())
+                            .padding(.vertical, 8)
+                    }
+
+                    Text(titlelForSource(store.redeemOption), bundle: .module)
+                        .font(Font.title3.bold())
+
+                    ContentView(option: store.state.redeemOption)
+
+                    Spacer()
+
+                    LoadingPrimaryButton(text: L10n.rdmSccBtnReturnToMain,
+                                         isLoading: false) {
+                        store.send(.closeButtonTapped)
+                    }
+                    .accessibility(identifier: A11y.pharmacyRedeem.phaRedeemBtnRedeem)
                 }
-
-                Text(titlelForSource(store.redeemOption), bundle: .module)
-                    .font(Font.title3.bold())
-                    .padding(.horizontal)
-
-                ContentView(option: store.state.redeemOption)
-                    .padding(.horizontal)
-
-                Spacer()
-
-                Button {
-                    store.send(.closeButtonTapped)
-                } label: {
-                    Label(L10n.rdmSccBtnReturnToMain)
-                }
-                .buttonStyle(.primary)
-                .accessibility(identifier: A11y.pharmacyRedeem.phaRedeemBtnRedeem)
+                .navigationBarBackButtonHidden(true)
+                .navigationTitle(L10n.phaSuccessRedeemTitle)
+                .navigationBarTitleDisplayMode(.inline)
+                .padding()
             }
-            .navigationBarBackButtonHidden(true)
-            .navigationTitle(L10n.phaSuccessRedeemTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .padding(.vertical)
         }
     }
 
@@ -118,20 +115,20 @@ struct RedeemSuccessView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .top, spacing: 16) {
                         Image(systemName: SFSymbolName.numbers1circleFill)
-                            .foregroundColor(Colors.primary700)
+                            .foregroundColor(Colors.primary600)
                             .font(Font.title3.bold())
                         Text(L10n.rdmSccTxtShipmentContent1)
                     }
                     HStack(alignment: .top, spacing: 16) {
                         Image(systemName: SFSymbolName.numbers2circleFill)
-                            .foregroundColor(Colors.primary700)
+                            .foregroundColor(Colors.primary600)
                             .font(Font.title3.bold())
 
                         Text(L10n.rdmSccTxtShipmentContent2)
                     }
                     HStack(alignment: .top, spacing: 16) {
                         Image(systemName: SFSymbolName.numbers3circleFill)
-                            .foregroundColor(Colors.primary700)
+                            .foregroundColor(Colors.primary600)
                             .font(Font.title3.bold())
                         Text(L10n.rdmSccTxtShipmentContent3)
                     }

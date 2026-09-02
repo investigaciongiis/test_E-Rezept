@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -25,6 +21,22 @@ import Foundation
 
 /// TrustStore storage protocol
 public protocol TrustStoreStorage {
+    /// Retrieve a previously saved TrustStore CertList
+    var certList: AnyPublisher<CertList?, Never> { get }
+
+    /// Set and save the TrustStore CertList
+    ///
+    /// - Parameter certList: CertList of certificates to save. Pass in nil to unset.
+    func set(certList: CertList?)
+
+    /// Retrieve a previously saved OCSPList
+    var ocspList: AnyPublisher<OCSPList?, Never> { get }
+
+    /// Set and save the TrustStore OCSPList
+    ///
+    /// - Parameter ocspList: OCSPList to save. Pass in nil to unset.
+    func set(ocspList: OCSPList?)
+
     /// Retrieve the previously saved PKICertificates
     func getPKICertificates() -> PKICertificates?
 
@@ -41,30 +53,114 @@ public protocol TrustStoreStorage {
     /// - Parameter vauCertificate: Data of the VAU certificate to save. Pass in nil
     func set(vauCertificate: Data?)
 
-    /// Retrieve the previously saved OCSP response for a specific certificate
-    /// - Parameters:
-    ///   - issuerCn: The common name of the issuer certificate
-    ///   - serialNr: The serial number of the certificate
-    func getOcspResponse(issuerCn: String, serialNr: String) -> Data?
+    /// Retrieve the previously saved OCSP response for the VAU certificate
+    func getVauCertificateOcspResponse() -> Data?
 
-    /// Set and save the OCSP response for a specific certificate
-    /// - Parameters:
-    ///  - issuerCn: The common name of the issuer certificate
-    ///  - serialNr: The serial number of the certificate
-    func setOcspResponse(issuerCn: String, serialNr: String, ocspResponse: Data?)
-
-    /// Reset all stored OCSP responses
-    func resetOcspResponses()
+    /// Set and save the OCSP response for the VAU certificate
+    ///
+    /// - Parameter vauCertificateOcspResponse: Data of the OCSP response to save. Pass in nil
+    func set(vauCertificateOcspResponse: Data?)
 }
 
 public class TrustStoreFileStorage: TrustStoreStorage {
+    let certListFilePath: URL
+    let ocspListFilePath: URL
     let pkiCertificatesFilePath: URL
     let vauCertificateFilePath: URL
+    let vauCertificateOcspResponseFilePath: URL
     let writingOptions: Data.WritingOptions = [.atomicWrite, .completeFileProtectionUnlessOpen]
 
     public init(trustStoreStorageBaseFilePath: URL) {
+        certListFilePath = trustStoreStorageBaseFilePath.appendingPathComponent("trustStoreCertList")
+        ocspListFilePath = trustStoreStorageBaseFilePath.appendingPathComponent("trustStoreOCSPList")
         pkiCertificatesFilePath = trustStoreStorageBaseFilePath.appendingPathComponent("trustStorePKICertificates")
         vauCertificateFilePath = trustStoreStorageBaseFilePath.appendingPathComponent("vauCertificate")
+        vauCertificateOcspResponseFilePath = trustStoreStorageBaseFilePath
+            .appendingPathComponent("vauCertificateOcspResponse")
+    }
+
+    public var certList: AnyPublisher<CertList?, Never> {
+        retrieveCertList()
+    }
+
+    public func set(certList: CertList?) {
+        let success: Bool
+        do {
+            if let certList = certList {
+                let writeResult = try Self.jsonEncoder.encode(certList)
+                    .save(to: certListFilePath, options: writingOptions)
+                switch writeResult {
+                case .success: success = true
+                case .failure: success = false
+                }
+            } else {
+                try FileManager.default.removeItem(at: certListFilePath)
+                success = true
+            }
+        } catch {
+            success = false
+        }
+        if success {
+            certListPassthrough.send(certList)
+        }
+    }
+
+    private let certListPassthrough = PassthroughSubject<CertList?, Never>()
+
+    private func retrieveCertList() -> AnyPublisher<CertList?, Never> {
+        Deferred { [weak self] () -> AnyPublisher<CertList?, Never> in
+            guard let self = self,
+                  let certListData = try? Data(contentsOf: self.certListFilePath),
+                  let certList = try? Self.jsonDecoder.decode(CertList.self, from: certListData)
+            else {
+                return Just(nil).eraseToAnyPublisher()
+            }
+            return Just(certList).eraseToAnyPublisher()
+        }
+        .merge(with: certListPassthrough)
+        .eraseToAnyPublisher()
+    }
+
+    public var ocspList: AnyPublisher<OCSPList?, Never> {
+        retrieveOCSPList()
+    }
+
+    public func set(ocspList: OCSPList?) {
+        let success: Bool
+        do {
+            if let ocspList = ocspList {
+                let writeResult = try Self.jsonEncoder.encode(ocspList)
+                    .save(to: ocspListFilePath, options: writingOptions)
+                switch writeResult {
+                case .success: success = true
+                case .failure: success = false
+                }
+            } else {
+                try FileManager.default.removeItem(at: ocspListFilePath)
+                success = true
+            }
+        } catch {
+            success = false
+        }
+        if success {
+            ocspListPassthrough.send(ocspList)
+        }
+    }
+
+    private let ocspListPassthrough = PassthroughSubject<OCSPList?, Never>()
+
+    private func retrieveOCSPList() -> AnyPublisher<OCSPList?, Never> {
+        Deferred { [weak self] () -> AnyPublisher<OCSPList?, Never> in
+            guard let self = self,
+                  let data = try? Data(contentsOf: self.ocspListFilePath),
+                  let ocspList = try? Self.jsonDecoder.decode(OCSPList.self, from: data)
+            else {
+                return Just(nil).eraseToAnyPublisher()
+            }
+            return Just(ocspList).eraseToAnyPublisher()
+        }
+        .merge(with: ocspListPassthrough)
+        .eraseToAnyPublisher()
     }
 
     public func getPKICertificates() -> PKICertificates? {
@@ -108,55 +204,19 @@ public class TrustStoreFileStorage: TrustStoreStorage {
         }
     }
 
-    private static let ocspResponseDirectoryName = "ocspResponses"
-    public func getOcspResponse(issuerCn: String, serialNr: String) -> Data? {
-        do {
-            let ocspResponseDirectory = try FileManager.default
-                .url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-                .appendingPathComponent(Self.ocspResponseDirectoryName)
-            let fileName = "\(issuerCn)_\(serialNr).ocsp"
-            let fileURL = ocspResponseDirectory.appendingPathComponent(fileName)
-            return try Data(contentsOf: fileURL)
-        } catch {
+    public func getVauCertificateOcspResponse() -> Data? {
+        guard let data = try? Data(contentsOf: vauCertificateOcspResponseFilePath) else {
             return nil
         }
+        return data
     }
 
-    public func setOcspResponse(issuerCn: String, serialNr: String, ocspResponse: Data?) {
+    public func set(vauCertificateOcspResponse: Data?) {
         do {
-            let ocspResponseDirectory = try FileManager.default
-                .url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-                .appendingPathComponent(Self.ocspResponseDirectoryName)
-            try FileManager.default.createDirectory(
-                at: ocspResponseDirectory,
-                withIntermediateDirectories: true
-            )
-            let fileName = "\(issuerCn)_\(serialNr).ocsp"
-            let fileURL = ocspResponseDirectory.appendingPathComponent(fileName)
-
-            if let ocspResponse {
-                _ = ocspResponse.save(to: fileURL, options: writingOptions)
+            if let vauCertificateOcspResponse {
+                _ = vauCertificateOcspResponse.save(to: vauCertificateOcspResponseFilePath, options: writingOptions)
             } else {
-                try FileManager.default.removeItem(at: fileURL)
-            }
-        } catch {
-            // no feedback
-        }
-    }
-
-    public func resetOcspResponses() {
-        do {
-            let ocspResponseDirectory = try FileManager.default
-                .url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-                .appendingPathComponent(Self.ocspResponseDirectoryName)
-            if FileManager.default.fileExists(atPath: ocspResponseDirectory.path) {
-                let fileURLs = try FileManager.default.contentsOfDirectory(
-                    at: ocspResponseDirectory,
-                    includingPropertiesForKeys: nil
-                )
-                for url in fileURLs where url.pathExtension == "ocsp" {
-                    try? FileManager.default.removeItem(at: url)
-                }
+                try FileManager.default.removeItem(at: vauCertificateOcspResponseFilePath)
             }
         } catch {
             // no feedback

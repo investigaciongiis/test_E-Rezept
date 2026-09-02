@@ -1,53 +1,45 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Dependencies
 import eRpKit
-import eRpResources
-import FeatureHelpers
 import Foundation
 import GemPDFKit
-import Settings
 import UIKit
 
-@CodedError("035")
+// sourcery: CodedError = "035"
 enum ChargeItemPDFServiceError: Error {
-    @ErrorCode("01")
+    // sourcery: errorCode = "01"
     case couldNotCreateDestinationURL
-    @ErrorCode("02")
+    // sourcery: errorCode = "02"
     case couldNotCreatePDFStringForParsing
-    @ErrorCode("03")
+    // sourcery: errorCode = "03"
     case parsingError(Error)
-    @ErrorCode("04")
+    // sourcery: errorCode = "04"
     case failedToCreateAttachment(Error)
 
-    @ErrorCode("05")
+    // sourcery: errorCode = "05"
     case dataMissingPatient
-    @ErrorCode("06")
+    // sourcery: errorCode = "06"
     case dataMissingDoctor
-    @ErrorCode("07")
+    // sourcery: errorCode = "07"
     case dataMissingPharmacy
-    @ErrorCode("08")
+    // sourcery: errorCode = "08"
     case dataMissingInvoice
 }
 
@@ -73,7 +65,7 @@ extension DependencyValues {
 
 // swiftlint:disable:next type_body_length
 struct DefaultChargeItemPDFService: ChargeItemPDFService {
-    @Dependency(\.uiDateFormatter) var uiDateFormatter: UIDateFormatter
+    let uiDateFormatter = UIDateFormatter(fhirDateFormatter: .shared)
 
     func loadPDFOrGenerate(for chargeItem: ErxChargeItem) throws -> URL {
         guard let outputURL = try? FileManager.default.url(
@@ -101,37 +93,16 @@ struct DefaultChargeItemPDFService: ChargeItemPDFService {
             throw ChargeItemPDFServiceError.parsingError(error)
         }
 
-        var attachments: [PDFAttachment] = []
+        let attachmentData = chargeItem.receiptSignature?.data?.data(using: .utf8) ?? Data()
+        let attachment = PDFAttachment(filename: "Data", content: attachmentData)
 
-        if let prescriptionData = chargeItem.prescriptionSignature?.data?.data(using: .utf8) {
-            // Verordnungsdatensatz
-            attachments.append(PDFAttachment(
-                filename: "\(chargeItem.taskId ?? chargeItem.identifier)_verordnung.p7s",
-                content: prescriptionData,
-                mimeType: "application/pkcs7-signature"
-            ))
-        }
-        if let dispenseData = chargeItem.dispenseSignature?.data?.data(using: .utf8) {
-            attachments.append(PDFAttachment(
-                filename: "\(chargeItem.taskId ?? chargeItem.identifier)_abgabedaten.p7s",
-                content: dispenseData,
-                mimeType: "application/pkcs7-signature"
-            ))
-        }
-        if let receiptData = chargeItem.receiptSignature?.data?.data(using: .utf8) {
-            attachments.append(PDFAttachment(
-                filename: "\(chargeItem.taskId ?? chargeItem.identifier)_quittung.p7s",
-                content: receiptData,
-                mimeType: "application/pkcs7-signature"
-            ))
-        }
-
+        let printedAttachment: Data
         do {
-            let attachementsData = try document.append(attachments: attachments, startObj: result.count)
-            result.append(attachementsData)
+            printedAttachment = try document.append(attachment: attachment, startObj: result.count)
         } catch {
             throw ChargeItemPDFServiceError.failedToCreateAttachment(error)
         }
+        result.append(printedAttachment)
 
         try result.write(to: outputURL)
 
@@ -308,17 +279,17 @@ struct DefaultChargeItemPDFService: ChargeItemPDFService {
     }
 
     func medicationText(for medication: ErxMedication?, request: ErxMedicationRequest) -> String {
-        guard let medication,
+        guard let medication = medication,
               let profile = medication.profile else {
             return ""
         }
         switch profile {
         case .freeText:
             return
-                "Freitextverordnung: \(request.quantity.map { "\($0.value)x" } ?? "") \(medication.displayName ?? "")"
+                "Freitextverordnung: \(request.quantity.map { "\($0.value)x" } ?? "") \(medication.displayName)"
         case .pzn:
             let v26 = request.quantity.map { "\($0.value)x " } ?? ""
-            let v25 = "\(medication.displayName ?? "")/ "
+            let v25 = "\(medication.displayName)/ "
             let v27 = medication.amount?.numerator.value.appending(" ") ?? ""
             let v28 = medication.amount?.numerator.unit?.appending(" ") ?? ""
             let v29 = medication.normSizeCode?.appending(" ") ?? ""
@@ -386,16 +357,12 @@ struct DefaultChargeItemPDFService: ChargeItemPDFService {
         return pdfData as Data
     }
 
-    static let unsafeFileCharacterSet = CharacterSet(charactersIn: "\"\\/?<>:*| ")
-
     func generateChargeItemPDFName(for chargeItem: ErxChargeItem) -> String {
-        @Dependency(\.fhirDateFormatter) var fhirDateFormatter: FHIRDateFormatter
-        let date = fhirDateFormatter.date(from: chargeItem.enteredDate ?? "") ?? Date()
-        let dateFormatted = fhirDateFormatter.string(from: date, format: .yearMonthDay)
+        let date = uiDateFormatter.fhirDateFormatter.date(from: chargeItem.enteredDate ?? "") ?? Date()
+        let dateFormatted = uiDateFormatter.fhirDateFormatter.string(from: date, format: .yearMonthDay)
         let medicationNameFormatted = (chargeItem.medication?.name ?? L10n.serviceTxtMissingChargeItemPdfName.text)
             .trimmed()
-            .components(separatedBy: Self.unsafeFileCharacterSet)
-            .joined()
+            .replacingOccurrences(of: " ", with: "")
         return medicationNameFormatted + "_" + dateFormatted
     }
 }
@@ -436,7 +403,7 @@ extension DavInvoice.ChargeableItem {
         let text: String
         let col2 = pzn ?? hmrn ?? ta1 ?? ""
 
-        if let pzn,
+        if let pzn = self.pzn,
            pzn == medication?.pzn {
             text = "wie verordnet"
         } else {

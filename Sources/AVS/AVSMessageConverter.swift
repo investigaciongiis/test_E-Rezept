@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ASN1Kit
@@ -29,7 +25,7 @@ protocol AVSMessageConverter {
     func convert(_ message: AVSMessage, recipients: [X509]) throws -> Data
 }
 
-/// Refer to RFC 5083 https://datatracker.ietf.org/doc/html/rfc5083
+// Refer to RFC 5083 https://datatracker.ietf.org/doc/html/rfc5083
 struct AuthEnvelopedWithUnauthAttributes: AVSMessageConverter {
     static let encoder = JSONEncoder()
     let avsCmsEncrypter: AVSCmsEncrypter
@@ -40,7 +36,7 @@ struct AuthEnvelopedWithUnauthAttributes: AVSMessageConverter {
         self.avsCmsEncrypter = avsCmsEncrypter
     }
 
-    /// Refer to RFC 5083 https://datatracker.ietf.org/doc/html/rfc5083
+    // Refer to RFC 5083 https://datatracker.ietf.org/doc/html/rfc5083
     func convert(_ message: AVSMessage, recipients: [X509]) throws -> Data {
         // 0. Serialize to JSON
         let data = try Self.encoder.encode(message)
@@ -61,7 +57,7 @@ struct AuthEnvelopedWithUnauthAttributes: AVSMessageConverter {
 
     static let oidRecipientEmail = "1.2.276.0.76.4.173"
 
-    /// For unauthAttr syntax, refer to gemSpec_KOMLE 2.2.5 Ungeschützte Attribute (unauthAttrs)
+    // For unauthAttr syntax, refer to gemSpec_KOMLE 2.2.5 Ungeschützte Attribute (unauthAttrs)
     static func recipientEmailsUnAuthAttribute(recipients: [X509]) throws -> Data {
         let recipientEmails = try recipients
             .map(Self.recipientEmail)
@@ -109,8 +105,8 @@ struct AuthEnvelopedWithUnauthAttributes: AVSMessageConverter {
                         tag: .universal(.sequence),
                         data: .constructed(
                             [
-                                ASN1Decoder.decode(asn1: holder),
-                                serialNumber.asn1encode(tag: .universal(.integer)),
+                                try ASN1Decoder.decode(asn1: holder),
+                                try serialNumber.asn1encode(tag: .universal(.integer)),
                             ]
                         )
                     ),
@@ -183,7 +179,7 @@ extension X509 {
 
          where the value holds an ASN1 object containing the registration number string
          */
-        guard let derBytes else {
+        guard let derBytes = derBytes else {
             throw AVSError.invalidX509Input
         }
         let decoded = try ASN1Decoder.decode(asn1: derBytes)

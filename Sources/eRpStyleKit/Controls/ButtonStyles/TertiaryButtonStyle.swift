@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import SwiftUI
@@ -36,26 +32,28 @@ public struct TertiaryButtonStyle: ButtonStyle {
         isDestructive = destructive
     }
 
-    @Environment(\.colorScheme) private var colorScheme
-
     var foregroundColor: Color {
         switch (isDestructive, isEnabled) {
         case (false, true):
             return Colors.primary
         case (false, false):
-            return Colors.primary.disabled(for: colorScheme)
+            return Color(.systemGray)
         case (true, true):
-            return Colors.red700
+            return Colors.red600
         case (true, false):
-            return Colors.red700.disabled(for: colorScheme)
+            return Color(.systemGray)
         }
     }
 
     public func makeBody(configuration: Self.Configuration) -> some View {
         configuration.label
-            .font(.subheadline.weight(.semibold))
-            .foregroundColor(foregroundColor)
+            .font(.body.weight(.semibold))
+            .foregroundColor(isEnabled ? foregroundColor : Color(.systemGray))
             .opacity(configuration.isPressed ? 0.25 : 1)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke().foregroundColor(foregroundColor))
+            .cornerRadius(16)
+            .padding(.horizontal)
     }
 }
 
@@ -64,9 +62,7 @@ extension ButtonStyle where Self == TertiaryButtonStyle {
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View.buttonStyle(.Tertiary)`` modifier.
-    public static var tertiary: TertiaryButtonStyle {
-        TertiaryButtonStyle()
-    }
+    public static var tertiary: TertiaryButtonStyle { TertiaryButtonStyle() }
 
     /// A button style that applies fg and bg color, as well as border radius.
     ///

@@ -1,38 +1,32 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureHelpers
 import Nimble
 import XCTest
 
 @MainActor
 class PharmacyContactDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.immediate
-    var mockShipmentInfoDataStore: ShipmentInfoDataStoreMock!
+    var mockShipmentInfoDataStore: MockShipmentInfoDataStore!
     var mockInputValidator: MockRedeemInputValidator!
 
     typealias TestStore = TestStoreOf<PharmacyContactDomain>
@@ -49,7 +43,7 @@ class PharmacyContactDomainTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        mockShipmentInfoDataStore = ShipmentInfoDataStoreMock()
+        mockShipmentInfoDataStore = MockShipmentInfoDataStore()
         mockInputValidator = MockRedeemInputValidator()
     }
 
@@ -66,7 +60,6 @@ class PharmacyContactDomainTests: XCTestCase {
             dependencies.schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
             dependencies.shipmentInfoDataStore = mockShipmentInfoDataStore
             dependencies.redeemInputValidator = mockInputValidator
-            dependencies.redeemOrderInputValidator.type = { [mockInputValidator] _ in mockInputValidator }
         }
     }
 
@@ -74,21 +67,19 @@ class PharmacyContactDomainTests: XCTestCase {
         // given
         let sut = testStore(for: PharmacyContactDomain.State(
             shipmentInfo: shipmentInfo,
-            serviceOption: .erxTaskRepository
+            service: .erxTaskRepository
         ))
         mockInputValidator.returnValue = .valid
-        mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorReturnValue = Just([shipmentInfo])
+        mockShipmentInfoDataStore.saveShipmentInfosReturnValue = Just([shipmentInfo])
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         // when
         await sut.send(.save)
 
         // then
-        expect(self.mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.saveShipmentInfosCallsCount).to(equal(1))
         await sut.receive(.response(.shipmentInfoSaved(.success(shipmentInfo))))
-        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdUUIDVoidCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdCallsCount).to(equal(1))
         await sut.receive(.delegate(.close))
     }
 
@@ -98,11 +89,11 @@ class PharmacyContactDomainTests: XCTestCase {
         let sut = testStore(
             for: PharmacyContactDomain.State(
                 shipmentInfo: shipmentInfo,
-                serviceOption: .erxTaskRepository
+                service: .erxTaskRepository
             )
         )
         mockInputValidator.returnValue = .valid
-        mockShipmentInfoDataStore.saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorReturnValue =
+        mockShipmentInfoDataStore.saveShipmentInfosReturnValue =
             Fail(error: expectedError)
                 .eraseToAnyPublisher()
 
@@ -110,8 +101,7 @@ class PharmacyContactDomainTests: XCTestCase {
         await sut.send(.save)
 
         // then
-        expect(self.mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.saveShipmentInfosCallsCount).to(equal(1))
         await sut.receive(.response(.shipmentInfoSaved(.failure(expectedError)))) {
             $0.alertState = AlertState(
                 title: { TextState("Fehler") },
@@ -123,7 +113,7 @@ class PharmacyContactDomainTests: XCTestCase {
                 message: { TextState(LocalStoreError.write(error: DemoError.demo).localizedDescriptionWithErrorList) }
             )
         }
-        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdUUIDVoidCallsCount).to(equal(0))
+        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdCallsCount).to(equal(0))
     }
 
     func testChangingInputIntoSomethingInvalid() async {
@@ -131,7 +121,7 @@ class PharmacyContactDomainTests: XCTestCase {
         let sut = testStore(
             for: PharmacyContactDomain.State(
                 shipmentInfo: shipmentInfo,
-                serviceOption: .erxTaskRepository
+                service: .erxTaskRepository
             )
         )
 
@@ -188,7 +178,7 @@ class PharmacyContactDomainTests: XCTestCase {
         let sut = testStore(
             for: PharmacyContactDomain.State(
                 shipmentInfo: shipmentInfo,
-                serviceOption: .erxTaskRepository
+                service: .erxTaskRepository
             )
         )
 
@@ -269,16 +259,14 @@ class PharmacyContactDomainTests: XCTestCase {
             state.contactInfo = PharmacyContactDomain.ContactInfo(finalShipmentInfo)
         }
 
-        mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorReturnValue = Just([finalShipmentInfo])
+        mockShipmentInfoDataStore.saveShipmentInfosReturnValue = Just([finalShipmentInfo])
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         await sut.send(.save)
 
-        expect(self.mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.saveShipmentInfosCallsCount).to(equal(1))
         await sut.receive(.response(.shipmentInfoSaved(.success(finalShipmentInfo))))
-        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdUUIDVoidCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdCallsCount).to(equal(1))
         await sut.receive(.delegate(.close))
     }
 }

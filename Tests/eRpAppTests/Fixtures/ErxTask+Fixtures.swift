@@ -1,25 +1,22 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
+@testable import eRpFeatures // todo rm me (DemoDate)
 import eRpKit
 import Foundation
 
@@ -164,7 +161,7 @@ extension ErxTask {
             insuranceId: "A123456789",
             dosageInstruction: nil,
             telematikId: "11b2-8555",
-            whenHandedOver: TestDate.createFormattedDate(.today) ?? "",
+            whenHandedOver: DemoDate.createDemoDate(.today) ?? "",
             medication: .init(
                 name: "Vita-Tee",
                 pzn: "06876519",
@@ -176,8 +173,7 @@ extension ErxTask {
                     expiresOn: "2323-01-26T15:23:21+00:00"
                 )
             ),
-            epaMedication: nil,
-            diGaDispense: nil
+            epaMedication: nil
         )
 
         static let medicationDispense2: ErxMedicationDispense = .init(
@@ -199,8 +195,7 @@ extension ErxTask {
                     expiresOn: "2323-01-26T15:23:21+00:00"
                 )
             ),
-            epaMedication: nil,
-            diGaDispense: nil
+            epaMedication: nil
         )
 
         static let medicationDispenseWeekBefore: ErxMedicationDispense = .init(
@@ -212,8 +207,7 @@ extension ErxTask {
             whenHandedOver: FHIRDateFormatter.liveValue
                 .stringWithLongUTCTimeZone(from: Date(timeIntervalSince1970: 1_706_612_400)),
             medication: medication7,
-            epaMedication: nil,
-            diGaDispense: nil
+            epaMedication: nil
         )
 
         static let medicationDispense3: ErxMedicationDispense = .init(
@@ -222,7 +216,7 @@ extension ErxTask {
             insuranceId: "A123456789",
             dosageInstruction: "use hot water",
             telematikId: "11b2-8555",
-            whenHandedOver: TestDate.createFormattedDate(.today) ?? "",
+            whenHandedOver: DemoDate.createDemoDate(.today) ?? "",
             medication: .init(
                 name: "Green-Tee",
                 amount: .init(numerator: .init(value: "4")),
@@ -233,52 +227,7 @@ extension ErxTask {
                     expiresOn: "2323-01-26T15:23:21+00:00"
                 )
             ),
-            epaMedication: nil,
-            diGaDispense: nil
-        )
-
-        static let medicationDispenseDiGa: ErxMedicationDispense = .init(
-            identifier: "taskId-4",
-            taskId: "53210f983-1e67-22c5-8955-63bf44e44fb8",
-            insuranceId: "A123456789",
-            dosageInstruction: "use hot water",
-            telematikId: "11b2-8555",
-            whenHandedOver: TestDate.createFormattedDate(.today) ?? "",
-            medication: .init(
-                name: "Green-Tee",
-                amount: .init(numerator: .init(value: "4")),
-                dosageForm: "INS",
-                normSizeCode: "NB",
-                batch: .init(
-                    lotNumber: "Charge number 1001",
-                    expiresOn: "2323-01-26T15:23:21+00:00"
-                )
-            ),
-            epaMedication: nil,
-            diGaDispense: .init(redeemCode: "123123",
-                                deepLink: "123123")
-        )
-
-        static let medicationDispenseDiGaRejected: ErxMedicationDispense = .init(
-            identifier: "taskId-4",
-            taskId: "53210f983-1e67-22c5-8955-63bf44e44fb8",
-            insuranceId: "A123456789",
-            dosageInstruction: "use hot water",
-            telematikId: "11b2-8555",
-            whenHandedOver: TestDate.createFormattedDate(.today) ?? "",
-            noteText: "Diese DiGa konnte nicht erstellt werden, da zu teuer",
-            medication: .init(
-                name: "Green-Tee",
-                amount: .init(numerator: .init(value: "4")),
-                dosageForm: "INS",
-                normSizeCode: "NB",
-                batch: .init(
-                    lotNumber: "Charge number 1001",
-                    expiresOn: "2323-01-26T15:23:21+00:00"
-                )
-            ),
-            epaMedication: nil,
-            diGaDispense: .init(isMissingData: true)
+            epaMedication: nil
         )
 
         static let erxTaskReady = erxTask1
@@ -336,7 +285,6 @@ extension ErxTask {
         static let erxTaskSubstitutionAllowed: ErxTask = .init(
             identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
             authoredOn: "2021-06-10T10:55:04+02:00",
@@ -360,7 +308,6 @@ extension ErxTask {
         static let erxTaskRedeemedFixDate: ErxTask = .init(
             identifier: "7350f983-1e67-11b2-8555-63bf44e44fb8",
             status: .completed,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
             authoredOn: "2023-12-13T20:15:00Z",
@@ -383,7 +330,6 @@ extension ErxTask {
         static let erxTaskError: ErxTask = .init(
             identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .error(.decoding(message: "error: decoding")),
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             authoredOn: "2021-06-10T10:55:04+02:00"
         )
@@ -444,18 +390,8 @@ extension ErxTask {
             mark: false,
             numbering: 0,
             totalNumber: 0,
-            startPeriod: TestDate.createFormattedDate(.yesterday),
-            endPeriod: TestDate.createFormattedDate(.yesterday)
-        )
-
-        static let demoDeviceRequest = ErxDeviceRequest(
-            status: .active,
-            intent: .order,
-            pzn: "123123",
-            appName: "Beste App",
-            accidentInfo: demoAccidentInfo,
-            authoredOn: "2323-01-26T15:23:21+00:00",
-            diGaInfo: nil
+            startPeriod: DemoDate.createDemoDate(.yesterday),
+            endPeriod: DemoDate.createDemoDate(.yesterday)
         )
 
         static func avsTransaction(for taskId: String) -> AVSTransaction {
@@ -470,7 +406,6 @@ extension ErxTask {
         static let scannedTask: ErxTask = .init(
             identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
             authoredOn: "2323-01-26T15:23:21+00:00",
@@ -480,10 +415,9 @@ extension ErxTask {
         static let scannedTaskWithAVSTransaction: ErxTask = .init(
             identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.today),
+            authoredOn: DemoDate.createDemoDate(.today),
             avsTransactions: [avsTransaction(for: "2390f983-1e67-11b2-8555-63bf44e44fb8")],
             source: .scanner
         )
@@ -491,12 +425,11 @@ extension ErxTask {
         static let erxTask1: ErxTask = .init(
             identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.today),
-            expiresOn: TestDate.createFormattedDate(.tomorrow),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.today),
+            expiresOn: DemoDate.createDemoDate(.tomorrow),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication1,
             medicationRequest: .init(
@@ -512,12 +445,11 @@ extension ErxTask {
         static let erxTask2: ErxTask = .init(
             identifier: "5390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.today),
-            expiresOn: TestDate.createFormattedDate(.twentyEightDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.today),
+            expiresOn: DemoDate.createDemoDate(.twentyEightDaysAhead),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: compoundingMedication,
             medicationRequest: .init(
@@ -533,12 +465,11 @@ extension ErxTask {
         static let erxTask3: ErxTask = .init(
             identifier: "0390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.yesterday),
-            expiresOn: TestDate.createFormattedDate(.twelveDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.yesterday),
+            expiresOn: DemoDate.createDemoDate(.twelveDaysAhead),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication3,
             medicationRequest: .init(
@@ -555,12 +486,11 @@ extension ErxTask {
         static let erxTask4: ErxTask = .init(
             identifier: "1390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.dayBeforeYesterday),
-            expiresOn: TestDate.createFormattedDate(.twentyEightDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.dayBeforeYesterday),
+            expiresOn: DemoDate.createDemoDate(.twentyEightDaysAhead),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication4,
             medicationRequest: .init(
@@ -574,12 +504,11 @@ extension ErxTask {
         static let erxTask5: ErxTask = .init(
             identifier: "3390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.sixteenDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.yesterday),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.sixteenDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.yesterday),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication5,
             medicationRequest: .init(
@@ -593,12 +522,11 @@ extension ErxTask {
         static let erxTask6: ErxTask = .init(
             identifier: "490f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.thirtyDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.dayBeforeYesterday),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.thirtyDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.dayBeforeYesterday),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
             author: "Praxis Dr. med. Karin Hasenbein",
             medication: medication6,
             medicationRequest: .init(
@@ -613,13 +541,12 @@ extension ErxTask {
         static let erxTask7: ErxTask = .init(
             identifier: "6380f983-1e67-11b2-8555-63bf44e44fb8",
             status: .computed(status: .dispensed),
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.sixteenDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.twentyEightDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
-            lastMedicationDispense: TestDate.createFormattedDate(.weekBefore),
+            authoredOn: DemoDate.createDemoDate(.sixteenDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.twentyEightDaysAhead),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
+            lastMedicationDispense: DemoDate.createDemoDate(.weekBefore),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication7,
             medicationRequest: .init(
@@ -636,12 +563,11 @@ extension ErxTask {
         static let erxTask8: ErxTask = .init(
             identifier: "6370f983-1e67-11b2-8555-63bf44e44fb8",
             status: .computed(status: .waiting),
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.sixteenDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.yesterday),
-            acceptedUntil: TestDate.createFormattedDate(.yesterday),
+            authoredOn: DemoDate.createDemoDate(.sixteenDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.yesterday),
+            acceptedUntil: DemoDate.createDemoDate(.yesterday),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication8,
             medicationRequest: .init(
@@ -656,13 +582,12 @@ extension ErxTask {
         static let erxTask9: ErxTask = .init(
             identifier: "6360f983-1e67-11b2-8555-63bf44e44fb8",
             status: .inProgress,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.sixteenDaysBefore),
-            lastModified: TestDate.createFormattedDate(.weekBefore),
-            expiresOn: TestDate.createFormattedDate(.twelveDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.twelveDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.sixteenDaysBefore),
+            lastModified: DemoDate.createDemoDate(.weekBefore),
+            expiresOn: DemoDate.createDemoDate(.twelveDaysAhead),
+            acceptedUntil: DemoDate.createDemoDate(.twelveDaysAhead),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication7,
             medicationRequest: .init(
@@ -676,13 +601,12 @@ extension ErxTask {
         static let erxTask10: ErxTask = .init(
             identifier: "7350f983-1e67-11b2-8555-63bf44e44fb8",
             status: .completed,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.thirtyDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.yesterday),
-            acceptedUntil: TestDate.createFormattedDate(.yesterday),
-            redeemedOn: TestDate.createFormattedDate(.yesterday),
+            authoredOn: DemoDate.createDemoDate(.thirtyDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.yesterday),
+            acceptedUntil: DemoDate.createDemoDate(.yesterday),
+            redeemedOn: DemoDate.createDemoDate(.yesterday),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication1,
             medicationRequest: .init(
@@ -700,12 +624,11 @@ extension ErxTask {
         static let erxTask11: ErxTask = .init(
             identifier: "7340f983-1e67-11b2-8955-63bf44e44fb8",
             status: .cancelled,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.thirtyDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.weekBefore),
-            acceptedUntil: TestDate.createFormattedDate(.weekBefore),
+            authoredOn: DemoDate.createDemoDate(.thirtyDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.weekBefore),
+            acceptedUntil: DemoDate.createDemoDate(.weekBefore),
             redeemedOn: nil,
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: compoundingMedication,
@@ -720,7 +643,6 @@ extension ErxTask {
         static let erxTask12: ErxTask = .init(
             identifier: "7330f983-1e67-11b2-8955-63bf44e44fb8",
             status: .draft,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
             authoredOn: nil,
@@ -740,12 +662,11 @@ extension ErxTask {
         static let erxTask13: ErxTask = .init(
             identifier: "7320f983-1e67-11b2-8955-63bf44e44fb8",
             status: .undefined(status: "on-hold"),
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.thirtyDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.weekBefore),
-            acceptedUntil: TestDate.createFormattedDate(.weekBefore),
+            authoredOn: DemoDate.createDemoDate(.thirtyDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.weekBefore),
+            acceptedUntil: DemoDate.createDemoDate(.weekBefore),
             redeemedOn: nil,
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication4,
@@ -760,12 +681,11 @@ extension ErxTask {
         static let erxTask14: ErxTask = .init(
             identifier: "7390f983-1e67-11b2-8955-63bf44e44fb8",
             status: .inProgress,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.thirtyDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.weekBefore),
-            acceptedUntil: TestDate.createFormattedDate(.weekBefore),
+            authoredOn: DemoDate.createDemoDate(.thirtyDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.weekBefore),
+            acceptedUntil: DemoDate.createDemoDate(.weekBefore),
             redeemedOn: nil,
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication4,
@@ -780,13 +700,12 @@ extension ErxTask {
         static let erxTask15: ErxTask = .init(
             identifier: "53210f983-1e67-22c5-8955-63bf44e44fb8",
             status: .completed,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.thirtyDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.weekBefore),
-            acceptedUntil: TestDate.createFormattedDate(.weekBefore),
-            redeemedOn: TestDate.createFormattedDate(.yesterday),
+            authoredOn: DemoDate.createDemoDate(.thirtyDaysBefore),
+            expiresOn: DemoDate.createDemoDate(.weekBefore),
+            acceptedUntil: DemoDate.createDemoDate(.weekBefore),
+            redeemedOn: DemoDate.createDemoDate(.yesterday),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication8,
             medicationRequest: .init(
@@ -795,7 +714,6 @@ extension ErxTask {
             patient: demoPatient,
             practitioner: demoPractitioner,
             organization: demoOrganization,
-            communications: [ErxTask.Communication.Fixtures.communicationReplyYesterDay],
             medicationDispenses: [
                 medicationDispense1,
                 medicationDispense2,
@@ -805,12 +723,11 @@ extension ErxTask {
         static let erxTask16: ErxTask = .init(
             identifier: "34235f983-1e67-22c5-8955-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.yesterday),
-            expiresOn: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
+            authoredOn: DemoDate.createDemoDate(.yesterday),
+            expiresOn: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
+            acceptedUntil: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
             redeemedOn: nil,
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication8,
@@ -820,62 +737,17 @@ extension ErxTask {
             ),
             patient: demoPatient,
             practitioner: demoPractitioner,
-            organization: demoOrganization,
-            communications: [ErxTask.Communication.Fixtures.communicationReply2ComputedDate]
-        )
-
-        static let erxTask17: ErxTask = .init(
-            identifier: "53210f983-1e67-22c5-8955-63bf44e44fb8",
-            status: .completed,
-            flowType: .pharmacyOnly,
-            accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
-            fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.thirtyDaysBefore),
-            expiresOn: TestDate.createFormattedDate(.weekBefore),
-            acceptedUntil: TestDate.createFormattedDate(.weekBefore),
-            redeemedOn: TestDate.createFormattedDate(.yesterday),
-            author: "Dr. Dr. med. Carsten van Storchhausen",
-            medication: medication8,
-            medicationRequest: .init(
-                accidentInfo: demoAccidentInfo
-            ),
-            patient: demoPatient,
-            practitioner: demoPractitioner,
-            organization: demoOrganization,
-            communications: [ErxTask.Communication.Fixtures.communicationDispReqYesterDay]
-        )
-
-        static let erxTask18: ErxTask = .init(
-            identifier: "34235f983-1e67-22c5-8955-63bf44e44fb8",
-            status: .ready,
-            flowType: .pharmacyOnly,
-            accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
-            fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.yesterday),
-            expiresOn: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
-            redeemedOn: nil,
-            author: "Dr. Dr. med. Carsten van Storchhausen",
-            medication: medication8,
-            medicationRequest: .init(
-                accidentInfo: demoAccidentInfo,
-                multiplePrescription: demoMultiplePrescription
-            ),
-            patient: demoPatient,
-            practitioner: demoPractitioner,
-            organization: demoOrganization,
-            communications: [ErxTask.Communication.Fixtures.communicationDispReq2ComputedDate]
+            organization: demoOrganization
         )
 
         static let erxTaskSelfPayer: ErxTask = .init(
             identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.today),
-            expiresOn: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.tomorrow),
+            authoredOn: DemoDate.createDemoDate(.today),
+            expiresOn: DemoDate.createDemoDate(.ninetyTwoDaysAhead),
+            acceptedUntil: DemoDate.createDemoDate(.tomorrow),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication1,
             medicationRequest: .init(
@@ -887,77 +759,6 @@ extension ErxTask {
             patient: demoSelfPayerPatient,
             practitioner: demoPractitioner,
             organization: demoOrganization
-        )
-
-        static let erxTaskDeviceRequest: ErxTask = .init(
-            identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
-            status: .ready,
-            flowType: .pharmacyOnly,
-            accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
-            fullUrl: nil,
-            authoredOn: "2026-07-13T20:15:00Z",
-            expiresOn: "2026-09-10T10:55:04+02:00",
-            acceptedUntil: "2026-08-10T10:55:04+02:00",
-            author: "Dr. Dr. med. Carsten van Storchhausen",
-            medication: medication1,
-            medicationRequest: .init(
-                dosageInstructions: "1-0-1-0",
-                substitutionAllowed: true,
-                accidentInfo: demoAccidentInfo,
-                quantity: .init(value: "2", unit: "Packungen")
-            ),
-            patient: demoSelfPayerPatient,
-            practitioner: demoPractitioner,
-            organization: demoOrganization,
-            deviceRequest: demoDeviceRequest
-        )
-
-        static let erxTaskDeviceRequestDispense: ErxTask = .init(
-            identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
-            status: .ready,
-            flowType: .pharmacyOnly,
-            accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
-            fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.today),
-            expiresOn: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.tomorrow),
-            author: "Dr. Dr. med. Carsten van Storchhausen",
-            medication: medication1,
-            medicationRequest: .init(
-                dosageInstructions: "1-0-1-0",
-                substitutionAllowed: true,
-                accidentInfo: demoAccidentInfo,
-                quantity: .init(value: "2", unit: "Packungen")
-            ),
-            patient: demoSelfPayerPatient,
-            practitioner: demoPractitioner,
-            organization: demoOrganization,
-            medicationDispenses: [medicationDispenseDiGa],
-            deviceRequest: demoDeviceRequest
-        )
-
-        static let erxTaskDeviceRequestDispenseRejected: ErxTask = .init(
-            identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
-            status: .ready,
-            flowType: .pharmacyOnly,
-            accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
-            fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.today),
-            expiresOn: TestDate.createFormattedDate(.ninetyTwoDaysAhead),
-            acceptedUntil: TestDate.createFormattedDate(.tomorrow),
-            author: "Dr. Dr. med. Carsten van Storchhausen",
-            medication: medication1,
-            medicationRequest: .init(
-                dosageInstructions: "1-0-1-0",
-                substitutionAllowed: true,
-                accidentInfo: demoAccidentInfo,
-                quantity: .init(value: "2", unit: "Packungen")
-            ),
-            patient: demoSelfPayerPatient,
-            practitioner: demoPractitioner,
-            organization: demoOrganization,
-            medicationDispenses: [medicationDispenseDiGaRejected],
-            deviceRequest: demoDeviceRequest
         )
 
         static let erxTasks: [ErxTask] =

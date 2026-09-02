@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import SwiftUI
@@ -56,7 +52,7 @@ private struct TextFieldWithDoneButtonToolbar: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .introspect(.textField, on: .iOS(.v15, .v16, .v17, .v18, .v26)) { textField in
+            .introspect(.textField, on: .iOS(.v15, .v16, .v17, .v18)) { textField in
                 let toolBar = textField
                     .inputAccessoryView as? UIToolbar ??
                     UIToolbar(frame: CGRect(x: 0, y: 0, width: textField.frame.size.width, height: 44))
@@ -68,7 +64,7 @@ private struct TextFieldWithDoneButtonToolbar: ViewModifier {
                 let doneButton = BarButtonItem(
                     title: "Done",
                     style: UIBarButtonItem.Style.done,
-                    action: action
+                    action: self.action
                 )
                 // TODO: replace color conversion when using iOS 14 // swiftlint:disable:this todo
 //              #if os(iOS)
@@ -79,10 +75,10 @@ private struct TextFieldWithDoneButtonToolbar: ViewModifier {
 //              // use default
 //              #endif
                 doneButton.accessibilityTraits = [.keyboardKey, .button]
-                doneButton.accessibilityIdentifier = accessibilityIdentifier
-                doneButton.accessibilityLabel = accessibilityLabel
-                doneButton.title = title
-                doneButton.isEnabled = enabled
+                doneButton.accessibilityIdentifier = self.accessibilityIdentifier
+                doneButton.accessibilityLabel = self.accessibilityLabel
+                doneButton.title = self.title
+                doneButton.isEnabled = self.enabled
                 toolBar.setItems([flexButton, doneButton], animated: false)
                 textField.inputAccessoryView = toolBar
             }

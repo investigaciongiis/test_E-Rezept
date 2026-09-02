@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -27,7 +23,6 @@ import eRpKit
 @testable import eRpLocalStorage
 import Foundation
 import Nimble
-import Sharing
 import XCTest
 
 final class AVSTransactionCoreDataStoreTests: XCTestCase {
@@ -52,36 +47,20 @@ final class AVSTransactionCoreDataStoreTests: XCTestCase {
     }
 
     private func loadFactory() -> CoreDataControllerFactory {
-        guard let factory else {
-            return .init(databaseUrl: { self.databaseFile }) {
-                @Shared(.coreDataController) var coreDataController
-
-                let fileProtection: FileProtectionType = {
-                    #if os(macOS)
-                    return FileProtectionType(rawValue: "none")
-                    #else
-                    return .completeUnlessOpen
-                    #endif
-                }()
-
-                if let controller = coreDataController {
-                    return controller
-                }
-                guard Thread.isMainThread else {
-                    return try DispatchQueue.main.sync {
-                        try loadCoreDataController()
-                    }
-                }
-                func loadCoreDataController() throws -> CoreDataController {
-                    let controller = try CoreDataController(
-                        url: self.databaseFile,
-                        fileProtection: fileProtection
-                    )
-                    $coreDataController.withLock { $0 = controller }
-                    return controller
-                }
-                return try loadCoreDataController()
-            }
+        guard let factory = factory else {
+            #if os(macOS)
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: FileProtectionType(rawValue: "none")
+            )
+            #else
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: .completeUnlessOpen
+            )
+            #endif
+            self.factory = factory
+            return factory
         }
 
         return factory
@@ -102,6 +81,7 @@ final class AVSTransactionCoreDataStoreTests: XCTestCase {
 
     private func loadErxTaskCoreDataStore() -> ErxTaskCoreDataStore {
         DefaultErxTaskCoreDataStore(
+            profileId: profileUUID,
             coreDataControllerFactory: loadFactory(),
             foregroundQueue: .immediate,
             backgroundQueue: coreDataBackgroundQueue,
@@ -207,20 +187,20 @@ final class AVSTransactionCoreDataStoreTests: XCTestCase {
         cancellable.cancel()
     }
 
-    func testSavingAVSTransactions() {
+    func testSavingAVSTransactions() throws {
         let sut = loadAVSTransactionCoreDataStore()
         let avsTransaction1 = avsTransaction(with: UUID())
         let avsTransaction2 = avsTransaction(with: UUID())
         sut.add(avsTransactions: [avsTransaction1, avsTransaction2])
     }
 
-    func testSavingOneAVSTransaction() {
+    func testSavingOneAVSTransaction() throws {
         let sut = loadAVSTransactionCoreDataStore()
         let avsTransaction = avsTransaction(with: UUID())
         sut.add(avsTransaction: avsTransaction)
     }
 
-    func testSavingPreviousStoredAVSTransaction() {
+    func testSavingPreviousStoredAVSTransaction() throws {
         let sut = loadAVSTransactionCoreDataStore()
         let avsTransactionId = UUID()
         let avsTransaction = avsTransaction(with: avsTransactionId)
@@ -257,12 +237,11 @@ final class AVSTransactionCoreDataStoreTests: XCTestCase {
     }
 
     func testSavingAVSTransactionUpdatesErxTask() {
-        let task = ErxTask(identifier: "12345", status: .ready, flowType: .pharmacyOnly, source: .scanner)
+        let task = ErxTask(identifier: "12345", status: .ready, source: .scanner)
 
         let erxTaskStore = loadErxTaskCoreDataStore()
         _ = erxTaskStore.save(
             tasks: [task],
-            in: nil,
             updateProfileLastAuthenticated: false
         )
         .sink { result in

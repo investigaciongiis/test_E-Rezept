@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
@@ -29,11 +25,11 @@ import XCTest
 final class URLRequestExtSerializeTests: XCTestCase {
     func testURLRequestRawStringEncodedPost() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com"))
+        let url = URL(string: "http://some-service.com")!
         var sut = URLRequest(url: url)
         sut.httpMethod = "POST"
         sut.addValue("application/fhir+json", forHTTPHeaderField: "Accept")
-        let body = Data("body".utf8)
+        let body = "body".data(using: .utf8)!
         sut.httpBody = body
 
         // when
@@ -46,7 +42,7 @@ final class URLRequestExtSerializeTests: XCTestCase {
 
     func testURLRequestRawStringEncodedGet() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com/path"))
+        let url = URL(string: "http://some-service.com/path")!
         var sut = URLRequest(url: url)
         sut.httpMethod = "GET"
         sut.addValue("value1", forHTTPHeaderField: "header1")
@@ -60,7 +56,7 @@ final class URLRequestExtSerializeTests: XCTestCase {
 
     func testURLRequestRawStringEncodedGetWithParameters() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com/path?firstPara=firstValue&secondPara=secondValue"))
+        let url = URL(string: "http://some-service.com/path?firstPara=firstValue&secondPara=secondValue")!
         var sut = URLRequest(url: url)
         sut.httpMethod = "GET"
         sut.addValue("value1", forHTTPHeaderField: "header1")
@@ -75,7 +71,7 @@ final class URLRequestExtSerializeTests: XCTestCase {
 
     func testDecodeFhirServerAnswerHtmlStringToHttpResponse() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com"))
+        let url = URL(string: "http://some-service.com")!
         let sut = // swiftlint:disable:next line_length
             "HTTP/1.1 200 OK\r\nDate: Fri, 13 Jan 2006 15:12:48 GMT\r\nContent-Type: application/json\r\n\r\n{\n  \"resourceType\": \"Bundle\"\n}"
 
@@ -91,7 +87,7 @@ final class URLRequestExtSerializeTests: XCTestCase {
 
     func testDecodeGetAnswerHtmlStringToHttpResponse() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com"))
+        let url = URL(string: "http://some-service.com")!
         let sut = // swiftlint:disable:next line_length
             "HTTP/1.0 302 Found\r\nDate: Fri, 13 Jan 2006 15:12:44 GMT\r\nLocation: http://de.wikipedia.org/wiki/Katzen\r\n\r\n"
 
@@ -108,7 +104,7 @@ final class URLRequestExtSerializeTests: XCTestCase {
 
     func testDecodePostAnswerHtmlStringToHttpResponse() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com"))
+        let url = URL(string: "http://some-service.com")!
         let sut = // swiftlint:disable:next line_length
             "HTTP/1.1 200 OK\r\nDate: Fri, 13 Jan 2006 15:12:48 GMT\r\nLast-Modified: Tue, 10 Jan 2006 11:18:20 GMT\r\nContent-Language: de\r\nContent-Type: text/html; charset=utf-8\r\n\r\nDie Katzen (Felidae) sind eine Familie aus der Ordnung der Raubtiere (Carnivora)\r\ninnerhalb der Überfamilie der Katzenartigen (Feloidea).\r\n\r\nWeiteres ..."
 
@@ -126,7 +122,7 @@ final class URLRequestExtSerializeTests: XCTestCase {
 
     func testDecodeFhirServiceResponseStringToHTTPResponse() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com"))
+        let url = URL(string: "http://some-service.com")!
         let sut = // swiftlint:disable:next line_length
             "HTTP/1.1 200 OK\r\ncontent-length: 54\r\nconnection: close\r\ncontent-type: application/fhir+json\r\ndate: Tue, 09 Feb 2021 14:19:16 GMT\r\n\r\n{\"resourceType\":\"Bundle\",\"type\":\"searchset\",\"total\":0}"
 

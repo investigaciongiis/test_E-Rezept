@@ -1,31 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import eRpResources
-import FeatureHelpers
 import Nimble
 import XCTest
 
@@ -34,11 +28,11 @@ final class MedicationReminderListDomainTests: XCTestCase {
     typealias TestStore = TestStoreOf<MedicationReminderListDomain>
 
     let mainQueue = DispatchQueue.immediate
-    var mockUserProfileService: UserProfileServiceMock!
+    var mockUserProfileService: MockUserProfileService!
 
     override func setUp() {
         super.setUp()
-        mockUserProfileService = UserProfileServiceMock()
+        mockUserProfileService = MockUserProfileService()
     }
 
     func testLoadMedicationSchedule() async {
@@ -107,7 +101,7 @@ final class MedicationReminderListDomainTests: XCTestCase {
             }
     }
 
-    func testLoadProfiles() async throws {
+    func testLoadProfiles() async {
         let sut = TestStore(initialState: .init()) {
             MedicationReminderListDomain()
         } withDependencies: { dependencies in
@@ -122,8 +116,7 @@ final class MedicationReminderListDomainTests: XCTestCase {
             UserProfile.Fixtures.olafOffline,
         ]
 
-        mockUserProfileService
-            .userProfilesPublisherAnyPublisherUserProfileUserProfileServiceErrorReturnValue = Just(expectedProfiles)
+        mockUserProfileService.userProfilesPublisherReturnValue = Just(expectedProfiles)
             .setFailureType(to: UserProfileServiceError.self)
             .eraseToAnyPublisher()
 
@@ -133,14 +126,14 @@ final class MedicationReminderListDomainTests: XCTestCase {
 
         await sut.receive(.loadProfileMedicationReminder(expectedProfiles))
 
-        try await sut.receive(.profileMedicationReminderReceived([], XCTUnwrap(expectedProfiles.first))) { state in
+        await sut.receive(.profileMedicationReminderReceived([], expectedProfiles.first!)) { state in
             state.profileMedicationReminder = [MedicationReminderListDomain.ProfileMedicationReminder(
                 profile: expectedProfiles.first!,
                 medicationProfileReminderList: []
             )]
         }
 
-        try await sut.receive(.profileMedicationReminderReceived([], XCTUnwrap(expectedProfiles.last))) { state in
+        await sut.receive(.profileMedicationReminderReceived([], expectedProfiles.last!)) { state in
             state.profileMedicationReminder = [MedicationReminderListDomain.ProfileMedicationReminder(
                 profile: expectedProfiles.first!,
                 medicationProfileReminderList: []
@@ -172,39 +165,6 @@ final class MedicationReminderListDomainTests: XCTestCase {
                 })
             )
         }
-    }
-
-    func testDeleteFromProfileMedicationReminderList() async {
-        // given
-        let medicationScheduleRepositoryDeleteCounter = LockIsolated(0)
-        let sut = TestStore(
-            initialState: .init(
-                profileMedicationReminder: [
-                    .init(
-                        profile: Self.FixturesB.profileErxTask,
-                        medicationProfileReminderList: [Self.FixturesB.medicationSchedule1]
-                    ),
-                ]
-            )
-        ) {
-            MedicationReminderListDomain()
-        } withDependencies: { dependencies in
-            dependencies.medicationScheduleRepository.delete = { _ in
-                medicationScheduleRepositoryDeleteCounter.withValue { $0 += 1 }
-            }
-            dependencies.schedulers = Schedulers(uiScheduler: mainQueue.eraseToAnyScheduler())
-            dependencies.userProfileService = mockUserProfileService
-        }
-
-        // then
-        expect(sut.state.profileMedicationReminder.count) == 1
-        await sut.send(.deleteFromProfileMedicationReminderList(
-            MedicationReminderListDomainTests.FixturesB.profileErxTask.id,
-            IndexSet(integer: 0)
-        )) { state in
-            state.profileMedicationReminder = []
-        }
-        await expect(medicationScheduleRepositoryDeleteCounter.value).toEventually(equal(1))
     }
 }
 

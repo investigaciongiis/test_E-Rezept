@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
@@ -28,20 +24,10 @@ public class FHIRDateFormatter {
     public static let shared = FHIRDateFormatter()
     private init() {}
 
-    /// Thread-safe immutable cache: one formatter per DateFormats
-    private static let isoDateFormatters: [DateFormats: ISO8601DateFormatter] = {
-        var dict: [DateFormats: ISO8601DateFormatter] = [:]
-        for format in DateFormats.allCases {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = format.formatOptions
-            dict[format] = formatter
-        }
-        return dict
+    private lazy var serverDateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        return formatter
     }()
-
-    private func isoFormatter(for format: DateFormats) -> ISO8601DateFormatter {
-        Self.isoDateFormatters[format] ?? ISO8601DateFormatter()
-    }
 
     private lazy var utcDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -57,7 +43,8 @@ public class FHIRDateFormatter {
     ///   - format: specify how detailed the format should be. The format can be one of the FHIR dates
     /// - Returns: a FHIR date string in the specified format
     public func string(from date: Date, format: DateFormats = .yearMonthDayTime) -> String {
-        isoFormatter(for: format).string(from: date)
+        serverDateFormatter.formatOptions = format.formatOptions
+        return serverDateFormatter.string(from: date)
     }
 
     /// Creates a `Date` from a string if it conforms to one of the FHIR date formats
@@ -75,7 +62,9 @@ public class FHIRDateFormatter {
         guard let dateFormat = format ?? dateFormat(for: string) else {
             return nil
         }
-        return isoFormatter(for: dateFormat).date(from: string)
+
+        serverDateFormatter.formatOptions = dateFormat.formatOptions
+        return serverDateFormatter.date(from: string)
     }
 
     /// Creates a date string with the format `2020-06-23T09:41:00+00:00`

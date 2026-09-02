@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
@@ -42,10 +38,8 @@ public struct PharmacyLocation: Identifiable, Equatable {
         imagePath: String? = nil,
         countUsage: Int = 0,
         hoursOfOperation: [HoursOfOperation] = [],
-        physicalFeatures: [PhysicalFeature] = [],
-        specialities: [Speciality] = [],
-        specialClosingHours: [SpecialOperationHours] = [],
-        emergencyServiceHours: [SpecialOperationHours] = []
+        avsEndpoints: AVSEndpoints? = nil,
+        avsCertificates: [X509] = []
     ) {
         self.id = id
         self.status = status
@@ -61,10 +55,8 @@ public struct PharmacyLocation: Identifiable, Equatable {
         self.imagePath = imagePath
         self.countUsage = countUsage
         self.hoursOfOperation = hoursOfOperation
-        self.physicalFeatures = physicalFeatures
-        self.specialities = specialities
-        self.specialClosingHours = specialClosingHours
-        self.emergencyServiceHours = emergencyServiceHours
+        self.avsEndpoints = avsEndpoints
+        self.avsCertificates = avsCertificates
     }
 
     // MARK: FHIR resources
@@ -98,17 +90,17 @@ public struct PharmacyLocation: Identifiable, Equatable {
     public var countUsage: Int
     /// HoursOfOperation (opening hours)
     public var hoursOfOperation: [HoursOfOperation]
-    /// Special closing hours
-    public var specialClosingHours: [SpecialOperationHours]
-    /// Emergency Service Hours
-    public var emergencyServiceHours: [SpecialOperationHours]
-    /// Physical features available at this pharmacy location
-    public var physicalFeatures: [PhysicalFeature] = []
-    /// Specialities offered at this pharmacy location
-    public var specialities: [Speciality] = []
+    /// Container that holds urls to the AVS Endpoints and their certificates to send requests with the AVSModul
+    public var avsEndpoints: AVSEndpoints?
+    /// Array of certificates for all recipients
+    public var avsCertificates: [X509] = []
 
     public var canBeDisplayedInMap: Bool {
         position?.latitude != nil && position?.longitude != nil
+    }
+
+    public var hasAVSEndpoints: Bool {
+        avsEndpoints != nil
     }
 
     /// Indicates if the delivery service via the `eRpRemoteStorage` module (Fachdienst) is present
@@ -133,6 +125,99 @@ public struct PharmacyLocation: Identifiable, Equatable {
     /// Note: Authentication via "Fachdienst" is required
     public var hasEmergencyService: Bool {
         types.contains { $0.isEmergency }
+    }
+
+    /// Indicates if the delivery service via the `AVS` module (ApothekenVerwaltunsSystem) is present
+    /// Note: No authentication via "Fachdienst" is required
+    public var hasDeliveryAVSService: Bool {
+        avsEndpoints?.deliveryUrl != nil && !avsCertificates.isEmpty
+    }
+
+    /// Indicates if the shipment service via the `AVS` module (ApothekenVerwaltunsSystem) is present
+    /// Note: No authentication via "Fachdienst" is required
+    public var hasShipmentAVSService: Bool {
+        avsEndpoints?.shipmentUrl != nil && !avsCertificates.isEmpty
+    }
+
+    /// Indicates if the reservation/onPremise service via the `AVS` module (ApothekenVerwaltunsSystem) is present
+    /// Note: No authentication via "Fachdienst" is required
+    public var hasReservationAVSService: Bool {
+        avsEndpoints?.onPremiseUrl != nil && !avsCertificates.isEmpty
+    }
+
+    public var hasAnyAVSService: Bool {
+        hasReservationAVSService || hasShipmentAVSService || hasDeliveryAVSService
+    }
+
+    public struct AVSEndpoints: Codable, Equatable {
+        public let onPremiseUrl: String?
+        public let onPremiseUrlAdditionalHeaders: [String: String]
+        public let shipmentUrl: String?
+        public let shipmentUrlAdditionalHeaders: [String: String]
+        public let deliveryUrl: String?
+        public let deliveryUrlAdditionalHeaders: [String: String]
+
+        public struct Endpoint: Equatable, Codable {
+            public let url: URL
+            public let additionalHeaders: [String: String]
+
+            public init(url: URL, additionalHeaders: [String: String] = [:]) {
+                self.url = url
+                self.additionalHeaders = additionalHeaders
+            }
+        }
+
+        public init(
+            onPremiseUrl: String? = nil,
+            onPremiseUrlAdditionalHeaders: [String: String] = [:],
+            shipmentUrl: String? = nil,
+            shipmentUrlAdditionalHeaders: [String: String] = [:],
+            deliveryUrl: String? = nil,
+            deliveryUrlAdditionalHeaders: [String: String] = [:]
+        ) {
+            self.onPremiseUrl = onPremiseUrl
+            self.onPremiseUrlAdditionalHeaders = onPremiseUrlAdditionalHeaders
+            self.shipmentUrl = shipmentUrl
+            self.shipmentUrlAdditionalHeaders = shipmentUrlAdditionalHeaders
+            self.deliveryUrl = deliveryUrl
+            self.deliveryUrlAdditionalHeaders = deliveryUrlAdditionalHeaders
+        }
+
+        public func url(for redeemOption: RedeemOption, transactionId: String, telematikId: String) -> Endpoint? {
+            guard let sanatizedUrl = url(for: redeemOption)?
+                .replacingOccurrences(of: "<ti_id>", with: telematikId.urlPercentEscapedString() ?? "")
+                .replacingOccurrences(of: "<transactionID>", with: transactionId.urlPercentEscapedString() ?? "") else {
+                return nil
+            }
+
+            guard let url = URL(string: sanatizedUrl) else {
+                return nil
+            }
+
+            return Endpoint(url: url, additionalHeaders: additionalHeaders(for: redeemOption))
+        }
+
+        private func url(for redeemOption: RedeemOption) -> String? {
+            switch redeemOption {
+            case .onPremise:
+                return onPremiseUrl
+            case .delivery:
+                return deliveryUrl
+            case .shipment:
+                return shipmentUrl
+            }
+        }
+
+        private func additionalHeaders(for redeemOption: RedeemOption) -> [String: String] {
+            switch redeemOption {
+            case .onPremise:
+                return onPremiseUrlAdditionalHeaders
+            case .delivery:
+                return deliveryUrlAdditionalHeaders
+            case .shipment:
+                return shipmentUrlAdditionalHeaders
+            }
+        }
     }
 
     public mutating func updateLocalStoredProperties(with pharmacy: PharmacyLocation) {
@@ -202,7 +287,7 @@ extension PharmacyLocation {
         public let latitude: Decimal?
         public let longitude: Decimal?
         public var coordinate: CLLocationCoordinate2D? {
-            if let longitude, let latitude {
+            if let longitude = longitude, let latitude = latitude {
                 return CLLocationCoordinate2D(latitude: latitude.doubleValue, longitude: longitude.doubleValue)
             } else {
                 return nil
@@ -228,15 +313,15 @@ extension PharmacyLocation {
 
         public var fullAddress: String {
             var address = ""
-            if let street {
+            if let street = street {
                 address = street
             }
             if let number = houseNumber {
                 address += " \(number)"
             }
 
-            if let city {
-                if let zip {
+            if let city = city {
+                if let zip = zip {
                     address += ", \(zip) \(city)"
                 } else {
                     address += ", \(city)"
@@ -247,15 +332,15 @@ extension PharmacyLocation {
 
         public var fullAddressBreak: String {
             var address = ""
-            if let street {
+            if let street = street {
                 address = street
             }
             if let number = houseNumber {
                 address += " \(number)"
             }
 
-            if let city {
-                if let zip {
+            if let city = city {
+                if let zip = zip {
                     address += "\n\(zip) \(city)"
                 } else {
                     address += "\n\(city)"
@@ -295,42 +380,6 @@ extension PharmacyLocation {
         public let openingTime: String?
         public let closingTime: String?
     }
-
-    public enum PhysicalFeature: String, Codable, Hashable {
-        case parking = "parkmoeglichkeit"
-        case publicTransport = "oepnv"
-        case barrierFree = "barrierefrei"
-        case pickupAutomat = "abholautomat"
-    }
-
-    public enum Speciality: String, Codable, Hashable {
-        // PharmacyHealthcareSpecialtyCS (codes 10-40 are handled by PharmacyType)
-        case sterileCompounding = "50"
-        case hypertension = "60"
-        case inhalationTechnique = "70"
-        case polymedication = "80"
-        case oralCancerTherapy = "90"
-        case organTransplantation = "100"
-        // HealthcareServiceSpecialtyCS
-        case vaccination = "impfung"
-        case bodyMeasurements = "koerperwerte"
-        case allergyTest = "allergietest"
-        case travelMedicineConsultation = "reisemedizin-beratung"
-    }
-
-    public struct SpecialOperationHours: Codable, Hashable {
-        public init(reason: String? = nil,
-                    startDate: String? = nil,
-                    endDate: String? = nil) {
-            self.reason = reason
-            self.startDate = startDate
-            self.endDate = endDate
-        }
-
-        public let reason: String?
-        public let startDate: String?
-        public let endDate: String?
-    }
 }
 
 extension Decimal {
@@ -356,9 +405,6 @@ extension PharmacyLocation: Codable {
         case imagePath
         case countUsage
         case hoursOfOperation
-        case physicalFeatures
-        case specialities
-        case specialClosingHours
-        case emergencyServiceHours
+        case avsEndpoints
     }
 }

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -77,7 +73,9 @@ extension MKCoordinateRegion {
 // swiftlint:enable identifier_name
 
 struct MapViewWithClustering: UIViewRepresentable {
-    static var isTestingEnvironment: Bool = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    static var isTestingEnvironment: Bool = {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }()
 
     @Binding var region: MKCoordinateRegionContainer
     var showUserLocation = true
@@ -102,7 +100,7 @@ struct MapViewWithClustering: UIViewRepresentable {
         /// Handling the update of the region binding
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated _: Bool) {
             DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
+                guard let self = self else { return }
                 self.parent.region = .delegate(mapView.region)
             }
         }
@@ -137,7 +135,8 @@ struct MapViewWithClustering: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let mapView = MKMapView()
         guard !Self.isTestingEnvironment else {
-            return context.coordinator.greyView
+            let greyView = context.coordinator.greyView
+            return greyView
         }
         mapView.delegate = context.coordinator
         mapView.setRegion(region.region, animated: false)

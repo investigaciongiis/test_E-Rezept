@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -30,7 +26,7 @@ struct LegalNoticeView: View {
             VStack(alignment: .leading) {
                 LegalNoticeSectionView(
                     title: L10n.stgLnoTxtTitleIssuer,
-                    text: L10n.stgLnoTxtTextIssuerRosenthaler
+                    text: L10n.stgLnoTxtTextIssuer
                 )
                 LegalNoticeSectionView(
                     title: nil,
@@ -64,13 +60,11 @@ extension LegalNoticeView {
         var title: LocalizedStringKey?
         var text: LocalizedStringKey
         var body: some View {
-            if let title {
+            if let title = title {
                 Text(title, bundle: .module)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.headline)
                     .padding(.top, 20)
-                    .accessibilityHeading(.h2)
-                    .accessibilityAddTraits(.isHeader)
             }
             Text(text, bundle: .module)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -88,46 +82,41 @@ extension LegalNoticeView {
         var phoneLink: URL?
 
         var body: some View {
-            if let title {
+            if let title = title {
                 Text(title, bundle: .module)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.headline)
                     .padding(.top, 20)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityHeading(.h2)
             }
-            if let webLink {
+            if let webLink = webLink {
                 HStack {
                     Image(systemName: SFSymbolName.network)
                         .frame(width: iconSize)
-                        .foregroundColor(Colors.primary700)
-                        .accessibilityHidden(true)
+                        .foregroundColor(Colors.primary600)
                     Link(L10n.stgLnoLinkTextContact, destination: webLink)
-                        .foregroundColor(Colors.primary700)
+                        .foregroundColor(Colors.primary600)
                         .accessibility(identifier: A18n.settings.legalNotice.stgLnoLinkContact)
                 }
                 .padding(.top, 1)
             }
-            if let emailLink {
+            if let emailLink = emailLink {
                 HStack {
                     Image(systemName: SFSymbolName.mail)
                         .frame(width: iconSize)
-                        .foregroundColor(Colors.primary700)
-                        .accessibilityHidden(true)
+                        .foregroundColor(Colors.primary600)
                     Link(L10n.stgLnoMailTextContact, destination: emailLink)
-                        .foregroundColor(Colors.primary700)
+                        .foregroundColor(Colors.primary600)
                         .accessibility(identifier: A18n.settings.legalNotice.stgLnoMailContact)
                 }
                 .padding(.top, 1)
             }
-            if let phoneLink {
+            if let phoneLink = phoneLink {
                 HStack {
                     Image(systemName: SFSymbolName.phone)
                         .frame(width: iconSize)
-                        .foregroundColor(Colors.primary700)
-                        .accessibilityHidden(true)
+                        .foregroundColor(Colors.primary600)
                     Link(L10n.stgLnoPhoneTextContact, destination: phoneLink)
-                        .foregroundColor(Colors.primary700)
+                        .foregroundColor(Colors.primary600)
                         .accessibility(identifier: A18n.settings.legalNotice.stgLnoPhoneContact)
                 }
                 .padding(.top, 1)

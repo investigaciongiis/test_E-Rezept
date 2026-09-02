@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
 import ComposableArchitecture
 import eRpKit
 import Foundation
@@ -36,39 +31,28 @@ extension PrescriptionDetailDomain {
         return CGSize(width: pixelDimension, height: pixelDimension)
     }
 
-    func save(erxTasks: [ErxTask], profileId: UUID?) -> Effect<PrescriptionDetailDomain.Action> {
+    func save(erxTasks: [ErxTask]) -> Effect<PrescriptionDetailDomain.Action> {
         .run { send in
-            do {
-                try await erxTaskRepository.saveTask(erxTasks, profileId)
-                await send(.response(.redeemedOnSavedReceived(true)))
-            } catch {
-                await send(.response(.redeemedOnSavedReceived(false)))
-            }
+            let result = try await erxTaskRepository.save(erxTasks: erxTasks).async(\.self)
+            await send(.response(.redeemedOnSavedReceived(result)))
         }
     }
 
-    func delete(erxTask: ErxTask, profileId: UUID?) -> Effect<PrescriptionDetailDomain.Action> {
+    func delete(erxTask: ErxTask) -> Effect<PrescriptionDetailDomain.Action> {
         .run { send in
-            do {
-                try await erxTaskRepository.deleteTask([erxTask], profileId)
-                await send(.response(.taskDeletedReceived(.success(true))))
-            } catch let error as ErxRepositoryError {
-                await send(.response(.taskDeletedReceived(.failure(error))))
-            }
+            let result = try await erxTaskRepository.delete(erxTasks: [erxTask]).asyncResult(\.self)
+            await send(.response(.taskDeletedReceived(result)))
         }
     }
 
-    func deleteChargeItem(profileId: UUID, erxTask: ErxTask) -> Effect<PrescriptionDetailDomain.Action> {
+    func deleteChargeItem(erxTask: ErxTask) -> Effect<PrescriptionDetailDomain.Action> {
         .run { send in
-            let chargeItems = try await erxTaskRepository.loadRemoteChargeItems(profileId)
+            let chargeItems = try await erxTaskRepository.loadRemoteChargeItems().async(\.self)
             if let sparseChargeItem = chargeItems.first(where: { $0.taskId == erxTask.id }) {
                 if let chargeItem = sparseChargeItem.chargeItem {
-                    do {
-                        try await erxTaskRepository.deleteChargeItems([chargeItem], profileId)
-                        await send(.response(.chargeItemDeletedReceived(.success(true))))
-                    } catch let error as ErxRepositoryError {
-                        await send(.response(.chargeItemDeletedReceived(.failure(error))))
-                    }
+                    let result = try await erxTaskRepository.delete(chargeItems: [chargeItem])
+                        .asyncResult(\.self)
+                    await send(.response(.chargeItemDeletedReceived(result)))
                 } else {
                     // Parsing failed, can't delete item
                     await send(.response(.chargeItemDeletedReceived(.success(false))))

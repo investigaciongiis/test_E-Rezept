@@ -1,48 +1,40 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureHelpers
 import Nimble
-import Settings
 import XCTest
 
 @MainActor
 final class OnboardingDomainTests: XCTestCase {
-    let mockUserDataStore = UserDataStoreMock()
-    let mockAppSecurityManager = AppSecurityManagerMock()
+    let mockUserDataStore = MockUserDataStore()
+    let mockAppSecurityManager = MockAppSecurityManager()
     let testScheduler = DispatchQueue.test
     static let now = Date()
     typealias TestStore = TestStoreOf<OnboardingDomain>
 
     func testStore(with state: OnboardingDomain.State = OnboardingDomain.Dummies.state) -> TestStore {
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
         return TestStore(initialState: state) {
             OnboardingDomain()
         } withDependencies: { dependencies in
@@ -51,65 +43,151 @@ final class OnboardingDomainTests: XCTestCase {
             dependencies.userDataStore = mockUserDataStore
             dependencies.schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
             dependencies.date = DateGenerator.constant(Self.now)
-            dependencies.tracker = PlaceholderTracker()
         }
+    }
+
+    func testSavingAuthenticationWithoutSelection() async {
+        let composition = OnboardingDomain.Composition.allPages
+        let store = testStore(
+            with: OnboardingDomain.State(composition: composition)
+        )
+
+        await store.send(.saveAuthentication) { state in
+            state.composition.setPage(OnboardingDomain.Page.registerAuthentication)
+            state.registerAuthenticationState.showNoSelectionMessage = true
+        }
+    }
+
+    func testSavingAuthenticationWithWrongPassword() async {
+        let authenticationState = RegisterAuthenticationDomain.State(
+            availableSecurityOptions: [],
+            selectedSecurityOption: .password,
+            passwordA: "ABC",
+            passwordB: "different"
+        )
+        let store = testStore(
+            with: OnboardingDomain.State(composition: OnboardingDomain.Composition.allPages,
+                                         registerAuthenticationState: authenticationState)
+        )
+
+        await store.send(.saveAuthentication) { state in
+            state.composition.setPage(OnboardingDomain.Page.registerAuthentication)
+            state.registerAuthenticationState.showNoSelectionMessage = true
+        }
+
+        expect(self.mockUserDataStore.setOnboardingVersionCalled).to(beFalse())
+    }
+
+    func testSavingAuthenticationWithUnsafePassword() async {
+        let authenticationState = RegisterAuthenticationDomain.State(
+            availableSecurityOptions: [],
+            selectedSecurityOption: .password,
+            passwordA: "ABC",
+            passwordB: "ABC",
+            passwordStrength: .veryWeak
+        )
+
+        let store = testStore(
+            with: OnboardingDomain.State(composition: OnboardingDomain.Composition.allPages,
+                                         registerAuthenticationState: authenticationState)
+        )
+
+        await store.send(.saveAuthentication) { state in
+            state.composition.setPage(OnboardingDomain.Page.registerAuthentication)
+            state.registerAuthenticationState.showNoSelectionMessage = true
+        }
+        expect(self.mockUserDataStore.setOnboardingVersionCalled).to(beFalse())
     }
 
     func testSavingAuthenticationWithCorrectPassword() async {
         let selectedOption: AppSecurityOption = .password
-        mockAppSecurityManager.savePasswordStringBoolReturnValue = true
-        let state = RegisterPasswordDomain.State(
+        mockAppSecurityManager.savePasswordReturnValue = true
+        let authenticationState = RegisterAuthenticationDomain.State(
+            availableSecurityOptions: [],
+            selectedSecurityOption: .password,
             passwordA: "ABC",
             passwordB: "ABC",
             passwordStrength: .excellent
         )
-        var path = StackState<OnboardingDomain.Path.State>()
-        path.append(.registerPassword(state))
-
         let store = testStore(
-            with: OnboardingDomain.State(path: path)
+            with: OnboardingDomain.State(composition: OnboardingDomain.Composition.allPages,
+                                         registerAuthenticationState: authenticationState)
         )
 
-        await store.send(.path(.element(id: 0, action: .registerPassword(.delegate(.nextPage)))))
-        await store.receive(.showAnalytics) { state in
-            state.path[id: 1] = .analytics
-        }
-        expect(self.mockAppSecurityManager.savePasswordStringBoolCallsCount) == 1
-        expect(self.mockAppSecurityManager.savePasswordStringBoolReturnValue).to(beTrue())
-        expect(self.mockUserDataStore.setAppSecurityOptionAppSecurityOptionVoidReceivedAppSecurityOption) ==
-            selectedOption
-        expect(self.mockUserDataStore.setAppSecurityOptionAppSecurityOptionVoidCallsCount) == 1
+        await store.send(.saveAuthentication)
+        expect(self.mockAppSecurityManager.savePasswordCallsCount) == 1
+        expect(self.mockAppSecurityManager.savePasswordReturnValue).to(beTrue())
+        expect(self.mockUserDataStore.setAppSecurityOptionReceivedAppSecurityOption) == selectedOption
+        expect(self.mockUserDataStore.setAppSecurityOptionCallsCount) == 1
+
+        await store.receive(.dismissOnboarding)
+        expect(self.mockUserDataStore.setHideOnboardingCallsCount) == 1
+        expect(self.mockUserDataStore.setHideOnboardingReceivedHideOnboarding) == true
+
+        expect(self.mockUserDataStore.setOnboardingVersionCalled).to(beTrue())
+        expect(self.mockUserDataStore.setOnboardingVersionReceivedInvocations)
+            .to(equal([AppVersion.current.productVersion]))
     }
 
     func testSavingAuthenticationWithBiometry() async {
-        let state = RegisterAuthenticationDomain.State(availableSecurityOptions: [])
-        var path = StackState<OnboardingDomain.Path.State>()
-        path.append(.registerAuth(state))
-
+        let selectedOption: AppSecurityOption = .biometry(.faceID)
+        let authenticationState = RegisterAuthenticationDomain.State(
+            availableSecurityOptions: [],
+            selectedSecurityOption: .biometry(.faceID),
+            biometrySuccessful: true
+        )
         let store = testStore(
-            with: OnboardingDomain.State(path: path)
+            with: OnboardingDomain.State(
+                composition: OnboardingDomain.Composition.allPages,
+                registerAuthenticationState: authenticationState
+            )
         )
 
-        await store.send(.path(.element(id: 0, action: .registerAuth(.delegate(.nextPage)))))
-        await store.receive(.showAnalytics) { state in
-            state.path[id: 1] = .analytics
-        }
-        expect(self.mockUserDataStore.setAppSecurityOptionAppSecurityOptionVoidCallsCount) == 1
-    }
-
-    func testDismissOnboarding() async {
-        let store = testStore(
-            with: OnboardingDomain.State()
-        )
-
-        await store.send(.allowTracking)
+        await store.send(.saveAuthentication)
+        expect(self.mockUserDataStore.setAppSecurityOptionReceivedAppSecurityOption) == selectedOption
+        expect(self.mockUserDataStore.setAppSecurityOptionCallsCount) == 1
 
         await store.receive(.dismissOnboarding)
-        expect(self.mockUserDataStore.setHideOnboardingBoolVoidCallsCount) == 1
-        expect(self.mockUserDataStore.setHideOnboardingBoolVoidReceivedHideOnboarding) == true
+        expect(self.mockUserDataStore.setHideOnboardingCallsCount) == 1
+        expect(self.mockUserDataStore.setHideOnboardingReceivedHideOnboarding) == true
 
-        expect(self.mockUserDataStore.setOnboardingVersionStringVoidCalled).to(beTrue())
-        expect(self.mockUserDataStore.setOnboardingVersionStringVoidReceivedInvocations)
+        expect(self.mockUserDataStore.setOnboardingVersionCalled).to(beTrue())
+        expect(self.mockUserDataStore.setOnboardingVersionReceivedInvocations)
             .to(equal([AppVersion.current.productVersion]))
+    }
+
+    func testAddNextViewAfterLegalConfirm() async {
+        let store = testStore(
+            with: OnboardingDomain.State(
+                legalConfirmed: false,
+                composition: OnboardingDomain.Composition(currentPageIndex: 1, pages: [.start, .legalInfo])
+            )
+        )
+
+        await store.send(.setConfirmLegal(true)) { store in
+            store.legalConfirmed = true
+            store.composition.pages = [.start, .legalInfo, .registerAuthentication, .analytics]
+        }
+
+        await store.send(.nextPage) { store in
+            store.composition.currentPageIndex = 2
+        }
+    }
+
+    func testResetViewAfterLegalUnchecked() async {
+        let store = testStore(
+            with: OnboardingDomain.State(
+                legalConfirmed: true,
+                composition: OnboardingDomain.Composition(
+                    currentPageIndex: 1,
+                    pages: [.start, .legalInfo, .registerAuthentication]
+                )
+            )
+        )
+
+        await store.send(.setConfirmLegal(false)) { store in
+            store.legalConfirmed = false
+            store.composition.pages = [.start, .legalInfo]
+        }
     }
 }

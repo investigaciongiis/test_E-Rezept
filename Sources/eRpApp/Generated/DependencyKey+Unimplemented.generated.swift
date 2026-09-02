@@ -1,27 +1,23 @@
 // Generated using Sourcery — https://github.com/krzysztofzablocki/Sourcery
 // DO NOT EDIT
 
-import BfArM
+import AVS
 import Combine
 import CombineSchedulers
 import CoreData
+import LocalAuthentication
 import eRpKit
 import eRpLocalStorage
 import eRpRemoteStorage
-import eRpResources
-import FeatureCardWall
 import FHIRClient
 import HTTPClient
 import IdentifiedCollections
 import IDP
-import LocalAuthentication
 import OpenSSL
 import Pharmacy
-import Profiles
-import Settings
 import TrustStore
-import UIKit
 import VAUClient
+import UIKit
 import XCTestDynamicOverlay
 
 
@@ -50,15 +46,6 @@ struct UnimplementedAppSecurityManager: AppSecurityManager {
     }
     func matches(password: String) throws -> Bool {
         fatalError("matches(password:) has not been implemented")
-    }
-    func registerFailedPasswordAttempt() throws -> Void {
-        fatalError("registerFailedPasswordAttempt has not been implemented")
-    }
-    func resetPasswordDelay() throws -> Void {
-        fatalError("resetPasswordDelay has not been implemented")
-    }
-    func currentPasswordDelay() throws -> TimeInterval {
-        fatalError("currentPasswordDelay has not been implemented")
     }
     func migrate() throws -> Void {
         fatalError("migrate has not been implemented")
@@ -106,6 +93,18 @@ struct UnimplementedChargeItemPDFService: ChargeItemPDFService {
         fatalError("loadPDFOrGenerate(for:) has not been implemented")
     }
 }
+struct UnimplementedCoreDataControllerFactory: CoreDataControllerFactory {
+    init() {}
+
+    var databaseUrl: URL {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    func loadCoreDataController() throws -> CoreDataController {
+        fatalError("loadCoreDataController has not been implemented")
+    }
+}
 struct UnimplementedAuditEventsService: AuditEventsService {
     init() {}
 
@@ -142,76 +141,6 @@ struct UnimplementedDeviceSecurityManager: DeviceSecurityManager {
         fatalError("set(ignoreRootedDeviceWarningForSession:) has not been implemented")
     }
 }
-struct UnimplementedErxLocalDataStore: ErxLocalDataStore {
-    init() {}
-
-    func fetchTask(by id: ErxTask.ID, accessCode: String?) -> AnyPublisher<ErxTask?, LocalStoreError> {
-        fatalError("fetchTask(by:accessCode:) has not been implemented")
-    }
-    func listAllTasks(of profileId: UUID?) -> AnyPublisher<[ErxTask], LocalStoreError> {
-        fatalError("listAllTasks(of:) has not been implemented")
-    }
-    func fetchLatestLastModifiedForErxTasks(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError> {
-        fatalError("fetchLatestLastModifiedForErxTasks(of:) has not been implemented")
-    }
-    func save(tasks: [ErxTask], in profileId: UUID?, updateProfileLastAuthenticated: Bool) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("save(tasks:in:updateProfileLastAuthenticated:) has not been implemented")
-    }
-    func delete(tasks: [ErxTask], in profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("delete(tasks:in:) has not been implemented")
-    }
-    func listAllTasksWithoutProfile() -> AnyPublisher<[ErxTask], LocalStoreError> {
-        fatalError("listAllTasksWithoutProfile has not been implemented")
-    }
-    func listAllCommunications(for profile: ErxTask.Communication.Profile) -> AnyPublisher<[ErxTask.Communication], LocalStoreError> {
-        fatalError("listAllCommunications(for:) has not been implemented")
-    }
-    func fetchLatestTimestampForCommunications(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError> {
-        fatalError("fetchLatestTimestampForCommunications(of:) has not been implemented")
-    }
-    func save(communications: [ErxTask.Communication], of profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("save(communications:of:) has not been implemented")
-    }
-    func allUnreadCommunications(of profileId: UUID?, for profile: ErxTask.Communication.Profile) -> AnyPublisher<[ErxTask.Communication], LocalStoreError> {
-        fatalError("allUnreadCommunications(of:for:) has not been implemented")
-    }
-    func listAllMedicationDispenses(of profileId: UUID?) -> AnyPublisher<[ErxMedicationDispense], LocalStoreError> {
-        fatalError("listAllMedicationDispenses(of:) has not been implemented")
-    }
-    func save(medicationDispenses: [ErxMedicationDispense]) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("save(medicationDispenses:) has not been implemented")
-    }
-    func fetchChargeItem(of profileId: UUID?, by chargeItemID: ErxSparseChargeItem.ID) -> AnyPublisher<ErxSparseChargeItem?, LocalStoreError> {
-        fatalError("fetchChargeItem(of:by:) has not been implemented")
-    }
-    func fetchLatestTimestampForChargeItems(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError> {
-        fatalError("fetchLatestTimestampForChargeItems(of:) has not been implemented")
-    }
-    func listAllChargeItems(of profileId: UUID?) -> AnyPublisher<[ErxSparseChargeItem], LocalStoreError> {
-        fatalError("listAllChargeItems(of:) has not been implemented")
-    }
-    func save(chargeItems: [ErxSparseChargeItem], of profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("save(chargeItems:of:) has not been implemented")
-    }
-    func delete(of profileId: UUID?, chargeItems: [ErxSparseChargeItem]) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("delete(of:chargeItems:) has not been implemented")
-    }
-    func update(diGaInfo: DiGaInfo) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("update(diGaInfo:) has not been implemented")
-    }
-    func save(euCommunications: [EuCommunication], profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("save(euCommunications:profileId:) has not been implemented")
-    }
-    func listAllEuCommunication(countryCode: String?, profileId: UUID?) -> AnyPublisher<[EuCommunication], LocalStoreError> {
-        fatalError("listAllEuCommunication(countryCode:profileId:) has not been implemented")
-    }
-    func delete(euCommunications: [EuCommunication], profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
-        fatalError("delete(euCommunications:profileId:) has not been implemented")
-    }
-    func loadLatestActiveEuCommunication(profileId: UUID?) -> AnyPublisher<EuCommunication?, LocalStoreError> {
-        fatalError("loadLatestActiveEuCommunication(profileId:) has not been implemented")
-    }
-}
 struct UnimplementedErxMatrixCodeGenerator: ErxMatrixCodeGenerator {
     init() {}
 
@@ -234,71 +163,71 @@ struct UnimplementedErxMatrixCodeGenerator: ErxMatrixCodeGenerator {
         fatalError("publishedMatrixCode(for:with:) has not been implemented")
     }
 }
-struct UnimplementedErxRemoteDataStore: ErxRemoteDataStore {
+struct UnimplementedErxTaskRepository: ErxTaskRepository {
     init() {}
 
-    func fetchTask(by id: ErxTask.ID, accessCode: String?, profileId: UUID) -> AnyPublisher<ErxTask?, RemoteStoreError> {
-        fatalError("fetchTask(by:accessCode:profileId:) has not been implemented")
+    func loadRemote(by id: ErxTask.ID, accessCode: String?) -> AnyPublisher<ErxTask?, ErxRepositoryError> {
+        fatalError("loadRemote(by:accessCode:) has not been implemented")
     }
-    func listAllTasks(after referenceDate: String?, profileId: UUID) -> AnyPublisher<PagedContent<[ErxTask]>, RemoteStoreError> {
-        fatalError("listAllTasks(after:profileId:) has not been implemented")
+    func loadLocal(by id: ErxTask.ID, accessCode: String?) -> AnyPublisher<ErxTask?, ErxRepositoryError> {
+        fatalError("loadLocal(by:accessCode:) has not been implemented")
     }
-    func listTasksNextPage(of previousPage: PagedContent<[ErxTask]>, profileId: UUID) -> AnyPublisher<PagedContent<[ErxTask]>, RemoteStoreError> {
-        fatalError("listTasksNextPage(of:profileId:) has not been implemented")
+    func loadLocalAll() -> AnyPublisher<[ErxTask], ErxRepositoryError> {
+        fatalError("loadLocalAll has not been implemented")
     }
-    func listDetailedTasks(for tasks: PagedContent<[ErxTask]>, profileId: UUID) -> AnyPublisher<PagedContent<[ErxTask]>, RemoteStoreError> {
-        fatalError("listDetailedTasks(for:profileId:) has not been implemented")
+    func loadRemoteAll(for locale: String?) -> AnyPublisher<[ErxTask], ErxRepositoryError> {
+        fatalError("loadRemoteAll(for:) has not been implemented")
     }
-    func delete(tasks: [ErxTask], profileId: UUID) -> AnyPublisher<Bool, RemoteStoreError> {
-        fatalError("delete(tasks:profileId:) has not been implemented")
+    func save(erxTasks: [ErxTask]) -> AnyPublisher<Bool, ErxRepositoryError> {
+        fatalError("save(erxTasks:) has not been implemented")
     }
-    func markEURedeemable(for id: ErxTask.ID, byPatientAuthorization: Bool, profileId: UUID) -> AnyPublisher<ErxTask?, RemoteStoreError> {
-        fatalError("markEURedeemable(for:byPatientAuthorization:profileId:) has not been implemented")
+    func delete(erxTasks: [ErxTask]) -> AnyPublisher<Bool, ErxRepositoryError> {
+        fatalError("delete(erxTasks:) has not been implemented")
     }
-    func redeem(order: ErxTaskOrder, profileId: UUID) -> AnyPublisher<ErxTaskOrder, RemoteStoreError> {
-        fatalError("redeem(order:profileId:) has not been implemented")
+    func redeem(order: ErxTaskOrder) -> AnyPublisher<ErxTaskOrder, ErxRepositoryError> {
+        fatalError("redeem(order:) has not been implemented")
     }
-    func listAllCommunications(after referenceDate: String?, for profile: ErxTask.Communication.Profile, profileId: UUID) -> AnyPublisher<[ErxTask.Communication], RemoteStoreError> {
-        fatalError("listAllCommunications(after:for:profileId:) has not been implemented")
+    func loadLocalCommunications(for profile: ErxTask.Communication.Profile) -> AnyPublisher<[ErxTask.Communication], ErxRepositoryError> {
+        fatalError("loadLocalCommunications(for:) has not been implemented")
     }
-    func fetchAuditEvent(by id: ErxAuditEvent.ID, profileId: UUID) -> AnyPublisher<ErxAuditEvent?, RemoteStoreError> {
-        fatalError("fetchAuditEvent(by:profileId:) has not been implemented")
+    func saveLocal(communications: [ErxTask.Communication]) -> AnyPublisher<Bool, ErxRepositoryError> {
+        fatalError("saveLocal(communications:) has not been implemented")
     }
-    func listAllAuditEvents(after referenceDate: String?, for locale: String?, profileId: UUID) -> AnyPublisher<PagedContent<[ErxAuditEvent]>, RemoteStoreError> {
-        fatalError("listAllAuditEvents(after:for:profileId:) has not been implemented")
+    func countAllUnreadCommunicationsAndChargeItems(for fhirProfile: ErxTask.Communication.Profile) -> AnyPublisher<Int, ErxRepositoryError> {
+        fatalError("countAllUnreadCommunicationsAndChargeItems(for:) has not been implemented")
     }
-    func listAuditEventsNextPage(from url: URL, locale: String?, profileId: UUID) -> AnyPublisher<PagedContent<[ErxAuditEvent]>, RemoteStoreError> {
-        fatalError("listAuditEventsNextPage(from:locale:profileId:) has not been implemented")
+    func loadRemoteLatestAuditEvents(for locale: String?) -> AnyPublisher<PagedContent<[ErxAuditEvent]>, ErxRepositoryError> {
+        fatalError("loadRemoteLatestAuditEvents(for:) has not been implemented")
     }
-    func listMedicationDispenses(for id: ErxTask.ID, profileId: UUID) -> AnyPublisher<[ErxMedicationDispense], RemoteStoreError> {
-        fatalError("listMedicationDispenses(for:profileId:) has not been implemented")
+    func loadRemoteAuditEventsPage(from url: URL, locale: String?) -> AnyPublisher<PagedContent<[ErxAuditEvent]>, ErxRepositoryError> {
+        fatalError("loadRemoteAuditEventsPage(from:locale:) has not been implemented")
     }
-    func fetchChargeItem(by id: ErxChargeItem.ID, profileId: UUID) -> AnyPublisher<ErxChargeItem?, RemoteStoreError> {
-        fatalError("fetchChargeItem(by:profileId:) has not been implemented")
+    func loadRemoteChargeItems() -> AnyPublisher<[ErxSparseChargeItem], ErxRepositoryError> {
+        fatalError("loadRemoteChargeItems has not been implemented")
     }
-    func listAllChargeItems(after referenceDate: String?, profileId: UUID) -> AnyPublisher<[ErxChargeItem], RemoteStoreError> {
-        fatalError("listAllChargeItems(after:profileId:) has not been implemented")
+    func fetchConsents() -> AnyPublisher<[ErxConsent], ErxRepositoryError> {
+        fatalError("fetchConsents has not been implemented")
     }
-    func delete(chargeItems: [ErxChargeItem], profileId: UUID) -> AnyPublisher<Bool, RemoteStoreError> {
-        fatalError("delete(chargeItems:profileId:) has not been implemented")
+    func loadLocal(by id: ErxSparseChargeItem.ID) -> AnyPublisher<ErxSparseChargeItem?, ErxRepositoryError> {
+        fatalError("loadLocal(by:) has not been implemented")
     }
-    func fetchConsents(profileId: UUID) -> AnyPublisher<[ErxConsent], RemoteStoreError> {
-        fatalError("fetchConsents(profileId:) has not been implemented")
+    func loadLocalAll() -> AnyPublisher<[ErxSparseChargeItem], ErxRepositoryError> {
+        fatalError("loadLocalAll has not been implemented")
     }
-    func grantConsent(_ consent: ErxConsent, profileId: UUID) -> AnyPublisher<ErxConsent?, RemoteStoreError> {
-        fatalError("grantConsent(_:profileId:) has not been implemented")
+    func save(chargeItems: [ErxSparseChargeItem]) -> AnyPublisher<Bool, ErxRepositoryError> {
+        fatalError("save(chargeItems:) has not been implemented")
     }
-    func revokeConsent(_ category: ErxConsent.Category, profileId: UUID) -> AnyPublisher<Bool, RemoteStoreError> {
-        fatalError("revokeConsent(_:profileId:) has not been implemented")
+    func delete(chargeItems: [ErxChargeItem]) -> AnyPublisher<Bool, ErxRepositoryError> {
+        fatalError("delete(chargeItems:) has not been implemented")
     }
-    func loadRemoteEuAccessCode(profileId: UUID) -> AnyPublisher<EuAccessCode?, RemoteStoreError> {
-        fatalError("loadRemoteEuAccessCode(profileId:) has not been implemented")
+    func deleteLocal(chargeItems: [ErxChargeItem]) -> AnyPublisher<Bool, ErxRepositoryError> {
+        fatalError("deleteLocal(chargeItems:) has not been implemented")
     }
-    func grantEuAccessPermission(accessCode: EuAccessCode, profileId: UUID) -> AnyPublisher<EuAccessCode?, RemoteStoreError> {
-        fatalError("grantEuAccessPermission(accessCode:profileId:) has not been implemented")
+    func grantConsent(_ consent: ErxConsent) -> AnyPublisher<ErxConsent?, ErxRepositoryError> {
+        fatalError("grantConsent(_:) has not been implemented")
     }
-    func deleteEuAccessCode(profileId: UUID) -> AnyPublisher<Bool, RemoteStoreError> {
-        fatalError("deleteEuAccessCode(profileId:) has not been implemented")
+    func revokeConsent(_ category: ErxConsent.Category) -> AnyPublisher<Bool, ErxRepositoryError> {
+        fatalError("revokeConsent(_:) has not been implemented")
     }
 }
 class UnimplementedExtAuthRequestStorage: NSObject, ExtAuthRequestStorage {
@@ -317,6 +246,13 @@ class UnimplementedExtAuthRequestStorage: NSObject, ExtAuthRequestStorage {
     }
     func reset() -> Void {
         fatalError("reset has not been implemented")
+    }
+}
+struct UnimplementedFeedbackReceiver: FeedbackReceiver {
+    init() {}
+
+    func hapticFeedbackSuccess() -> Void {
+        fatalError("hapticFeedbackSuccess has not been implemented")
     }
 }
 struct UnimplementedIDPSession: IDPSession {
@@ -370,6 +306,9 @@ struct UnimplementedIDPSession: IDPSession {
     }
     func verifyAndExchange(signedChallenge: SignedChallenge, idTokenValidator: @escaping (TokenPayload.IDTokenPayload) -> Result<Bool, Error>) -> AnyPublisher<IDPToken, IDPError> {
         fatalError("verifyAndExchange(signedChallenge:idTokenValidator:) has not been implemented")
+    }
+    func httpInterceptor(delegate: IDPSessionDelegate?) -> IDPInterceptor {
+        fatalError("httpInterceptor(delegate:) has not been implemented")
     }
     func exchange(token: IDPExchangeToken, challengeSession: ChallengeSession) -> AnyPublisher<IDPToken, IDPError> {
         fatalError("exchange(token:challengeSession:) has not been implemented")
@@ -434,14 +373,21 @@ struct UnimplementedNFCHealthCardPasswordController: NFCHealthCardPasswordContro
         fatalError("changeReferenceData(can:old:new:mode:) has not been implemented")
     }
 }
+struct UnimplementedNFCSignatureProvider: NFCSignatureProvider {
+    init() {}
+
+    func sign(can: String, pin: String, challenge: IDPChallengeSession) async -> Result<SignedChallenge, NFCSignatureProviderError> {
+        fatalError("sign(can:pin:challenge:) has not been implemented")
+    }
+    func signForBiometrics(can: String, pin: String, challenge: IDPChallengeSession, registerDataProvider: SecureEnclaveSignatureProvider, in pairingSession: PairingSession) async -> Result<(SignedChallenge, RegistrationData), NFCSignatureProviderError> {
+        fatalError("signForBiometrics(can:pin:challenge:registerDataProvider:in:) has not been implemented")
+    }
+}
 struct UnimplementedOrdersRepository: OrdersRepository {
     init() {}
 
     func loadAllOrders() -> AsyncThrowingStream<IdentifiedArray<String, Order>, Swift.Error> {
         fatalError("loadAllOrders has not been implemented")
-    }
-    func loadEuOrders(profileId: UUID) -> AsyncThrowingStream<IdentifiedArray<String, EuOrder>, Swift.Error> {
-        fatalError("loadEuOrders(profileId:) has not been implemented")
     }
 }
 struct UnimplementedPasswordStrengthTester: PasswordStrengthTester {
@@ -451,17 +397,70 @@ struct UnimplementedPasswordStrengthTester: PasswordStrengthTester {
         fatalError("passwordStrength(for:) has not been implemented")
     }
 }
+struct UnimplementedPharmacyRepository: PharmacyRepository {
+    init() {}
+
+    func updateFromRemote(by telematikId: String) -> AnyPublisher<PharmacyLocation, PharmacyRepositoryError> {
+        fatalError("updateFromRemote(by:) has not been implemented")
+    }
+    func loadCached(by telematikId: String) -> AnyPublisher<PharmacyLocation?, PharmacyRepositoryError> {
+        fatalError("loadCached(by:) has not been implemented")
+    }
+    func searchRemote(searchTerm: String, position: Position?, filter: [PharmacyRepositoryFilter]) -> AnyPublisher<[PharmacyLocation], PharmacyRepositoryError> {
+        fatalError("searchRemote(searchTerm:position:filter:) has not been implemented")
+    }
+    func loadLocal(by telematikId: String) -> AnyPublisher<PharmacyLocation?, PharmacyRepositoryError> {
+        fatalError("loadLocal(by:) has not been implemented")
+    }
+    func loadLocal(count: Int?) -> AnyPublisher<[PharmacyLocation], PharmacyRepositoryError> {
+        fatalError("loadLocal(count:) has not been implemented")
+    }
+    func save(pharmacies: [PharmacyLocation]) -> AnyPublisher<Bool, PharmacyRepositoryError> {
+        fatalError("save(pharmacies:) has not been implemented")
+    }
+    func delete(pharmacies: [PharmacyLocation]) -> AnyPublisher<Bool, PharmacyRepositoryError> {
+        fatalError("delete(pharmacies:) has not been implemented")
+    }
+    func loadAvsCertificates(for id: String) -> AnyPublisher<[X509], PharmacyRepositoryError> {
+        fatalError("loadAvsCertificates(for:) has not been implemented")
+    }
+    func save(pharmacy: PharmacyLocation) -> AnyPublisher<Bool, PharmacyRepositoryError> {
+        fatalError("save(pharmacy:) has not been implemented")
+    }
+    func delete(pharmacy: PharmacyLocation) -> AnyPublisher<Bool, PharmacyRepositoryError> {
+        fatalError("delete(pharmacy:) has not been implemented")
+    }
+}
 struct UnimplementedPrescriptionRepository: PrescriptionRepository {
     init() {}
 
-    func loadLocal(for profileId: UUID) -> AnyPublisher<[Prescription], PrescriptionRepositoryError> {
-        fatalError("loadLocal(for:) has not been implemented")
+    func loadLocal() -> AnyPublisher<[Prescription], PrescriptionRepositoryError> {
+        fatalError("loadLocal has not been implemented")
     }
-    func forcedLoadRemote(for locale: String?, for profileId: UUID) -> AnyPublisher<PrescriptionRepositoryLoadRemoteResult, PrescriptionRepositoryError> {
-        fatalError("forcedLoadRemote(for:for:) has not been implemented")
+    func forcedLoadRemote(for locale: String?) -> AnyPublisher<PrescriptionRepositoryLoadRemoteResult, PrescriptionRepositoryError> {
+        fatalError("forcedLoadRemote(for:) has not been implemented")
     }
-    func silentLoadRemote(for locale: String?, for profileId: UUID) -> AnyPublisher<PrescriptionRepositoryLoadRemoteResult, PrescriptionRepositoryError> {
-        fatalError("silentLoadRemote(for:for:) has not been implemented")
+    func silentLoadRemote(for locale: String?) -> AnyPublisher<PrescriptionRepositoryLoadRemoteResult, PrescriptionRepositoryError> {
+        fatalError("silentLoadRemote(for:) has not been implemented")
+    }
+}
+struct UnimplementedProfileBasedSessionProvider: ProfileBasedSessionProvider {
+    init() {}
+
+    func idpSession(for profileId: UUID) -> IDPSession {
+        fatalError("idpSession(for:) has not been implemented")
+    }
+    func biometrieIdpSession(for profileId: UUID) -> IDPSession {
+        fatalError("biometrieIdpSession(for:) has not been implemented")
+    }
+    func userDataStore(for profileId: UUID) -> SecureUserDataStore {
+        fatalError("userDataStore(for:) has not been implemented")
+    }
+    func idTokenValidator(for profileId: UUID) -> AnyPublisher<IDTokenValidator, IDTokenValidatorError> {
+        fatalError("idTokenValidator(for:) has not been implemented")
+    }
+    func signatureProvider(for profileId: UUID) -> SecureEnclaveSignatureProvider {
+        fatalError("signatureProvider(for:) has not been implemented")
     }
 }
 struct UnimplementedProfileDataStore: ProfileDataStore {
@@ -550,14 +549,8 @@ struct UnimplementedRedeemInputValidator: RedeemInputValidator {
     func ifDeliveryOrShipmentThenIsNonEmptyPhoneOrNonEmptyMail(optionType: RedeemOption, phone: String?, mail: String?) -> Validity {
         fatalError("ifDeliveryOrShipmentThenIsNonEmptyPhoneOrNonEmptyMail(optionType:phone:mail:) has not been implemented")
     }
-    func onPremiseOrElseIsNonEmptyContactData(optionType: RedeemOption, name: String?, street: String?, zip: String?, city: String?, phone: String?) -> Bool {
-        fatalError("onPremiseOrElseIsNonEmptyContactData(optionType:name:street:zip:city:phone:) has not been implemented")
-    }
     func validate(_ shipmentInfo: ShipmentInfo?, for redeemOption: RedeemOption) -> Validity {
         fatalError("validate(_:for:) has not been implemented")
-    }
-    func hasCompleteContactData(_ shipmentInfo: ShipmentInfo?, for redeemOption: RedeemOption) -> Bool {
-        fatalError("hasCompleteContactData(_:for:) has not been implemented")
     }
     func validate(_ contactInfo: PharmacyContactDomain.ContactInfo) -> Validity {
         fatalError("validate(_:) has not been implemented")
@@ -569,11 +562,8 @@ struct UnimplementedRedeemInputValidator: RedeemInputValidator {
 struct UnimplementedRedeemService: RedeemService {
     init() {}
 
-    func redeem(_ orders: [OrderRequest], profileId: UUID) -> AnyPublisher<IdentifiedArrayOf<OrderResponse>, RedeemServiceError> {
-        fatalError("redeem(_:profileId:) has not been implemented")
-    }
-    func redeemDiGa(_ orders: [OrderDiGaRequest], profileId: UUID) -> AnyPublisher<IdentifiedArrayOf<OrderDiGaResponse>, RedeemServiceError> {
-        fatalError("redeemDiGa(_:profileId:) has not been implemented")
+    func redeem(_ orders: [OrderRequest]) -> AnyPublisher<IdentifiedArrayOf<OrderResponse>, RedeemServiceError> {
+        fatalError("redeem(_:) has not been implemented")
     }
 }
 struct UnimplementedRegisteredDevicesService: RegisteredDevicesService {
@@ -608,6 +598,13 @@ struct UnimplementedResourceHandler: ResourceHandler {
         fatalError("open(_:options:completionHandler:) has not been implemented")
     }
 }
+class UnimplementedRouting: NSObject, Routing {
+    override init() {}
+
+    func routeTo(_ endpoint: Endpoint) async -> Void {
+        fatalError("routeTo(_:) has not been implemented")
+    }
+}
 struct UnimplementedSearchHistory: SearchHistory {
     init() {}
 
@@ -616,6 +613,34 @@ struct UnimplementedSearchHistory: SearchHistory {
     }
     func historyItems() -> [String] {
         fatalError("historyItems has not been implemented")
+    }
+}
+struct UnimplementedSecureEnclaveSignatureProvider: SecureEnclaveSignatureProvider {
+    init() {}
+
+    var isBiometrieRegistered: AnyPublisher<Bool, Never> {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    func createPairingSession() throws -> PairingSession {
+        fatalError("createPairingSession has not been implemented")
+    }
+    func signPairingSession(_ pairingSession: PairingSession, with signer: JWTSigner, certificate: X509) -> AnyPublisher<RegistrationData, SecureEnclaveSignatureProviderError> {
+        fatalError("signPairingSession(_:with:certificate:) has not been implemented")
+    }
+    func abort(pairingSession: PairingSession) throws -> Void {
+        fatalError("abort(pairingSession:) has not been implemented")
+    }
+    func authenticationData(for challenge: IDPChallengeSession) -> AnyPublisher<SignedAuthenticationData, SecureEnclaveSignatureProviderError> {
+        fatalError("authenticationData(for:) has not been implemented")
+    }
+}
+class UnimplementedSecurityPolicyEvaluator: NSObject, SecurityPolicyEvaluator {
+    override init() {}
+
+    func canEvaluatePolicy(_ policy: LAPolicy, error: NSErrorPointer) -> Bool {
+        fatalError("canEvaluatePolicy(_:error:) has not been implemented")
     }
 }
 struct UnimplementedShipmentInfoDataStore: ShipmentInfoDataStore {
@@ -744,17 +769,17 @@ class UnimplementedUserDataStore: NSObject, UserDataStore {
         set(value) { fatalError("") }
     }
 
+    var hideWelcomeDrawer: Bool {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
     var readInternalCommunications: AnyPublisher<[String], Never> {
         get { fatalError("") }
         set(value) { fatalError("") }
     }
 
     var hideWelcomeMessage: AnyPublisher<Bool, Never> {
-        get { fatalError("") }
-        set(value) { fatalError("") }
-    }
-
-    var hideEURedeemInstructions: AnyPublisher<Bool, Never> {
         get { fatalError("") }
         set(value) { fatalError("") }
     }
@@ -805,9 +830,6 @@ class UnimplementedUserDataStore: NSObject, UserDataStore {
     func set(hideWelcomeMessage: Bool) -> Void {
         fatalError("set(hideWelcomeMessage:) has not been implemented")
     }
-    func set(hideEURedeemInstructions: Bool) -> Void {
-        fatalError("set(hideEURedeemInstructions:) has not been implemented")
-    }
 }
 struct UnimplementedUserProfileService: UserProfileService {
     init() {}
@@ -836,6 +858,21 @@ struct UnimplementedUserProfileService: UserProfileService {
 struct UnimplementedUserSession: UserSession {
     init() {}
 
+    var isAuthenticated: AnyPublisher<Bool, UserSessionError> {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var erxTaskRepository: ErxTaskRepository {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var entireErxTaskRepository: ErxTaskRepository {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
     var ordersRepository: OrdersRepository {
         get { fatalError("") }
         set(value) { fatalError("") }
@@ -851,12 +888,32 @@ struct UnimplementedUserSession: UserSession {
         set(value) { fatalError("") }
     }
 
+    var pharmacyRepository: PharmacyRepository {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var updateChecker: UpdateChecker {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
     var localUserStore: UserDataStore {
         get { fatalError("") }
         set(value) { fatalError("") }
     }
 
     var secureUserStore: SecureUserDataStore {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var isDemoMode: Bool {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var nfcSessionProvider: NFCSignatureProvider {
         get { fatalError("") }
         set(value) { fatalError("") }
     }
@@ -891,7 +948,22 @@ struct UnimplementedUserSession: UserSession {
         set(value) { fatalError("") }
     }
 
+    var appSecurityManager: AppSecurityManager {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var deviceSecurityManager: DeviceSecurityManager {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
     var profileId: UUID {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var avsSession: AVSSession {
         get { fatalError("") }
         set(value) { fatalError("") }
     }
@@ -917,6 +989,11 @@ struct UnimplementedUserSession: UserSession {
     }
 
     var pairingIdpSessionLoginHandler: LoginHandler {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider {
         get { fatalError("") }
         set(value) { fatalError("") }
     }
@@ -949,6 +1026,11 @@ struct UnimplementedUsersSessionContainer: UsersSessionContainer {
     init() {}
 
     var userSession: UserSession {
+        get { fatalError("") }
+        set(value) { fatalError("") }
+    }
+
+    var isDemoMode: AnyPublisher<Bool, Never> {
         get { fatalError("") }
         set(value) { fatalError("") }
     }

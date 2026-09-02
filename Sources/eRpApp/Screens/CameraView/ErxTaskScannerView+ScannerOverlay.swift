@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import AVFoundation
@@ -29,113 +25,113 @@ import SwiftUI
 
 extension ErxTaskScannerView {
     struct ScannerOverlay: View {
-        @Bindable var store: StoreOf<ScannerDomain>
+        @Perception.Bindable var store: StoreOf<ScannerDomain>
         @State var isImageScaled = false
 
         var body: some View {
-            VStack {
-                HStack {
-                    CloseButton { store.send(.closeWithoutSave) }
-                        .accessibility(identifier: A11y.scanner.scnBtnCancelScan)
-                        .accessibility(label: Text(L10n.scnBtnCancelScan))
+            WithPerceptionTracking {
+                VStack {
+                    HStack {
+                        CloseButton { store.send(.closeWithoutSave) }
+                            .accessibility(identifier: A11y.scanner.scnBtnCancelScan)
+                            .accessibility(label: Text(L10n.scnBtnCancelScan))
 
-                    Spacer()
+                        Spacer()
 
-                    if (AVCaptureDevice.default(for: AVMediaType.video)?.hasTorch) == true {
-                        Button(action: {
-                            store.send(.toggleFlashLight)
-                            toggleFlashlight(status: store.isFlashOn)
-                        }, label: {
-                            HStack {
-                                Image(
-                                    systemName: !store.isFlashOn ? SFSymbolName.lightbulb : SFSymbolName
-                                        .lightbulbSlash
-                                ).foregroundColor(Color.primary)
-                                Text(!store.state.isFlashOn ? L10n.scnBtnLightOn : L10n.scnBtnLightOff)
-                                    .foregroundColor(Color.primary)
-                            }
-                        })
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemGray5))
-                        .cornerRadius(8)
-                        .padding([.vertical])
-                    }
-                }
-                .padding(.horizontal)
-
-                InfoView(localizedTextKey: textLabel(
-                    for: store.scanState,
-                    hasScannedBatches: !store.acceptedTaskBatches.isEmpty
-                ))
-
-                Spacer()
-                if store.scanState.isIdle || store.scanState.isLoading {
-                    if isImageScaled {
-                        Image(systemName: SFSymbolName.plusViewFinder)
-                            .font(Font.largeTitle)
-                            .foregroundColor(Colors.yellow500)
-                            .transition(.endlessScale(from: 1, to: 1.2))
-                    }
-                } else {
-                    ScanStateImage(imageAsset: imageAsset(for: store.scanState),
-                                   foregroundColor: alertTintColor(for: store.scanState))
-                }
-                Spacer()
-
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        store.send(.importButtonTapped)
-                    }, label: {
-                        Image(systemName: SFSymbolName.photoOnRect)
-                            .frame(width: 56, height: 56)
-                            .font(.body.weight(.semibold))
-                            .foregroundColor(Color.primary)
-                            .background(
-                                Circle().foregroundColor(Colors.systemGray6)
-                            )
-                    })
-                    .accessibilityLabel(L10n.scnBtnImportPhoto)
-                }
-                .padding(.horizontal)
-
-                if !store.acceptedTaskBatches.isEmpty {
-                    FinishButton(scannedBatches: store.acceptedTaskBatches) {
-                        store.send(.saveAndClose(store.acceptedTaskBatches))
-                    }
-                }
-            }
-            .confirmationDialog($store.scope(state: \.destination?.sheet, action: \.destination.sheet))
-            .fileImporter(
-                isPresented: Binding<Bool>(
-                    get: { store.destination == .documentImporter },
-                    set: { show in
-                        if !show {
-                            store.send(.resetNavigation)
+                        if (AVCaptureDevice.default(for: AVMediaType.video)?.hasTorch) == true {
+                            Button(action: {
+                                store.send(.toggleFlashLight)
+                                toggleFlashlight(status: store.isFlashOn)
+                            }, label: {
+                                HStack {
+                                    Image(
+                                        systemName: !store.isFlashOn ? SFSymbolName.lightbulb : SFSymbolName
+                                            .lightbulbSlash
+                                    ).foregroundColor(Color.primary)
+                                    Text(!store.state.isFlashOn ? L10n.scnBtnLightOn : L10n.scnBtnLightOff)
+                                        .foregroundColor(Color.primary)
+                                }
+                            })
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                                .background(Color(.systemGray5))
+                                .cornerRadius(8)
+                                .padding()
                         }
                     }
-                ),
-                allowedContentTypes: [.pdf],
-                allowsMultipleSelection: false
-            ) { result in
-                store.send(.response(.documentFileReceived(
-                    result.mapError { _ in ScannerDomain.Error.invalid }
-                )))
-            }
-            .sheet(item: $store
-                .scope(state: \.destination?.imageGallery, action: \.destination.imageGallery)) { _ in
-                    ImagePicker(image: .init(get: { nil },
-                                             set: { store.send(.response(.galleryImageReceived($0))) }))
-            }
-            .onAppear {
-                isImageScaled.toggle()
-            }
-            .onReceive(NotificationCenter.default
-                .publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    store.send(.flashLightOff)
-            }
-            .onChange(of: store.isFlashOn) { _, _ in UIImpactFeedbackGenerator(style: .light).impactOccurred()
+
+                    InfoView(localizedTextKey: textLabel(
+                        for: store.scanState,
+                        hasScannedBatches: !store.acceptedTaskBatches.isEmpty
+                    ))
+
+                    Spacer()
+                    if store.scanState.isIdle || store.scanState.isLoading {
+                        if isImageScaled {
+                            Image(systemName: SFSymbolName.plusViewFinder)
+                                .font(Font.largeTitle)
+                                .foregroundColor(Colors.yellow500)
+                                .transition(.endlessScale(from: 1, to: 1.2))
+                        }
+                    } else {
+                        ScanStateImage(imageAsset: imageAsset(for: store.scanState),
+                                       foregroundColor: alertTintColor(for: store.scanState))
+                    }
+                    Spacer()
+
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            store.send(.importButtonTapped)
+                        }, label: {
+                            Image(systemName: SFSymbolName.photoOnRect)
+                                .frame(width: 56, height: 56)
+                                .font(.body.weight(.semibold))
+                                .foregroundColor(Color.primary)
+                                .background(
+                                    Circle().foregroundColor(Colors.systemGray6)
+                                )
+                        })
+                    }
+                    .padding(.horizontal)
+
+                    if !store.acceptedTaskBatches.isEmpty {
+                        FinishButton(scannedBatches: store.acceptedTaskBatches) {
+                            store.send(.saveAndClose(store.acceptedTaskBatches))
+                        }
+                    }
+                }
+                .confirmationDialog($store.scope(state: \.destination?.sheet, action: \.destination.sheet))
+                .fileImporter(
+                    isPresented: Binding<Bool>(
+                        get: { store.destination == .documentImporter },
+                        set: { show in
+                            if !show {
+                                store.send(.resetNavigation)
+                            }
+                        }
+                    ),
+                    allowedContentTypes: [.pdf],
+                    allowsMultipleSelection: false
+                ) { result in
+                    store.send(.response(.documentFileReceived(
+                        result.mapError { _ in ScannerDomain.Error.invalid }
+                    )))
+                }
+                .sheet(item: $store
+                    .scope(state: \.destination?.imageGallery, action: \.destination.imageGallery)) { _ in
+                        ImagePicker(image: .init(get: { nil },
+                                                 set: { store.send(.response(.galleryImageReceived($0))) }))
+                }
+                .onAppear {
+                    self.isImageScaled.toggle()
+                }
+                .onReceive(NotificationCenter.default
+                    .publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                        store.send(.flashLightOff)
+                }
+                .onChange(of: store.isFlashOn) { _ in UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                }
             }
         }
 
@@ -179,7 +175,7 @@ extension ErxTaskScannerView {
         }
 
         private func alertTintColor(for scanState: LoadingState<[ScannedErxTask], ScannerDomain.Error>) -> Color {
-            scanState.isValue ? Colors.secondary700 : Colors.systemLabel
+            scanState.isValue ? Colors.secondary600 : Colors.systemLabel
         }
     }
 }
@@ -221,7 +217,7 @@ extension ErxTaskScannerView.ScannerOverlay {
                 .accessibility(identifier: A11y.scanner.scnImgScanAlert)
                 .onAppear {
                     withAnimation(.spring()) {
-                        imageScale = 1.0
+                        self.imageScale = 1.0
                     }
                 }
         }
@@ -238,26 +234,26 @@ extension ErxTaskScannerView.ScannerOverlay {
         @State var previousContent: S = ""
 
         var body: some View {
-            Text(content)
+            Text(self.content)
                 .fontWeight(.bold)
                 .font(.system(size: 15))
-                .foregroundColor(Colors.secondary700)
+                .foregroundColor(Colors.secondary600)
                 .padding(5)
                 .background(Colors.systemGray6)
                 .clipShape(Circle())
                 .scaleEffect(counterScale)
-                .onReceive(Just(counterScale)) { scale in
+                .onReceive(Just(self.counterScale)) { scale in
                     if scale == 2.0 {
                         withAnimation {
-                            counterScale = 1.0
+                            self.counterScale = 1.0
                         }
                     }
                 }
-                .onReceive(Just(content)) { content in
-                    if content != previousContent {
+                .onReceive(Just(self.content)) { content in
+                    if content != self.previousContent {
                         withAnimation {
-                            previousContent = content
-                            counterScale = 2.0
+                            self.previousContent = content
+                            self.counterScale = 2.0
                         }
                     }
                 }
@@ -291,7 +287,7 @@ extension ErxTaskScannerView.ScannerOverlay {
                     Spacer()
                 }
                 .padding(5)
-                .background(Colors.secondary700)
+                .background(Colors.secondary600)
                 .cornerRadius(20)
                 .padding(20)
             }.background(Colors.systemGray6)

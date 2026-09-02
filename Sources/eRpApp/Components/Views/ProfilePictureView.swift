@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpStyleKit
@@ -94,20 +90,20 @@ struct ProfilePictureView: View {
         case .none, .never:
             return nil
         case .connected:
-            return Text(L10n.mainTxtLoggedInState).foregroundColor(Colors.secondary700)
+            return Text(L10n.mainTxtLoggedInState).foregroundColor(Colors.secondary600)
         case .disconnected:
             return Text(L10n.mainTxtLoggedOutState).foregroundColor(Colors.systemGray)
         }
     }
 
     var body: some View {
-        HStack {
-            ZStack(alignment: .bottomTrailing) {
-                Button {
-                    action()
-                } label: {
+        Button {
+            action()
+        } label: {
+            HStack {
+                ZStack(alignment: .bottomTrailing) {
                     Group {
-                        if let userImageData, !userImageData.isEmpty {
+                        if let userImageData = userImageData, !userImageData.isEmpty {
                             Image(uiImage: UIImage(data: userImageData) ?? UIImage())
                                 .resizable()
                                 .scaledToFill()
@@ -120,7 +116,7 @@ struct ProfilePictureView: View {
                         } else {
                             Image(systemName: SFSymbolName.camera)
                                 .font(Font.headline.weight(.bold))
-                                .foregroundColor(Colors.systemLabelSecondary)
+                                .foregroundColor(Color(.secondaryLabel))
                         }
                     }
                     .frame(width: style.size, height: style.size, alignment: .center)
@@ -130,30 +126,28 @@ struct ProfilePictureView: View {
                         width: isBorderOn ? 4 : 0,
                         cornerRadius: style.size * 0.5
                     )
-                    .foregroundColor(Colors.systemLabelSecondary)
+                    .foregroundColor(Color(.secondaryLabel))
                     .padding(.vertical, 8)
                     .padding(.trailing, 16)
                     .padding(.leading, style.paddingLeading)
                     .accessibilityIdentifier(A11y.mainScreen.erxBtnProfile)
-                }
-                .accessibilityLabel(L10n.mainBtnProfileSmall)
 
-                if let connectionStatusImage {
-                    let isConnected = connection == .connected
-                    connectionStatusImage
-                        .font(.system(size: style.statusImageSize).weight(.bold))
-                        .frame(width: style.statusSize, height: style.statusSize, alignment: .center)
-                        .foregroundColor(isConnected ? Colors.secondary700 : Colors.systemGray)
-                        .background(Circle().fill(isConnected ? Colors.secondary200 : Colors.secondary))
-                        .border(Colors.systemBackground, width: 4, cornerRadius: 999)
-                        .accessibilityIdentifier(A11y.mainScreen.erxImgProfileStatus)
-                        .accessibilityLabel(isConnected ? L10n.mainTxtProfileStatusOnline : L10n
-                            .mainTxtProfileStatusOffline)
-                        .accessibilityHidden(style != .large)
+                    if let connectionStatusImage {
+                        let isConnected = connection == .connected
+                        connectionStatusImage
+                            .font(.system(size: style.statusImageSize).weight(.bold))
+                            .frame(width: style.statusSize, height: style.statusSize, alignment: .center)
+                            .foregroundColor(isConnected ? Colors.secondary600 : Colors.systemGray)
+                            .background(Circle().fill(isConnected ? Colors.secondary200 : Colors.secondary))
+                            .border(Colors.systemBackground, width: 4, cornerRadius: 999)
+                            .accessibilityIdentifier(A11y.mainScreen.erxImgProfileStatus)
+                            .accessibilityLabel(isConnected ? L10n.mainTxtProfileStatusOnline : L10n
+                                .mainTxtProfileStatusOffline)
+                    }
                 }
-            }
-            if let connectionStatusText, style == .small {
-                connectionStatusText.multilineTextAlignment(.leading)
+                if let connectionStatusText, style == .small {
+                    connectionStatusText.multilineTextAlignment(.leading).accessibilityHidden(true)
+                }
             }
         }
     }

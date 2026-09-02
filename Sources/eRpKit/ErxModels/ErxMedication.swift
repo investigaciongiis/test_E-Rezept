@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
@@ -92,15 +88,15 @@ public struct ErxMedication: Hashable, Codable, Sendable {
 
     /// Category of a drug
     public enum DrugCategory: String, Equatable, Codable, Sendable {
-        /// Arznei- und Verbandmittel "00"
+        // Arznei- und Verbandmittel "00"
         case avm = "00"
-        /// Betaeubungsmittel "01"
+        // Betaeubungsmittel "01"
         case btm = "01"
-        /// Arzneimittelverschreibungsverordnung "02"
+        // Arzneimittelverschreibungsverordnung "02"
         case amvv = "02"
-        /// Sonstiges
+        // Sonstiges
         case other = "03"
-        /// Unknown category when there was a different category
+        // Unknown category when there was a different category
         case unknown
     }
 
@@ -151,7 +147,7 @@ public struct ErxMedication: Hashable, Codable, Sendable {
         public let denominator: Quantity?
 
         public var description: String {
-            guard let denominator, denominator.value != "1" else {
+            guard let denominator = denominator, denominator.value != "1" else {
                 return "\(numerator.description)"
             }
             return "\(numerator.description) / \(denominator.description)"
@@ -169,23 +165,10 @@ public struct ErxMedication: Hashable, Codable, Sendable {
         public let unit: String?
 
         public var description: String {
-            guard let unit else {
+            guard let unit = unit else {
                 return value
             }
             return "\(value) \(unit)"
-        }
-    }
-}
-
-extension ErxMedication {
-    /// Name of the medication or its ingredients
-    public var displayName: String? {
-        if let name {
-            return name
-        } else {
-            let joinedText = ingredients.compactMap(\.text).joined(separator: ", ")
-            guard !joinedText.isEmpty else { return nil }
-            return joinedText
         }
     }
 }

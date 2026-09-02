@@ -1,35 +1,30 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
-import FeatureCommunication
 import Nimble
 import XCTest
 
 @MainActor
 final class AppDomainTests: XCTestCase {
-    var mockUserDataStore: UserDataStoreMock!
+    var mockUserDataStore: MockUserDataStore!
 
     typealias TestStore = TestStoreOf<AppDomain>
 
@@ -42,14 +37,15 @@ final class AppDomainTests: XCTestCase {
             initialState: .init(
                 destination: .settings,
                 main: Self.Fixtures.mainDomainState,
-                pharmacy: Self.Fixtures.pharmacyContainerState,
+                pharmacySearch: Self.Fixtures.pharmacySearchDomainState,
                 orders: Self.Fixtures.ordersDomainState,
-                messages: Self.Fixtures.messageThreadListDomainState,
                 settings: SettingsDomain.State(
+                    isDemoMode: false,
                     destination: nil
                 ),
                 unreadOrderMessageCount: 0,
-                unreadInternalCommunicationCount: 0
+                unreadInternalCommunicationCount: 0,
+                isDemoMode: false
             )
         ) {
             AppDomain()
@@ -64,14 +60,15 @@ final class AppDomainTests: XCTestCase {
             initialState: .init(
                 destination: .settings,
                 main: Self.Fixtures.mainDomainState,
-                pharmacy: Self.Fixtures.pharmacyContainerState,
+                pharmacySearch: Self.Fixtures.pharmacySearchDomainState,
                 orders: Self.Fixtures.ordersDomainState,
-                messages: Self.Fixtures.messageThreadListDomainState,
                 settings: SettingsDomain.State(
+                    isDemoMode: false,
                     destination: .healthCardPasswordForgotPin(.init(mode: .forgotPin))
                 ),
                 unreadOrderMessageCount: 0,
-                unreadInternalCommunicationCount: 0
+                unreadInternalCommunicationCount: 0,
+                isDemoMode: false
             )
         ) {
             AppDomain()
@@ -79,6 +76,7 @@ final class AppDomainTests: XCTestCase {
 
         await testStore.send(.setNavigation(.settings)) {
             $0.settings = SettingsDomain.State(
+                isDemoMode: false,
                 destination: nil
             )
         }
@@ -89,10 +87,10 @@ final class AppDomainTests: XCTestCase {
             initialState: .init(
                 destination: .settings,
                 main: Self.Fixtures.mainDomainState,
-                pharmacy: Self.Fixtures.pharmacyContainerState,
+                pharmacySearch: Self.Fixtures.pharmacySearchDomainState,
                 orders: Self.Fixtures.ordersDomainState,
-                messages: Self.Fixtures.messageThreadListDomainState,
                 settings: SettingsDomain.State(
+                    isDemoMode: false,
                     destination: .healthCardPasswordForgotPin(HealthCardPasswordIntroductionDomain.State(
                         mode: .forgotPin,
                         destination: .can(HealthCardPasswordCanDomain.State(
@@ -107,7 +105,8 @@ final class AppDomainTests: XCTestCase {
                     ))
                 ),
                 unreadOrderMessageCount: 0,
-                unreadInternalCommunicationCount: 0
+                unreadInternalCommunicationCount: 0,
+                isDemoMode: false
             )
         ) {
             AppDomain()
@@ -115,6 +114,7 @@ final class AppDomainTests: XCTestCase {
 
         await testStore.send(.setNavigation(.settings)) {
             $0.settings = SettingsDomain.State(
+                isDemoMode: false,
                 destination: nil
             )
         }
@@ -126,20 +126,16 @@ final class AppDomainTests: XCTestCase {
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.State()
         )
 
-        static let pharmacyContainerState = PharmacyContainerDomain.State(
-            pharmacySearch: pharmacySearchDomainState
-        )
-
         static let pharmacySearchDomainState = PharmacySearchDomain.State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             searchText: "Apothekesdfwerwerasdf",
             pharmacies: [],
-            pharmacyFilterOptions: Shared(value: []),
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([]),
             searchState: .searchResultEmpty
         )
 
-        static let ordersDomainState = OrdersDomain.State(communicationMessage: Shared(value: []))
-        static let messageThreadListDomainState = MessageThreadListDomain.State()
+        static let ordersDomainState = OrdersDomain.State()
     }
 }

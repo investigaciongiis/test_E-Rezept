@@ -18,54 +18,6 @@
 			<string>%u mislykkede loginforsøg blev fundet</string>
 		</dict>
 	</dict>
-	<key>auth_txt_password_failure_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Forkert adgangskode. Prøv igen om 1 sekund.</string>
-			<key>other</key>
-			<string>Forkert adgangskode. Prøv igen om %u sekunder.</string>
-		</dict>
-	</dict>
-	<key>auth_txt_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Prøv venligst igen om %u sekund.</string>
-			<key>other</key>
-			<string>Prøv igen om %u sekunder.</string>
-		</dict>
-	</dict>
-	<key>dtl_txt_med_redeemed_on_direct_assignment</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Denne recept blev %%@ indløst for dig som led i en behandling.</string>
-			<key>other</key>
-			<string>Denne recept blev udskrevet til dig den % %@ som en del af en behandling.</string>
-		</dict>
-	</dict>
 	<key>erx_txt_accepted_until</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

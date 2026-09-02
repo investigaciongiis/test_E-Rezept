@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import SwiftUI
@@ -28,10 +24,17 @@ import SwiftUI
 /// To manually apply this style to a button, or to a view that contains buttons, use
 /// the ``View.buttonStyle(.form)`` modifier.
 public struct FormToggleStyle: ToggleStyle {
+    let showSeparator: Bool
+
+    public init(showSeparator: Bool) {
+        self.showSeparator = showSeparator
+    }
+
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .labelStyle(ToggleLabelStyle(
-                isOn: configuration.$isOn
+                isOn: configuration.$isOn,
+                showSeparator: showSeparator
             ))
             .labeledContentStyle(.automatic)
     }
@@ -40,8 +43,7 @@ public struct FormToggleStyle: ToggleStyle {
 public struct ToggleLabelStyle: LabelStyle {
     @Binding var isOn: Bool
 
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
-    @Environment(\.sectionContainerElementInformation.isRootElement) var isRootElement
+    let showSeparator: Bool
 
     public func makeBody(configuration: Configuration) -> some View {
         Label {
@@ -51,8 +53,7 @@ public struct ToggleLabelStyle: LabelStyle {
                 Toggle(isOn: $isOn) {}
                     .toggleStyle(DefaultToggleStyle())
             }
-            .rootSectionContainerElement(false)
-            .bottomDividerIfNeeded()
+            .bottomDivider(showSeparator: showSeparator)
 
         } icon: {
             configuration.icon
@@ -67,27 +68,5 @@ extension ToggleStyle where Self == FormToggleStyle {
     ///
     /// To manually apply this style to a button, or to a view that contains buttons, use
     /// the ``View.buttonStyle(.form)`` modifier.
-    public static var plain: FormToggleStyle {
-        FormToggleStyle()
-    }
-}
-
-#Preview {
-    SectionContainer {
-        Toggle(isOn: .constant(true)) {
-            Label {
-                Text("Toggle Label")
-            } icon: {
-                Image(systemName: SFSymbolName.bell)
-            }
-        }
-        Toggle(isOn: .constant(false)) {
-            Label {
-                Text("Toggle Label Off")
-            } icon: {
-                Image(systemName: SFSymbolName.bell)
-            }
-        }
-    }
-    .sectionContainerStyle(.bordered)
+    public static var plain: FormToggleStyle { FormToggleStyle(showSeparator: true) }
 }

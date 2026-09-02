@@ -1,30 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import CombineSchedulers
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureHelpers
 import IDP
 import Nimble
 import XCTest
@@ -79,11 +74,10 @@ final class RedeemMethodsDomainTests: XCTestCase {
         erxTask = ErxTask(
             identifier: "2390f983-1e67-11b2-8555-63bf44e44fb8",
             status: .ready,
-            flowType: .pharmacyOnly,
             accessCode: "e46ab30636811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
             fullUrl: nil,
-            authoredOn: TestDate.createFormattedDate(.today),
-            expiresOn: TestDate.createFormattedDate(.tomorrow),
+            authoredOn: DemoDate.createDemoDate(.today),
+            expiresOn: DemoDate.createDemoDate(.tomorrow),
             author: "Dr. Dr. med. Carsten van Storchhausen",
             medication: medication,
             medicationRequest: .init(
@@ -97,25 +91,23 @@ final class RedeemMethodsDomainTests: XCTestCase {
         )
     }
 
-    lazy var scannedTask: ErxTask = .init(
-        identifier: "34235f983-1e67-331g-8955-63bf44e44fb8",
-        status: .ready,
-        flowType: .pharmacyOnly,
-        accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
-        fullUrl: nil,
-        authoredOn: TestDate.createFormattedDate(.yesterday),
-        redeemedOn: nil,
-        source: .scanner
-    )
+    lazy var scannedTask: ErxTask = {
+        .init(
+            identifier: "34235f983-1e67-331g-8955-63bf44e44fb8",
+            status: .ready,
+            accessCode: "e46ab30336811adaa210a719021701895f5787cab2c65420ffd02b3df25f6e24",
+            fullUrl: nil,
+            authoredOn: DemoDate.createDemoDate(.yesterday),
+            redeemedOn: nil,
+            source: .scanner
+        )
+    }()
 
     func testStore() -> TestStore {
         let schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
-        return TestStore(
-            initialState: RedeemMethodsDomain.State(
-                prescriptions: [Prescription.Dummies.scanned, Prescription.Dummies.prescriptionReady]
-            )
-        ) {
-            RedeemMethodsDomain()
+        return TestStore(initialState: RedeemMethodsDomain
+            .State(prescriptions: Shared([Prescription.Dummies.scanned, Prescription.Dummies.prescriptionReady]))) {
+                RedeemMethodsDomain()
         } withDependencies: { dependencies in
             dependencies.schedulers = schedulers
         }
@@ -131,9 +123,26 @@ final class RedeemMethodsDomainTests: XCTestCase {
         )
 
         // when
-        await store.send(.matrixCodeTapped) { sut in
+        await store.send(.showMatrixCodeTapped) { sut in
             // then
             sut.destination = .matrixCode(expectedState)
+        }
+    }
+
+    func testOpenPharmacySearchScreen() async {
+        let store = testStore()
+
+        let expectedState = PharmacySearchDomain.State(
+            selectedPrescriptions: Shared([Prescription.Dummies.scanned, Prescription.Dummies.prescriptionReady]),
+            inRedeemProcess: true,
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([])
+        )
+
+        // when
+        await store.send(.showPharmacySearchTapped) { sut in
+            // then
+            sut.destination = .pharmacySearch(expectedState)
         }
     }
 }

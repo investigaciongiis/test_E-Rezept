@@ -1,5 +1,5 @@
 {
-    "listAllTasksOfRecordings":
+    "listAllTasksRecordings":
     {
         "type": "queue",
         "payload":
@@ -15,11 +15,13 @@
                         "qualification": "doctor"
                     },
                     "prescriptionId": "1234",
-                    "isEURedeemable" : false,
-                    "isSetEURedeemableByPatient" : false,
                     "communications":
                     [],
-                    "flowType": "160",
+                    "flowType":
+                    {
+                        "pharmacyOnly":
+                        {}
+                    },
                     "author": "Les Moore",
                     "source": "server",
                     "medication":
@@ -61,7 +63,7 @@
                         "substitutionAllowed": true,
                         "coPaymentStatus": "0",
                         "dosageInstructions": "1-0-2-0-0-3-1",
-                        "ser": true,
+                        "bvg": true,
                         "quantity":
                         {
                             "unit": "{Package}",

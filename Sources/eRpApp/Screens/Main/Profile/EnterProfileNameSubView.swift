@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpStyleKit
@@ -27,68 +23,51 @@ import SwiftUIIntrospect
 struct EnterProfileNameSubView: View {
     let displayName: Binding<String>
     let didTapButtonAction: () -> Void
-    let closeAction: (() -> Void)?
     var validating: ((String) -> Bool)?
 
     @FocusState private var focused: Bool
 
-    init(
-        displayName: Binding<String>,
-        didTapButtonAction: @escaping () -> Void,
-        closeAction: (() -> Void)? = nil,
-        validating: ((String) -> Bool)? = nil
-    ) {
-        self.displayName = displayName
-        self.didTapButtonAction = didTapButtonAction
-        self.closeAction = closeAction
-        self.validating = validating
-    }
-
     var isValidEntry: Bool {
-        guard let validating else { return true }
+        guard let validating = validating else { return true }
         return validating(displayName.wrappedValue)
     }
 
     var body: some View {
         VStack(spacing: 8) {
-            if let closeAction {
-                HStack(spacing: 0) {
-                    Spacer()
-
-                    CloseButton {
-                        closeAction()
-                    }
-                }
-            }
-
             Section(header:
                 Text(L10n.addTxtTitle)
                     .font(.system(size: 16, weight: .bold))) {
-                TextField(
-                    "",
-                    text: displayName
-                )
-                .introspect(.textField, on: .iOS(.v15, .v16, .v17, .v18, .v26)) { textField in
-                    textField.clearButtonMode = .whileEditing
-                }
-                .accessibilityIdentifier(A11y.settings.newProfile.stgInpNewProfileName)
-                .foregroundColor(Colors.systemLabel)
-                .padding()
-                .border(Colors.primary700, width: 2, cornerRadius: 8)
-                .padding(.vertical)
-                .padding(.horizontal)
-                .focused($focused)
-
-                Button(
-                    action: {
-                        didTapButtonAction()
-                    },
-                    label: {
-                        Text(L10n.addBtnSave)
+                    TextField(
+                        L10n.addTxtProfile1,
+                        text: displayName
+                    )
+                    .introspect(.textField, on: .iOS(.v15, .v16, .v17, .v18)) { textField in
+                        textField.clearButtonMode = .whileEditing
                     }
-                )
-                .accessibilityIdentifier(A11y.settings.newProfile.stgBtnNewProfileSave)
-                .buttonStyle(.primary(isEnabled: isValidEntry, isDestructive: false, width: .wideHugging))
+                    .foregroundColor(Colors.text)
+                    .padding()
+                    .border(Colors.primary700, width: 2, cornerRadius: 8)
+                    .padding(.vertical)
+                    .padding(.horizontal)
+                    .focused($focused)
+
+                    Button(
+                        action: {
+                            didTapButtonAction()
+                        },
+                        label: {
+                            HStack {
+                                Text(L10n.addBtnSave)
+                                    .foregroundColor(isValidEntry ? Color(.white) : Color(.systemGray))
+                                    .font(.system(size: 16, weight: .bold))
+                                    .padding()
+                                    .padding(.horizontal)
+                            }
+                        }
+                    )
+                    .disabled(!isValidEntry)
+                    .background(isValidEntry ? Colors.primary : Color(.systemGray4))
+                    .cornerRadius(16)
             }
         }
         .padding()

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -27,9 +23,7 @@ import eRpKit
 /// Communication related local store interfaces
 extension DefaultErxTaskCoreDataStore {
     /// Fetch the most recent `timestamp` of all `Communication`s
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
-    public func fetchLatestTimestampForCommunications(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError> {
+    public func fetchLatestTimestampForCommunications() -> AnyPublisher<String?, LocalStoreError> {
         let request: NSFetchRequest<ErxTaskCommunicationEntity> = ErxTaskCommunicationEntity.fetchRequest()
         request.fetchLimit = 1
         request.sortDescriptors = [NSSortDescriptor(
@@ -48,8 +42,6 @@ extension DefaultErxTaskCoreDataStore {
     }
 
     /// List all communications for the given profile contained in the store
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter profile: Filters for the passed Profile type
     /// - Returns: array of the fetched communications or error
     public func listAllCommunications(
@@ -67,13 +59,6 @@ extension DefaultErxTaskCoreDataStore {
             )
             subPredicates.append(comProfile)
         }
-        // exclude communications from DiGas  .taskId.hasPrefix("162.")
-        let taskIdPredicate = NSPredicate(
-            format: "NOT (%K BEGINSWITH %@)",
-            #keyPath(ErxTaskCommunicationEntity.taskId),
-            "162."
-        )
-        subPredicates.append(taskIdPredicate)
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: subPredicates)
         return coreDataCrudable.fetch(request)
             .map { list in
@@ -83,11 +68,8 @@ extension DefaultErxTaskCoreDataStore {
     }
 
     /// Returns all unread communications for the given profile
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter profile: profile for which you want to have the count
     public func allUnreadCommunications(
-        of profileId: UUID?,
         for profile: ErxTask.Communication.Profile
     ) -> AnyPublisher<[ErxTask.Communication], LocalStoreError> {
         let request: NSFetchRequest<ErxTaskCommunicationEntity> = ErxTaskCommunicationEntity.fetchRequest()
@@ -131,14 +113,12 @@ extension DefaultErxTaskCoreDataStore {
     }
 
     /// Creates or updates the passes sequence of `ErxTaskCommunication`s
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter communications: Array of communications that should be stored
     /// - Returns: `true` if save operation was successful
-    public func save(communications: [ErxTask.Communication],
-                     of profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
+    public func save(communications: [ErxTask.Communication]) -> AnyPublisher<Bool, LocalStoreError> {
         coreDataCrudable.save(mergePolicy: .error) { [weak self] moc in
             _ = communications.map { erxTaskCommunication -> ErxTaskCommunicationEntity in
+
                 let request: NSFetchRequest<ErxTaskCommunicationEntity> = ErxTaskCommunicationEntity
                     .fetchRequest()
                 request.predicate = NSPredicate(
@@ -163,8 +143,7 @@ extension DefaultErxTaskCoreDataStore {
                     // swiftlint:disable:next todo
                     // FIXME: This is potentially broken. Currently it`s possible to redeem a task several times.
                     // That can cause a wrong match between the dispReq and the reply
-                    if newCommunicationEntity.profile == ErxTask.Communication.Profile.reply.rawValue
-                        || newCommunicationEntity.profile == ErxTask.Communication.Profile.diga.rawValue {
+                    if newCommunicationEntity.profile == ErxTask.Communication.Profile.reply.rawValue {
                         // check if in the new communications is also the related disp req
                         var communicationDispReq = communications
                             .first { $0.profile == .dispReq &&
@@ -173,7 +152,6 @@ extension DefaultErxTaskCoreDataStore {
                             }
                         if communicationDispReq == nil {
                             communicationDispReq = self?.fetchCommunication(
-                                of: profileId,
                                 for: .dispReq,
                                 with: erxTaskCommunication.taskId,
                                 telematikId: erxTaskCommunication.telematikId,
@@ -197,8 +175,7 @@ extension DefaultErxTaskCoreDataStore {
         }
     }
 
-    private func fetchCommunication(of profileId: UUID?,
-                                    for profile: ErxTask.Communication.Profile,
+    private func fetchCommunication(for profile: ErxTask.Communication.Profile,
                                     with taskId: ErxTask.ID,
                                     telematikId: String,
                                     on moc: NSManagedObjectContext) -> ErxTask.Communication? {

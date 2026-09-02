@@ -1,140 +1,136 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import CasePaths
 import ComposableArchitecture
 import eRpKit
 import eRpStyleKit
-import FeatureCardWall
 import Foundation
 import SwiftUI
 
 struct ChargeItemListView: View {
-    @Bindable var store: StoreOf<ChargeItemListDomain>
+    @Perception.Bindable var store: StoreOf<ChargeItemListDomain>
 
     @State private var editMode: EditMode = .inactive
 
     var body: some View {
-        VStack(spacing: 0) {
-            if store.chargeItemGroups.isEmpty {
-                Spacer()
-                VStack(alignment: .center, spacing: 0) {
-                    HStack {
-                        Spacer(minLength: 0)
-                        Image(decorative: Asset.Illustrations.girlRedCircleLarge)
-                        Spacer(minLength: 0)
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                if store.chargeItemGroups.isEmpty {
+                    Spacer()
+                    VStack(alignment: .center, spacing: 0) {
+                        HStack {
+                            Spacer(minLength: 0)
+                            Image(decorative: Asset.Illustrations.girlRedCircleLarge)
+                            Spacer(minLength: 0)
+                        }
+                        Text(L10n.stgTxtChargeItemListEmptyListReplacement)
+                            .font(Font.headline.weight(.bold))
+                            .accessibilityIdentifier(A11y.settings.chargeItemList
+                                .stgTxtChargeItemListEmptyListReplacement)
                     }
-                    Text(L10n.stgTxtChargeItemListEmptyListReplacement)
-                        .font(Font.headline.weight(.bold))
-                        .accessibilityIdentifier(A11y.settings.chargeItemList
-                            .stgTxtChargeItemListEmptyListReplacement)
-                }
-
-                Spacer()
-            } else {
-                _ChargeItemListView(store: store)
-            }
-
-            // Bottom banner
-            if let bottomBanner = store.bottomBannerState {
-                HStack {
-                    Text(bottomBanner.message)
-                        .font(Font.subheadline)
-                        .accessibilityIdentifier(A11y.settings.chargeItemList
-                            .stgTxtChargeItemListBottomBannerMessage)
 
                     Spacer()
+                } else {
+                    _ChargeItemListView(store: store)
+                }
 
-                    if bottomBanner != .loading {
+                // Bottom banner
+                if let bottomBanner = store.bottomBannerState {
+                    HStack {
+                        Text(bottomBanner.message)
+                            .font(Font.subheadline)
+                            .accessibilityIdentifier(A11y.settings.chargeItemList
+                                .stgTxtChargeItemListBottomBannerMessage)
+
+                        Spacer()
+
+                        if bottomBanner != .loading {
+                            Button(
+                                action: {
+                                    store.send(bottomBanner.action)
+                                },
+                                label: {
+                                    Text(bottomBanner.buttonText)
+                                        .accessibilityIdentifier(A11y.settings.chargeItemList
+                                            .stgBtnChargeItemListBottomBanner)
+                                }
+                            )
+                            .buttonStyle(.tertiaryFilled)
+                            .padding(.leading)
+                        } else {
+                            ProgressView()
+                                .font(.subheadline)
+                                .colorScheme(.dark)
+                                .padding(SwiftUI.EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                                .background(Colors.disabled)
+                                .cornerRadius(8)
+                        }
+                    }
+
+                    .padding(.horizontal, 16)
+                    .padding(.vertical)
+                    .background((bottomBanner == .loading ? Colors.systemBackgroundSecondary : Colors.primary100)
+                        .ignoresSafeArea())
+                    .topBorder(strokeWith: 0.5, color: Colors.separator)
+                }
+
+                Rectangle()
+                    .frame(width: 0, height: 0, alignment: .center)
+                    .sheet(
+                        item: $store.scope(
+                            state: \.destination?.idpCardWall,
+                            action: \.destination.idpCardWall
+                        )
+                    ) { store in
+                        IDPCardWallView(store: store)
+                    }
+                    .accessibility(hidden: true)
+                    .hidden()
+            }
+            .navigationDestination(
+                item: $store.scope(state: \.destination?.chargeItem, action: \.destination.chargeItem)
+            ) { store in
+                ChargeItemView(store: store)
+            }
+            .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
+            .toast($store.scope(state: \.destination?.toast, action: \.destination.toast))
+            .environment(\.editMode, $editMode)
+            .keyboardShortcut(.defaultAction) // workaround: this makes the alert's primary button bold
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if editMode.isEditing {
                         Button(
-                            action: {
-                                store.send(bottomBanner.action)
+                            action: { /* insert some action soon */
+                                withAnimation {
+                                    editMode = .inactive
+                                }
                             },
                             label: {
-                                Text(bottomBanner.buttonText)
-                                    .accessibilityIdentifier(A11y.settings.chargeItemList
-                                        .stgBtnChargeItemListBottomBanner)
+                                Text(L10n.stgBtnChargeItemListEditingDone)
                             }
                         )
-                        .buttonStyle(.tertiaryFilled)
-                        .padding(.leading)
+                        .accessibility(identifier: A11y.settings.chargeItemList
+                            .stgBtnChargeItemListMenuEntryEditingDone)
                     } else {
-                        ProgressView()
-                            .font(.subheadline)
-                            .colorScheme(.dark)
-                            .padding(SwiftUI.EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                            .background(Colors.disabled)
-                            .cornerRadius(8)
-                    }
-                }
-
-                .padding(.horizontal, 16)
-                .padding(.vertical)
-                .background((bottomBanner == .loading ? Colors.systemBackgroundSecondary : Colors.primary100)
-                    .ignoresSafeArea())
-                .topBorder(strokeWith: 0.5, color: Colors.separator)
-            }
-
-            Rectangle()
-                .frame(width: 0, height: 0, alignment: .center)
-                .sheet(
-                    item: $store.scope(
-                        state: \.destination?.idpCardWall,
-                        action: \.destination.idpCardWall
-                    )
-                ) { store in
-                    CardWallIntroductionView(store: store)
-                }
-                .accessibility(hidden: true)
-                .hidden()
-        }
-        .navigationDestination(
-            item: $store.scope(state: \.destination?.chargeItem, action: \.destination.chargeItem)
-        ) { store in
-            ChargeItemView(store: store)
-        }
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
-        .toast($store.scope(state: \.destination?.toast, action: \.destination.toast))
-        .environment(\.editMode, $editMode)
-        .keyboardShortcut(.defaultAction) // workaround: this makes the alert's primary button bold
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                if editMode.isEditing {
-                    Button(
-                        action: { /* insert some action soon */
-                            withAnimation {
-                                editMode = .inactive
-                            }
-                        },
-                        label: {
-                            Text(L10n.stgBtnChargeItemListEditingDone)
-                        }
-                    )
-                    .accessibility(identifier: A11y.settings.chargeItemList
-                        .stgBtnChargeItemListMenuEntryEditingDone)
-                } else {
-                    Menu(
-                        content: {
-                            // TODO: reenable when deletion/selection is implemented swiftlint:disable:this todo
+                        Menu(
+                            content: {
+                                // TODO: reenable when deletion/selection is implemented swiftlint:disable:this todo
 //                                Button(
 //                                    action: { /* insert some action soon */
 //                                        withAnimation {
@@ -151,49 +147,53 @@ struct ChargeItemListView: View {
 //                                )
 //                                .accessibility(identifier: A11y.settings.chargeItemList
 //                                    .stgBtnChargeItemListMenuEntryEdit)
-                            ForEach(store.toolbarMenuState.entries) { entry in
-                                Button(
-                                    role: entry.destructive ? .destructive : nil,
-                                    action: { store.send(entry.action) },
-                                    label: { Text(entry.labelText) }
-                                )
-                                .accessibilityIdentifier(entry.a11y)
+                                ForEach(store.toolbarMenuState.entries) { entry in
+                                    Button(
+                                        role: entry.destructive ? .destructive : nil,
+                                        action: { store.send(entry.action) },
+                                        label: { Text(entry.labelText) }
+                                    )
+                                    .accessibilityIdentifier(entry.a11y)
+                                    .disabled(entry.isDisabled)
+                                }
+                            },
+                            label: {
+                                Label {
+                                    Text(L10n.stgBtnChargeItemListMenu)
+                                } icon: {
+                                    Image(systemName: SFSymbolName.ellipsis)
+                                }
                             }
-                        },
-                        label: {
-                            Label {
-                                Text(L10n.stgBtnChargeItemListMenu)
-                            } icon: {
-                                Image(systemName: SFSymbolName.ellipsis)
-                            }
-                        }
-                    )
-                    .accessibilityIdentifier(A11y.settings.chargeItemList.stgBtnChargeItemListNavigationBarMenu)
+                        )
+                        .accessibilityIdentifier(A11y.settings.chargeItemList.stgBtnChargeItemListNavigationBarMenu)
+                    }
                 }
             }
-        }
-        .navigationTitle(L10n.stgTxtChargeItemListTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            await store.send(.task).finish()
+            .navigationTitle(L10n.stgTxtChargeItemListTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await store.send(.task).finish()
+            }
         }
     }
 }
 
 extension ChargeItemListView {
     private struct _ChargeItemListView: View {
-        @Bindable var store: StoreOf<ChargeItemListDomain>
+        @Perception.Bindable var store: StoreOf<ChargeItemListDomain>
 
         var body: some View {
-            List {
-                ForEach(store.chargeItemGroups) { group in
-                    ChargeItemSection(chargeItemSection: group) { chargeItem in
-                        store.send(.select(chargeItem))
+            WithPerceptionTracking {
+                List {
+                    ForEach(store.chargeItemGroups) { group in
+                        ChargeItemSection(chargeItemSection: group) { chargeItem in
+                            store.send(.select(chargeItem))
+                        }
                     }
                 }
+                .listStyle(.inset)
+                .accessibilityIdentifier(A11y.settings.chargeItemList.stgBtnChargeItemListContainer)
             }
-            .listStyle(.inset)
-            .accessibilityIdentifier(A11y.settings.chargeItemList.stgBtnChargeItemListContainer)
         }
 
         private struct ChargeItemSection: View {
@@ -217,17 +217,17 @@ extension ChargeItemListView {
 //                                } label: {
 //                                    Label("Eingelöst", systemImage: SFSymbolName.checkmark)
 //                                }
-//                                .tint(Colors.primary700)
+//                                .tint(Colors.primary600)
 //                            })
 //                            .swipeActions {
 //                                Button(role: .destructive) {
 //                                } label: {
 //                                    Label("Löschen", systemImage: "minus.circle")
 //                                }
-//                                .tint(Colors.red700)
+//                                .tint(Colors.red600)
 //                                Button("Check") {
 //                                }
-//                                .tint(Colors.primary700)
+//                                .tint(Colors.primary600)
 //                            }
                     }
                     // TODO: placeholder for deletion story swiftlint:disable:this todo
@@ -290,7 +290,7 @@ extension ChargeItemListView {
                         Spacer()
                     } icon: {
                         Image(systemName: SFSymbolName.chevronForward)
-                            .foregroundColor(Colors.systemLabelSecondary)
+                            .foregroundColor(Color(.tertiaryLabel))
                             .font(.body.weight(.semibold))
                     }
                     .labelStyle(TrailingIconLabelStyle2())
@@ -311,8 +311,8 @@ extension ChargeItemListView {
             }
 
             /// `LabelStyle` switching the icon to be trailing instead of leading.
-            struct TrailingIconLabelStyle2: LabelStyle {
-                func makeBody(configuration: Configuration) -> some View {
+            public struct TrailingIconLabelStyle2: LabelStyle {
+                public func makeBody(configuration: Configuration) -> some View {
                     HStack {
                         configuration.title
 

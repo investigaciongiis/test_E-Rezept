@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -29,7 +25,7 @@ struct Lens<Whole, Part> {
     let set: (Part) -> (Whole) -> Whole
 }
 
-// swiftlint:disable type_name
+// swiftlint:disable opening_brace type_name
 extension Prescription {
     init(
         erxTask: ErxTask,
@@ -125,39 +121,6 @@ extension ErxTask {
                 }
             }
         )
-
-        static let deviceRequest = Lens<ErxTask, ErxDeviceRequest?>(
-            get: { $0.deviceRequest },
-            set: { newdeviceRequest in
-                { oldErxTask in
-                    ErxTask(
-                        identifier: oldErxTask.identifier,
-                        status: oldErxTask.status,
-                        flowType: oldErxTask.flowType,
-                        accessCode: oldErxTask.accessCode,
-                        fullUrl: oldErxTask.fullUrl,
-                        authoredOn: oldErxTask.authoredOn,
-                        lastModified: oldErxTask.lastModified,
-                        expiresOn: oldErxTask.expiresOn,
-                        acceptedUntil: oldErxTask.acceptedUntil,
-                        redeemedOn: oldErxTask.redeemedOn,
-                        avsTransactions: oldErxTask.avsTransactions,
-                        author: oldErxTask.author,
-                        prescriptionId: oldErxTask.prescriptionId,
-                        source: oldErxTask.source,
-                        medication: oldErxTask.medication,
-                        medicationRequest: oldErxTask.medicationRequest,
-                        medicationSchedule: oldErxTask.medicationSchedule,
-                        patient: oldErxTask.patient,
-                        practitioner: oldErxTask.practitioner,
-                        organization: oldErxTask.organization,
-                        communications: oldErxTask.communications,
-                        medicationDispenses: oldErxTask.medicationDispenses,
-                        deviceRequest: newdeviceRequest
-                    )
-                }
-            }
-        )
     }
 }
 
@@ -227,24 +190,4 @@ extension Order {
     }
 }
 
-extension ErxDeviceRequest {
-    enum lens {
-        static let diGaInfo = Lens<ErxDeviceRequest, DiGaInfo?>(
-            get: { $0.diGaInfo },
-            set: { newDiGaInfo in
-                { oldDeviceRequest in
-                    ErxDeviceRequest(status: oldDeviceRequest.status,
-                                     intent: oldDeviceRequest.intent,
-                                     pzn: oldDeviceRequest.pzn,
-                                     appName: oldDeviceRequest.appName,
-                                     isSER: oldDeviceRequest.isSER,
-                                     accidentInfo: oldDeviceRequest.accidentInfo,
-                                     authoredOn: oldDeviceRequest.authoredOn,
-                                     diGaInfo: newDiGaInfo)
-                }
-            }
-        )
-    }
-}
-
-// swiftlint:enable type_name
+// swiftlint:enable opening_brace type_name

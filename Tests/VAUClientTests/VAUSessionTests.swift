@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -30,24 +26,23 @@ import TrustStore
 import XCTest
 
 final class VAUSessionTests: XCTestCase {
-    func testSessionRetainsCurrentUserPseudonym() async throws {
+    func testSessionRetainsCurrentUserPseudonym() throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com"))
-        let request = try URLRequest(url: XCTUnwrap(URL(string: "http://www.url.com")))
+        let url = URL(string: "http://some-service.com")!
+        let request = URLRequest(url: URL(string: "http://www.url.com")!)
         let chain = PassThroughChain(request: request)
 
-        let vauAccessTokenProvider = VAUAccessTokenProviderMock()
+        let vauAccessTokenProvider = MockVAUAccessTokenProvider()
         vauAccessTokenProvider.vauBearerToken = Just("SomeAccessToken").setFailureType(to: VAUError.self)
             .eraseToAnyPublisher()
-        let mockVAUCrypto = VAUCryptoMock()
-        mockVAUCrypto.decryptDataDataStringReturnValue = ""
-        mockVAUCrypto.encryptDataReturnValue = Data()
-        let mockVAUCryptoProvider = VAUCryptoProviderMock()
-        mockVAUCryptoProvider
-            .provideForMessageStringVauCertificateVAUCertificateBearerTokenBearerTokenVAUCryptoReturnValue =
-            mockVAUCrypto
-        let trustStoreSession = TrustStoreSessionMock()
-        trustStoreSession.vauCertificateX509ReturnValue = Self.defaultVauCertificate
+        let mockVAUCrypto = MockVAUCrypto()
+        mockVAUCrypto.decryptDataReturnValue = ""
+        mockVAUCrypto.encryptReturnValue = Data()
+        let mockVAUCryptoProvider = MockVAUCryptoProvider()
+        mockVAUCryptoProvider.provideForVauCertificateBearerTokenReturnValue = mockVAUCrypto
+        let trustStoreSession = MockTrustStoreSession()
+        trustStoreSession.loadVauCertificateReturnValue = Just(Self.defaultVauCertificate)
+            .setFailureType(to: TrustStoreError.self).eraseToAnyPublisher()
 
         let sut = VAUSession(
             vauServer: url,
@@ -56,7 +51,7 @@ final class VAUSessionTests: XCTestCase {
             vauStorage: MemStorage(),
             trustStoreSession: trustStoreSession
         )
-        let interceptor = VAUInterceptor(vauSession: sut)
+        let interceptor = sut.provideInterceptor()
 
         // helping subscriber
         var currentVauEndpoints: [URL?] = []
@@ -72,29 +67,33 @@ final class VAUSessionTests: XCTestCase {
 
         // Mock first response containing a new user pseudonym for further use
         let userPseudonymHeaders1 = ["userpseudonym": "pseudo1"]
-        let response1 = try XCTUnwrap(HTTPURLResponse(
+        let response1 = HTTPURLResponse(
             url: url,
             statusCode: 200,
             httpVersion: "1/1",
             headerFields: userPseudonymHeaders1
-        ))
+        )!
         chain.response = response1
-        _ = try? await interceptor.intercept(chain: chain)
-        expect(currentVauEndpoints.count) == 2
-        expect(currentVauEndpoints[1]?.absoluteString) == "\(url)/VAU/pseudo1"
+        interceptor.intercept(chain: chain)
+            .test(expectations: { _ in
+                expect(currentVauEndpoints.count) == 2
+                expect(currentVauEndpoints[1]?.absoluteString) == "\(url)/VAU/pseudo1"
+            })
 
         // Mock second response containing another user pseudonym for further use
         let userPseudonymHeaders2 = ["userpseudonym": "pseudo2"]
-        let response2 = try XCTUnwrap(HTTPURLResponse(
+        let response2 = HTTPURLResponse(
             url: url,
             statusCode: 200,
             httpVersion: "1/1",
             headerFields: userPseudonymHeaders2
-        ))
+        )!
         chain.response = response2
-        _ = try? await interceptor.intercept(chain: chain)
-        expect(currentVauEndpoints.count) == 3
-        expect(currentVauEndpoints[2]?.absoluteString) == "\(url)/VAU/pseudo2"
+        interceptor.intercept(chain: chain)
+            .test(expectations: { _ in
+                expect(currentVauEndpoints.count) == 3
+                expect(currentVauEndpoints[2]?.absoluteString) == "\(url)/VAU/pseudo2"
+            })
 
         currentVauEndpointSubscriber.cancel()
     }

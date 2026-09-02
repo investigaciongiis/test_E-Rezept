@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -43,7 +39,6 @@ public protocol ErxLocalDataStore {
     /// Fetch the ErxTask by its id and accessCode when required by `Self`
     ///
     /// - Parameters:
-    ///   - profileId: The profile identifier to which the item belongs to or nil if all data should be considered
     ///   - id: the ErxTask ID
     ///   - accessCode: AccessCode, optional as required by implementing DataStore
     /// - Returns: Publisher for the fetch request
@@ -51,27 +46,20 @@ public protocol ErxLocalDataStore {
         -> AnyPublisher<ErxTask?, LocalStoreError>
 
     /// List all tasks contained in the store
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
-    func listAllTasks(of profileId: UUID?) -> AnyPublisher<[ErxTask], LocalStoreError>
+    func listAllTasks() -> AnyPublisher<[ErxTask], LocalStoreError>
 
     /// Fetch the most recent `lastModified` of all `ErxTask`s
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
-    func fetchLatestLastModifiedForErxTasks(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError>
+    func fetchLatestLastModifiedForErxTasks() -> AnyPublisher<String?, LocalStoreError>
 
     /// Creates or updates a sequence of tasks into the store
     /// - Parameter tasks: Array of `ErxTasks`s that should be saved
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter updateProfileLastAuthenticated: `true` if the profile last authenticated should be updated, `false`
     ///   otherwise.
     /// - Returns: A publisher that finishes with `true` on completion or fails with an error.
-    func save(tasks: [ErxTask], in profileId: UUID?, updateProfileLastAuthenticated: Bool)
-        -> AnyPublisher<Bool, LocalStoreError>
+    func save(tasks: [ErxTask], updateProfileLastAuthenticated: Bool) -> AnyPublisher<Bool, LocalStoreError>
 
     /// Deletes a sequence of tasks from the store
-    func delete(tasks: [ErxTask], in profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError>
+    func delete(tasks: [ErxTask]) -> AnyPublisher<Bool, LocalStoreError>
 
     /// List all tasks without relationship to a `Profile`
     func listAllTasksWithoutProfile() -> AnyPublisher<[ErxTask], LocalStoreError>
@@ -86,30 +74,23 @@ public protocol ErxLocalDataStore {
     ) -> AnyPublisher<[ErxTask.Communication], LocalStoreError>
 
     /// Fetch the most recent `timestamp` of all `Communication`s
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
-    func fetchLatestTimestampForCommunications(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError>
+    func fetchLatestTimestampForCommunications() -> AnyPublisher<String?, LocalStoreError>
 
     /// Creates or updates the passes sequence of `ErxTaskCommunication`s
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter communications: Array of communications that should be stored
     /// - Returns: `true` if save operation was successful
-    func save(communications: [ErxTask.Communication], of profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError>
+    func save(communications: [ErxTask.Communication]) -> AnyPublisher<Bool, LocalStoreError>
 
     /// Returns all unread communications for the given profile
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter profile: profile for which you want to have the count
     func allUnreadCommunications(
-        of profileId: UUID?,
         for profile: ErxTask.Communication.Profile
     ) -> AnyPublisher<[ErxTask.Communication], LocalStoreError>
 
     // MARK: - MedicationDispense interfaces
 
     /// List all medication dispenses contained in the store
-    func listAllMedicationDispenses(of profileId: UUID?) -> AnyPublisher<[ErxMedicationDispense], LocalStoreError>
+    func listAllMedicationDispenses() -> AnyPublisher<[ErxMedicationDispense], LocalStoreError>
 
     /// Creates or updates the passed sequence of `ErxTask.MedicationDispense`s
     /// - Parameter medicationDispenses: Array of medication dispenses that should be stored
@@ -124,51 +105,23 @@ public protocol ErxLocalDataStore {
     ///   - id: the ErxChargeItem ID
     /// - Returns: Publisher for the fetch request
     func fetchChargeItem(
-        of profileId: UUID?,
         by chargeItemID: ErxSparseChargeItem.ID
     ) -> AnyPublisher<ErxSparseChargeItem?, LocalStoreError>
 
     /// Fetch the most recent `enteredDate` of all `ChargeItem`s
-    func fetchLatestTimestampForChargeItems(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError>
+    func fetchLatestTimestampForChargeItems() -> AnyPublisher<String?, LocalStoreError>
 
     /// List all charge items with the given local contained in the store
     /// - Returns: Array of the fetched charge items or error
-    func listAllChargeItems(of profileId: UUID?) -> AnyPublisher<[ErxSparseChargeItem], LocalStoreError>
+    func listAllChargeItems() -> AnyPublisher<[ErxSparseChargeItem], LocalStoreError>
 
     /// Creates or updates the passed sequence of `ErxSparseChargeItem`s
     /// - Parameter chargeItems: Array of charge items that should be stored
     /// - Returns: `true` if save operation was successful
-    func save(chargeItems: [ErxSparseChargeItem], of profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError>
+    func save(chargeItems: [ErxSparseChargeItem]) -> AnyPublisher<Bool, LocalStoreError>
 
     /// Deletes a sequence of charge items from the store
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter chargeItems: Array of charge items that should be deleted
     /// - Returns: `true` if delete operation was successful
-    func delete(of profileId: UUID?, chargeItems: [ErxSparseChargeItem]) -> AnyPublisher<Bool, LocalStoreError>
-
-    /// Creates or updates the passed sequence of `DiGaInfo`
-    /// - Parameter diGaInfo: diGaInfo that should be saved
-    /// - Returns: `true` if save operation was successful
-    func update(diGaInfo: DiGaInfo) -> AnyPublisher<Bool, LocalStoreError>
-
-    /// Creates or updates the sequence passed of `EuCommunication`
-    /// - Parameter euCommunication: EuCommunication that should be saved
-    /// - Returns: `true` if save operation was successful
-    func save(euCommunications: [EuCommunication], profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError>
-
-    /// Creates or updates the sequence passed of `EuCommunication`
-    /// - Returns: array of `EuCommunication` or error
-    func listAllEuCommunication(countryCode: String?, profileId: UUID?)
-        -> AnyPublisher<[EuCommunication], LocalStoreError>
-
-    /// Delete local `EuCommunication`
-    /// - Parameter EuCommunication: Array of `EuCommunication` that should be deleted
-    /// - Returns: `true` if save operation was successful
-    func delete(euCommunications: [EuCommunication], profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError>
-
-    /// Delete local `EuCommunication`
-    /// - Parameter EuCommunication: Array of `EuCommunication` that should be deleted
-    /// - Returns: `true` if save operation was successful
-    func loadLatestActiveEuCommunication(profileId: UUID?) -> AnyPublisher<EuCommunication?, LocalStoreError>
+    func delete(chargeItems: [ErxSparseChargeItem]) -> AnyPublisher<Bool, LocalStoreError>
 }

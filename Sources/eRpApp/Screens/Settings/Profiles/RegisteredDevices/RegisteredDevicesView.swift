@@ -1,34 +1,29 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import CasePaths
 import ComposableArchitecture
 import eRpStyleKit
-import FeatureCardWall
 import IDP
 import SwiftUI
 
 struct RegisteredDevicesView: View {
-    @Bindable var store: StoreOf<RegisteredDevicesDomain>
+    @Perception.Bindable var store: StoreOf<RegisteredDevicesDomain>
 
     func delete(at offsets: IndexSet) {
         let deviceKeysToDelete: [String] = offsets.compactMap { offset in
@@ -54,105 +49,107 @@ struct RegisteredDevicesView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            switch store.content {
-            case let .loading(entries):
-                if !entries.isEmpty {
-                    List {
-                        Section(
-                            content: {
-                                ForEach(entries) { entry in
-                                    SubTitle(
-                                        title: entry.name,
-                                        description: description(for: entry)
-                                    )
-                                    .padding(.vertical)
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                switch store.content {
+                case let .loading(entries):
+                    if !entries.isEmpty {
+                        List {
+                            Section(
+                                content: {
+                                    ForEach(entries) { entry in
+                                        SubTitle(
+                                            title: entry.name,
+                                            description: description(for: entry)
+                                        )
+                                        .padding(.vertical)
+                                    }
+                                },
+                                header: {
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
                                 }
-                            },
-                            header: {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
-                            }
-                        )
-                    }
-                    .listStyle(InsetGroupedListStyle())
-                } else {
-                    VStack {
-                        ProgressView()
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                }
-            case let .loaded(entries):
-                if !entries.isEmpty {
-                    List {
-                        ForEach(entries) { entry in
-                            SubTitle(
-                                title: entry.name,
-                                description: description(for: entry)
                             )
-                            .padding(.vertical)
-                            .accessibilityElement(children: .combine)
                         }
-                        .onDelete(perform: delete)
+                        .listStyle(InsetGroupedListStyle())
+                    } else {
+                        VStack {
+                            ProgressView()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     }
-                    .listStyle(InsetGroupedListStyle())
-                    .toolbar {
-                        EditButton()
+                case let .loaded(entries):
+                    if !entries.isEmpty {
+                        List {
+                            ForEach(entries) { entry in
+                                SubTitle(
+                                    title: entry.name,
+                                    description: description(for: entry)
+                                )
+                                .padding(.vertical)
+                                .accessibilityElement(children: .combine)
+                            }
+                            .onDelete(perform: delete)
+                        }
+                        .listStyle(InsetGroupedListStyle())
+                        .toolbar {
+                            EditButton()
+                        }
+                    } else {
+                        VStack(spacing: 8) {
+                            Text(L10n.stgTxtRegDevicesEmptyListTitle)
+                                .font(.headline)
+
+                            Text(L10n.stgTxtRegDevicesEmptyList)
+                                .font(.subheadline)
+                                .foregroundColor(Color(.secondaryLabel))
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     }
-                } else {
+                case .notLoaded:
                     VStack(spacing: 8) {
-                        Text(L10n.stgTxtRegDevicesEmptyListTitle)
+                        Text(L10n.stgTxtRegDevicesInfoTitle)
                             .font(.headline)
 
-                        Text(L10n.stgTxtRegDevicesEmptyList)
+                        Text(L10n.stgTxtRegDevicesInfo)
                             .font(.subheadline)
-                            .foregroundColor(Colors.systemLabelSecondary)
+                            .foregroundColor(Color(.secondaryLabel))
                             .multilineTextAlignment(.center)
+
+                        Button(action: {
+                            store.send(.loadDevices)
+                        }, label: {
+                            Label(title: {
+                                Text(L10n.stgBtnRegDevicesLoad)
+                                    .font(.subheadline)
+                            }, icon: {
+                                Image(systemName: SFSymbolName.refresh)
+                            })
+                        })
                     }
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
-            case .notLoaded:
-                VStack(spacing: 8) {
-                    Text(L10n.stgTxtRegDevicesInfoTitle)
-                        .font(.headline)
-
-                    Text(L10n.stgTxtRegDevicesInfo)
-                        .font(.subheadline)
-                        .foregroundColor(Colors.systemLabelSecondary)
-                        .multilineTextAlignment(.center)
-
-                    Button(action: {
-                        store.send(.loadDevices)
-                    }, label: {
-                        Label(title: {
-                            Text(L10n.stgBtnRegDevicesLoad)
-                                .font(.subheadline)
-                        }, icon: {
-                            Image(systemName: SFSymbolName.refresh)
-                        })
-                    })
+            }
+            .task {
+                await store.send(.task).finish()
+            }
+            .fullScreenCover(item: $store.scope(state: \.destination?.cardWallCAN,
+                                                action: \.destination.cardWallCAN)) { store in
+                NavigationStack {
+                    CardWallCANView(store: store)
                 }
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .navigationViewStyle(StackNavigationViewStyle())
             }
+            .subTitleStyle(PlainSectionContainerSubTitleStyle())
+            .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
+            .navigationTitle(L10n.stgTxtRegDevicesTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .background(Color(.secondarySystemBackground)
+                .ignoresSafeArea())
         }
-        .task {
-            await store.send(.task).finish()
-        }
-        .fullScreenCover(item: $store.scope(state: \.destination?.cardWallCAN,
-                                            action: \.destination.cardWallCAN)) { store in
-            NavigationStack {
-                CardWallCANView(store: store)
-            }
-            .navigationViewStyle(StackNavigationViewStyle())
-        }
-        .subTitleStyle(PlainSectionContainerSubTitleStyle())
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
-        .navigationTitle(L10n.stgTxtRegDevicesTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .background(Color(.secondarySystemBackground)
-            .ignoresSafeArea())
     }
 }
 

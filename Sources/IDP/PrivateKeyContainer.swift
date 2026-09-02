@@ -1,28 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
+import ASN1Kit
 import Combine
 import Foundation
+import OpenSSL
 import Security
 
 /// Represents a (SecureEnclave) private key, namely `PrK_SE_AUT`, secured by iOS Biometrics.
@@ -31,32 +28,30 @@ import Security
 /// authorization purposes
 /// [REQ:BSI-eRp-ePA:O.Cryp_7#2] Container for private key operations using secure enclave private keys
 public struct PrivateKeyContainer {
-    @CodedError("108")
+    // sourcery: CodedError = "108"
     public enum Error: Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case keyNotFound(String)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case unknownError(String)
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case retrievingPublicKeyFailed
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case creationFromBiometrie(Swift.Error?)
-        @ErrorCode("05")
+        // sourcery: errorCode = "05"
         case creationWithoutBiometrie(Swift.Error?)
-        @ErrorCode("06")
+        // sourcery: errorCode = "06"
         case convertingKey(Swift.Error?)
-        @ErrorCode("07")
+        // sourcery: errorCode = "07"
         case signing(Swift.Error?)
-        @ErrorCode("08")
+        // sourcery: errorCode = "08"
         case canceledByUser
     }
 
-    private let privateKey: SecKey
-    /// The public key associated with the private key.
-    public let publicKey: SecKey
+    let privateKey: SecKey
+    let publicKey: SecKey
 
-    /// The tag or identifier of the key
-    public let tag: String
+    let tag: String
 
     /// Initializes a `PrivateKeyContainer` for a given tag. Throws `PrivateKeyContainer.Error` in case of a failure.
     /// - Parameter tag: The `tag` or identifier of the key.
@@ -149,7 +144,7 @@ public struct PrivateKeyContainer {
                                              // [REQ:BSI-eRp-ePA:O.Auth_5#2] Key invalidates on changes of registered
                                              // biometric features
                                              .biometryCurrentSet], &error) else {
-            guard let error else {
+            guard let error = error else {
                 throw Error.unknownError("Access Control creation failed")
             }
             throw Error.creationFromBiometrie(error.takeRetainedValue() as Swift.Error)
@@ -187,7 +182,7 @@ public struct PrivateKeyContainer {
                                             kSecAttrAccessibleWhenUnlocked,
                                             [.privateKeyUsage],
                                             &error) else {
-            guard let error else {
+            guard let error = error else {
                 throw Error.unknownError("Access Control creation failed")
             }
             throw Error.creationWithoutBiometrie(error.takeRetainedValue() as Swift.Error)
@@ -210,10 +205,38 @@ public struct PrivateKeyContainer {
     }
     #endif
 
+    func publicKeyData() throws -> Data {
+        var error: Unmanaged<CFError>?
+
+        let keyData = SecKeyCopyExternalRepresentation(publicKey, &error)
+
+        guard let unwrappedKeyData = keyData else {
+            throw Error.convertingKey(error?.takeRetainedValue())
+        }
+
+        return unwrappedKeyData as Data
+    }
+
+    func asn1PublicKey() throws -> Data {
+        let asn1 = ASN1Data.constructed(
+            [
+                create(tag: .universal(.sequence), data: ASN1Data.constructed(
+                    [
+                        try ObjectIdentifier.from(string: "1.2.840.10045.2.1").asn1encode(),
+                        try ObjectIdentifier.from(string: "1.2.840.10045.3.1.7").asn1encode(),
+                    ]
+                )),
+
+                try publicKeyData().asn1bitStringEncode(),
+            ]
+        )
+        return try create(tag: .universal(.sequence), data: asn1).serialize()
+    }
+
     /// Sign the given `Data` with the private key.
     /// - Parameter data: Data to sign with the private key.
     /// - Throws: `PrivateKeyContainer.Error` in case of a failure or a missing key.
-    /// - Returns: signature
+    /// - Returns: Data in concat format containing the Signature `r` | `s`.
     public func sign(data: Data) throws -> Data {
         let algorithm: SecKeyAlgorithm = .ecdsaSignatureMessageX962SHA256
 
@@ -230,7 +253,7 @@ public struct PrivateKeyContainer {
                                                     &error) as Data? else {
             let error = error?.takeRetainedValue()
 
-            if let error,
+            if let error = error,
                CFErrorGetDomain(error) as String? == "com.apple.LocalAuthentication" {
                 throw Error.canceledByUser
             }
@@ -238,6 +261,29 @@ public struct PrivateKeyContainer {
             throw Error.signing(error)
         }
 
-        return signature
+        return try signature.derToConcat()
+    }
+}
+
+// sourcery: CodedError = "107"
+public enum ConversionError: Swift.Error {
+    // sourcery: errorCode = "01"
+    case generic(String?)
+}
+
+extension Data {
+    // From jose4j EcdsaUsingShaAlgorithm.java
+    func derToConcat() throws -> Data {
+        let wholeASN1 = try ASN1Decoder.decode(asn1: self)
+        let sequence = try Array(from: wholeASN1)
+
+        guard sequence.count == 2 else {
+            throw ConversionError.generic("Error converting EC signature. Expected 2 elements, found \(sequence.count)")
+        }
+
+        let signatureR = try Data(from: sequence[0]).dropLeadingZeroByte.padWithLeadingZeroes(totalLength: 32)
+        let signatureS = try Data(from: sequence[1]).dropLeadingZeroByte.padWithLeadingZeroes(totalLength: 32)
+
+        return signatureR + signatureS
     }
 }

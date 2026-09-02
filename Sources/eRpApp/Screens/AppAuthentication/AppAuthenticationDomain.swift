@@ -1,29 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 import eRpKit
-import FeatureHelpers
 
 @Reducer
 struct AppAuthenticationDomain {
@@ -32,17 +27,6 @@ struct AppAuthenticationDomain {
         var didCompleteAuthentication = false
         var subdomain: Subdomain.State?
         var failedAuthenticationsCount: Int = 0
-
-        var showGroupShot: Bool {
-            switch subdomain {
-            case .biometrics, .biometricAndPassword:
-                return true
-            case .password:
-                return failedAuthenticationsCount == 0
-            case .none:
-                return false
-            }
-        }
     }
 
     enum Action: Equatable {
@@ -52,7 +36,7 @@ struct AppAuthenticationDomain {
         case subdomain(Subdomain.Action)
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Subdomain {
         case biometrics(AppAuthenticationBiometricsDomain)
         case password(AppAuthenticationPasswordDomain)
@@ -66,7 +50,7 @@ struct AppAuthenticationDomain {
     let didCompleteAuthentication: (() -> Void)?
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.subdomain, action: \.subdomain) {
                 Subdomain.body
             }
@@ -175,17 +159,13 @@ extension AppAuthenticationDomain {
         static let state = State()
 
         static let store = StoreOf<AppAuthenticationDomain>(initialState: state) {
-//            AppAuthenticationDomain {}
-            EmptyReducer()
+            AppAuthenticationDomain {}
         }
 
         static func storeFor(_ state: State) -> StoreOf<AppAuthenticationDomain> {
             Store(initialState: state) {
-                EmptyReducer()
+                AppAuthenticationDomain {}
             }
         }
     }
 }
-
-extension AppAuthenticationDomain.Subdomain.State: Equatable {}
-extension AppAuthenticationDomain.Subdomain.Action: Equatable {}

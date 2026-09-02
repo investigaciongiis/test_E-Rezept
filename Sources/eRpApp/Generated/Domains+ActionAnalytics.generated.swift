@@ -2,10 +2,6 @@
 // DO NOT EDIT
 
 import Foundation
-import FeatureEURedeem
-import FeatureCardWall
-import FeatureCommunication
-import eRpResources
 
 
 
@@ -13,59 +9,52 @@ import eRpResources
 
 
 extension AccidentInfoDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension AppAuthenticationBiometricPasswordDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppAuthenticationBiometricPasswordDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension AppAuthenticationBiometricsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppAuthenticationBiometricsDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension AppAuthenticationDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension AppAuthenticationDomain.Subdomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .biometrics(action):
@@ -74,186 +63,175 @@ extension AppAuthenticationDomain.Subdomain.Action {
                 action.analytics(tracker: tracker)
             case let .biometricAndPassword(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppAuthenticationPasswordDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension AppDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .main(action: action):
                 action.analytics(tracker: tracker)
-            case let .pharmacy(action: action):
+            case let .pharmacySearch(action: action):
                 action.analytics(tracker: tracker)
             case let .orders(action: action):
                 action.analytics(tracker: tracker)
-            case let .messages(action: action):
-                action.analytics(tracker: tracker)
             case let .settings(action: action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppDomain.Destinations.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension AppMigrationDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppMigrationDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension AppSecurityDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppSecurityDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .appPassword(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppStartDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AppStartDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .onboarding(action):
                 action.analytics(tracker: tracker)
             case let .app(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AuditEventsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension AuditEventsDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .cardWall(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallCANDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallCANDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .pin(action):
                 action.analytics(tracker: tracker)
             case let .egk(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
+        }
+    }
+}
+extension CardWallExtAuthConfirmationDomain.Action {
+    func analytics(tracker: Tracker) {
+        switch self {
+            default: break
         }
     }
 }
 extension CardWallExtAuthHelpDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallExtAuthSelectionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallExtAuthSelectionDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
+            case let .confirmation(action):
+                action.analytics(tracker: tracker)
             case let .help(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallIntroductionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallIntroductionDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .can(action):
@@ -262,84 +240,76 @@ extension CardWallIntroductionDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .egk(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallLoginOptionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallLoginOptionDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .readCard(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallPINDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallPINDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .login(action):
                 action.analytics(tracker: tracker)
             case let .egk(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallReadCardDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CardWallReadCardDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .help(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ChargeItemDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ChargeItemDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .shareSheet(action):
@@ -348,518 +318,308 @@ extension ChargeItemDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .alterChargeItem(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ChargeItemListDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ChargeItemListDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .idpCardWall(action):
                 action.analytics(tracker: tracker)
             case let .chargeItem(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension CoPaymentDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension CoPaymentDomain.DelegateAction {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
-        }
-    }
-}
-extension CodeDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .destination(.presented(action)):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension CodeDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
-        }
-    }
-}
-extension ConsentDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .destination(.presented(action)):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension ConsentDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
-        }
-    }
-}
-extension CountrySelectionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .destination(.presented(action)):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension CountrySelectionDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension CreatePasswordDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension CreateProfileDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension CreateProfileDomain.DelegateAction {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension DeviceSecurityDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension DiGaDetailDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .destination(.presented(action)):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension DiGaDetailDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .descriptionDiGA(action):
-                action.analytics(tracker: tracker)
-            case let .validDiGa(action):
-                action.analytics(tracker: tracker)
-            case let .supportDiGa(action):
-                action.analytics(tracker: tracker)
-            case let .cardWall(action):
-                action.analytics(tracker: tracker)
-            case let .patient(action):
-                action.analytics(tracker: tracker)
-            case let .practitioner(action):
-                action.analytics(tracker: tracker)
-            case let .organization(action):
-                action.analytics(tracker: tracker)
-            case let .technicalInformations(action):
-                action.analytics(tracker: tracker)
-            case let .insuranceList(action):
-                action.analytics(tracker: tracker)
-            case let .duesInfo(action):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension DiGaInsuranceListDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .destination(.presented(action)):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension DiGaInsuranceListDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension DosageInstructionsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension EURedeemDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .selection(action):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension EURedeemDomain.Path.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .countrySelection(action):
-                action.analytics(tracker: tracker)
-            case let .prescriptionSelection(action):
-                action.analytics(tracker: tracker)
-            case let .instructions(action):
-                action.analytics(tracker: tracker)
-            case let .code(action):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension EURedeemSelectionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .destination(.presented(action)):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension EURedeemSelectionDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .consent(action):
-                action.analytics(tracker: tracker)
-            case let .cardWall(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension EditProfileDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension EditProfileDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .auditEvents(action):
-                action.analytics(tracker: tracker)
-            case let .notificationChannels(action):
                 action.analytics(tracker: tracker)
             case let .registeredDevices(action):
                 action.analytics(tracker: tracker)
             case let .chargeItemList(action):
                 action.analytics(tracker: tracker)
-            case let .cardWall(action):
-                action.analytics(tracker: tracker)
-            case let .euRedeemConsent(action):
-                action.analytics(tracker: tracker)
             case let .editProfilePicture(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension EditProfileNameDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension EditProfileNameDomain.DelegateAction {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension EditProfilePictureDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension EditProfilePictureDomain.DelegateAction {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension EditProfilePictureDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension EmptyDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension EpaMedicationCodableIngredientDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension EpaMedicationDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension EpaMedicationDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .codableIngredient(action):
                 action.analytics(tracker: tracker)
             case let .medicationIngredient(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ExtAuthPendingDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ExtAuthPendingDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordCanDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordCanDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .puk(action):
                 action.analytics(tracker: tracker)
             case let .oldPin(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordIntroductionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordIntroductionDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .can(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordOldPinDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordOldPinDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .pin(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordPinDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordPinDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .readCard(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordPukDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordPukDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .pin(action):
                 action.analytics(tracker: tracker)
             case let .readCard(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordReadCardDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HealthCardPasswordReadCardDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case let .help(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension HorizontalProfileSelectionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension IDPCardWallDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension IDPCardWallDomain.Subdomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .can(action):
@@ -868,28 +628,18 @@ extension IDPCardWallDomain.Subdomain.Action {
                 action.analytics(tracker: tracker)
             case let .readCard(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension IngredientDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension InstructionsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension MainDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
@@ -900,12 +650,11 @@ extension MainDomain.Action {
                 action.analytics(tracker: tracker)
             case let .horizontalProfileSelection(action: action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MainDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .createProfile(action):
@@ -924,228 +673,152 @@ extension MainDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .prescriptionDetail(action):
                 action.analytics(tracker: tracker)
-            case let .medicationReminder(action):
-                action.analytics(tracker: tracker)
-            case let .diGaDetail(action):
-                action.analytics(tracker: tracker)
-            case let .osDeprecation(action):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension MainDomain.Path.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
             case let .redeemMethods(action):
                 action.analytics(tracker: tracker)
-            case let .redeem(action):
+            case let .medicationReminder(action):
                 action.analytics(tracker: tracker)
-            case let .pharmacy(action):
-                action.analytics(tracker: tracker)
-            case let .euRedeemSelection(action):
-                action.analytics(tracker: tracker)
-            case let .countrySelection(action):
-                action.analytics(tracker: tracker)
-            case let .prescriptionSelection(action):
-                action.analytics(tracker: tracker)
-            case let .instructions(action):
-                action.analytics(tracker: tracker)
-            case let .code(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MatrixCodeDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MatrixCodeDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .sharePrescription(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .ingredient(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationOverviewDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationOverviewDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .medication(action):
                 action.analytics(tracker: tracker)
             case let .epaMedication(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationReminderListDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationReminderListDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .medicationReminder(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationReminderOneDaySummaryDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationReminderSetupDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension MedicationReminderSetupDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .repetitionDetails(action):
                 action.analytics(tracker: tracker)
             case let .dosageInstructionsInfo(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
-extension MessageThreadDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
-        }
-    }
-}
-extension MessageThreadListDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
+extension NewProfileDomain.Action {
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
-extension MessageThreadListDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
+extension NewProfileDomain.Destination.Action {
     func analytics(tracker: Tracker) {
         switch self {
-            case let .orderDetail(action):
+            case let .editProfilePicture(action):
                 action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension NotificationChannelsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
-        }
-    }
-}
-extension OSDeprecationDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension OnboardingDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension OnboardingDomain.Path.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .registerAuth(action):
+            case let .registerAuthentication(action: action):
                 action.analytics(tracker: tracker)
-            case let .registerPassword(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrderDetailDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrderDetailDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .pickupCode(action):
@@ -1156,176 +829,129 @@ extension OrderDetailDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .pharmacyDetail(action):
                 action.analytics(tracker: tracker)
-            case let .euAccessCode(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrderHealthCardContactDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension OrderHealthCardDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrderHealthCardDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .serviceInquiry(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrderHealthCardInquiryDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrderHealthCardInquiryDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .contact(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrdersDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrdersDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .orderDetail(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension OrganizationDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PatientDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacyContactDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension PharmacyContainerDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .pharmacySearch(action):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension PharmacyContainerDomain.Path.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .redeem(action):
-                action.analytics(tracker: tracker)
-            case let .euRedeemSelection(action):
-                action.analytics(tracker: tracker)
-            case let .countrySelection(action):
-                action.analytics(tracker: tracker)
-            case let .prescriptionSelection(action):
-                action.analytics(tracker: tracker)
-            case let .instructions(action):
-                action.analytics(tracker: tracker)
-            case let .code(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacyDetailDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case let .serviceOption(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacyDetailDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            case let .redeemViaAVS(action):
+                action.analytics(tracker: tracker)
+            case let .redeemViaErxTaskRepository(action):
+                action.analytics(tracker: tracker)
+            default: break
         }
     }
 }
 extension PharmacyPrescriptionSelectionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacyRedeemDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case let .serviceOption(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacyRedeemDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .redeemSuccess(action):
@@ -1336,30 +962,27 @@ extension PharmacyRedeemDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .prescriptionSelection(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacySearchClusterDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacySearchDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacySearchDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .pharmacyDetail(action):
@@ -1368,92 +991,89 @@ extension PharmacySearchDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .pharmacyMapSearch(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            case let .redeemViaAVS(action):
+                action.analytics(tracker: tracker)
+            case let .redeemViaErxTaskRepository(action):
+                action.analytics(tracker: tracker)
+            default: break
         }
     }
 }
 extension PharmacySearchFilterDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacySearchMapDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PharmacySearchMapDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .pharmacy(action):
                 action.analytics(tracker: tracker)
             case let .filter(action):
                 action.analytics(tracker: tracker)
+            case let .redeemViaAVS(action):
+                action.analytics(tracker: tracker)
+            case let .redeemViaErxTaskRepository(action):
+                action.analytics(tracker: tracker)
             case let .clusterSheet(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PickupCodeDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PractitionerDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PrescriptionArchiveDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PrescriptionArchiveDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .prescriptionDetail(action):
                 action.analytics(tracker: tracker)
-            case let .diGaDetail(action):
-                action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PrescriptionDetailDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PrescriptionDetailDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .chargeItem(action):
@@ -1469,8 +1089,6 @@ extension PrescriptionDetailDomain.Destination.Action {
             case let .organization(action):
                 action.analytics(tracker: tracker)
             case let .accidentInfo(action):
-                action.analytics(tracker: tracker)
-            case let .teratogenicInfo(action):
                 action.analytics(tracker: tracker)
             case let .technicalInformations(action):
                 action.analytics(tracker: tracker)
@@ -1492,204 +1110,138 @@ extension PrescriptionDetailDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .selfPayerInfo(action):
                 action.analytics(tracker: tracker)
-            case let .tPrescriptionInfo(action):
-                action.analytics(tracker: tracker)
             case let .medicationReminder(action):
                 action.analytics(tracker: tracker)
             case let .dosageInstructionsInfo(action):
                 action.analytics(tracker: tracker)
             case let .matrixCode(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension PrescriptionDosageInstructionsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension PrescriptionDosageInstructionsDomain.DelegateAction {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PrescriptionListDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension PrescriptionValidityDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension PrescriptionValidityDomain.DelegateAction {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension ProfilesDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension ReadCardHelpDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension ReadCardHelpDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension RedeemMethodsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension RedeemMethodsDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .matrixCode(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            case let .pharmacySearch(action):
+                action.analytics(tracker: tracker)
+            default: break
         }
     }
 }
 extension RedeemSuccessDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension RegisterAuthenticationDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension RegisterPasswordDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension RegisteredDevicesDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension RegisteredDevicesDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .cardWallCAN(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ScannerDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ScannerDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension SelectEUPrescriptionsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case let .destination(.presented(action)):
-                action.analytics(tracker: tracker)
-            case _: break
-        }
-    }
-}
-extension SelectEUPrescriptionsDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
-        }
-    }
-}
-extension ServiceOptionDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension SettingsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .profiles(action: action):
                 action.analytics(tracker: tracker)
             case let .destination(.presented(action)):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension SettingsDomain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             case let .healthCardPasswordForgotPin(action):
@@ -1718,55 +1270,35 @@ extension SettingsDomain.Destination.Action {
                 action.analytics(tracker: tracker)
             case let .medicationReminderList(action):
                 action.analytics(tracker: tracker)
-            case _: break
+            default: break
         }
     }
 }
 extension ShareSheetDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension SubstitutionInfoDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension SubstitutionInfoDomain.DelegateAction {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension TCAToast_PreviewProvider.Domain.Destination.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
+            default: break
         }
     }
 }
 extension TechnicalInformationsDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
-            case _: break
-        }
-    }
-}
-extension TeratogenicInfoDomain.Action {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
-    func analytics(tracker: Tracker) {
-        switch self {
-            case _: break
+            default: break
         }
     }
 }

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import SwiftUI
@@ -58,12 +54,12 @@ public struct InitialsImage: View {
             .fill(backgroundColor)
             .overlay(
                 Circle()
-                    .strokeBorder(borderColor ?? .clear, lineWidth: borderColor != nil ? 2 : 0)
+                    .strokeBorder(self.borderColor ?? .clear, lineWidth: borderColor != nil ? 2 : 0)
             )
             .overlay(
                 Text(text)
                     .font(.system(size: size == .regular ? 11 : 13).weight(.bold))
-                    .foregroundColor(Colors.systemLabelSecondary)
+                    .foregroundColor(Color(.secondaryLabel))
             )
             .frame(width: dimension, height: dimension, alignment: .center)
             .overlay(ConnectionStatusCircle(statusColor: statusColor),
@@ -75,7 +71,7 @@ public struct InitialsImage: View {
         let statusColor: Color?
 
         var body: some View {
-            if let statusColor {
+            if let statusColor = statusColor {
                 Circle()
                     .fill(Color(.systemBackground))
                     .frame(width: 12, height: 12)
@@ -93,7 +89,7 @@ struct InitialsImage_Preview: PreviewProvider {
             InitialsImage(backgroundColor: Color.red, text: "AB")
 
             InitialsImage(
-                backgroundColor: Colors.secondary700,
+                backgroundColor: Color.green,
                 text: "AB",
                 statusColor: Color.red,
                 borderColor: Color.blue,

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import SwiftUI
@@ -113,43 +109,32 @@ public struct DefaultKeyValuePairStyle: KeyValuePairStyle {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(configuration.key)
         .accessibilityValue(configuration.value)
-    }
-}
-
-struct PaddedKeyValuePairStyle: KeyValuePairStyle {
-    func makeBody(configuration: KeyValuePairConfiguration) -> some View {
-        HStack {
-            configuration.key
-                .font(.body)
-                .labelStyle(DefaultLabelStyle())
-            Spacer()
-            configuration.value
-                .font(.body.weight(.bold))
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(configuration.key)
-        .accessibilityValue(configuration.value)
         .padding()
     }
 }
 
 public struct SeparatedKeyValuePairStyle: KeyValuePairStyle {
+    let showSeparator: Bool
+
+    init(showSeparator: Bool) {
+        self.showSeparator = showSeparator
+    }
+
     public func makeBody(configuration: KeyValuePairConfiguration) -> some View {
         HStack {
             configuration.key
                 .font(.body)
-                .foregroundColor(Colors.systemLabel)
+                .foregroundColor(Color(.label))
             Spacer()
             configuration.value
                 .font(.body)
-                .foregroundColor(Colors.systemLabelSecondary)
+                .foregroundColor(Color(.secondaryLabel))
         }
-        .bottomDividerIfNeeded()
+        .bottomDivider(showSeparator: showSeparator)
         .padding(.leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(configuration.key)
         .accessibilityValue(configuration.value)
-        .rootSectionContainerElement(false)
     }
 }
 
@@ -158,11 +143,11 @@ public struct PlainKeyValuePairStyle: KeyValuePairStyle {
         HStack {
             configuration.key
                 .font(.body)
-                .foregroundColor(Colors.systemLabel)
+                .foregroundColor(Color(.label))
             Spacer()
             configuration.value
                 .font(.body)
-                .foregroundColor(Colors.systemLabelSecondary)
+                .foregroundColor(Color(.secondaryLabel))
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(configuration.key)
@@ -171,8 +156,7 @@ public struct PlainKeyValuePairStyle: KeyValuePairStyle {
 }
 
 extension View {
-    /// Sets a `KeyValuePairStyle` for this and the children views.
-    public func keyValuePairStyle(_ style: some KeyValuePairStyle) -> some View {
+    func keyValuePairStyle<Style: KeyValuePairStyle>(_ style: Style) -> some View {
         environment(\.keyValuePairStyle, AnyKeyValuePairStyle(style: style))
     }
 }
@@ -197,7 +181,7 @@ private struct ConcreteTypeErased<Base: KeyValuePairStyle>: TypeErasedBox {
 struct AnyKeyValuePairStyle: KeyValuePairStyle {
     typealias Body = AnyView
     private let box: TypeErasedBox
-    init(style value: some KeyValuePairStyle) {
+    init<T: KeyValuePairStyle>(style value: T) {
         box = ConcreteTypeErased(baseProto: value)
     }
 
@@ -224,32 +208,5 @@ extension EnvironmentValues {
 extension View {
     func keyValuePairStyle(_ keyValuePairStyle: AnyKeyValuePairStyle) -> some View {
         environment(\.keyValuePairStyle, keyValuePairStyle)
-    }
-}
-
-extension KeyValuePairStyle where Self == SeparatedNoPaddingKeyValuePairStyle {
-    /// A button style that applies a navigation chevron and wraps the button with a divider.
-    ///
-    /// To apply this style to a button, or to a view that contains buttons, use
-    /// the ``View/buttonStyle(_:)`` modifier.
-    public static var noPadding: SeparatedNoPaddingKeyValuePairStyle {
-        SeparatedNoPaddingKeyValuePairStyle()
-    }
-}
-
-public struct SeparatedNoPaddingKeyValuePairStyle: KeyValuePairStyle {
-    public func makeBody(configuration: KeyValuePairConfiguration) -> some View {
-        HStack {
-            configuration.key
-                .font(.body)
-                .labelStyle(DefaultLabelStyle())
-            Spacer()
-            configuration.value
-                .font(.body)
-                .foregroundColor(Colors.systemLabelSecondary)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(configuration.key)
-        .accessibilityValue(configuration.value)
     }
 }

@@ -1,26 +1,22 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
+import Combine
 import Foundation
 
 // swiftlint:disable large_tuple
@@ -45,9 +41,18 @@ public protocol HTTPClient {
     /// - Parameter request: The request to be (modified and) sent.
     /// - Parameter interceptors: per request interceptors.
     /// - Parameter handler: handler that should be called in case of redirect.
+    /// - Returns: `AnyPublisher` that emits a response as `HTTPResponse`
+    func send(request: URLRequest, interceptors: [Interceptor], redirect handler: RedirectHandler?)
+        -> AnyPublisher<HTTPResponse, HTTPClientError>
+
+    /// Send the given request. The request will be processed by the list of `Interceptors`.
+    ///
+    /// - Parameter request: The request to be (modified and) sent.
+    /// - Parameter interceptors: per request interceptors.
+    /// - Parameter handler: handler that should be called in case of redirect.
     /// - Note: Only `HTTPClientError`s are supposed to be thrown.
     /// - Returns: The response as `HTTPResponse`
-    func send(
+    func sendAsync(
         request: URLRequest,
         interceptors: [Interceptor],
         redirect handler: RedirectHandler?
@@ -62,18 +67,27 @@ extension HTTPClient {
     ///
     /// - Parameter request: The request to be (modified and) sent.
     /// - Parameter interceptors: per request interceptors.
+    /// - Returns: `AnyPublisher` that emits a response as `HTTPResponse`
+    public func send(request: URLRequest, interceptors: [Interceptor]) -> AnyPublisher<HTTPResponse, HTTPClientError> {
+        send(request: request, interceptors: interceptors, redirect: nil)
+    }
+
+    /// Send the given request.
+    ///
+    /// - Parameter request: The request to be (modified and) sent.
+    /// - Returns: `AnyPublisher` that emits a response as `HTTPResponse`
+    public func send(request: URLRequest) -> AnyPublisher<HTTPResponse, HTTPClientError> {
+        send(request: request, interceptors: [])
+    }
+
+    /// Send the given request. The request will be processed by the list of `Interceptors`.
+    ///
+    /// - Parameter request: The request to be (modified and) sent.
+    /// - Parameter interceptors: per request interceptors.
     /// - Note: Only `HTTPClientError`s are supposed to be thrown.
     /// - Returns: The response as `HTTPResponse`
-    public func send(request: URLRequest, interceptors: [Interceptor]) async throws -> HTTPResponse {
-        do {
-            return try await send(request: request, interceptors: interceptors, redirect: nil)
-        } catch let httpError as HTTPClientError {
-            throw httpError
-        } catch let urlError as URLError {
-            throw HTTPClientError.httpError(urlError)
-        } catch {
-            throw HTTPClientError.unknown(error)
-        }
+    public func sendAsync(request: URLRequest, interceptors: [Interceptor]) async throws -> HTTPResponse {
+        try await sendAsync(request: request, interceptors: interceptors, redirect: nil)
     }
 
     /// Send the given request. The request will be processed by the list of `Interceptors`.
@@ -81,39 +95,31 @@ extension HTTPClient {
     /// - Parameter request: The request to be (modified and) sent.
     /// - Note: Only `HTTPClientError`s are supposed to be thrown.
     /// - Returns: The response as `HTTPResponse`
-    public func send(request: URLRequest) async throws -> HTTPResponse {
-        do {
-            return try await send(request: request, interceptors: [])
-        } catch let httpError as HTTPClientError {
-            throw httpError
-        } catch let urlError as URLError {
-            throw HTTPClientError.httpError(urlError)
-        } catch {
-            throw HTTPClientError.unknown(error)
-        }
+    public func sendAsync(request: URLRequest) async throws -> HTTPResponse {
+        try await sendAsync(request: request, interceptors: [])
     }
 }
 
+// sourcery: CodedError = "530"
 /// HTTP Error
-@CodedError("530")
 public enum HTTPClientError: Swift.Error, Equatable, LocalizedError {
+    // sourcery: errorCode = "01"
     /// Internal error in the request/chain handling
-    @ErrorCode("01")
     case internalError(String)
+    // sourcery: errorCode = "02"
     /// The server responded with an error
-    @ErrorCode("02")
     case httpError(URLError)
+    // sourcery: errorCode = "03"
     /// The connection to the server has gone bad
-    @ErrorCode("03")
     case networkError(String)
+    // sourcery: errorCode = "04"
     /// Authentication error
-    @ErrorCode("04")
     case authentication(Swift.Error)
+    // sourcery: errorCode = "05"
     /// Error emitted by the VAU client
-    @ErrorCode("05")
     case vauError(Swift.Error)
+    // sourcery: errorCode = "06"
     /// Unclassified error
-    @ErrorCode("06")
     case unknown(Swift.Error)
 
     public static func ==(lhs: HTTPClientError, rhs: HTTPClientError) -> Bool {

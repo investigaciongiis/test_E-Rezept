@@ -1,33 +1,26 @@
-// swiftlint:disable file_length
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
 //
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
-//
+// swiftlint:disable file_length
 
 import Combine
 import ComposableArchitecture
-import ConsentService
 import eRpKit
 import eRpLocalStorage
-import FeatureCardWall
-import FeatureHelpers
 import Foundation
 
 // swiftlint:disable type_body_length
@@ -74,25 +67,31 @@ struct ChargeItemListDomain {
             switch (authenticationState, grantConsentState) {
             case (.authenticated, .granted):
                 entries = [
+                    .connect.disabled,
+                    .activate.disabled,
                     .deactivate,
                 ]
             case (.authenticated, _):
                 entries = [
+                    .connect.disabled,
                     .activate,
+                    .deactivate.disabled,
                 ]
             case (_, _):
                 entries = [
                     .connect,
+                    .activate.disabled,
+                    .deactivate.disabled,
                 ]
             }
             return .init(entries: entries)
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = cardWall
-        case idpCardWall(CardWallIntroductionDomain)
+        case idpCardWall(IDPCardWallDomain)
         // sourcery: AnalyticsScreen = alert
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
@@ -306,6 +305,7 @@ struct ChargeItemListDomain {
                 return .none
             case .consentNotGranted, // not required for local response
                  .notAuthenticated:
+
                 return .none
             }
         case let .response(.fetchChargeItemsRemote(result)):
@@ -327,12 +327,12 @@ struct ChargeItemListDomain {
                 return .none
             case let .error(error):
                 state.grantConsentState = .error
-                if case let .consentService(consentServiceError) = error {
-                    if case .loginHandler = consentServiceError {
+                if case let .chargeItemConsentService(chargeItemConsentServiceError) = error {
+                    if case .loginHandler = chargeItemConsentServiceError {
                         state.authenticationState = .error
                         state.bottomBannerState = .authenticate
                         state.destination = nil
-                    } else if let alertState = consentServiceError.alertState {
+                    } else if let alertState = chargeItemConsentServiceError.alertState {
                         // in case of an expected (specified) http error
                         state.authenticationState = .authenticated
                         state.destination = .alert(alertState.chargeItemListDomainErpAlertState)
@@ -368,10 +368,7 @@ struct ChargeItemListDomain {
             case .furtherAuthenticationRequired:
                 state.authenticationState = .notAuthenticated
                 state.grantConsentState = .unknown
-                state.destination = .idpCardWall(.init(
-                    isNFCReady: serviceLocator.deviceCapabilities.isNFCReady,
-                    profileId: state.profileId
-                ))
+                state.destination = .idpCardWall(.init(profileId: state.profileId))
                 return .none
             case let .error(error):
                 state.authenticationState = .error
@@ -379,6 +376,7 @@ struct ChargeItemListDomain {
                 state.destination = .alert(AlertStates.authenticateErrorFor(error: error))
                 return .none
             }
+
         case .grantConsent:
             state.grantConsentState = .loading
             return .publisher(
@@ -413,12 +411,12 @@ struct ChargeItemListDomain {
                 return .none
             case let .error(error):
                 state.grantConsentState = .error
-                if case let .consentService(consentServiceError) = error {
-                    if case .loginHandler = consentServiceError {
+                if case let .chargeItemConsentService(chargeItemConsentServiceError) = error {
+                    if case .loginHandler = chargeItemConsentServiceError {
                         state.authenticationState = .error
                         state.bottomBannerState = .authenticate
                         state.destination = nil
-                    } else if let alertState = consentServiceError.alertState {
+                    } else if let alertState = chargeItemConsentServiceError.alertState {
                         // in case of an expected (specified) http error
                         state.authenticationState = .authenticated
                         state.destination = .alert(alertState.chargeItemListDomainErpAlertState)
@@ -431,6 +429,7 @@ struct ChargeItemListDomain {
                 }
                 return .none
             }
+
         case .revokeConsent:
             return .publisher(
                 chargeItemsService.revokeChargeItemsConsent(for: state.profileId)
@@ -470,7 +469,8 @@ struct ChargeItemListDomain {
                 state.bottomBannerState = .authenticate
                 return .none
             }
-        case .destination(.presented(.idpCardWall(.delegate(.close)))):
+        case .destination(.presented(.idpCardWall(.delegate(.close)))),
+             .destination(.presented(.idpCardWall(.delegate(.finished)))):
             state.destination = nil
             return .send(.fetchChargeItems)
         case .destination(.presented(.idpCardWall)),
@@ -500,6 +500,4 @@ extension ChargeItemListDomain {
     }
 }
 
-extension ChargeItemListDomain.Destination.State: Equatable {}
-extension ChargeItemListDomain.Destination.Action: Equatable {}
 // swiftlint:enable type_body_length

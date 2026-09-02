@@ -1,51 +1,42 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import BfArM
+import AVS
 import Combine
-import ComposableArchitecture
 import Dependencies
 import eRpKit
 import eRpLocalStorage
 import eRpRemoteStorage
-import FeatureCardWall
-import FeatureHelpers
 import FHIRClient
-import FHIRVZD
-import FHIRVZDLive
 import Foundation
 import HTTPClient
-import HTTPClientLive
 import IDP
-import IDPLive
 import Pharmacy
-import Profiles
-import Settings
 import TrustStore
 import VAUClient
 
+// swiftlint:disable:next type_body_length
 class StandardSessionContainer: UserSession {
     private var keychainStorage: KeychainStorage
     private let schedulers: Schedulers
+    private var erxTaskCoreDataStore: ErxTaskCoreDataStore
+    private var entireCoreDataStore: ErxTaskCoreDataStore
+    private var pharmacyCoreDataStore: PharmacyCoreDataStore
     let appConfiguration: AppConfiguration
     var profileDataStore: ProfileDataStore
     let shipmentInfoDataStore: ShipmentInfoDataStore
@@ -56,6 +47,9 @@ class StandardSessionContainer: UserSession {
     init(
         for profileId: UUID,
         schedulers: Schedulers,
+        erxTaskCoreDataStore: ErxTaskCoreDataStore,
+        entireCoreDataStore: ErxTaskCoreDataStore,
+        pharmacyCoreDataStore: PharmacyCoreDataStore,
         profileDataStore: ProfileDataStore,
         shipmentInfoDataStore: ShipmentInfoDataStore,
         avsTransactionDataStore: AVSTransactionDataStore,
@@ -63,12 +57,17 @@ class StandardSessionContainer: UserSession {
     ) {
         self.profileId = profileId
         self.schedulers = schedulers
+        self.erxTaskCoreDataStore = erxTaskCoreDataStore
+        self.entireCoreDataStore = entireCoreDataStore
+        self.pharmacyCoreDataStore = pharmacyCoreDataStore
         self.profileDataStore = profileDataStore
         self.shipmentInfoDataStore = shipmentInfoDataStore
         self.avsTransactionDataStore = avsTransactionDataStore
         self.appConfiguration = appConfiguration
         keychainStorage = KeychainStorage(profileId: profileId, schedulers: schedulers)
     }
+
+    var isDemoMode: Bool { false }
 
     lazy var trustStoreSession: TrustStoreSession = {
         guard let trustStoreStorageFilePath = try? FileManager.default.url(
@@ -128,15 +127,40 @@ class StandardSessionContainer: UserSession {
         )
     }()
 
-    lazy var extAuthRequestStorage: ExtAuthRequestStorage = PersistentExtAuthRequestStorage()
-    lazy var secureUserStore: SecureUserDataStore = keychainStorage
-    lazy var localUserStore: UserDataStore = UserDefaultsStore()
+    lazy var extAuthRequestStorage: ExtAuthRequestStorage = { PersistentExtAuthRequestStorage() }()
+    lazy var secureUserStore: SecureUserDataStore = { keychainStorage }()
+    lazy var localUserStore: UserDataStore = { UserDefaultsStore() }()
 
-    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = idpSession.isLoggedIn
-        .mapError { UserSessionError.idpError(error: $0) }
-        .eraseToAnyPublisher()
+    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = {
+        idpSession.isLoggedIn
+            .mapError { UserSessionError.idpError(error: $0) }
+            .eraseToAnyPublisher()
+    }()
 
-    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = DefaultNFCResetRetryCounterController()
+    lazy var nfcSessionProvider: NFCSignatureProvider = {
+        #if ENABLE_DEBUG_VIEW
+        #if targetEnvironment(simulator)
+        return VirtualEGKSignatureProvider()
+        #else
+        return switchedSignatureProvider
+        #endif
+        #else
+        return EGKSignatureProvider(storage: secureUserStore)
+        #endif
+    }()
+
+    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = {
+        DefaultNFCResetRetryCounterController()
+    }()
+
+    #if ENABLE_DEBUG_VIEW
+    lazy var switchedSignatureProvider: NFCSignatureProvider = {
+        SwitchSignatureProvider(
+            defaultSignatureProvider: EGKSignatureProvider(storage: secureUserStore),
+            alternativeSignatureProvider: VirtualEGKSignatureProvider()
+        )
+    }()
+    #endif
 
     // Local VAU storage configuration
     // [REQ:gemSpec_Krypt:A_20175#3|10] Initialization of the VAUStorage at a predefined location in the filesystem
@@ -153,6 +177,20 @@ class StandardSessionContainer: UserSession {
         return FileVAUStorage(vauStorageBaseFilePath: vauStorageFilePath)
     }()
 
+    @Dependency(\.pharmacyServiceFactory) var pharmacyServiceFactory: PharmacyServiceFactory
+
+    lazy var pharmacyRepository: PharmacyRepository = {
+        DefaultPharmacyRepository(
+            disk: pharmacyCoreDataStore,
+            cloud: pharmacyServiceFactory.construct(
+                FHIRClient(
+                    server: appConfiguration.apoVzd,
+                    httpClient: pharmacyHttpClient
+                )
+            )
+        )
+    }()
+
     lazy var updateChecker: UpdateChecker = {
         @Dependency(\.updateCheckerFactory) var factory
 
@@ -166,18 +204,61 @@ class StandardSessionContainer: UserSession {
         return factory.updateChecker(client, appConfiguration)
     }()
 
-    @Dependency(\.erxTaskRepository) var erxTaskRepository
-    @Dependency(\.pharmacyRepository) var pharmacyRepository
+    @Dependency(\.erxRemoteDataStoreFactory) var erxRemoteDataStoreFactory: ErxRemoteDataStoreFactory
+    @Dependency(\.medicationScheduleRepository) var medicationScheduleRepository
 
-    /// Orders are displayed for all profiles, so the local store is returning objects from all profiles
-    lazy var ordersRepository: OrdersRepository = DefaultOrdersRepository()
+    private lazy var erxRemoteDataStore: ErxRemoteDataStore = {
+        let vauSession = VAUSession(
+            vauServer: appConfiguration.erp,
+            vauAccessTokenProvider: self.idpSession.asVAUAccessTokenProvider(),
+            vauStorage: self.vauStorage,
+            trustStoreSession: self.trustStoreSession
+        )
 
-    lazy var appSecurityManager: AppSecurityManager =
+        let fhirClient = FHIRClient(
+            server: appConfiguration.base,
+            httpClient: self.erpHttpClient(vau: vauSession)
+        )
+        return erxRemoteDataStoreFactory.construct(fhirClient)
+    }()
+
+    // The local store only returns stored objects for the related profileId
+    lazy var erxTaskRepository: ErxTaskRepository = {
+        DefaultErxTaskRepository(
+            disk: erxTaskCoreDataStore,
+            cloud: erxRemoteDataStore,
+            medicationScheduleRepository: medicationScheduleRepository,
+            profile: profile()
+        )
+    }()
+
+    // the locale store returns all stored objects regardless from which profile they are
+    lazy var entireErxTaskRepository: ErxTaskRepository = {
+        DefaultErxTaskRepository(
+            disk: entireCoreDataStore,
+            cloud: erxRemoteDataStore,
+            medicationScheduleRepository: medicationScheduleRepository,
+            profile: profile()
+        )
+    }()
+
+    // Orders are displayed for all profiles, so the local store is returning objects from all profiles
+    lazy var ordersRepository: OrdersRepository = {
+        DefaultOrdersRepository(
+            erxTaskRepository: entireErxTaskRepository,
+            pharmacyRepository: pharmacyRepository
+        )
+    }()
+
+    lazy var appSecurityManager: AppSecurityManager = {
         DefaultAppSecurityManager(keychainAccess: SystemKeychainAccessHelper())
+    }()
 
-    lazy var deviceSecurityManager: DeviceSecurityManager = DefaultDeviceSecurityManager(
-        userDataStore: localUserStore
-    )
+    lazy var deviceSecurityManager: DeviceSecurityManager = {
+        DefaultDeviceSecurityManager(
+            userDataStore: localUserStore
+        )
+    }()
 
     func profile() -> AnyPublisher<Profile, LocalStoreError> {
         profileDataStore.fetchProfile(by: profileId)
@@ -185,9 +266,29 @@ class StandardSessionContainer: UserSession {
             .eraseToAnyPublisher()
     }
 
-    private lazy var prescriptionRepositoryWithActivity: DefaultPrescriptionRepository = .init(
-        loginHandler: idpSessionLoginHandler
-    )
+    lazy var avsSession: AVSSession = {
+        #if ENABLE_DEBUG_VIEW
+        DefaultAVSSession(httpClient: avsHttpClient) { message, endpoint, httpResponse in
+            var urlRequest = URLRequest(url: endpoint.url)
+            endpoint.additionalHeaders.forEach { key, value in
+                urlRequest.addValue(value, forHTTPHeaderField: key)
+            }
+            urlRequest.httpBody = try? JSONEncoder().encode(message)
+            var response = httpResponse
+            response.status = HTTPStatusCode.debug
+            DebugLiveLogger.shared.log(request: urlRequest, sentAt: Date(), response: response, receivedAt: Date())
+        }
+        #else
+        DefaultAVSSession(httpClient: avsHttpClient)
+        #endif
+    }()
+
+    private lazy var prescriptionRepositoryWithActivity: DefaultPrescriptionRepository = {
+        DefaultPrescriptionRepository(
+            loginHandler: idpSessionLoginHandler,
+            erxTaskRepository: self.erxTaskRepository
+        )
+    }()
 
     var prescriptionRepository: PrescriptionRepository {
         prescriptionRepositoryWithActivity
@@ -198,21 +299,34 @@ class StandardSessionContainer: UserSession {
     }
 
     @Dependency(\.loginHandlerServiceFactory) var loginHandlerServiceFactory: LoginHandlerServiceFactory
-    @Dependency(\.secureEnclaveSignatureProviderFactory) var secureEnclaveSignatureProviderFactory:
-        SecureEnclaveSignatureProviderFactory
 
-    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = secureEnclaveSignatureProviderFactory
-        .construct(profileId)
+    lazy var idpSessionLoginHandler: LoginHandler = {
+        loginHandlerServiceFactory.construct(
+            idpSession,
+            secureEnclaveSignatureProvider
+        )
+    }()
 
-    lazy var idpSessionLoginHandler: LoginHandler = loginHandlerServiceFactory.construct(
-        idpSession,
-        secureEnclaveSignatureProvider
-    )
+    lazy var pairingIdpSessionLoginHandler: LoginHandler = {
+        loginHandlerServiceFactory.construct(
+            pairingIdpSession,
+            secureEnclaveSignatureProvider
+        )
+    }()
 
-    lazy var pairingIdpSessionLoginHandler: LoginHandler = loginHandlerServiceFactory.construct(
-        pairingIdpSession,
-        secureEnclaveSignatureProvider
-    )
+    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = {
+        #if ENABLE_DEBUG_VIEW && targetEnvironment(simulator)
+        // swiftlint:disable:next trailing_closure
+        DefaultSecureEnclaveSignatureProvider(
+            storage: secureUserStore,
+            privateKeyContainerProvider: { try PrivateKeyContainer.createFromKeyChain(with: $0) }
+        )
+        #else
+        DefaultSecureEnclaveSignatureProvider(
+            storage: secureUserStore
+        )
+        #endif
+    }()
 }
 
 extension IDPSession {
@@ -257,10 +371,10 @@ extension StandardSessionContainer {
         // [REQ:gemSpec_IDP_Frontend:A_21325#2] Interceptor order defines what is encrypted via VAU
         let interceptors: [Interceptor] = [
             AdditionalHeaderInterceptor(additionalHeader: appConfiguration.erpAdditionalHeader),
-            IDPInterceptor(session: idpSession),
+            idpSession.httpInterceptor(delegate: nil),
             LoggingInterceptor(log: .body), // Logging interceptor (DEBUG ONLY)
             DebugLiveLogger.LogInterceptor(),
-            VAUInterceptor(vauSession: session),
+            session.provideInterceptor(),
             AdditionalHeaderInterceptor(additionalHeader: appConfiguration.erpAdditionalHeader),
         ]
 
@@ -274,6 +388,20 @@ extension StandardSessionContainer {
     var idpHttpClient: HTTPClient {
         let interceptors: [Interceptor] = [
             AdditionalHeaderInterceptor(additionalHeader: appConfiguration.idpAdditionalHeader),
+            LoggingInterceptor(log: .body), // Logging interceptor (DEBUG ONLY)
+            DebugLiveLogger.LogInterceptor(),
+        ]
+
+        // Remote FHIR data source configuration
+        return DefaultHTTPClient(
+            urlSessionConfiguration: .ephemeral,
+            interceptors: interceptors
+        )
+    }
+
+    var pharmacyHttpClient: HTTPClient {
+        let interceptors: [Interceptor] = [
+            AdditionalHeaderInterceptor(additionalHeader: appConfiguration.apoVzdAdditionalHeader),
             LoggingInterceptor(log: .body), // Logging interceptor (DEBUG ONLY)
             DebugLiveLogger.LogInterceptor(),
         ]

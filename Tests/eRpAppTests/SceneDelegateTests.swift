@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -53,39 +49,29 @@ final class SceneDelegateTests: XCTestCase {
 
     private func loadFactory() -> CoreDataControllerFactory {
         guard let factory = coreDataFactory else {
-            let factory: CoreDataControllerFactory = .init(databaseUrl: { self.databaseFile }) {
-                @Shared(.coreDataController) var coreDataController
-
-                let fileProtection: FileProtectionType = {
-                    #if os(macOS)
-                    return FileProtectionType(rawValue: "none")
-                    #else
-                    return .completeUnlessOpen
-                    #endif
-                }()
-
-                if let controller = coreDataController {
-                    return controller
-                }
-                guard Thread.isMainThread else {
-                    return try DispatchQueue.main.sync {
-                        try loadCoreDataController()
-                    }
-                }
-                func loadCoreDataController() throws -> CoreDataController {
-                    let controller = try CoreDataController(
-                        url: self.databaseFile,
-                        fileProtection: fileProtection
-                    )
-                    $coreDataController.withLock { $0 = controller }
-                    return controller
-                }
-                return try loadCoreDataController()
-            }
+            #if os(macOS)
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: FileProtectionType(rawValue: "none")
+            )
+            #else
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: .completeUnlessOpen
+            )
+            #endif
             coreDataFactory = factory
             return factory
         }
+
         return factory
+    }
+
+    private func loadProfileCoreDataStore() -> ProfileCoreDataStore {
+        ProfileCoreDataStore(
+            coreDataControllerFactory: loadFactory(),
+            backgroundQueue: AnyScheduler.main
+        )
     }
 
     func testSanitizingDatabaseShouldWipeUserDefaultsIfThereIsNoProfile() throws {

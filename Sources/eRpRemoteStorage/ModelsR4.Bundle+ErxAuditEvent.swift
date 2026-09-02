@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -26,8 +22,8 @@ import ModelsR4
 
 extension ModelsR4.Bundle {
     func parseErxAuditEventsContainer() throws -> PagedContent<[ErxAuditEvent]> {
-        try PagedContent(content: parseErxAuditEvents(),
-                         next: parseNext())
+        PagedContent(content: try parseErxAuditEvents(),
+                     next: parseNext())
     }
 
     func parseNext() -> URL? {
@@ -84,30 +80,11 @@ extension ModelsR4.Bundle {
                 }
             }
 
-            var agentName: String?
-            var agentTelematikId: String?
-            // For accesses by pharmacies we also want to display the Telematik ID
-            if let agent = auditEvent.agent.first {
-                // According to simplifier the name is mandatory
-                // https://simplifier.net/packages/de.gematik.erezept-workflow.r4/1.4.3/files/2550117
-                agentName = agent.name?.value?.string
-                if let who = agent.who,
-                   // According to simplifier the identifier is mandatory
-                   // https://simplifier.net/packages/de.gematik.erezept-workflow.r4/1.4.3/files/2550117
-                   let agentIdentifier = who.identifier {
-                    agentTelematikId = agentIdentifier.value?.value?.string
-                }
-            }
-
-            return ErxAuditEvent(
-                identifier: identifier,
-                locale: auditEvent.language?.value?.string,
-                text: text,
-                timestamp: auditEvent.recorded.value?.description,
-                taskId: taskId,
-                agentName: agentName,
-                agentTelematikId: agentTelematikId
-            )
+            return ErxAuditEvent(identifier: identifier,
+                                 locale: auditEvent.language?.value?.string,
+                                 text: text,
+                                 timestamp: auditEvent.recorded.value?.description,
+                                 taskId: taskId)
         } ?? []
     }
 }

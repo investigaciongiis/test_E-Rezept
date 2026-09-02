@@ -18,54 +18,6 @@
 			<string>Открити са %u неуспешни опита за влизане</string>
 		</dict>
 	</dict>
-	<key>auth_txt_password_failure_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Грешна парола. Моля, опитайте отново след 1 секунда.</string>
-			<key>other</key>
-			<string>Грешна парола. Моля, опитайте отново след %u секунди.</string>
-		</dict>
-	</dict>
-	<key>auth_txt_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Моля, опитайте отново след %u секунда.</string>
-			<key>other</key>
-			<string>Моля, опитайте отново след %u секунди.</string>
-		</dict>
-	</dict>
-	<key>dtl_txt_med_redeemed_on_direct_assignment</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Тази рецепта беше %%@ използвана като част от лечение за Вас.</string>
-			<key>other</key>
-			<string>Тази рецепта е издадена за Вас на % %@ като част от лечение.</string>
-		</dict>
-	</dict>
 	<key>erx_txt_accepted_until</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

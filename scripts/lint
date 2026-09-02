@@ -13,10 +13,7 @@ echo "==> Running static analysis…"
 mint run swiftformat . --config .swiftformat --lint
 mint run swiftlint lint --strict --quiet
 
-sourcery --hideVersionHeader --quiet
-if git diff --name-only | grep -q .generated.swift; then
-  echo "Linting failed: uncommitted sourcery changes.\nRun: sourcery --hideVersionHeader\nand commit your changes."
-  exit 1
-fi
-
-echo "Linting completed successfully."
+[[ ! "$(mint run swiftgen config run)" =~ "written" ]] || {
+ echo "Linting failed: uncommitted swiftgen changes.\nRun:\tswiftgen\nand commit your changes."
+ exit 1
+}

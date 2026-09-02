@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -41,17 +37,21 @@ struct PharmacySearchCell: View {
                     .fontWeight(.semibold)
                     .foregroundColor(Colors.systemLabel)
                     .padding([.top, .bottom], 1)
+                    .accessibilitySortPriority(100)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     Text(pharmacy.pharmacyLocation.address?.fullAddress ?? "")
                         .lineLimit(1)
                 }
+                .accessibilitySortPriority(90)
                 .foregroundColor(Colors.systemLabelSecondary)
 
                 ColoredOpeningHours(openingState: pharmacy.todayOpeningState)
                     .padding(.top, 1)
+                    .accessibilitySortPriority(80)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilitySortPriority(1000)
             .padding(.trailing, showDistance && pharmacy.distanceInM != nil ? 0 : 16)
 
             if showDistance,
@@ -59,11 +59,13 @@ struct PharmacySearchCell: View {
                 Text(distance)
                     .font(Font.footnote.weight(.semibold))
                     .foregroundColor(Colors.systemLabelSecondary)
+                    .accessibilitySortPriority(50)
                     .padding(.trailing, 4)
             }
 
             if isFavorite {
                 Image(systemName: SFSymbolName.starFill).foregroundColor(Colors.starYellow)
+                    .accessibilitySortPriority(60)
             }
 
             if loading {
@@ -83,28 +85,20 @@ struct PharmacySearchCell: View {
                     Group {
                         Text(L10n.phaSearchTxtOpenUntil) +
                             Text(" \(time)")
-                    }.foregroundColor(openingState.foregroundColor)
+                    }.foregroundColor(Colors.secondary600)
                 case let .closingSoon(closingDateTime: time):
                     Group {
                         Text(L10n.phaSearchTxtClosingSoon) +
                             Text(" - \(time)")
-                    }.foregroundColor(openingState.foregroundColor)
+                    }.foregroundColor(Colors.yellow700)
                 case let .willOpen(_, openingDateTime):
                     Group {
                         Text(L10n.phaSearchTxtOpensAt) +
                             Text(" \(openingDateTime)")
-                    }.foregroundColor(openingState.foregroundColor)
+                    }.foregroundColor(Colors.yellow700)
                 case .closed:
                     Text(L10n.phaSearchTxtClosed)
-                        .foregroundColor(openingState.foregroundColor)
-                case let .closingButOpenLaterToday(closingDateTime: closing,
-                                                   openingDateTime: opening):
-                    Group {
-                        Text(L10n.phaSearchTxtOpenUntil) +
-                            Text(" \(closing), ") +
-                            Text(L10n.phaSearchTxtOpenAgain) +
-                            Text(" \(opening)")
-                    }.foregroundColor(openingState.foregroundColor)
+                        .foregroundColor(Colors.systemLabelSecondary)
                 default:
                     EmptyView()
                 }
@@ -137,7 +131,7 @@ struct PharmacySearchCell_Previews: PreviewProvider {
                         )
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibility(identifier: A11y.pharmacySearch.phaSearchTxtResultListEntry)
-                        .buttonStyle(.navigation(minChevronSpacing: 0))
+                        .buttonStyle(.navigation(showSeparator: true, minChevronSpacing: 0))
                         .modifier(SectionContainerCellModifier(last: false))
                     }
                 }

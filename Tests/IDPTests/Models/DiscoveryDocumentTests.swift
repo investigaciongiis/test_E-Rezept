@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -29,23 +25,23 @@ import XCTest
 
 class DiscoveryDocumentTests: XCTestCase {
     func testMappingDiscoveryDocumentPayload() throws {
-        let payload = try DiscoveryDocumentPayload(
-            authentication: XCTUnwrap(URL(string: "http://localhost:8888/sign_response")),
-            authenticationPair: XCTUnwrap(URL(string: "http://localhost:8888/alt_response")),
-            sso: XCTUnwrap(URL(string: "http://localhost:8888/sso_response")),
-            token: XCTUnwrap(URL(string: "http://localhost:8888/token")),
-            disc: XCTUnwrap(URL(string: "http://localhost:8888/discoveryDocument")),
-            pairing: XCTUnwrap(URL(string: "http://localhost:8888/pairings")),
-            issuer: XCTUnwrap(URL(string: "https://idp.zentral.idp.splitdns.ti-dienste.de")),
-            jwks: XCTUnwrap(URL(string: "http://localhost:8888/jwks")),
+        let payload = DiscoveryDocumentPayload(
+            authentication: URL(string: "http://localhost:8888/sign_response")!,
+            authenticationPair: URL(string: "http://localhost:8888/alt_response")!,
+            sso: URL(string: "http://localhost:8888/sso_response")!,
+            token: URL(string: "http://localhost:8888/token")!,
+            disc: URL(string: "http://localhost:8888/discoveryDocument")!,
+            pairing: URL(string: "http://localhost:8888/pairings")!,
+            issuer: URL(string: "https://idp.zentral.idp.splitdns.ti-dienste.de")!,
+            jwks: URL(string: "http://localhost:8888/jwks")!,
             exp: Date(timeIntervalSince1970: 1_615_909_864),
             iat: Date(timeIntervalSince1970: 1_615_823_464),
-            pukIdpEnc: XCTUnwrap(URL(string: "http://localhost:8888/idpEnc/jwks.json")),
-            pukIdpSig: XCTUnwrap(URL(string: "http://localhost:8888/ipdSig/jwks.json")),
-            kkAppList: XCTUnwrap(URL(string: "http://localhost:8888/appList")),
-            kkAppListgId: XCTUnwrap(URL(string: "http://localhost:8888/appListgId")),
-            thirdPartyAuth: XCTUnwrap(URL(string: "http://localhost:8888/thirdPartyAuth")),
-            federationAuth: XCTUnwrap(URL(string: "http://localhost:8888/federationAuth")),
+            pukIdpEnc: URL(string: "http://localhost:8888/idpEnc/jwks.json")!,
+            pukIdpSig: URL(string: "http://localhost:8888/ipdSig/jwks.json")!,
+            kkAppList: URL(string: "http://localhost:8888/appList")!,
+            kkAppListgId: URL(string: "http://localhost:8888/appListgId")!,
+            thirdPartyAuth: URL(string: "http://localhost:8888/thirdPartyAuth")!,
+            federationAuth: URL(string: "http://localhost:8888/federationAuth")!,
             subjectTypesSupported: [
                 "pairwise",
             ],
@@ -73,21 +69,21 @@ class DiscoveryDocumentTests: XCTestCase {
             ]
         )
 
-        let jwtData = try XCTUnwrap(try Bundle.module
-            .path(forResource: "discovery-doc", ofType: "jwt", inDirectory: "Resources/JWT.bundle")?
-            .readFileContents())
+        let jwtData = try Bundle.module
+            .path(forResource: "discovery-doc", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
+            .readFileContents()
         let jwt = try JWT(from: jwtData)
-        let jwkData = try XCTUnwrap(try Bundle.module
-            .path(forResource: "jwk", ofType: "json", inDirectory: "Resources/JWT.bundle")?
-            .readFileContents())
+        let jwkData = try Bundle.module
+            .path(forResource: "jwk", ofType: "json", inDirectory: "Resources/JWT.bundle")!
+            .readFileContents()
         let jwk = try JSONDecoder().decode(JWK.self, from: jwkData)
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSZ"
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
 
-        let expirationDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-19 08:51:16.0000+0000"))
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-18 08:51:16.0000+0000"))
+        let expirationDate = dateFormatter.date(from: "2021-03-19 08:51:16.0000+0000")!
+        let issuedDate = dateFormatter.date(from: "2021-03-18 08:51:16.0000+0000")!
 
         let document = try DiscoveryDocument(jwt: jwt, encryptPuks: jwk, signingPuks: jwk, createdOn: issuedDate)
         expect(document.expiresOn) == expirationDate

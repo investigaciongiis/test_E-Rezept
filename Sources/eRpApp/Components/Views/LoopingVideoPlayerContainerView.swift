@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import AVKit
@@ -33,12 +29,10 @@ struct LoopingVideoPlayerContainerView: UIViewRepresentable {
     }
 
     func makeUIView(context _: Context) -> PlayerView {
-        PlayerView()
+        PlayerView(withURL: url)
     }
 
-    func updateUIView(_ playerView: PlayerView, context _: Context) {
-        playerView.updateWith(url: url)
-    }
+    func updateUIView(_: PlayerView, context _: Context) {}
 
     final class PlayerView: UIView {
         var player: AVPlayer? {
@@ -67,7 +61,7 @@ struct LoopingVideoPlayerContainerView: UIViewRepresentable {
         }
         #endif
 
-        init() {
+        init(withURL url: URL) {
             super.init(frame: .zero)
 
             #if targetEnvironment(simulator)
@@ -77,23 +71,12 @@ struct LoopingVideoPlayerContainerView: UIViewRepresentable {
             }
             #endif
 
-            playerLayer?.contentsGravity = .resizeAspectFill
-            playerLayer?.videoGravity = .resizeAspectFill
-
-            NotificationCenter.default.addObserver(self,
-                                                   selector: #selector(playerItemDidReachEnd(notification:)),
-                                                   name: .AVPlayerItemDidPlayToEndTime,
-                                                   object: player?.currentItem)
-        }
-
-        func updateWith(url: URL) {
             #if DEBUG
             // Enable Subtitles
             let playerItem = AVPlayerItem(url: url)
             let asset = playerItem.asset
 
-            asset.loadMediaSelectionGroup(for: .legible) { group, _ in
-                guard let group else { return }
+            if let group = asset.mediaSelectionGroup(forMediaCharacteristic: AVMediaCharacteristic.legible) {
                 let locale = Locale(identifier: "eng")
                 let options =
                     AVMediaSelectionGroup.mediaSelectionOptions(from: group.options, with: locale)
@@ -115,6 +98,14 @@ struct LoopingVideoPlayerContainerView: UIViewRepresentable {
                 player?.currentItem?.seek(to: .zero, completionHandler: nil)
             }
             player?.play()
+
+            playerLayer?.contentsGravity = .resizeAspectFill
+            playerLayer?.videoGravity = .resizeAspectFill
+
+            NotificationCenter.default.addObserver(self,
+                                                   selector: #selector(playerItemDidReachEnd(notification:)),
+                                                   name: .AVPlayerItemDidPlayToEndTime,
+                                                   object: player?.currentItem)
         }
 
         required init?(coder: NSCoder) {
@@ -131,9 +122,8 @@ struct LoopingVideoPlayerContainerView: UIViewRepresentable {
 
         @objc
         func playerItemDidReachEnd(notification _: Notification) {
-            // Looping is no longer allowed due to accessibilty 🤷‍♂️
-            // player?.currentItem?.seek(to: .zero, completionHandler: nil)
-            // player?.play()
+            player?.currentItem?.seek(to: .zero, completionHandler: nil)
+            player?.play()
         }
     }
 }

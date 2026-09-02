@@ -1,33 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
-import CodedError
 import Combine
-import ConsentService
 import Dependencies
 import eRpKit
-import ErxTaskRepository
-import FeatureCardWall
 import Foundation
 import IDP
 
@@ -65,18 +56,18 @@ enum ChargeItemDomainServiceFetchResult: Equatable {
     case consentNotGranted
     case error(Error)
 
-    @CodedError("030")
+    // sourcery: CodedError = "030"
     enum Error: Equatable, Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case localStore(LocalStoreError)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case loginHandler(LoginHandlerError)
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case erxRepository(ErxRepositoryError)
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case unexpected
-        @ErrorCode("05")
-        case consentService(ConsentService.Error)
+        // sourcery: errorCode = "05"
+        case chargeItemConsentService(ChargeItemConsentService.Error)
     }
 }
 
@@ -86,11 +77,11 @@ enum ChargeItemDomainServiceAuthenticateResult: Equatable {
     case furtherAuthenticationRequired
     case error(Error)
 
-    @CodedError("031")
+    // sourcery: CodedError = "031"
     enum Error: Equatable, Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case loginHandler(LoginHandlerError)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case unexpected
     }
 }
@@ -100,25 +91,25 @@ enum ChargeItemListDomainServiceGrantResult: Equatable {
     case success // 201
     case conflict // 409 the user's consent has already been given
 
-    /// login handler
+    // login handler
     case notAuthenticated
 
     case error(Error)
 
-    @CodedError("032")
+    // sourcery: CodedError = "032"
     enum Error: Equatable, Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case localStore(LocalStoreError)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case loginHandler(LoginHandlerError)
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case erxRepository(ErxRepositoryError)
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case unexpectedGrantConsentResponse
-        @ErrorCode("05")
+        // sourcery: errorCode = "05"
         case unexpected
-        @ErrorCode("06")
-        case consentService(ConsentService.Error)
+        // sourcery: errorCode = "06"
+        case chargeItemConsentService(ChargeItemConsentService.Error)
     }
 }
 
@@ -128,18 +119,18 @@ enum ChargeItemListDomainServiceRevokeResult: Equatable {
     case conflict
     case error(Error)
 
-    @CodedError("033")
+    // sourcery: CodedError = "033"
     enum Error: Equatable, Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case localStore(LocalStoreError)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case loginHandler(LoginHandlerError)
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case erxRepository(ErxRepositoryError)
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case unexpected
-        @ErrorCode("05")
-        case consentService(ConsentService.Error)
+        // sourcery: errorCode = "05"
+        case chargeItemConsentService(ChargeItemConsentService.Error)
     }
 }
 
@@ -148,78 +139,75 @@ enum ChargeItemDomainServiceDeleteResult: Equatable {
     case notAuthenticated
     case error(Error)
 
-    @CodedError("034")
+    // sourcery: CodedError = "034"
     enum Error: Equatable, Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case localStore(LocalStoreError)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case loginHandler(LoginHandlerError)
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case erxRepository(ErxRepositoryError)
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case unexpected
     }
 }
 
 struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
     let userSessionProvider: UserSessionProvider
-    let consentService: ConsentService
+    let chargeItemConsentService: ChargeItemConsentService
 
     private func loginHandler(for profileId: UUID) -> LoginHandler {
         let userSession = userSessionProvider.userSession(for: profileId)
         return userSession.idpSessionLoginHandler
     }
 
-    func fetchLocalChargeItems(for profileId: UUID) -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> {
-        @Dependency(\.erxTaskRepository) var erxTaskRepository
+    private func erxTaskRepository(for profileId: UUID) -> ErxTaskRepository {
+        let userSession = userSessionProvider.userSession(for: profileId)
+        return userSession.erxTaskRepository
+    }
 
-        return Future {
-            try await erxTaskRepository.loadLocalAllChargeItems(profileId)
-        }
-        .mapError { $0.asErxRepositoryError() }
-        .first()
-        .map { .success($0) }
-        .catch { error in
-            Just(ChargeItemDomainServiceFetchResult.error(.erxRepository(error)))
-                .eraseToAnyPublisher()
-        }
-        .eraseToAnyPublisher()
+    func fetchLocalChargeItems(for profileId: UUID) -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> {
+        let erxTaskRepository = erxTaskRepository(for: profileId)
+        return erxTaskRepository.loadLocalAll()
+            .first()
+            .map { .success($0) }
+            .catch { error in
+                Just(ChargeItemDomainServiceFetchResult.error(.erxRepository(error)))
+                    .eraseToAnyPublisher()
+            }
+            .eraseToAnyPublisher()
     }
 
     func fetchRemoteChargeItemsAndSave(for profileId: UUID) -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> {
-        @Dependency(\.erxTaskRepository) var erxTaskRepository
-
-        return Future<ConsentService.CheckResult, Swift.Error> {
-            try await consentService.checkForConsent(.chargcons, profileId)
+        Future<ChargeItemConsentService.CheckResult, Swift.Error> {
+            try await chargeItemConsentService.checkForConsent(profileId)
         }
         .mapError { error in
-            guard let error = error as? ConsentService.Error
-            else { return ConsentService.Error.unexpected }
+            guard let error = error as? ChargeItemConsentService.Error
+            else { return ChargeItemConsentService.Error.unexpected }
             return error
         }
-        .flatMap { consentServiceResult -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> in
-            switch consentServiceResult {
+        .flatMap { chargeItemConsentServiceResult -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> in
+            switch chargeItemConsentServiceResult {
             case .granted:
-                return Future {
-                    try await erxTaskRepository.loadRemoteChargeItems(profileId)
-                }
-                .mapError { $0.asErxRepositoryError() }
-                .first()
-                .map { ChargeItemDomainServiceFetchResult.success($0) }
-                .catch { error in
-                    Just(ChargeItemDomainServiceFetchResult.error(.erxRepository(error))).eraseToAnyPublisher()
-                }
-                .eraseToAnyPublisher()
+                return erxTaskRepository(for: profileId).loadRemoteChargeItems()
+                    .first()
+                    .map { ChargeItemDomainServiceFetchResult.success($0) }
+                    .catch { error in
+                        Just(ChargeItemDomainServiceFetchResult.error(.erxRepository(error))).eraseToAnyPublisher()
+                    }
+                    .eraseToAnyPublisher()
             case .notGranted:
                 return Just(ChargeItemDomainServiceFetchResult.consentNotGranted).eraseToAnyPublisher()
             case .notAuthenticated:
                 return Just(ChargeItemDomainServiceFetchResult.notAuthenticated).eraseToAnyPublisher()
+
             case let .error(error):
-                return Just(.error(.consentService(error))).eraseToAnyPublisher()
+                return Just(.error(.chargeItemConsentService(error))).eraseToAnyPublisher()
             }
         }
         .catch { error -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> in
-            Just(.error(.consentService(error))).eraseToAnyPublisher()
+            Just(.error(.chargeItemConsentService(error))).eraseToAnyPublisher()
         }
         .eraseToAnyPublisher()
     }
@@ -228,9 +216,8 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
         chargeItem: ErxChargeItem,
         for profileId: UUID
     ) -> AnyPublisher<ChargeItemDomainServiceDeleteResult, Never> {
-        @Dependency(\.erxTaskRepository) var erxTaskRepository
-
         let loginHandler = loginHandler(for: profileId)
+        let erxTaskRepository = erxTaskRepository(for: profileId)
         let userSession = userSessionProvider.userSession(for: profileId)
 
         return loginHandler.isAuthenticated()
@@ -246,17 +233,14 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
                                 return Just(.error(.unexpected))
                                     .eraseToAnyPublisher()
                             }
-                            return Future {
-                                try await erxTaskRepository.deleteChargeItems([chargeItem], profileId)
-                            }
-                            .mapError { $0.asErxRepositoryError() }
-                            .first()
-                            .map { _ in .success }
-                            .catch { error in
-                                Just(ChargeItemDomainServiceDeleteResult.error(.erxRepository(error)))
-                                    .eraseToAnyPublisher()
-                            }
-                            .eraseToAnyPublisher()
+                            return erxTaskRepository.delete(chargeItems: [chargeItem])
+                                .first()
+                                .map { _ in .success }
+                                .catch { error in
+                                    Just(ChargeItemDomainServiceDeleteResult.error(.erxRepository(error)))
+                                        .eraseToAnyPublisher()
+                                }
+                                .eraseToAnyPublisher()
                         }
                         .catch { error -> AnyPublisher<ChargeItemDomainServiceDeleteResult, Never> in
                             Just(.error(.localStore(error))).eraseToAnyPublisher()
@@ -265,7 +249,6 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
 
                 case LoginResult.success(false):
                     return Just(.notAuthenticated).eraseToAnyPublisher()
-
                 case let LoginResult.failure(error):
                     return Just(.error(.loginHandler(error))).eraseToAnyPublisher()
                 }
@@ -291,51 +274,47 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
     }
 
     func grantChargeItemsConsent(for profileId: UUID) -> AnyPublisher<ChargeItemListDomainServiceGrantResult, Never> {
-        Future<ConsentService.GrantResult, Swift.Error> {
-            try await consentService.grantConsent(.chargcons, profileId)
+        Future<ChargeItemConsentService.GrantResult, Swift.Error> {
+            try await chargeItemConsentService.grantConsent(profileId)
         }
         .mapError { error in
-            guard let error = error as? ConsentService.Error
-            else { return ConsentService.Error.unexpected }
+            guard let error = error as? ChargeItemConsentService.Error
+            else { return ChargeItemConsentService.Error.unexpected }
             return error
         }
-        .map { consentServiceResult -> ChargeItemListDomainServiceGrantResult in
-            switch consentServiceResult {
+        .map { chargeItemConsentServiceResult -> ChargeItemListDomainServiceGrantResult in
+            switch chargeItemConsentServiceResult {
             case .success: return .success
             case .conflict: return .conflict
             case .notAuthenticated: return .notAuthenticated
             case let .error(error):
-                return ChargeItemListDomainServiceGrantResult.error(.consentService(error))
+                return ChargeItemListDomainServiceGrantResult.error(.chargeItemConsentService(error))
             }
         }
         .catch { error -> AnyPublisher<ChargeItemListDomainServiceGrantResult, Never> in
-            Just(.error(.consentService(error))).eraseToAnyPublisher()
+            Just(.error(.chargeItemConsentService(error))).eraseToAnyPublisher()
         }
         .eraseToAnyPublisher()
     }
 
     func fetchChargeItemsAssumingConsentGranted(for profileId: UUID)
         -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> {
-        @Dependency(\.erxTaskRepository) var erxTaskRepository
-
         let loginHandler = loginHandler(for: profileId)
+        let erxTaskRepository = erxTaskRepository(for: profileId)
 
         return loginHandler.isAuthenticated()
             .first()
             .flatMap { (loginResult: LoginResult) -> AnyPublisher<ChargeItemDomainServiceFetchResult, Never> in
                 switch loginResult {
                 case LoginResult.success(true):
-                    return Future {
-                        try await erxTaskRepository.loadRemoteChargeItems(profileId)
-                    }
-                    .mapError { $0.asErxRepositoryError() }
-                    .first()
-                    .map { .success($0) }
-                    .catch { error in
-                        Just(ChargeItemDomainServiceFetchResult.error(.erxRepository(error)))
-                            .eraseToAnyPublisher()
-                    }
-                    .eraseToAnyPublisher()
+                    return erxTaskRepository.loadRemoteChargeItems()
+                        .first()
+                        .map { .success($0) }
+                        .catch { error in
+                            Just(ChargeItemDomainServiceFetchResult.error(.erxRepository(error)))
+                                .eraseToAnyPublisher()
+                        }
+                        .eraseToAnyPublisher()
                 case LoginResult.success(false):
                     return Just(.notAuthenticated).eraseToAnyPublisher()
                 case let LoginResult.failure(error):
@@ -346,16 +325,16 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
     }
 
     func revokeChargeItemsConsent(for profileId: UUID) -> AnyPublisher<ChargeItemListDomainServiceRevokeResult, Never> {
-        Future<ConsentService.RevokeResult, Swift.Error> {
-            try await consentService.revokeConsent(.chargcons, profileId)
+        Future<ChargeItemConsentService.RevokeResult, Swift.Error> {
+            try await chargeItemConsentService.revokeConsent(profileId)
         }
         .mapError { error in
-            guard let error = error as? ConsentService.Error
-            else { return ConsentService.Error.unexpected }
+            guard let error = error as? ChargeItemConsentService.Error
+            else { return ChargeItemConsentService.Error.unexpected }
             return error
         }
-        .flatMap { consentServiceResult -> AnyPublisher<ChargeItemListDomainServiceRevokeResult, Never> in
-            switch consentServiceResult {
+        .flatMap { chargeItemConsentServiceResult -> AnyPublisher<ChargeItemListDomainServiceRevokeResult, Never> in
+            switch chargeItemConsentServiceResult {
             case .success:
                 return deleteAllLocalChargeItems(for: profileId)
                     .first()
@@ -365,36 +344,28 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
                 return Just(.notAuthenticated).eraseToAnyPublisher()
             case .conflict: return Just(.conflict).eraseToAnyPublisher()
             case let .error(error):
-                return Just(ChargeItemListDomainServiceRevokeResult.error(.consentService(error)))
+                return Just(ChargeItemListDomainServiceRevokeResult.error(.chargeItemConsentService(error)))
                     .eraseToAnyPublisher()
             }
         }
         .catch { error -> AnyPublisher<ChargeItemListDomainServiceRevokeResult, Never> in
-            Just(.error(.consentService(error))).eraseToAnyPublisher()
+            Just(.error(.chargeItemConsentService(error))).eraseToAnyPublisher()
         }
         .eraseToAnyPublisher()
     }
 
     private func deleteAllLocalChargeItems(for profileId: UUID)
         -> AnyPublisher<ChargeItemDomainServiceDeleteResult, Never> {
-        @Dependency(\.erxTaskRepository) var erxTaskRepository
-
-        let chargeItemsPublisher: AnyPublisher<[ErxSparseChargeItem], ErxRepositoryError> = Future {
-            try await erxTaskRepository.loadLocalAllChargeItems(profileId)
-        }
-        .mapError { $0.asErxRepositoryError() }
-        .eraseToAnyPublisher()
-
+        let erxTaskRepository = erxTaskRepository(for: profileId)
+        let chargeItemsPublisher: AnyPublisher<[ErxSparseChargeItem], ErxRepositoryError> = erxTaskRepository
+            .loadLocalAll()
         return chargeItemsPublisher
             .first()
-            .flatMap { chargeItems in
-                Future {
-                    try await erxTaskRepository.deleteLocalChargeItems(chargeItems.compactMap(\.chargeItem), profileId)
-                }
-                .mapError { $0.asErxRepositoryError() }
-                .first()
-                .map { _ in ChargeItemDomainServiceDeleteResult.success }
-                .eraseToAnyPublisher()
+            .flatMap {
+                erxTaskRepository.deleteLocal(chargeItems: $0.compactMap(\.chargeItem))
+                    .first()
+                    .map { _ in ChargeItemDomainServiceDeleteResult.success }
+                    .eraseToAnyPublisher()
             }
             .catch { error -> AnyPublisher<ChargeItemDomainServiceDeleteResult, Never> in
                 Just(ChargeItemDomainServiceDeleteResult.error(.erxRepository(error)))
@@ -405,11 +376,11 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
 }
 
 extension Publisher where Self.Output == ChargeItemDomainServiceDeleteResult,
-    Failure == ConsentService.Error {
+    Failure == ChargeItemConsentService.Error {
     func eraseToResult() -> AnyPublisher<ChargeItemListDomainServiceRevokeResult, Never> {
         map { .success($0) }
             .catch { error in
-                Just(.error(.consentService(error)))
+                Just(.error(.chargeItemConsentService(error)))
                     .eraseToAnyPublisher()
             }
             .eraseToAnyPublisher()
@@ -422,7 +393,7 @@ extension DefaultChargeItemListDomainService {
     static let live: Self = DefaultChargeItemListDomainService(
         userSessionProvider: UserSessionProviderDependency
             .liveValue,
-        consentService: ConsentService.liveValue
+        chargeItemConsentService: ChargeItemConsentService.liveValue
     )
 }
 

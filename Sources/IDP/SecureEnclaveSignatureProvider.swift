@@ -1,42 +1,38 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import Foundation
+import OpenSSL
 
-@CodedError("109")
+// sourcery: CodedError = "109"
 public enum SecureEnclaveSignatureProviderError: Swift.Error {
-    @ErrorCode("01")
+    // sourcery: errorCode = "01"
     case fetchingPrivateKey(Swift.Error?)
-    @ErrorCode("02")
+    // sourcery: errorCode = "02"
     case signing(Swift.Error?)
-    @ErrorCode("03")
+    // sourcery: errorCode = "03"
     case packagingAuthCertificate
-    @ErrorCode("04")
+    // sourcery: errorCode = "04"
     case packagingSeCertificate
-    @ErrorCode("05")
+    // sourcery: errorCode = "05"
     case gatheringPairingData(Swift.Error)
-    @ErrorCode("06")
+    // sourcery: errorCode = "06"
     case `internal`(String, Swift.Error?)
 }
 
@@ -71,7 +67,7 @@ public protocol SecureEnclaveSignatureProvider {
     ///   - pairingSession: `PairingSession` instance that is used to identify the biometric key.
     ///   - signer: The `JWTSigner` that is used to authenticate the key that is paired. Usually this is a eGK.
     ///   - certificate: Certificate of the signer that is used to sign the `PairingData`.
-    func signPairingSession(_ pairingSession: PairingSession, with signer: JWTSigner, certificate: IDPX509)
+    func signPairingSession(_ pairingSession: PairingSession, with signer: JWTSigner, certificate: X509)
         -> AnyPublisher<RegistrationData, SecureEnclaveSignatureProviderError>
 
     /// Cancels the signing session and delete all temporary data, such as `PrK_SE_AUT` and `PuK_SE_AUT`.

@@ -1,27 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
-import CodedError
 import Combine
 import CombineSchedulers
 import Foundation
@@ -29,20 +23,20 @@ import HTTPClient
 import ModelsR4
 
 extension FHIRClient {
+    // sourcery: CodedError = "520"
     /// Error cases when using the `FHIRClient`
-    @CodedError("520")
     public enum Error: Swift.Error, Equatable, CustomStringConvertible, LocalizedError {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case internalError(String)
+        // sourcery: errorCode = "04"
         /// When the server returned a successful response with inconsistent response data.
         /// E.g. no task(s) found in a Fetch response where we normally would have expected a HTTP 404 instead.
-        @ErrorCode("04")
         case inconsistentResponse
-        @ErrorCode("05")
+        // sourcery: errorCode = "05"
         case decoding(Swift.Error)
-        @ErrorCode("06")
+        // sourcery: errorCode = "06"
         case unknown(Swift.Error)
-        @ErrorCode("07")
+        // sourcery: errorCode = "07"
         case http(FHIRClientHttpError)
 
         public var description: String {
@@ -123,31 +117,29 @@ public class FHIRClient {
         if let bodyData = operation.httpBody {
             request.httpBody = bodyData
         }
-        return Future {
-            try await self.httpClient.send(request: request)
-        }
-        .receive(on: receiveQueue)
-        .tryMap { data, urlResponse, status in
-            let response = FHIRClient.Response.from(response: urlResponse, status: status, data: data)
+        return httpClient.send(request: request)
+            .receive(on: receiveQueue)
+            .tryMap { data, urlResponse, status in
+                let response = FHIRClient.Response.from(response: urlResponse, status: status, data: data)
 
-            guard response.status.isSuccessful else {
-                let urlError = URLError(
-                    URLError.Code(rawValue: response.status.rawValue),
-                    userInfo: ["body": response.body]
-                )
-                let outcome = try? JSONDecoder().decode(ModelsR4.OperationOutcome.self, from: response.body)
+                guard response.status.isSuccessful else {
+                    let urlError = URLError(
+                        URLError.Code(rawValue: response.status.rawValue),
+                        userInfo: ["body": response.body]
+                    )
+                    let outcome = try? JSONDecoder().decode(ModelsR4.OperationOutcome.self, from: response.body)
 
-                throw Error.http(
-                    FHIRClientHttpError(httpClientError: .httpError(urlError), operationOutcome: outcome)
-                )
+                    throw Error.http(
+                        FHIRClientHttpError(httpClientError: .httpError(urlError), operationOutcome: outcome)
+                    )
+                }
+
+                return try operation.handle(response: response)
             }
-
-            return try operation.handle(response: response)
-        }
-        .mapError { error in
-            error.asFHIRClientError()
-        }
-        .eraseToAnyPublisher()
+            .mapError { error in
+                error.asFHIRClientError()
+            }
+            .eraseToAnyPublisher()
     }
 }
 

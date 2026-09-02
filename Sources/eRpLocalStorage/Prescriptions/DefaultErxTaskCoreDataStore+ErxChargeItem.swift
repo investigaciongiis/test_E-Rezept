@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -29,11 +25,11 @@ extension DefaultErxTaskCoreDataStore {
     /// Fetch the ErxChargeItem by its id when required by `Self`
     ///
     /// - Parameters:
-    ///   - profileId: The profile identifier to which the item belongs to or nil if all data should be considered
     ///   - id: the ErxChargeItem ID
+    ///   - fullDetail: if set to true, fetches all available information
+    ///   otherwise only a minimal version
     /// - Returns: Publisher for the fetch request
     public func fetchChargeItem(
-        of profileId: UUID?,
         by chargeItemID: ErxChargeItem.ID
     ) -> AnyPublisher<ErxSparseChargeItem?, LocalStoreError> {
         let request: NSFetchRequest<ErxChargeItemEntity> = ErxChargeItemEntity.fetchRequest()
@@ -61,10 +57,7 @@ extension DefaultErxTaskCoreDataStore {
     }
 
     /// Fetch the most recent `enteredDate` of all `ChargeItem`s
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
-    /// - Returns: The latest timestamp as `String` or error
-    public func fetchLatestTimestampForChargeItems(of profileId: UUID?) -> AnyPublisher<String?, LocalStoreError> {
+    public func fetchLatestTimestampForChargeItems() -> AnyPublisher<String?, LocalStoreError> {
         let request: NSFetchRequest<ErxChargeItemEntity> = ErxChargeItemEntity.fetchRequest()
         request.fetchLimit = 1
         request.sortDescriptors = [NSSortDescriptor(key: #keyPath(ErxChargeItemEntity.enteredDate), ascending: false)]
@@ -80,11 +73,8 @@ extension DefaultErxTaskCoreDataStore {
     }
 
     /// List all charge items with the given local contained in the store
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Returns: Array of the fetched charge items or error
     public func listAllChargeItems(
-        of profileId: UUID?
     ) -> AnyPublisher<[ErxSparseChargeItem], LocalStoreError> {
         let request: NSFetchRequest<ErxChargeItemEntity> = ErxChargeItemEntity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(
@@ -105,7 +95,7 @@ extension DefaultErxTaskCoreDataStore {
     /// Creates or updates the passed sequence of `ErxChargeItem`s
     /// - Parameter chargeItems: Array of charge items that should be stored
     /// - Returns: `true` if save operation was successful
-    public func save(chargeItems: [ErxSparseChargeItem], of profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
+    public func save(chargeItems: [ErxSparseChargeItem]) -> AnyPublisher<Bool, LocalStoreError> {
         coreDataCrudable.save(mergePolicy: .error) { moc in
             _ = chargeItems.map { [weak self] chargeItem -> ErxChargeItemEntity? in
                 let request: NSFetchRequest<ErxChargeItemEntity> = ErxChargeItemEntity.fetchRequest()
@@ -115,14 +105,14 @@ extension DefaultErxTaskCoreDataStore {
                 )
 
                 if let chargeItemEntity = try? moc.fetch(request).first {
-                    chargeItemEntity.update(with: chargeItem, profileEntity: self?.fetchProfile(profileId, in: moc))
+                    chargeItemEntity.update(with: chargeItem, profileEntity: self?.fetchProfile(in: moc))
                     return chargeItemEntity
                 } else {
                     let chargeItemEntity = ErxChargeItemEntity.from(
                         chargeItem: chargeItem,
                         in: moc
                     )
-                    chargeItemEntity?.profile = self?.fetchProfile(profileId, in: moc)
+                    chargeItemEntity?.profile = self?.fetchProfile(in: moc)
                     return chargeItemEntity
                 }
             }
@@ -130,14 +120,9 @@ extension DefaultErxTaskCoreDataStore {
     }
 
     /// Deletes a sequence of charge items from the store
-    /// - Parameter profileId: The profile identifier to which the item belongs to or nil if all data should be
-    /// considered
     /// - Parameter chargeItems: Array of charge items that should be deleted
     /// - Returns: `true` if delete operation was successful
-    public func delete(
-        of profileId: UUID?,
-        chargeItems: [ErxSparseChargeItem]
-    ) -> AnyPublisher<Bool, LocalStoreError> {
+    public func delete(chargeItems: [ErxSparseChargeItem]) -> AnyPublisher<Bool, LocalStoreError> {
         let request: NSFetchRequest<ErxChargeItemEntity> = ErxChargeItemEntity.fetchRequest()
         var subPredicates = [NSPredicate]()
         if let identifier = profileId {

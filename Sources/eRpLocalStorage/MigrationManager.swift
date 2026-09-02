@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import CombineSchedulers
 import CoreData
@@ -40,7 +35,7 @@ public protocol ModelMigrating {
 }
 
 public class MigrationManager: ModelMigrating {
-    let coreDataControllerFactory: CoreDataControllerFactory
+    internal let coreDataControllerFactory: CoreDataControllerFactory
     private let userDataStore: UserDataStore
     private let erxTaskDataStore: ErxTaskCoreDataStore
     private var coreDataController: CoreDataController?
@@ -114,21 +109,21 @@ public class MigrationManager: ModelMigrating {
     }
 }
 
-@CodedError("501")
+// sourcery: CodedError = "501"
 public enum MigrationError: Swift.Error, LocalizedError, Equatable {
-    @ErrorCode("01")
+    // sourcery: errorCode = "01"
     case isLatestVersion
-    @ErrorCode("02")
+    // sourcery: errorCode = "02"
     case missingProfile
-    @ErrorCode("03")
+    // sourcery: errorCode = "03"
     case write(error: Swift.Error)
-    @ErrorCode("04")
+    // sourcery: errorCode = "04"
     case read(error: Swift.Error)
-    @ErrorCode("05")
+    // sourcery: errorCode = "05"
     case delete(error: Swift.Error)
-    @ErrorCode("06")
+    // sourcery: errorCode = "06"
     case unspecified(error: Swift.Error)
-    @ErrorCode("07")
+    // sourcery: errorCode = "07"
     case initialization(error: Swift.Error)
 
     public var errorDescription: String? {
@@ -176,16 +171,16 @@ extension MigrationManager: CoreDataCrudable {
     func migrateToModelVersion4() -> AnyPublisher<[Profile], MigrationError> {
         deleteAllAuditEvents()
             .flatMap { [weak self] _ -> AnyPublisher<[Profile], MigrationError> in
-                guard let self else {
+                guard let self = self else {
                     return Empty(completeImmediately: true).eraseToAnyPublisher()
                 }
                 var scannedTasks: [ErxTask] = []
-                return self.erxTaskDataStore.listAllTasks(of: nil)
+                return self.erxTaskDataStore.listAllTasks()
                     .first()
                     .map { tasks -> [Profile] in
                         Dictionary(grouping: tasks) { $0.patient?.name }
                             .compactMap { name, erxTasks -> Profile? in
-                                guard let name else {
+                                guard let name = name else {
                                     // tasks without patient name are scanned tasks
                                     scannedTasks.append(contentsOf: erxTasks)
                                     return nil
@@ -218,7 +213,7 @@ extension MigrationManager: CoreDataCrudable {
     func migrateToModelVersion6() -> AnyPublisher<ModelVersion, MigrationError> {
         Deferred {
             Future<ModelVersion, MigrationError> { [weak self] promise in
-                guard let self,
+                guard let self = self,
                       let moc = self.coreDataController?.container.newBackgroundContext() else {
                     return
                 }
@@ -255,7 +250,7 @@ extension MigrationManager: CoreDataCrudable {
     func migrateToModelVersion8() -> AnyPublisher<ModelVersion, MigrationError> {
         Deferred {
             Future<ModelVersion, MigrationError> { [weak self] promise in
-                guard let self,
+                guard let self = self,
                       let moc = self.coreDataController?.container.newBackgroundContext() else {
                     return
                 }
@@ -285,7 +280,7 @@ extension MigrationManager: CoreDataCrudable {
     func migrateToModelVersion9(defaultProfileName: String) -> AnyPublisher<ModelVersion, MigrationError> {
         Deferred {
             Future<ModelVersion, MigrationError> { [weak self] promise in
-                guard let self,
+                guard let self = self,
                       let moc = self.coreDataController?.container.newBackgroundContext() else {
                     return
                 }
@@ -327,7 +322,7 @@ extension MigrationManager: CoreDataCrudable {
             .eraseToAnyPublisher()
     }
 
-    /// Add scanned ErxTask's to the first profile
+    // Add scanned ErxTask's to the first profile
     func add(_ scannedTasks: [ErxTask], toFirstProfileOf profiles: [Profile]) -> [Profile] {
         var profiles = profiles
         guard var firstProfile = profiles.first else {
@@ -343,7 +338,7 @@ extension MigrationManager: CoreDataCrudable {
     func save(profiles: [Profile]) -> AnyPublisher<[Profile], MigrationError> {
         Deferred {
             Future<[Profile], MigrationError> { [weak self] promise in
-                guard let self,
+                guard let self = self,
                       let moc = self.coreDataController?.container.newBackgroundContext() else {
                     return
                 }
@@ -353,7 +348,7 @@ extension MigrationManager: CoreDataCrudable {
                     _ = profiles.map { profile -> ProfileEntity in
                         let profileEntity = ProfileEntity.from(profile: profile, in: moc)
                         if let erxTaskEntries = try? self.fetch(tasks: profile.erxTasks, in: moc) {
-                            for erxTaskEntry in erxTaskEntries {
+                            erxTaskEntries.forEach { erxTaskEntry in
                                 // Due to saving the wrong insuranceIdentifier we reset
                                 // `lastModified` so that the correct number can be fetched again
                                 erxTaskEntry.lastModified = nil

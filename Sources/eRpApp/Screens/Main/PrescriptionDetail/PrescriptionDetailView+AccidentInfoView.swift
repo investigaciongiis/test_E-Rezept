@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -27,30 +23,27 @@ import SwiftUI
 
 extension PrescriptionDetailView {
     struct AccidentInfoView: View {
-        @Bindable var store: StoreOf<AccidentInfoDomain>
+        @Perception.Bindable var store: StoreOf<AccidentInfoDomain>
 
         var body: some View {
             ScrollView(.vertical) {
                 SectionContainer {
-                    LabeledContent {
-                        Text(store.accidentInfo.localizedReason)
-                    } label: {
-                        Text(L10n.prscDtlTxtAccidentReason)
-                    }
+                    SubTitle(
+                        title: store.accidentInfo.localizedReason,
+                        description: L10n.prscDtlTxtAccidentReason
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlAccidentReason)
 
-                    LabeledContent {
-                        Text(store.accidentInfo.date ?? L10n.prscFdTxtNa.text)
-                    } label: {
-                        Text(L10n.prscFdTxtAccidentDate)
-                    }
+                    SubTitle(
+                        title: store.accidentInfo.date ?? L10n.prscFdTxtNa.text,
+                        description: L10n.prscFdTxtAccidentDate
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlAccidentDate)
 
-                    LabeledContent {
-                        Text(store.accidentInfo.workPlaceIdentifier ?? L10n.prscFdTxtNa.text)
-                    } label: {
-                        Text(L10n.prscFdTxtAccidentId)
-                    }
+                    SubTitle(
+                        title: store.accidentInfo.workPlaceIdentifier ?? L10n.prscFdTxtNa.text,
+                        description: L10n.prscFdTxtAccidentId
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlAccidentId)
 
                 }.sectionContainerStyle(.inline)

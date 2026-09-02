@@ -1,33 +1,33 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import eRpResources
 import Nimble
 import XCTest
 
 @MainActor
-struct MedicationReminderSetupScreen<Previous: Screen>: Screen {
+struct MedicationReminderSetupScreen<Previous>: Screen where Previous: Screen {
     let app: XCUIApplication
     let previous: Previous
+
+    init(app: XCUIApplication, previous: Previous) {
+        self.app = app
+        self.previous = previous
+    }
 
     func saveButton(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) -> XCUIElement {
         button(by: A11y.medicationReminder.medReminderBtnSaveSchedule, fileID: fileID, file: file, line: line)
@@ -38,8 +38,7 @@ struct MedicationReminderSetupScreen<Previous: Screen>: Screen {
 
         // Tap might trigger notification alert
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-        // swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
 
         return previous
@@ -105,14 +104,9 @@ struct MedicationReminderSetupScreen<Previous: Screen>: Screen {
             fatalError("Element list to short, expected \(position + 1) elements, found \(elements.count)")
         }
         elements[position].coordinate(withNormalizedOffset: .zero).withOffset(.init(dx: -30, dy: 10)).tap()
-        let button = button(by: "Löschen", fileID: fileID, file: file, line: line, checkExistence: false)
-        if button.exists {
-            button.tap()
-        } else {
-            staticText(by: "Löschen", fileID: fileID, file: file, line: line)
-                .coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5))
-                .tap()
-        }
+        staticText(by: "Löschen", fileID: fileID, file: file, line: line)
+            .coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5))
+            .tap()
     }
 
     func addTimeButton(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) -> XCUIElement {
@@ -125,7 +119,6 @@ struct MedicationReminderSetupScreen<Previous: Screen>: Screen {
 
     func toggleDosageDialog(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) {
         button(by: A11y.medicationReminder.medReminderBtnDosageInstruction, fileID: fileID, file: file, line: line)
-            .coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5))
             .tap()
     }
 

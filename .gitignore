@@ -14,16 +14,7 @@ doc/errors/generated
 development.env 
 development.apikeys.env
 development.static.env
-# Symbolic links to the above files are created during project setup
-Sources/eRpApp/development.env.default
-Sources/eRpApp/development.env
-Sources/eRpApp/development.apikeys.env
-Sources/eRpApp/development.static.env
 
-# Resources containing private (key) information
-# To be copied to their regarding locations via `make setup` and fastlane actions
-fastlane/audit_afos.json
-Tests/IntegrationTests/Resources/Certificates.bundle
 
 # AppCode project files
 .idea/
@@ -124,14 +115,28 @@ iOSInjectionProject/
 
 # own
 .urls
-memory-bank
-# Looks unsuspicious, only the script github_publish_prepare has to go (and is no longer needed)
-devops
 
-# will go away with public fastlane plugin
+Jenkinsfile
+Jenkinsfile_Archive
+devops
+.gitlab
+fastlane/Matchfile
+doc/security_review
+doc/architecture
+Sources/AVS/useful_links.txt
+
+# See if added files should also be removed within github_publish_prepare
+Tests/IntegrationTests/Resources/Certificates.bundle
+Tests/IntegrationTests/PharmacyDataQualityIntegrationTests.swift
+Tests/IDPTests/Resources/Certificates.bundle
+Templates/Sourcery/Generic/errors.stencil
+docs/errors/errors.html
+fastlane/audit_afos.json
+
 Gemfile.internal
 Gemfile.internal.lock
 fastlane/Pluginfile.internal
 .bundle
-# will go away automatically
 jenkinsfiles
+
+Templates/Sourcery/Generic/errors.stencil

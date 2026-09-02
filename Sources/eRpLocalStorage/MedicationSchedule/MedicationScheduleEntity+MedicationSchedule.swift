@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import CoreData
@@ -38,7 +34,6 @@ extension MedicationScheduleEntity {
         title = schedule.title
         body = schedule.dosageInstructions
         taskId = schedule.taskId
-        weekdays = schedule.weekdaysToString()
         isActive = schedule.isActive
 
         let entryEntities = schedule.entries.compactMap {
@@ -48,35 +43,6 @@ extension MedicationScheduleEntity {
         if !entryEntities.isEmpty {
             addToEntries(NSSet(array: entryEntities))
         }
-    }
-}
-
-extension MedicationSchedule {
-    /// Helper method to convert weekdays to a string for Core Data storage
-    func weekdaysToString() -> String {
-        weekdays.map { String($0.rawValue) }.sorted().joined(separator: ",")
-    }
-
-    /// Helper method to convert a string from Core Data to weekdays
-    /// Note: This method assumes that the string is a comma-separated list of integers
-    static func weekdaysFromString(_ string: String?) -> Set<Weekday> {
-        // Note:
-        // If the string is nil, it hasn't been set yet. This means the device is reading a
-        // schedule that was created before the introduction of the weekdays property.
-        // Thus it has been the case that all weekdays were selected.
-
-        // For newly created schedules (and DB entities), the weekdays property is set to all weekdays by default.
-        // (This is a short cut for a real data base migration step.)
-        guard let string else {
-            return Set(Weekday.allCases)
-        }
-
-        if string.isEmpty {
-            return Set() // Default to no weekdays if the string is empty
-        }
-
-        let weekdayValues = string.split(separator: ",").compactMap { Int(String($0)) }
-        return Set(weekdayValues.compactMap { Weekday(rawValue: $0) })
     }
 }
 
@@ -105,7 +71,6 @@ extension MedicationSchedule {
             dosageInstructions: entity.body ?? "",
             taskId: taskId,
             isActive: entity.isActive,
-            weekdays: MedicationSchedule.weekdaysFromString(entity.weekdays),
             entries: IdentifiedArray(
                 uniqueElements: entries
             )

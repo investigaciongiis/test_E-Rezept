@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 #if os(macOS)
@@ -34,7 +30,7 @@ extension View {
     ///   the toast to dismiss the toast.
     ///   - toast: The toast to show
     /// - Returns: The modified view.
-    public func toast(isPresented: Binding<Bool>, toast: Toast?) -> some View {
+    @ViewBuilder public func toast(isPresented: Binding<Bool>, toast: Toast?) -> some View {
         overlay {
             ToastContainerView(isPresented: isPresented.animation(.easeInOut), toast: toast)
         }
@@ -46,7 +42,7 @@ extension View {
     ///   the toast to dismiss the toast.
     ///   - toast: The toast to show
     /// - Returns: The modified view.
-    public func toast(toast: Binding<Toast?>) -> some View {
+    @ViewBuilder public func toast(toast: Binding<Toast?>) -> some View {
         overlay {
             ToastContainerView(
                 isPresented: .init(
@@ -204,7 +200,7 @@ struct Toast_PreviewProvider: PreviewProvider {
                 }
                 Button {
                     toast = Toast(style: .action("Toast with actions", Text("button title"), .module) {
-                        toast = nil
+                        self.toast = nil
                     })
                 } label: {
                     Text("Show Buttons")
@@ -221,7 +217,7 @@ struct Toast_PreviewProvider: PreviewProvider {
             .toast(
                 isPresented: Binding<Bool>(
                     get: {
-                        toast != nil
+                        self.toast != nil
                     },
                     set: { newValue in
                         if !newValue {

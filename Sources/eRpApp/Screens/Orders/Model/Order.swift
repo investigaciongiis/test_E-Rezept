@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -28,10 +24,7 @@ import Pharmacy
 struct Order: Identifiable, Equatable {
     static let unknownOrderId = "unknown"
     let orderId: String
-    var id: String {
-        orderId
-    }
-
+    var id: String { orderId }
     let communications: IdentifiedArrayOf<ErxTask.Communication>
     let chargeItems: IdentifiedArrayOf<ErxChargeItem>
     let pharmacy: PharmacyLocation?
@@ -61,9 +54,9 @@ struct Order: Identifiable, Equatable {
             var timelineEntries: [TimelineEntry] = displayedCommunications.compactMap { communication in
                 switch communication.profile {
                 case .dispReq:
-                    return .dispReq(communication, pharmacy: pharmacy, chipTexts: [])
+                    return .dispReq(communication, pharmacy: pharmacy)
                 case .reply:
-                    return .reply(communication, chipTexts: [])
+                    return .reply(communication)
                 default:
                     return nil
                 }
@@ -113,32 +106,5 @@ extension Order {
                 pharmacy: PharmacyLocation.Dummies.pharmacy
             )
         }()
-    }
-}
-
-extension Order {
-    /// This initialiser is only used for testing purposes
-    ///
-    /// - Important: timelineEntries property should only be used for testing
-    init(
-        orderId: String,
-        communications: IdentifiedArrayOf<ErxTask.Communication>,
-        chargeItems: IdentifiedArrayOf<ErxChargeItem>,
-        pharmacy: PharmacyLocation? = nil,
-        timelineEntries: [TimelineEntry] = []
-    ) {
-        self.orderId = orderId
-        self.communications = communications
-        self.chargeItems = chargeItems
-        self.pharmacy = pharmacy
-        let communicationTimestamp = communications.max { $0.timestamp < $1.timestamp }?.timestamp ?? ""
-        if let chargeItemTimestamp = chargeItems.max(by: { $0.enteredDate ?? "" < $1.enteredDate ?? "" })?
-            .enteredDate {
-            lastUpdated = [communicationTimestamp, chargeItemTimestamp].max(by: <) ?? ""
-        } else {
-            lastUpdated = communicationTimestamp
-        }
-        tasksCount = Set(communications.map(\.taskId)).count
-        self.timelineEntries = timelineEntries
     }
 }

@@ -1,8 +1,9 @@
 source "https://rubygems.org"
 
-ruby "4.0.3"
+ruby "3.1.2"
 
 gem "fastlane", "~>2.220"
+gem "jazzy", "~>0.14.4"
 gem "nokogiri", ">= 1.16.5"
 gem "kramdown"
 

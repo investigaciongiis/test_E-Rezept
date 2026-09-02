@@ -1,31 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import eRpResources
-import FeatureHelpers
 import Nimble
 import XCTest
 
@@ -35,19 +29,17 @@ final class AppAuthenticationBiometricPasswordDomainTests: XCTestCase {
 
     typealias TestStore = TestStoreOf<AppAuthenticationBiometricPasswordDomain>
 
-    var mockAppSecurityPasswordManager: AppSecurityManagerMock!
+    var mockAppSecurityPasswordManager: MockAppSecurityManager!
 
     override func setUp() {
         super.setUp()
-        mockAppSecurityPasswordManager = AppSecurityManagerMock()
+        mockAppSecurityPasswordManager = MockAppSecurityManager()
     }
 
     private func testStore(for _: AppAuthenticationBiometricPasswordDomain.State,
                            withResult result: AuthenticationChallengeProviderResult) -> TestStore {
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(result).eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(result).eraseToAnyPublisher()
         return TestStore(
             initialState: AppAuthenticationBiometricPasswordDomain.State(
                 biometryType: .faceID,
@@ -128,53 +120,28 @@ final class AppAuthenticationBiometricPasswordDomainTests: XCTestCase {
             for: .init(biometryType: .faceID, startImmediateAuthenticationChallenge: false, password: "abc"),
             withResult: .failure(.cannotEvaluatePolicy(nil))
         )
-        mockAppSecurityPasswordManager.matchesPasswordStringBoolReturnValue = true
+        mockAppSecurityPasswordManager.matchesPasswordReturnValue = true
 
-        expect(self.mockAppSecurityPasswordManager.matchesPasswordStringBoolCalled).to(beFalse())
+        expect(self.mockAppSecurityPasswordManager.matchesPasswordCalled).to(beFalse())
         await store.send(.loginButtonTapped)
         await store.receive(.passwordVerificationReceived(true)) { state in
             state.lastMatchResultSuccessful = true
         }
-        expect(self.mockAppSecurityPasswordManager.matchesPasswordStringBoolCalled).to(beTrue())
-        expect(self.mockAppSecurityPasswordManager.resetPasswordDelayVoidCalled).to(beTrue())
-        expect(self.mockAppSecurityPasswordManager.registerFailedPasswordAttemptVoidCalled).to(beFalse())
+        expect(self.mockAppSecurityPasswordManager.matchesPasswordCalled).to(beTrue())
     }
 
     func testPasswordDoesNotMatch() async {
-        let clock = TestClock()
-        let mockAppSecurityManager = AppSecurityManagerMock()
+        let store = testStore(
+            for: .init(biometryType: .faceID, startImmediateAuthenticationChallenge: false, password: "abc"),
+            withResult: .failure(.cannotEvaluatePolicy(nil))
+        )
+        mockAppSecurityPasswordManager.matchesPasswordReturnValue = false
 
-        let store = TestStore(initialState: AppAuthenticationBiometricPasswordDomain.State(
-            biometryType: .faceID,
-            startImmediateAuthenticationChallenge: false,
-            password: "abc"
-        )) {
-            AppAuthenticationBiometricPasswordDomain()
-        } withDependencies: {
-            $0.appSecurityManager = mockAppSecurityManager
-            $0.continuousClock = clock
-        }
-        mockAppSecurityManager.matchesPasswordStringBoolReturnValue = false
-        mockAppSecurityManager.currentPasswordDelayTimeIntervalReturnValue = 10.0
-
-        expect(mockAppSecurityManager.matchesPasswordStringBoolCalled).to(beFalse())
+        expect(self.mockAppSecurityPasswordManager.matchesPasswordCalled).to(beFalse())
         await store.send(.loginButtonTapped)
         await store.receive(.passwordVerificationReceived(false)) { state in
             state.lastMatchResultSuccessful = false
         }
-        await store.receive(.currentPasswordDelayReceived(10.0)) { state in
-            state.passwordDelay = 10.0
-        }
-
-        await clock.advance(by: .seconds(10))
-        for _ in 0 ..< 10 {
-            await store.receive(.passwordDelayTimerTick) { state in
-                state.passwordDelay -= 1.0
-            }
-        }
-
-        expect(mockAppSecurityManager.matchesPasswordStringBoolCalled).to(beTrue())
-        expect(mockAppSecurityManager.resetPasswordDelayVoidCalled).to(beFalse())
-        expect(mockAppSecurityManager.registerFailedPasswordAttemptVoidCalled).to(beTrue())
+        expect(self.mockAppSecurityPasswordManager.matchesPasswordCalled).to(beTrue())
     }
 }

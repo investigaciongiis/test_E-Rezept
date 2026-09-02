@@ -2,14 +2,12 @@
 // Generated using SwiftGen — https://github.com/SwiftGen/SwiftGen
 
 {% if files %}
-{% set accessModifier %}{% if param.publicAccess %}public{% else %}internal{% endif %}{% endset %}
-
 import Foundation
 
-{{accessModifier}} protocol AnalyticsScreen {
+protocol AnalyticsScreen {
     var name: String { get }
 }
-{{accessModifier}} typealias AnalyticsEvent = String
+typealias AnalyticsEvent = String
 
 // swiftlint:disable superfluous_disable_command
 // swiftlint:disable file_length
@@ -30,13 +28,13 @@ import Foundation
 
 
 {% macro screenBlock identifier screen %}
-  {{accessModifier}} static let {{ identifier }} = {{ identifier|upperFirstLetter }}()
+  static let {{ identifier }} = {{ identifier|upperFirstLetter }}()
 
-  {{accessModifier}} struct {{ identifier|upperFirstLetter }}: AnalyticsScreen {
-    {{accessModifier}} let name = "{{ screen.name }}"
+  struct {{ identifier|upperFirstLetter }}: AnalyticsScreen {
+    let name = "{{ screen.name }}"
 
     {% for eventName,event in screen.events %}
-    {{accessModifier}} let {{ eventName|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords }}: AnalyticsEvent = "{{ event.name }}"
+    let {{ eventName|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords }}: AnalyticsEvent = "{{ event.name }}"
     {% endfor %}
   }
   
@@ -44,7 +42,7 @@ import Foundation
 
 
 {% macro screensBlock screens %}
-  {{accessModifier}} enum Screens {
+  enum Screens {
   {% for key,screen in screens %}
     {% filter indent:2 %}
       {% call screenBlock key screen %}

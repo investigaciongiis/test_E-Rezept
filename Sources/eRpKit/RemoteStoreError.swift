@@ -1,31 +1,26 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import FHIRClient
 import Foundation
 
+// sourcery: CodedError = "204"
 /// Remote store error cases
-@CodedError("204")
 public enum RemoteStoreError: Swift.Error, LocalizedError, Equatable {
     public static func ==(lhs: RemoteStoreError, rhs: RemoteStoreError) -> Bool {
         switch (lhs, rhs) {
@@ -36,9 +31,9 @@ public enum RemoteStoreError: Swift.Error, LocalizedError, Equatable {
         }
     }
 
-    @ErrorCode("01")
+    // sourcery: errorCode = "01"
     case fhirClient(FHIRClient.Error)
-    @ErrorCode("02")
+    // sourcery: errorCode = "02"
     case notImplemented
 
     public var errorDescription: String? {

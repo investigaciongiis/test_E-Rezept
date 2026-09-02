@@ -18,54 +18,6 @@
 			<string>Er zijn %u mislukte inlogpogingen gedetecteerd</string>
 		</dict>
 	</dict>
-	<key>auth_txt_password_failure_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Onjuist wachtwoord. Probeer het over 1 seconde opnieuw.</string>
-			<key>other</key>
-			<string>Onjuist wachtwoord. Probeer het over %u seconden opnieuw.</string>
-		</dict>
-	</dict>
-	<key>auth_txt_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Probeer het over %u seconde opnieuw.</string>
-			<key>other</key>
-			<string>Probeer het over %u seconden opnieuw.</string>
-		</dict>
-	</dict>
-	<key>dtl_txt_med_redeemed_on_direct_assignment</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>one</key>
-			<string>Dit recept is %%@ in het kader van een behandeling voor u verzilverd.</string>
-			<key>other</key>
-			<string>Dit recept is voor u klaargemaakt op % %@ als onderdeel van een behandeling.</string>
-		</dict>
-	</dict>
 	<key>erx_txt_accepted_until</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

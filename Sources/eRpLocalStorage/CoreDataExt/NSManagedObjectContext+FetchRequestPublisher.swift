@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -43,7 +39,7 @@ extension NSManagedObjectContext.FetchRequestPublisher: Publisher {
     typealias Output = [Entity]
     typealias Failure = Error
 
-    func receive<S: Subscriber>(subscriber: S) where Failure == S.Failure, Output == S.Input {
+    func receive<S>(subscriber: S) where S: Subscriber, Failure == S.Failure, Output == S.Input {
         let subscription = Inner<S>(
             fetchRequest: fetchRequest,
             context: managedObjectContext,
@@ -66,7 +62,7 @@ extension NSManagedObjectContext.FetchRequestPublisher {
         private var downstream: Downstream?
 
         private let lock = NSLock()
-        /// This lock can only be held for the duration of downstream callouts
+        // This lock can only be held for the duration of downstream callouts
         private let downstreamLock = NSRecursiveLock()
 
         init(
@@ -100,7 +96,7 @@ extension NSManagedObjectContext.FetchRequestPublisher {
 
         func controllerDidChangeContent(_: NSFetchedResultsController<NSFetchRequestResult>) {
             let fetchedObjects = fetchedResultsController?.fetchedObjects ?? []
-            guard let downstream else { return }
+            guard let downstream = self.downstream else { return }
             lock.lock()
             if demand > 0 {
                 demand -= 1
@@ -121,7 +117,7 @@ extension NSManagedObjectContext.FetchRequestPublisher {
         }
 
         func request(_ requestDemand: Subscribers.Demand) {
-            guard let downstream else { return }
+            guard let downstream = self.downstream else { return }
             lock.lock()
             demand += requestDemand
             if demand > 0, let lastFetchedObjects = last {

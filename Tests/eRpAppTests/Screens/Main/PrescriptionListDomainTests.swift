@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -27,8 +23,6 @@ import ComposableArchitecture
 import eRpKit
 import eRpLocalStorage
 import eRpRemoteStorage
-import FeatureCardWall
-import FeatureHelpers
 import FHIRClient
 import XCTest
 
@@ -38,16 +32,16 @@ final class PrescriptionListDomainTests: XCTestCase {
 
     typealias TestStore = TestStoreOf<PrescriptionListDomain>
 
-    var mockPrescriptionRepository: PrescriptionRepositoryMock!
+    var mockPrescriptionRepository: MockPrescriptionRepository!
     var userSession: MockUserSession!
-    var userDataStore: UserDataStoreMock {
+    var userDataStore: MockUserDataStore {
         userSession.mockUserDataStore
     }
 
     override func setUp() {
         super.setUp()
 
-        mockPrescriptionRepository = PrescriptionRepositoryMock()
+        mockPrescriptionRepository = MockPrescriptionRepository()
         userSession = MockUserSession()
     }
 
@@ -65,8 +59,7 @@ final class PrescriptionListDomainTests: XCTestCase {
     func testLoadingPrescriptionsLocalTwoTimes() async {
         // given
         let input: [Prescription] = []
-        mockPrescriptionRepository
-            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue = Just(input)
+        mockPrescriptionRepository.loadLocalReturnValue = Just(input)
             .setFailureType(to: PrescriptionRepositoryError.self)
             .eraseToAnyPublisher()
         let store = testStore(for: mockPrescriptionRepository)
@@ -106,9 +99,7 @@ final class PrescriptionListDomainTests: XCTestCase {
         let returnValue = Just(PrescriptionRepositoryLoadRemoteResult.prescriptions(input))
             .setFailureType(to: PrescriptionRepositoryError.self)
             .eraseToAnyPublisher()
-        mockPrescriptionRepository
-            .silentLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            returnValue
+        mockPrescriptionRepository.silentLoadRemoteForReturnValue = returnValue
         let store = testStore(for: mockPrescriptionRepository)
 
         let expected: LoadingState<[Prescription], PrescriptionRepositoryError> =
@@ -140,11 +131,9 @@ final class PrescriptionListDomainTests: XCTestCase {
 
     func testLoadingPrescriptionsFromCloudTwoTimesWhenNotAuthenticated() async {
         // given
-        mockPrescriptionRepository
-            .silentLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            Just(.notAuthenticated)
-                .setFailureType(to: PrescriptionRepositoryError.self)
-                .eraseToAnyPublisher()
+        mockPrescriptionRepository.silentLoadRemoteForReturnValue = Just(.notAuthenticated)
+            .setFailureType(to: PrescriptionRepositoryError.self)
+            .eraseToAnyPublisher()
         let store = testStore(for: mockPrescriptionRepository)
 
         let expected: LoadingState<[Prescription], PrescriptionRepositoryError> =
@@ -177,14 +166,12 @@ final class PrescriptionListDomainTests: XCTestCase {
     func testLoadingPrescriptionsFromDiskAndCloudWhenNotAuthenticated() async {
         // given
         let input = Prescription.Fixtures.prescriptions
-        mockPrescriptionRepository
-            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue = Just(input)
+        mockPrescriptionRepository.loadLocalReturnValue = Just(input)
             .setFailureType(to: PrescriptionRepositoryError.self)
             .eraseToAnyPublisher()
         mockPrescriptionRepository
-            .silentLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            Just(PrescriptionRepositoryLoadRemoteResult.notAuthenticated)
-                .setFailureType(to: PrescriptionRepositoryError.self).eraseToAnyPublisher()
+            .silentLoadRemoteForReturnValue = Just(PrescriptionRepositoryLoadRemoteResult.notAuthenticated)
+            .setFailureType(to: PrescriptionRepositoryError.self).eraseToAnyPublisher()
         let store = testStore(for: mockPrescriptionRepository)
 
         let expectedValueForLoad: LoadingState<[Prescription], PrescriptionRepositoryError> =
@@ -218,13 +205,11 @@ final class PrescriptionListDomainTests: XCTestCase {
         // given
         let input = Prescription.Fixtures.prescriptions
 
-        mockPrescriptionRepository
-            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue = Just(input)
+        mockPrescriptionRepository.loadLocalReturnValue = Just(input)
             .setFailureType(to: PrescriptionRepositoryError.self)
             .eraseToAnyPublisher()
         mockPrescriptionRepository
-            .silentLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            Just(PrescriptionRepositoryLoadRemoteResult
+            .silentLoadRemoteForReturnValue = Just(PrescriptionRepositoryLoadRemoteResult
                 .prescriptions(input))
             .setFailureType(to: PrescriptionRepositoryError.self)
             .eraseToAnyPublisher()
@@ -257,12 +242,11 @@ final class PrescriptionListDomainTests: XCTestCase {
     let loadingErrorAuditEvents: PrescriptionRepositoryError = .erxRepository(.local(.notImplemented))
 
     func testLoadingFromDiskWithError() async {
-        mockPrescriptionRepository
-            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue = Fail(
-                outputType: [Prescription].self,
-                failure: loadingErrorTasks
-            )
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository.loadLocalReturnValue = Fail(
+            outputType: [Prescription].self,
+            failure: loadingErrorTasks
+        )
+        .eraseToAnyPublisher()
 
         let store = testStore(for: mockPrescriptionRepository)
 
@@ -285,10 +269,7 @@ final class PrescriptionListDomainTests: XCTestCase {
 
     func testLoadingFromCloudWithError() async {
         let store = testStore(for: mockPrescriptionRepository)
-        mockPrescriptionRepository
-            .silentLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            Fail(error: loadingErrorTasks)
-                .eraseToAnyPublisher()
+        mockPrescriptionRepository.silentLoadRemoteForReturnValue = Fail(error: loadingErrorTasks).eraseToAnyPublisher()
         let expectedTasks: LoadingState<[Prescription], PrescriptionRepositoryError> =
             .idle
 
@@ -305,103 +286,77 @@ final class PrescriptionListDomainTests: XCTestCase {
     }
 
     func testRefreshShouldShowCardWallWhenNotAuthenticated() async {
-        await withDependencies {
-            $0.drawerEvaluation.showDrawerEvaluationOnRefresh = { .none }
-        } operation: {
-            userDataStore.hideCardWallIntro = Just(false).eraseToAnyPublisher()
-            mockPrescriptionRepository
-                .forcedLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-                Just(.notAuthenticated)
-                    .setFailureType(to: PrescriptionRepositoryError.self)
-                    .eraseToAnyPublisher()
-            let store = testStore(for: mockPrescriptionRepository)
+        userDataStore.hideCardWallIntro = Just(false).eraseToAnyPublisher()
+        mockPrescriptionRepository.forcedLoadRemoteForReturnValue = Just(.notAuthenticated)
+            .setFailureType(to: PrescriptionRepositoryError.self)
+            .eraseToAnyPublisher()
+        let store = testStore(for: mockPrescriptionRepository)
 
-            let expected = CardWallIntroductionDomain.State(
-                isNFCReady: true,
-                profileId: userSession.profileId
-            )
-            await store.send(.refresh) {
-                $0.loadingState = .loading(nil)
-            }
-            await testScheduler.advance()
-            await store.receive(.response(.showCardWallReceived(expected))) {
-                $0.loadingState = .idle
-            }
+        let expected = CardWallIntroductionDomain.State(
+            isNFCReady: true,
+            profileId: userSession.profileId
+        )
+        await store.send(.refresh) {
+            $0.loadingState = .loading(nil)
         }
+        await testScheduler.advance()
+        await store.receive(.response(.showCardWallReceived(expected)))
     }
 
     func testRefreshShouldShowCardWallServerResponseIs403Forbidden() async {
-        await withDependencies {
-            $0.drawerEvaluation.showDrawerEvaluationOnRefresh = { .none }
-        } operation: {
-            userDataStore.hideCardWallIntro = Just(false).eraseToAnyPublisher()
-            mockPrescriptionRepository
-                .forcedLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-                Fail(
-                    outputType: PrescriptionRepositoryLoadRemoteResult.self,
-                    failure: PrescriptionRepositoryError.erxRepository(.remote(
-                        .fhirClient(FHIRClient.Error
-                            .http(.init(httpClientError: .httpError(.init(URLError.Code(rawValue: 403))),
-                                        operationOutcome: nil)))
-                    ))
-                ).eraseToAnyPublisher()
-            let store = testStore(for: mockPrescriptionRepository)
+        userDataStore.hideCardWallIntro = Just(false).eraseToAnyPublisher()
+        mockPrescriptionRepository.forcedLoadRemoteForReturnValue = Fail(
+            outputType: PrescriptionRepositoryLoadRemoteResult.self,
+            failure: PrescriptionRepositoryError.erxRepository(.remote(
+                .fhirClient(FHIRClient.Error
+                    .http(.init(httpClientError: .httpError(.init(URLError.Code(rawValue: 403))),
+                                operationOutcome: nil)))
+            ))
+        ).eraseToAnyPublisher()
+        let store = testStore(for: mockPrescriptionRepository)
 
-            let expected = CardWallIntroductionDomain.State(
-                isNFCReady: true,
-                profileId: userSession.profileId
-            )
-            await store.send(.refresh) {
-                $0.loadingState = .loading(nil)
-            }
-            await testScheduler.advance()
-            await store.receive(.response(.showCardWallReceived(expected))) {
-                $0.loadingState = .idle
-            }
+        let expected = CardWallIntroductionDomain.State(
+            isNFCReady: true,
+            profileId: userSession.profileId
+        )
+        await store.send(.refresh) {
+            $0.loadingState = .loading(nil)
         }
+        await testScheduler.advance()
+        await store.receive(.response(.showCardWallReceived(expected)))
     }
 
     func testRefreshShouldShowCardWallServerResponseIs401Unauthorized() async {
-        await withDependencies {
-            $0.drawerEvaluation.showDrawerEvaluationOnRefresh = { .none }
-        } operation: {
-            userDataStore.hideCardWallIntro = Just(false).eraseToAnyPublisher()
+        userDataStore.hideCardWallIntro = Just(false).eraseToAnyPublisher()
 
-            mockPrescriptionRepository
-                .forcedLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-                Fail(
-                    outputType: PrescriptionRepositoryLoadRemoteResult.self,
-                    failure: PrescriptionRepositoryError.erxRepository(.remote(
-                        .fhirClient(FHIRClient.Error
-                            .http(.init(httpClientError: .httpError(.init(URLError.Code(rawValue: 401))),
-                                        operationOutcome: nil)))
-                    ))
-                ).eraseToAnyPublisher()
-            let store = testStore(for: mockPrescriptionRepository)
+        mockPrescriptionRepository.forcedLoadRemoteForReturnValue = Fail(
+            outputType: PrescriptionRepositoryLoadRemoteResult.self,
+            failure: PrescriptionRepositoryError.erxRepository(.remote(
+                .fhirClient(FHIRClient.Error
+                    .http(.init(httpClientError: .httpError(.init(URLError.Code(rawValue: 401))),
+                                operationOutcome: nil)))
+            ))
+        ).eraseToAnyPublisher()
+        let store = testStore(for: mockPrescriptionRepository)
 
-            let expected = CardWallIntroductionDomain.State(
-                isNFCReady: true,
-                profileId: userSession.profileId
-            )
-
-            await store.send(.refresh) {
-                $0.loadingState = .loading(nil)
-            }
-            await testScheduler.advance()
-            await store.receive(.response(.showCardWallReceived(expected))) {
-                $0.loadingState = .idle
-            }
+        let expected = CardWallIntroductionDomain.State(
+            isNFCReady: true,
+            profileId: userSession.profileId
+        )
+        await store.send(.refresh) {
+            $0.loadingState = .loading(nil)
         }
+        await testScheduler.advance()
+        await store.receive(.response(.showCardWallReceived(expected)))
     }
 
     func testRefreshShouldLoadFromCloudWhenAuthenticated() async {
         let input = Prescription.Fixtures.prescriptions
 
         mockPrescriptionRepository
-            .forcedLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
-            Just(PrescriptionRepositoryLoadRemoteResult.prescriptions(input))
-                .setFailureType(to: PrescriptionRepositoryError.self)
-                .eraseToAnyPublisher()
+            .forcedLoadRemoteForReturnValue = Just(PrescriptionRepositoryLoadRemoteResult.prescriptions(input))
+            .setFailureType(to: PrescriptionRepositoryError.self)
+            .eraseToAnyPublisher()
         let store = testStore(for: mockPrescriptionRepository)
 
         let expected: LoadingState<[Prescription], PrescriptionRepositoryError> = .value(input)
@@ -416,14 +371,14 @@ final class PrescriptionListDomainTests: XCTestCase {
         }
     }
 
-    func testNavigateIntoLowDetailPrescriptionDetails() async throws {
+    func testNavigateIntoLowDetailPrescriptionDetails() async {
         // given
         let prescription = Prescription.Fixtures.prescriptions
 
         let store = testStore(for: mockPrescriptionRepository)
 
         // when
-        try await store.send(.prescriptionDetailViewTapped(selectedPrescription: XCTUnwrap(prescription.first)))
+        await store.send(.prescriptionDetailViewTapped(selectedPrescription: prescription.first!))
 
         // nothing happens, as this is currently supposed to be handled in the parent domain
     }

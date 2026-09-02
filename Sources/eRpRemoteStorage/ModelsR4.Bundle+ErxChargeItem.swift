@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -86,6 +82,11 @@ extension ModelsR4.Bundle {
         )
         let pharmacy = dispenseBundle.organization
 
+        guard let pharmacyId = pharmacy?.davOrganizationIdentifier
+        else {
+            throw RemoteStorageBundleParsingError.parseError("Could not parse organization identifier.")
+        }
+
         guard let pharmacyName = pharmacy?.name?.value?.string
         else {
             throw RemoteStorageBundleParsingError.parseError("Could not parse organization name.")
@@ -107,15 +108,12 @@ extension ModelsR4.Bundle {
             throw RemoteStorageBundleParsingError.parseError("Could not parse version number.")
         }
 
-        guard let pharmacyId = pharmacy?.davOrganizationIdentifier(from: fhirPackage)
-        else {
-            throw RemoteStorageBundleParsingError.parseError("Could not parse organization identifier.")
-        }
-
         let fhirAbgabedatenComposition = fhirPackage.dAV_PKV_PR_ERP_AbgabedatenComposition
         let fhirAbrechnungszeilen = fhirPackage.dAV_EX_ERP_Abrechnungszeilen
         let fhirZusatzdatenHerstellung = fhirPackage.dAV_EX_ERP_ZusatzdatenHerstellung
         let fhirZusatzdatenEinheit = fhirPackage.dAV_EX_ERP_ZusatzdatenEinheit
+
+        let invoice = dispenseBundle.invoice
 
         let dispenseComposition = dispenseBundle.findResource(
             for: fhirAbgabedatenComposition.meta_profile,
@@ -138,7 +136,7 @@ extension ModelsR4.Bundle {
 
             if let reference = invoice?.first?.value?.referenceOrNil?.reference {
                 let invoice = dispenseBundle.findResource(with: reference, type: Invoice.self)
-                chargeableItems += try invoice?.chargeableItems(from: fhirPackage) ?? []
+                chargeableItems += try invoice?.chargeableItems() ?? []
             }
 
             let ext = medicationDispense?.extensions(for: fhirZusatzdatenHerstellung.meta_profile)
@@ -155,7 +153,7 @@ extension ModelsR4.Bundle {
                     let invoice = secondMedicationDispense?.extensions(for: fhirZusatzdatenEinheit.meta_profile)
                     if let reference = invoice?.first?.value?.referenceOrNil?.reference {
                         let invoice = dispenseBundle.findResource(with: reference, type: Invoice.self)
-                        chargeableItems += try invoice?.chargeableItems(from: fhirPackage, separation: true) ?? []
+                        chargeableItems += try invoice?.chargeableItems(separation: true) ?? []
                     }
                 }
             } else {
@@ -170,7 +168,7 @@ extension ModelsR4.Bundle {
                     let invoice = secondMedicationDispense?.extensions(for: fhirZusatzdatenEinheit.meta_profile)
                     if let reference = invoice?.first?.value?.referenceOrNil?.reference {
                         let invoice = dispenseBundle.findResource(with: reference, type: Invoice.self)
-                        let ingredients = try invoice?.productionSteps(from: fhirPackage) ?? []
+                        let ingredients = try invoice?.productionSteps() ?? []
 
                         let sequence: Int32
                         if let ext = secondMedicationDispense?.extensions(for: fhirZusatzdatenEinheit.extension_counter)
@@ -194,9 +192,7 @@ extension ModelsR4.Bundle {
             }
         }
 
-        let invoice = dispenseBundle.invoice
-
-        guard let totalAdditionalFee = invoice?.totalAdditionalFee(from: fhirPackage)
+        guard let totalAdditionalFee = invoice?.totalAdditionalFee
         else {
             throw RemoteStorageBundleParsingError.parseError("Could not parse invoice totalGross additionalFee.")
         }
@@ -317,9 +313,11 @@ extension ModelsR4.ChargeItem {
 }
 
 extension ModelsR4.Invoice {
-    func totalAdditionalFee(from fhirPackage: ABDAERezeptAbgabedaten) -> Decimal? {
+    var totalAdditionalFee: Decimal? {
         totalGross?.extension?.first { total in
-            total.url.value?.url.absoluteString == fhirPackage.dAV_EX_ERP_Abrechnungszeilen.totalAdditionalFee
+            Dispense.Key.totalAdditionalFee.contains { key in
+                key.value == total.url.value?.url.absoluteString
+            }
         }
         .flatMap {
             if let valueX = $0.value,
@@ -330,8 +328,7 @@ extension ModelsR4.Invoice {
         }
     }
 
-    func productionSteps(from fhirPackage: ABDAERezeptAbgabedaten,
-                         special _: Bool = false) throws -> [DavInvoice.Production.Ingredient] {
+    func productionSteps(special _: Bool = false) throws -> [DavInvoice.Production.Ingredient] {
         try lineItem?.map {
             let factor = $0.priceComponent?.first?.factor?.value?.decimal
 
@@ -352,7 +349,7 @@ extension ModelsR4.Invoice {
             }
 
             return DavInvoice.Production.Ingredient(
-                pzn: $0.pzn(from: fhirPackage) ?? $0.ta1(from: fhirPackage) ?? "NA",
+                pzn: $0.pzn ?? $0.ta1 ?? "NA",
                 factorMark: mark,
                 factor: factor.map { $0 / 1000 },
                 price: price
@@ -360,8 +357,7 @@ extension ModelsR4.Invoice {
         } ?? []
     }
 
-    func chargeableItems(from fhirPackage: ABDAERezeptAbgabedaten,
-                         separation: Bool = false) throws -> [DavInvoice.ChargeableItem] {
+    func chargeableItems(separation: Bool = false) throws -> [DavInvoice.ChargeableItem] {
         try lineItem?.map {
             guard let factor = $0.priceComponent?.first?.factor?.value?.decimal
             else {
@@ -380,9 +376,9 @@ extension ModelsR4.Invoice {
                     factor: factor / 1000,
                     price: nil,
                     description: $0.chargeItem.chargeItemCodeableConcept?.text?.value?.string,
-                    pzn: $0.pzn(from: fhirPackage),
-                    ta1: $0.ta1(from: fhirPackage),
-                    hmrn: $0.hmnr(from: fhirPackage),
+                    pzn: $0.pzn,
+                    ta1: $0.ta1,
+                    hmrn: $0.hmrn,
                     zusatzattribut: zusatzAttribute
                 )
             }
@@ -390,9 +386,9 @@ extension ModelsR4.Invoice {
                 factor: factor,
                 price: price,
                 description: $0.chargeItem.chargeItemCodeableConcept?.text?.value?.string,
-                pzn: $0.pzn(from: fhirPackage),
-                ta1: $0.ta1(from: fhirPackage),
-                hmrn: $0.hmnr(from: fhirPackage),
+                pzn: $0.pzn,
+                ta1: $0.ta1,
+                hmrn: $0.hmrn,
                 zusatzattribut: zusatzAttribute
             )
         } ?? []
@@ -418,14 +414,14 @@ extension ModelsR4.Invoice {
         switch group {
         case "11":
             let dateValueX = zusatzAttributeExtension
-                .first { $0.url.value?.url.absoluteString == "DatumUhrzeit" }?.value
+                .first(where: { $0.url.value?.url.absoluteString == "DatumUhrzeit" })?.value
             if let valueX = dateValueX, case let Extension.ValueX.dateTime(date) = valueX,
                let date = date.value?.description {
                 return .notdienst(date)
             }
         case "12":
             let stringValueX = zusatzAttributeExtension
-                .first { $0.url.value?.url.absoluteString == "DokumentationFreitext" }?
+                .first(where: { $0.url.value?.url.absoluteString == "DokumentationFreitext" })?
                 .value
             if let valueX = stringValueX, case let Extension.ValueX.string(string) = valueX,
                let string = string.value?.description {
@@ -433,14 +429,14 @@ extension ModelsR4.Invoice {
             }
         case "16":
             let stringValueX = zusatzAttributeExtension
-                .first { $0.url.value?.url.absoluteString == "Spender-PZN" }?.value
+                .first(where: { $0.url.value?.url.absoluteString == "Spender-PZN" })?.value
             if let valueX = stringValueX, case let Extension.ValueX.codeableConcept(string) = valueX,
                let string = string.coding?.first?.code?.value?.string {
                 return .teilmengenabgabe(string)
             }
         case "101":
             let stringValueX = zusatzAttributeExtension
-                .first { $0.url.value?.url.absoluteString == "Schluessel" }?.value
+                .first(where: { $0.url.value?.url.absoluteString == "Schluessel" })?.value
             if let valueX = stringValueX, case let Extension.ValueX.codeableConcept(string) = valueX,
                let string = string.coding?.first?.code?.value?.string {
                 return .autidem(string)
@@ -454,22 +450,24 @@ extension ModelsR4.Invoice {
 }
 
 extension ModelsR4.InvoiceLineItem {
-    func pzn(from fhirPackage: ABDAERezeptAbgabedaten) -> String? {
-        coding(for: fhirPackage.dAV_EX_ERP_Abrechnungszeilen.pzn)?.code?.value?.string
+    var pzn: String? {
+        coding(for: Dispense.Key.ChargeItem.pzn)?.code?.value?.string
     }
 
-    func ta1(from fhirPackage: ABDAERezeptAbgabedaten) -> String? {
-        coding(for: fhirPackage.dAV_EX_ERP_Abrechnungszeilen.ta1)?.code?.value?.string
+    var ta1: String? {
+        coding(for: Dispense.Key.ChargeItem.ta1)?.code?.value?.string
     }
 
-    func hmnr(from fhirPackage: ABDAERezeptAbgabedaten) -> String? {
-        coding(for: fhirPackage.dAV_EX_ERP_Abrechnungszeilen.hmnr)?.code?.value?.string
+    var hmrn: String? {
+        coding(for: Dispense.Key.ChargeItem.hmnr)?.code?.value?.string
     }
 
-    func coding(for key: String) -> ModelsR4.Coding? {
+    func coding(for keys: [Dispense.Version: String]) -> ModelsR4.Coding? {
         if case let ChargeItemX.codeableConcept(item) = chargeItem {
             return item.coding?.first { coding in
-                coding.system?.value?.url.absoluteString == key
+                keys.contains {
+                    $0.value == coding.system?.value?.url.absoluteString
+                }
             }
         }
         return nil

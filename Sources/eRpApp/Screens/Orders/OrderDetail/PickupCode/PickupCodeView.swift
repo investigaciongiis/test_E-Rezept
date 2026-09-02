@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -27,7 +23,7 @@ import SwiftUI
 import SwiftUIIntrospect
 
 struct PickupCodeView: View {
-    @Bindable var store: StoreOf<PickupCodeDomain>
+    @Perception.Bindable var store: StoreOf<PickupCodeDomain>
     @State var originalBrightness: CGFloat?
 
     init(store: StoreOf<PickupCodeDomain>) {
@@ -35,67 +31,70 @@ struct PickupCodeView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: 0) {
-                    if let dmcCode = store.pickupCodeDMC {
-                        DMCView(image: store.dmcImage, dmcCode: dmcCode)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical)
-                    }
+        WithPerceptionTracking {
+            NavigationStack {
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: 0) {
+                        if let dmcCode = store.pickupCodeDMC {
+                            DMCView(image: store.dmcImage, dmcCode: dmcCode)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical)
+                        }
 
-                    if let hrCode = store.pickupCodeHR {
-                        HRCodeView(code: hrCode)
-                            .padding(.vertical, 8)
-                    }
+                        if let hrCode = store.pickupCodeHR {
+                            HRCodeView(code: hrCode)
+                                .padding(.vertical, 8)
+                        }
 
-                    TitleView(store: store)
+                        TitleView(store: store)
+                    }
+                }
+                .navigationBarItems(trailing: CloseButton { store.send(.delegate(.close)) }
+                    .accessibilityIdentifier(A11y.orderDetail.pickupCode.pucBtnClose))
+                .navigationBarTitleDisplayMode(.inline)
+                .introspect(.navigationView(style: .stack), on: .iOS(.v15, .v16, .v17, .v18)) { navigationController in
+                    let navigationBar = navigationController.navigationBar
+                    navigationBar.barTintColor = UIColor(Colors.systemBackground)
+                    let navigationBarAppearance = UINavigationBarAppearance()
+                    navigationBarAppearance.shadowColor = UIColor(Colors.systemColorClear)
+                    navigationBarAppearance.backgroundColor = UIColor(Colors.systemBackground)
+                    navigationBar.standardAppearance = navigationBarAppearance
+                }
+                .task {
+                    await store.send(.loadMatrixCodeImage(screenSize: UIScreen.main.bounds.size)).finish()
+                }
+                .onAppear {
+                    originalBrightness = UIScreen.main.brightness
+                }
+                .onDisappear {
+                    if let originalBrightness = originalBrightness {
+                        UIScreen.main.brightness = originalBrightness
+                    }
                 }
             }
-            .navigationBarItems(trailing: CloseButton { store.send(.delegate(.close)) }
-                .accessibilityIdentifier(A11y.orderDetail.pickupCode.pucBtnClose))
-            .navigationBarTitleDisplayMode(.inline)
-            .introspect(.navigationView(style: .stack),
-                        on: .iOS(.v15, .v16, .v17, .v18, .v26)) { navigationController in
-                let navigationBar = navigationController.navigationBar
-                navigationBar.barTintColor = UIColor(Colors.systemBackground)
-                let navigationBarAppearance = UINavigationBarAppearance()
-                navigationBarAppearance.shadowColor = UIColor(Colors.systemColorClear)
-                navigationBarAppearance.backgroundColor = UIColor(Colors.systemBackground)
-                navigationBar.standardAppearance = navigationBarAppearance
-            }
-            .task {
-                await store.send(.loadMatrixCodeImage(screenSize: UIScreen.main.bounds.size)).finish()
-            }
-            .onAppear {
-                originalBrightness = UIScreen.main.brightness
-            }
-            .onDisappear {
-                if let originalBrightness {
-                    UIScreen.main.brightness = originalBrightness
-                }
-            }
+            .accentColor(Colors.primary600)
+            .navigationViewStyle(StackNavigationViewStyle())
         }
-        .tint(Colors.primary700)
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 
     struct TitleView: View {
-        @Bindable var store: StoreOf<PickupCodeDomain>
+        @Perception.Bindable var store: StoreOf<PickupCodeDomain>
 
         var body: some View {
-            VStack(spacing: 8) {
-                Text(L10n.pucTxtTitle)
-                    .foregroundColor(Colors.systemLabel)
-                    .font(Font.subheadline.weight(.semibold))
-                    .accessibility(identifier: A11y.orderDetail.pickupCode.pucTxtTitle)
+            WithPerceptionTracking {
+                VStack(spacing: 8) {
+                    Text(L10n.pucTxtTitle)
+                        .foregroundColor(Colors.systemLabel)
+                        .font(Font.subheadline.weight(.semibold))
+                        .accessibility(identifier: A11y.orderDetail.pickupCode.pucTxtTitle)
 
-                let name = store.pharmacyName ?? L10n.ordTxtNoPharmacyName.text
-                Text(L10n.pucTxtSubtitle(name))
-                    .foregroundColor(Colors.systemLabelSecondary)
-                    .font(Font.subheadline)
-                    .multilineTextAlignment(.center)
-                    .accessibility(identifier: A11y.orderDetail.pickupCode.pucTxtSubtitle)
+                    let name = store.pharmacyName ?? L10n.ordTxtNoPharmacyName.text
+                    Text(L10n.pucTxtSubtitle(name))
+                        .foregroundColor(Colors.systemLabelSecondary)
+                        .font(Font.subheadline)
+                        .multilineTextAlignment(.center)
+                        .accessibility(identifier: A11y.orderDetail.pickupCode.pucTxtSubtitle)
+                }
             }
         }
     }

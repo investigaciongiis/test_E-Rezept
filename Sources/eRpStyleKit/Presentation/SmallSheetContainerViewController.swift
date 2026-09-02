@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 #if os(macOS)
@@ -31,7 +27,7 @@ class SmallSheetContainerViewController: UIViewController {
     weak var bottomAnchor: NSLayoutConstraint?
     weak var heightAnchor: NSLayoutConstraint?
 
-    /// Retained by ViewController hierarchy
+    // Retained by ViewController hierarchy
     weak var contentViewController: UIViewController?
 
     init(dismissBackgroundTap: @escaping () -> Void, contentVC: UIViewController) {
@@ -59,7 +55,7 @@ class SmallSheetContainerViewController: UIViewController {
 
     @objc
     func panGesture(_ gesture: UIPanGestureRecognizer) {
-        guard let bottomAnchor else {
+        guard let bottomAnchor = bottomAnchor else {
             return
         }
 
@@ -121,7 +117,7 @@ class SmallSheetContainerViewController: UIViewController {
         panGestureRecognizer.maximumNumberOfTouches = 1
         view.addGestureRecognizer(panGestureRecognizer)
 
-        if let contentViewController {
+        if let contentViewController = contentViewController {
             view.addSubview(fillingFooter)
             view.addSubview(contentViewController.view)
 
@@ -164,7 +160,7 @@ class SmallSheetContainerViewController: UIViewController {
         dismiss()
     }
 
-    /// Calculate content size
+    // Calculate content size
     var contentSize: CGSize? {
         var size = contentViewController?.view.sizeThatFits(CGSize(width: view.bounds.width, height: 0))
 
@@ -200,16 +196,6 @@ class SmallSheetContainerViewController: UIViewController {
         notificationCenter.removeObserver(self)
     }
 
-    private var maxContentHeight: CGFloat {
-        let screenHeight = view.window?.bounds.height ?? UIScreen.main.bounds.height
-        let topInset = view.window?.safeAreaInsets.top ?? 0
-        return screenHeight - topInset
-    }
-
-    private func clampedHeight(_ height: CGFloat) -> CGFloat {
-        min(height, maxContentHeight)
-    }
-
     override func preferredContentSizeDidChange(forChildContentContainer container: UIContentContainer) {
         super.preferredContentSizeDidChange(forChildContentContainer: container)
 
@@ -220,7 +206,7 @@ class SmallSheetContainerViewController: UIViewController {
                 options: [.beginFromCurrentState, .curveEaseOut]
             ) {
                 if let height = self.contentViewController?.preferredContentSize.height {
-                    self.heightAnchor?.constant = self.clampedHeight(height)
+                    self.heightAnchor?.constant = height
                 }
                 self.fillingFooter.backgroundColor = self.contentViewController?.view.subviews.first?
                     .backgroundColor ?? .systemBackground
@@ -230,7 +216,7 @@ class SmallSheetContainerViewController: UIViewController {
             }
         } else {
             if let height = contentViewController?.preferredContentSize.height {
-                heightAnchor?.constant = clampedHeight(height)
+                heightAnchor?.constant = height
             }
             fillingFooter.backgroundColor = contentViewController?.view.subviews.first?
                 .backgroundColor ?? .systemBackground

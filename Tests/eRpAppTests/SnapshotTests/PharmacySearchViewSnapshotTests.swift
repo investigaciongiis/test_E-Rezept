@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -56,12 +52,13 @@ final class PharmacySearchViewSnapshotTests: ERPSnapshotTestCase {
             )
         }
         let state = PharmacySearchDomain.State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             searchText: "",
             pharmacies: pharmacies,
             localPharmacies: pharmacies,
-            pharmacyFilterOptions: Shared(value: []),
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([]),
             searchState: .startView(loading: false)
         )
         let sut = NavigationStack {
@@ -82,9 +79,10 @@ final class PharmacySearchViewSnapshotTests: ERPSnapshotTestCase {
             PharmacySearchView(
                 store: .init(
                     initialState: PharmacySearchDomain.State(
-                        selectedPrescriptions: Shared(value: []),
+                        selectedPrescriptions: Shared([]),
                         inRedeemProcess: false,
                         searchText: "Apothekesdfwerwerasdf",
+                        pharmacyRedeemState: Shared(nil),
                         pharmacyFilterOptions: PharmacySearchMapDomainTests.Fixtures.sharedEmptyFilter,
                         searchState: .searchResultEmpty
                     )
@@ -104,10 +102,11 @@ final class PharmacySearchViewSnapshotTests: ERPSnapshotTestCase {
             PharmacySearchView(
                 store: .init(
                     initialState: PharmacySearchDomain.State(
-                        selectedPrescriptions: Shared(value: []),
+                        selectedPrescriptions: Shared([]),
                         inRedeemProcess: false,
                         searchText: "Adler Apo",
                         pharmacies: PharmacyLocationViewModel.Fixtures.pharmacies,
+                        pharmacyRedeemState: Shared(nil),
                         pharmacyFilterOptions: PharmacySearchMapDomainTests.Fixtures.sharedEmptyFilter,
                         searchState: .searchResultOk
                     )
@@ -122,89 +121,11 @@ final class PharmacySearchViewSnapshotTests: ERPSnapshotTestCase {
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
     }
 
-    func testPharmacySearch_searchSpecialClosingActive() {
-        withDependencies { dependencies in
-            dependencies.date.now = TestDate.defaultReferenceDate
-        } operation: {
-            let sut = NavigationStack {
-                PharmacySearchView(
-                    store: .init(
-                        initialState: PharmacySearchDomain.State(
-                            selectedPrescriptions: Shared(value: []),
-                            inRedeemProcess: false,
-                            searchText: "",
-                            pharmacies: [
-                                PharmacyLocationViewModel(
-                                    pharmacy: PharmacyLocation.Fixtures.pharmacyF,
-                                    referenceDate: TestDate.defaultReferenceDate
-                                ),
-                                PharmacyLocationViewModel(
-                                    pharmacy: PharmacyLocation.Fixtures.pharmacyG,
-                                    referenceDate: TestDate.defaultReferenceDate
-                                ),
-                                PharmacyLocationViewModel(
-                                    pharmacy: PharmacyLocation.Fixtures.pharmacyH,
-                                    referenceDate: TestDate.defaultReferenceDate
-                                ),
-                            ],
-                            pharmacyFilterOptions: PharmacySearchMapDomainTests.Fixtures.sharedEmptyFilter,
-                            searchState: .searchResultOk
-                        )
-                    ) {
-                        EmptyReducer()
-                    }
-                )
-            }
-            assertSnapshots(of: sut, as: snapshotModiOnDevices())
-            assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
-            assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
-        }
-    }
-
-    func testPharmacySearch_emergencyService() {
-        withDependencies { dependencies in
-            dependencies.date.now = TestDate.defaultReferenceDate
-        } operation: {
-            let sut = NavigationStack {
-                PharmacySearchView(
-                    store: .init(
-                        initialState: PharmacySearchDomain.State(
-                            selectedPrescriptions: Shared(value: []),
-                            inRedeemProcess: false,
-                            searchText: "",
-                            pharmacies: [
-                                PharmacyLocationViewModel(
-                                    pharmacy: PharmacyLocation.Fixtures.pharmacyI,
-                                    referenceDate: TestDate.defaultReferenceDate
-                                ),
-                                PharmacyLocationViewModel(
-                                    pharmacy: PharmacyLocation.Fixtures.pharmacyJ,
-                                    referenceDate: TestDate.defaultReferenceDate
-                                ),
-                                PharmacyLocationViewModel(
-                                    pharmacy: PharmacyLocation.Fixtures.pharmacyK,
-                                    referenceDate: TestDate.defaultReferenceDate
-                                ),
-                            ],
-                            pharmacyFilterOptions: PharmacySearchMapDomainTests.Fixtures.sharedEmptyFilter,
-                            searchState: .searchResultOk
-                        )
-                    ) {
-                        EmptyReducer()
-                    }
-                )
-            }
-            assertSnapshots(of: sut, as: snapshotModiOnDevices())
-            assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
-            assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
-        }
-    }
-
     func testPharmacySearch_mapSearch_WithUserButton() {
         let sut = PharmacySearchMapView(
             store: .init(
                 initialState: PharmacySearchMapDomain.State(
-                    selectedPrescriptions: Shared(value: []),
+                    selectedPrescriptions: Shared([]),
                     inRedeemProcess: false,
                     mapLocation: .manual(MKCoordinateRegion.gematikHQRegion),
                     pharmacies: PharmacyLocationViewModel.Fixtures.pharmacies,
@@ -237,6 +158,6 @@ final class PharmacySearchViewSnapshotTests: ERPSnapshotTestCase {
 
 extension PharmacySearchMapDomainTests {
     enum Fixtures {
-        static let sharedEmptyFilter: Shared<[PharmacySearchFilterDomain.PharmacyFilterOption]> = Shared(value: [])
+        static let sharedEmptyFilter: Shared<[PharmacySearchFilterDomain.PharmacyFilterOption]> = Shared([])
     }
 }

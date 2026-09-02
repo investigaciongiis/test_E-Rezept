@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -25,13 +21,12 @@ import Combine
 import eRpKit
 import IDP
 import Nimble
-import Profiles
 import XCTest
 
 final class StandardUserSessionTests: XCTestCase {
     var mockProfileValidator: AnyPublisher<IDTokenValidator, IDTokenValidatorError>!
     var mockCurrentProfile: AnyPublisher<Profile, LocalStoreError>!
-    var mockProfileDataStore = ProfileDataStoreMock()
+    var mockProfileDataStore = MockProfileDataStore()
 
     let idToken: String =
         "eyJhbGciOiJCUDI1NlIxIiwidHlwIjoiSldUIiwia2lkIjoicHVrX2lkcF9zaWcifQ.eyJhdF9oYXNoIjoiUzc2aFllak83dHgwMFVuYVpjaEZ0USIsInN1YiI6IlFYWTNRTHZ0OGdfT0F1VmRmV04zbHJWMGE1OEhLNGExTWtJYnZiWmRCb0EiLCJvcmdhbml6YXRpb25OYW1lIjoiVGVzdCBHS1YtU1ZOT1QtVkFMSUQiLCJwcm9mZXNzaW9uT0lEIjoiMS4yLjI3Ni4wLjc2LjQuNDkiLCJpZE51bW1lciI6IlgxMTA0NDM4NzQiLCJhbXIiOlsibWZhIiwic2MiLCJwaW4iXSwiaXNzIjoiaHR0cHM6Ly9pZHAuZGV2LmdlbWF0aWsuc29sdXRpb25zIiwiZ2l2ZW5fbmFtZSI6IkhlaW56IEhpbGxiZXJ0Iiwibm9uY2UiOiI1NTU3NTc3QTc1NzY2MTUzNDciLCJhdWQiOiJlUmV6ZXB0QXBwIiwiYWNyIjoiZ2VtYXRpay1laGVhbHRoLWxvYS1oaWdoIiwiYXpwIjoiZVJlemVwdEFwcCIsImF1dGhfdGltZSI6MTYxOTUxNjk5NCwic2NvcGUiOiJlLXJlemVwdCBvcGVuaWQiLCJleHAiOjE2MTk1MTcyOTQsImlhdCI6MTYxOTUxNjk5NCwiZmFtaWx5X25hbWUiOiJDw7ZyZGVzIiwianRpIjoiZmUwY2QzYTEyMGVlYjRiMyJ9.VYUiZ6cG8-EZyyMu5IV_owIlJ_5oJmRsB66rdILBGxiRGnlj2jX1Oxe_hMPYigL9dD2PwU8sZWOvuA3p1HZE9w" // swiftlint:disable:this line_length
@@ -41,11 +36,11 @@ final class StandardUserSessionTests: XCTestCase {
         return try idTokenJWT.decodePayload(type: TokenPayload.IDTokenPayload.self)
     }
 
-    func testIDTokenValidator_ProfileNotInStore() {
+    func testIDTokenValidator_ProfileNotInStore() throws {
         let sut = MockUserSession()
         let profileIdNotInStore = UUID()
         sut.mockUserDataStore.underlyingSelectedProfileId = Just(profileIdNotInStore).eraseToAnyPublisher()
-        sut.mockProfileDataStore.listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue = Just([])
+        sut.mockProfileDataStore.listAllProfilesReturnValue = Just([])
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 
@@ -66,8 +61,7 @@ final class StandardUserSessionTests: XCTestCase {
 
         let sut = MockUserSession()
         sut.profileId = currentProfile.id
-        sut.mockProfileDataStore
-            .listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue = Just([currentProfile, otherProfile])
+        sut.mockProfileDataStore.listAllProfilesReturnValue = Just([currentProfile, otherProfile])
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 
@@ -80,14 +74,13 @@ final class StandardUserSessionTests: XCTestCase {
         expect(expectedResult) == true
     }
 
-    func testIDTokenValidator_CreatesExpectedOutput() {
+    func testIDTokenValidator_CreatesExpectedOutput() throws {
         let currentProfile = Profile(name: "CurrentProfile", insuranceId: nil)
         let otherProfile = Profile(name: "OtherProfile")
 
         let sut = MockUserSession()
         sut.profileId = currentProfile.id
-        sut.mockProfileDataStore
-            .listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue = Just([currentProfile, otherProfile])
+        sut.mockProfileDataStore.listAllProfilesReturnValue = Just([currentProfile, otherProfile])
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 

@@ -1,30 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 import eRpKit
-import FeatureCommunication
-import FeatureHelpers
 import IDP
 import SwiftUI
 
@@ -38,15 +32,12 @@ struct AppDomain {
             // sourcery: AnalyticsState = main
             // sourcery: AnalyticsScreen = main
             case main
-            // sourcery: AnalyticsState = pharmacy
+            // sourcery: AnalyticsState = pharmacySearch
             // sourcery: AnalyticsScreen = pharmacySearch
-            case pharmacy
+            case pharmacySearch
             // sourcery: AnalyticsState = orders
             // sourcery: AnalyticsScreen = orders
             case orders
-            // sourcery: AnalyticsState = messages
-            // sourcery: AnalyticsScreen = orders
-            case messages
             // sourcery: AnalyticsState = settings
             // sourcery: AnalyticsScreen = settings
             case settings
@@ -61,16 +52,12 @@ struct AppDomain {
 
     @ObservableState
     struct State: Equatable {
-        @Shared(.isDemoMode) var isDemoMode
-        @Shared(.selectedProfileId) var profileId
-
         var destination: Destinations.State
 
         var main: MainDomain.State
-        var pharmacy: PharmacyContainerDomain.State
+        var pharmacySearch: PharmacySearchDomain.State
         var orders: OrdersDomain.State
         var settings: SettingsDomain.State
-        var messages: MessageThreadListDomain.State
 
         var unreadMessageCount: Int {
             unreadOrderMessageCount + unreadInternalCommunicationCount
@@ -78,46 +65,48 @@ struct AppDomain {
 
         var unreadOrderMessageCount: Int
         var unreadInternalCommunicationCount: Int
+        var isDemoMode: Bool
 
         init(
             destination: Destinations.State,
             main: MainDomain.State,
-            pharmacy: PharmacyContainerDomain.State,
+            pharmacySearch: PharmacySearchDomain.State,
             orders: OrdersDomain.State,
-            messages: MessageThreadListDomain.State,
             settings: SettingsDomain.State,
             unreadOrderMessageCount: Int,
-            unreadInternalCommunicationCount: Int
+            unreadInternalCommunicationCount: Int,
+            isDemoMode: Bool
         ) {
             self.destination = destination
             self.main = main
-            self.pharmacy = pharmacy
+            self.pharmacySearch = pharmacySearch
             self.orders = orders
-            self.messages = messages
             self.settings = settings
             self.unreadOrderMessageCount = unreadOrderMessageCount
             self.unreadInternalCommunicationCount = unreadInternalCommunicationCount
+            self.isDemoMode = isDemoMode
         }
     }
 
     enum Action: Equatable {
         case task
 
+        case isDemoModeReceived(Bool)
+        case registerDemoModeListener
         case registerNewMessageListener
         case newOrderMessageReceived(Int)
         case newInternalCommunicationReceived(Int)
         case setNavigation(Destinations.State)
 
         case main(action: MainDomain.Action)
-        case pharmacy(action: PharmacyContainerDomain.Action)
+        case pharmacySearch(action: PharmacySearchDomain.Action)
         case orders(action: OrdersDomain.Action)
-        case messages(action: MessageThreadListDomain.Action)
         case settings(action: SettingsDomain.Action)
     }
 
     @Dependency(\.schedulers) var schedulers: Schedulers
     @Dependency(\.changeableUserSessionContainer) var userSessionContainer: UsersSessionContainer
-    @Dependency(\.erxTaskRepository) var erxTaskRepository
+    @Dependency(\.entireErxTaskRepository) var entireErxTaskRepository
     @Dependency(\.internalCommunicationProtocol) var internalCommunicationProtocol: InternalCommunicationProtocol
 
     var body: some Reducer<State, Action> {
@@ -125,60 +114,65 @@ struct AppDomain {
             MainDomain()
         }
 
-        Scope(state: \.pharmacy, action: \.pharmacy) {
-            PharmacyContainerDomain()
+        Scope(state: \.pharmacySearch, action: \.pharmacySearch) {
+            PharmacySearchDomain()
         }
 
         Scope(state: \.orders, action: \.orders) {
             OrdersDomain()
         }
 
-        Scope(state: \.messages, action: \.messages) {
-            MessageThreadListDomain()
-        }
-
         Scope(state: \.settings, action: \.settings) {
             SettingsDomain()
         }
 
-        Reduce(core)
+        Reduce(self.core)
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
     func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .task:
-            return .send(.registerNewMessageListener)
+            return .merge(
+                .send(.registerDemoModeListener),
+                .send(.registerNewMessageListener)
+            )
         case .settings(
             action: .destination(
                 .presented(.editProfile(.destination(.presented(.alert(.confirmDeleteProfile)))))
             )
         ),
-        .settings(action: .destination(.presented(.newProfile(.createAndSaveProfileReceived(.success))))):
+        .settings(action: .destination(.presented(.newProfile(.response(.saveReceived(.success)))))):
             return .concatenate(
                 .send(.main(action: .setNavigation(tag: .none))),
                 .send(.orders(action: .resetNavigation)),
-                .send(.pharmacy(action: .pharmacySearch(.resetNavigation)))
+                .send(.pharmacySearch(action: .resetNavigation))
             )
         case .main(action: .horizontalProfileSelection(action: .selectProfile)):
             return .concatenate(
                 .send(.orders(action: .resetNavigation)),
-                .send(.pharmacy(action: .pharmacySearch(.resetNavigation)))
+                .send(.pharmacySearch(action: .resetNavigation))
+            )
+        case let .isDemoModeReceived(isDemoMode):
+            state.isDemoMode = isDemoMode
+            state.settings.isDemoMode = isDemoMode
+            return .none
+        case .registerDemoModeListener:
+            return .publisher(
+                userSessionContainer.isDemoMode
+                    .map(AppDomain.Action.isDemoModeReceived)
+                    .eraseToAnyPublisher
             )
         case .registerNewMessageListener:
             return .merge(
-                .run { [profileId = state.profileId] send in
-                    do {
-                        for try await count in erxTaskRepository.countAllUnreadCommunicationsAndChargeItems(
-                            profileId,
-                            .all
-                        ) {
-                            await send(.newOrderMessageReceived(count), animation: .default)
-                        }
-                    } catch {
-                        await send(.newOrderMessageReceived(67))
-                    }
-                },
+                .publisher(
+                    entireErxTaskRepository
+                        .countAllUnreadCommunicationsAndChargeItems(for: .all)
+                        .receive(on: schedulers.main.animation())
+                        .map(AppDomain.Action.newOrderMessageReceived)
+                        .catch { _ in Empty() }
+                        .eraseToAnyPublisher
+                ),
                 .run { send in
                     do {
                         for try await counter in internalCommunicationProtocol.loadUnreadInternalCommunicationsCount() {
@@ -203,11 +197,8 @@ struct AppDomain {
                 case .main:
                     state.main.destination = nil
                     return .none
-                case .pharmacy:
-                    state.pharmacy.pharmacySearch.destination = nil
-                    return .none
-                case .messages:
-                    state.messages.destination = nil
+                case .pharmacySearch:
+                    state.pharmacySearch.destination = nil
                     return .none
                 case .orders:
                     state.orders.destination = nil
@@ -220,7 +211,7 @@ struct AppDomain {
                 state.destination = destination
                 return .none
             }
-        case .main, .settings, .pharmacy, .orders, .messages:
+        case .main, .settings, .pharmacySearch, .orders:
             return .none
         }
     }
@@ -235,23 +226,12 @@ extension AppDomain {
         static let state = State(
             destination: .main,
             main: MainDomain.Dummies.state,
-            pharmacy: PharmacyContainerDomain.State(
-                pharmacySearch: PharmacySearchDomain.Dummies.stateStartView
-            ),
+            pharmacySearch: PharmacySearchDomain.Dummies.stateStartView,
             orders: OrdersDomain.Dummies.state,
-            messages: MessageThreadListDomain.Dummies.state,
             settings: SettingsDomain.Dummies.state,
             unreadOrderMessageCount: 0,
-            unreadInternalCommunicationCount: 0
+            unreadInternalCommunicationCount: 0,
+            isDemoMode: false
         )
-    }
-}
-
-extension SharedReaderKey
-    where Self == AppStorageKey<Bool>.Default {
-    /// A key to determine whether the app should show the feature eu redeeming of prescriptions.
-    /// As soon as this feature goes live, this key should be removed.
-    public static var communicationsV3Feature: Self {
-        Self[.appStorage("communications_v3_feature"), default: false]
     }
 }

@@ -13,73 +13,13 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Виявлено %u невдалих спроб входу</string>
+			<string></string>
 			<key>many</key>
-			<string>Виявлено %u невдалих спроб входу</string>
+			<string></string>
 			<key>one</key>
 			<string>Виявлено невдалу спробу входу</string>
 			<key>other</key>
 			<string>Виявлено %u невдалих спроб входу</string>
-		</dict>
-	</dict>
-	<key>auth_txt_password_failure_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>few</key>
-			<string>Неправильний пароль. Будь ласка, спробуйте ще раз за %u секунд.</string>
-			<key>many</key>
-			<string>Неправильний пароль. Будь ласка, спробуйте ще раз за %u секунд.</string>
-			<key>one</key>
-			<string>Неправильний пароль. Будь ласка, спробуйте ще раз через 1 секунду.</string>
-			<key>other</key>
-			<string>Неправильний пароль. Будь ласка, спробуйте ще раз за %u секунд.</string>
-		</dict>
-	</dict>
-	<key>auth_txt_please_retry_with_delay</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>few</key>
-			<string>Будь ласка, спробуйте ще раз через %u секунд.</string>
-			<key>many</key>
-			<string>Будь ласка, спробуйте ще раз через %u секунд.</string>
-			<key>one</key>
-			<string>Будь ласка, спробуйте ще раз через %u секунду.</string>
-			<key>other</key>
-			<string>Будь ласка, спробуйте ще раз через %u секунд.</string>
-		</dict>
-	</dict>
-	<key>dtl_txt_med_redeemed_on_direct_assignment</key>
-	<dict>
-		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@variable_0@</string>
-		<key>variable_0</key>
-		<dict>
-			<key>NSStringFormatSpecTypeKey</key>
-			<string>NSStringPluralRuleType</string>
-			<key>NSStringFormatValueTypeKey</key>
-			<string>li</string>
-			<key>few</key>
-			<string>Цей рецепт було виписано для вас % %@ як частину лікування.</string>
-			<key>many</key>
-			<string>Цей рецепт було виписано для вас % %@ як частину лікування.</string>
-			<key>one</key>
-			<string>Цей рецепт було %%@ у межах лікування для вас погашено.</string>
-			<key>other</key>
-			<string>Цей рецепт було виписано для вас % %@ як частину лікування.</string>
 		</dict>
 	</dict>
 	<key>erx_txt_accepted_until</key>
@@ -93,9 +33,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Ще можна отримати протягом %u днів</string>
+			<string></string>
 			<key>many</key>
-			<string>Ще можна отримати протягом %u днів</string>
+			<string></string>
 			<key>one</key>
 			<string>Викупити можна лише завтра</string>
 			<key>other</key>
@@ -113,9 +53,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Видалено: %% @</string>
+			<string></string>
 			<key>many</key>
-			<string>Видалено: %% @</string>
+			<string></string>
 			<key>one</key>
 			<string>Видалено: %% @</string>
 			<key>other</key>
@@ -133,9 +73,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Ще можна використати як самооплату протягом %u днів</string>
+			<string></string>
 			<key>many</key>
-			<string>Ще можна використати як самооплату протягом %u днів</string>
+			<string></string>
 			<key>one</key>
 			<string>Можна викупити лише завтра як самооплату</string>
 			<key>other</key>
@@ -153,9 +93,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>рецепти</string>
+			<string></string>
 			<key>many</key>
-			<string>рецепти</string>
+			<string></string>
 			<key>one</key>
 			<string>рецепт</string>
 			<key>other</key>
@@ -173,9 +113,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>%lu рецептів</string>
+			<string></string>
 			<key>many</key>
-			<string>%lu рецептів</string>
+			<string></string>
 			<key>one</key>
 			<string>%lu рецепт</string>
 			<key>other</key>
@@ -193,9 +133,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>%li рецептів не вдалося використати</string>
+			<string></string>
 			<key>many</key>
-			<string>%li рецептів не вдалося використати</string>
+			<string></string>
 			<key>one</key>
 			<string>Вибраний рецепт не можна використати</string>
 			<key>other</key>
@@ -213,9 +153,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Рецепти не можна викупити</string>
+			<string></string>
 			<key>many</key>
-			<string>Рецепти не можна викупити</string>
+			<string></string>
 			<key>one</key>
 			<string>Рецепт не можна погасити</string>
 			<key>other</key>
@@ -233,9 +173,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Наступні рецепти більше не можна використати: %% @. Можливо, ви вже викупили їх іншим способом або їх видалили.</string>
+			<string></string>
 			<key>many</key>
-			<string>Наступні рецепти більше не можна використати: %% @. Можливо, ви вже викупили їх іншим способом або їх видалили.</string>
+			<string></string>
 			<key>one</key>
 			<string>Рецепт %% @ більше не можна використовувати. Можливо, ви вже викупили його іншим способом або його видалили.</string>
 			<key>other</key>
@@ -253,9 +193,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Ліки отримано</string>
+			<string></string>
 			<key>many</key>
-			<string>Ліки отримано</string>
+			<string></string>
 			<key>one</key>
 			<string>Отримала ліки</string>
 			<key>other</key>
@@ -273,9 +213,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>Готово, додайте рецепти</string>
+			<string></string>
 			<key>many</key>
-			<string>Готово, додайте рецепти</string>
+			<string></string>
 			<key>one</key>
 			<string>Готово, додайте рецепт</string>
 			<key>other</key>
@@ -293,9 +233,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>рецепти</string>
+			<string></string>
 			<key>many</key>
-			<string>рецепти</string>
+			<string></string>
 			<key>one</key>
 			<string>рецепт</string>
 			<key>other</key>
@@ -313,9 +253,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>У вас ще є %u спроб ввести поточний PIN-код.</string>
+			<string></string>
 			<key>many</key>
-			<string>У вас ще є %u спроб ввести поточний PIN-код.</string>
+			<string></string>
 			<key>one</key>
 			<string>У вас є ще одна спроба ввести поточний PIN-код.</string>
 			<key>other</key>
@@ -333,9 +273,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>li</string>
 			<key>few</key>
-			<string>У вас ще є %u спроб ввести PUK-код.</string>
+			<string></string>
 			<key>many</key>
-			<string>У вас ще є %u спроб ввести PUK-код.</string>
+			<string></string>
 			<key>one</key>
 			<string>У вас є ще одна спроба ввести PUK-код.</string>
 			<key>other</key>

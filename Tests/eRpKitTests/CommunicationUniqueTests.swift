@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 @testable import eRpKit
@@ -29,7 +25,6 @@ final class CommunicationUniqueTests: XCTestCase {
         // given
         let communications = [
             Fixtures.communicationDuplicate,
-            Fixtures.communicationDuplicateButDifferentTaskId,
             Fixtures.communication,
             Fixtures.communicationProfile,
             Fixtures.communicationPayload,
@@ -45,12 +40,12 @@ final class CommunicationUniqueTests: XCTestCase {
         // then
         expect(result.count).to(equal(7))
         expect(result).to(contain(
-            UniqueFixtures.communication,
-            UniqueFixtures.communicationProfile,
-            UniqueFixtures.communicationPayload,
-            UniqueFixtures.communicationUser,
-            UniqueFixtures.communicationTelematik,
-            UniqueFixtures.communicationOrderId
+            Fixtures.communication,
+            Fixtures.communicationProfile,
+            Fixtures.communicationPayload,
+            Fixtures.communicationUser,
+            Fixtures.communicationTelematik,
+            Fixtures.communicationOrderId
         ))
     }
 
@@ -72,7 +67,7 @@ enum Fixtures {
     static let communication = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .dispReq,
-        taskId: "task_Id_1",
+        taskId: "123",
         userId: "ABC",
         telematikId: "T.XXX",
         orderId: "O.XXX",
@@ -84,7 +79,7 @@ enum Fixtures {
     static let communicationProfile = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .reply,
-        taskId: "task_Id_2",
+        taskId: "123",
         userId: "ABC",
         telematikId: "T.XXX",
         orderId: "O.XXX",
@@ -96,7 +91,7 @@ enum Fixtures {
     static let communicationUser = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .dispReq,
-        taskId: "task_Id_3",
+        taskId: "123",
         userId: "ABCD",
         telematikId: "T.XXX",
         orderId: "O.XXX",
@@ -108,7 +103,7 @@ enum Fixtures {
     static let communicationTelematik = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .dispReq,
-        taskId: "task_Id_4",
+        taskId: "123",
         userId: "ABC",
         telematikId: "T.YYY",
         orderId: "O.XXX",
@@ -120,7 +115,7 @@ enum Fixtures {
     static let communicationPayload = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .dispReq,
-        taskId: "task_Id_5",
+        taskId: "123",
         userId: "ABC",
         telematikId: "T.YYY",
         orderId: "O.XXX",
@@ -132,7 +127,7 @@ enum Fixtures {
     static let communicationOrderId = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .dispReq,
-        taskId: "task_Id_6",
+        taskId: "123",
         userId: "ABC",
         telematikId: "T.YYY",
         orderId: "O.ZZZ",
@@ -144,7 +139,7 @@ enum Fixtures {
     static let communicationEmptyOrderId = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .dispReq,
-        taskId: "task_Id_7",
+        taskId: "123",
         userId: "ABC",
         telematikId: "T.YYY",
         orderId: nil,
@@ -156,7 +151,7 @@ enum Fixtures {
     static let communicationDuplicate = ErxTask.Communication(
         identifier: UUID().uuidString,
         profile: .dispReq,
-        taskId: "task_Id_1",
+        taskId: "123",
         userId: "ABC",
         telematikId: "T.XXX",
         orderId: "O.XXX",
@@ -164,41 +159,4 @@ enum Fixtures {
         payloadJSON: "some",
         isRead: true
     )
-
-    static let communicationDuplicateButDifferentTaskId = ErxTask.Communication(
-        identifier: UUID().uuidString,
-        profile: .dispReq,
-        taskId: "task_Id_8",
-        userId: "ABC",
-        telematikId: "T.XXX",
-        orderId: "O.XXX",
-        timestamp: "21.09.2022",
-        payloadJSON: "some",
-        isRead: true
-    )
-}
-
-enum UniqueFixtures {
-    static let communication = ErxTask.Communication.Unique(
-        identifier: Fixtures.communication.identifier,
-        profile: Fixtures.communication.profile,
-        taskIds: [Fixtures.communication.taskId,
-                  Fixtures.communicationDuplicateButDifferentTaskId.taskId],
-        insuranceId: Fixtures.communication.insuranceId,
-        telematikId: Fixtures.communication.telematikId,
-        orderId: Fixtures.communication.orderId,
-        timestamp: Fixtures.communicationDuplicateButDifferentTaskId.timestamp,
-        payloadJSON: Fixtures.communication.payloadJSON,
-        isRead: Fixtures.communication.isRead
-    )
-
-    static let communicationProfile = ErxTask.Communication.Unique(from: Fixtures.communicationProfile)
-
-    static let communicationUser = ErxTask.Communication.Unique(from: Fixtures.communicationUser)
-
-    static let communicationTelematik = ErxTask.Communication.Unique(from: Fixtures.communicationTelematik)
-
-    static let communicationPayload = ErxTask.Communication.Unique(from: Fixtures.communicationPayload)
-
-    static let communicationOrderId = ErxTask.Communication.Unique(from: Fixtures.communicationOrderId)
 }

@@ -1,61 +1,43 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableCoreLocation
-import Dependencies
 import eRpKit
-import eRpStyleKit
 import Foundation
 import OpenSSL
-import SwiftUI
 
-// swiftlint:disable type_body_length
 /// Adds additional properties to the PharmacyLocation entity that are used in the view.
 @dynamicMemberLookup
-struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
+struct PharmacyLocationViewModel: Equatable, Identifiable {
     init(
         pharmacy: PharmacyLocation,
         referenceLocation: Location? = nil,
         referenceDate: Date? = nil,
-        timeOnlyFormatter _: ERPDateFormatter? = nil
+        timeOnlyFormatter: ERPDateFormatter? = nil
     ) {
         let referenceDate = referenceDate ?? Date()
-        // filter out specialClosing and specialOpening that are older then the refrenceDate
-        let filteredPharmacy = Self.filterSpecialHours(pharmacy: pharmacy, today: referenceDate)
-        self.pharmacyLocation = filteredPharmacy
-
+        pharmacyLocation = pharmacy
         let openingHours = Self.initHoursOfOperation(
-            pharmacy: pharmacyLocation,
-            referenceDate: referenceDate
+            pharmacy: pharmacy,
+            referenceDate: referenceDate,
+            timeOnlyFormatter: timeOnlyFormatter
         )
         self.openingHours = openingHours
-
-        self.specialClosingHours = filteredPharmacy.specialClosingHours.compactMap { specialPeriods in
-            SpecialOperationHoursPeriod(today: referenceDate, specialPeriods: specialPeriods)
-        }
-
-        self.emergencyServiceHours = filteredPharmacy.emergencyServiceHours.compactMap { openingPeriods in
-            SpecialOperationHoursPeriod(today: referenceDate, specialPeriods: openingPeriods)
-        }
 
         todayOpeningState = {
             let currentDay: String = Self.dayNameParseFormatter.string(from: referenceDate).lowercased()
@@ -68,10 +50,9 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
                 // Day does not exist in Data -> display closed
                 return .closed
             }
-
             return currentDayOpeningHours.openingState
         }()
-        if let pharmacyPosition = filteredPharmacy.position {
+        if let pharmacyPosition = pharmacy.position {
             distanceInM = initDistance(pharmacyPosition: pharmacyPosition, referenceLocation: referenceLocation)
             let distanceFormatter = MeasurementFormatter()
             distanceFormatter.locale = Locale.current
@@ -80,7 +61,7 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
             distanceFormatter.numberFormatter.maximumFractionDigits = 1
             distanceFormatter.numberFormatter.minimumFractionDigits = 0
 
-            if let distanceInM {
+            if let distanceInM = distanceInM {
                 if distanceInM > 100 {
                     let distanceInKM = distanceInM / 1000.0
                     if distanceInKM > 20 {
@@ -106,75 +87,10 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
 
     var pharmacyLocation: PharmacyLocation
     var openingHours: [OpeningHoursDay] = []
-    var specialClosingHours: [SpecialOperationHoursPeriod] = []
-    var emergencyServiceHours: [SpecialOperationHoursPeriod] = []
     var distanceInM: Double?
     var formattedDistance: String?
 
     let todayOpeningState: PharmacyOpenHoursCalculator.TodaysOpeningState
-
-    struct SpecialOperationHoursPeriod: Equatable, Hashable {
-        let imageName: EmergencyServiceImage
-        let reason: String
-        let displayPeriod: String
-        let isActive: Bool
-        let accessiblilityLabel: String
-
-        init?(
-            today: Date,
-            specialPeriods: PharmacyLocation.SpecialOperationHours,
-            calendar: Calendar = Calendar.current
-        ) {
-            @Dependency(\.fhirDateFormatter) var fhirDateFormatter: FHIRDateFormatter
-
-            guard let start = specialPeriods.startDate,
-                  let startString = start.dateStringWithOrWithoutHours(),
-                  let startDate = fhirDateFormatter.date(from: start),
-                  let end = specialPeriods.endDate,
-                  let endString = end.dateStringWithOrWithoutHours(),
-                  let endDate = fhirDateFormatter.date(from: end) else {
-                return nil
-            }
-
-            imageName = {
-                guard
-                    let startThreshold = calendar.date(bySettingHour: 17, minute: 0, second: 0, of: startDate),
-                    let nextDay = calendar.date(
-                        byAdding: .day,
-                        value: 1,
-                        to: calendar.startOfDay(for: startDate)
-                    ),
-                    let endThreshold = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: nextDay)
-                else {
-                    return .bell
-                }
-
-                return (startDate >= startThreshold && endDate <= endThreshold) ? .moon : .bell
-            }()
-
-            reason = specialPeriods.reason ?? ""
-
-            isActive = today >= startDate && today <= endDate
-
-            let sameDay = calendar.isDate(startDate, inSameDayAs: endDate)
-
-            accessiblilityLabel = {
-                if !sameDay {
-                    return """
-                    \(startString),
-                    \(L10n.phaDetailOpeningUntil.text)
-                    \(endString)
-                    """
-                } else {
-                    return """
-                    \(startString)
-                    """
-                }
-            }()
-
-            displayPeriod = "\(startString)\(!sameDay ? " – " : "")\(!sameDay ? endString : "")"
-        }
-    }
 
     struct OpeningHoursDay: Equatable, Hashable {
         static let localizesDisplayNameFormatter: DateFormatter = {
@@ -204,13 +120,12 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
             return formatted
         }
 
-        init(dayOfWeek: String, entries: [PharmacyLocationViewModel.OpeningHoursDay.Timespan]) {
+        internal init(dayOfWeek: String, entries: [PharmacyLocationViewModel.OpeningHoursDay.Timespan]) {
             self.dayOfWeek = dayOfWeek
             self.entries = entries
 
             if let date = Self.date(from: dayOfWeek) {
-                dayOfWeekLocalizedDisplayName = Self
-                    .localizesDisplayNameFormatter(from: date)
+                dayOfWeekLocalizedDisplayName = Self.localizesDisplayNameFormatter(from: date)
                 // .weekday starts with 1 being sunday, +5 % 7 to let monday be 0 and the first day
                 dayOfWeekNumber = (Calendar.current.component(.weekday, from: date) + 5) % 7
             } else {
@@ -223,11 +138,11 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
         let dayOfWeek: String
         let entries: [Timespan]
         var openingState: PharmacyOpenHoursCalculator.TodaysOpeningState {
-            entries.compactMap { (entry: Timespan) -> PharmacyOpenHoursCalculator.TodaysOpeningState? in
+            entries.compactMap { entry in
                 switch entry.openingState {
                 case .unknown, .closed:
                     return nil
-                case .open, .willOpen, .closingSoon, .closingButOpenLaterToday:
+                case .open, .willOpen, .closingSoon:
                     return entry.openingState
                 }
             }.first ?? .closed // Day exists, but is not about to open today
@@ -242,6 +157,18 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
         let dayOfWeekLocalizedDisplayName: String
     }
 
+    private static let defaultTimeOnlyFormatter: ERPDateFormatter = {
+        let dateFormatter = DateFormatter()
+        if let preferredLang = Locale.preferredLanguages.first,
+           preferredLang.starts(with: "de") {
+            dateFormatter.dateFormat = "HH:mm 'Uhr'"
+        } else {
+            dateFormatter.timeStyle = .short
+            dateFormatter.dateStyle = .none
+        }
+        return dateFormatter
+    }()
+
     private static let dayNameParseFormatter: DateFormatter = {
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "en_US")
@@ -251,9 +178,11 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
 
     static func initHoursOfOperation(
         pharmacy: PharmacyLocation,
-        referenceDate: Date
+        referenceDate: Date,
+        timeOnlyFormatter: ERPDateFormatter?
     ) -> [OpeningHoursDay] {
         let openHoursCalculator = PharmacyOpenHoursCalculator()
+        let timeOnlyFormatter = timeOnlyFormatter ?? Self.defaultTimeOnlyFormatter
 
         let expandedDays = pharmacy.hoursOfOperation.flatMap { timeSet in
             timeSet.daysOfWeek.map { day in
@@ -262,7 +191,7 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
                                                   closingTime: timeSet.closingTime)
             }
         }
-        return Dictionary(grouping: expandedDays) {
+        let days = Dictionary(grouping: expandedDays) {
             // as expandedDays is used, `daysOfWeek` is always a single element Array
             $0.daysOfWeek.first
         }
@@ -272,8 +201,7 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
                     openingState: openHoursCalculator.determineOpeningState(
                         for: referenceDate,
                         hoursOfOperation: [hour],
-                        specialClosings: pharmacy.specialClosingHours,
-                        emergencyServiceHours: pharmacy.emergencyServiceHours
+                        timeOnlyFormatter: timeOnlyFormatter
                     ),
                     openingTime: hour.openTimeWithoutSeconds,
                     closingTime: hour.closeTimeWithoutSeconds
@@ -282,6 +210,7 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
             return OpeningHoursDay(dayOfWeek: day ?? "", entries: timespans)
         }
         .sorted { $0.dayOfWeekNumber < $1.dayOfWeekNumber }
+        return days
     }
 
     func initDistance(pharmacyPosition: PharmacyLocation.Position, referenceLocation: Location? = nil) -> Double? {
@@ -321,74 +250,6 @@ struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
     .map {
         PharmacyLocationViewModel(pharmacy: $0)
     }
-
-    /// FHIR return old entries of specialClosingHours and emergencyServiceHours and we need to filter them
-    static func filterSpecialHours(pharmacy: PharmacyLocation, today: Date) -> PharmacyLocation {
-        @Dependency(\.fhirDateFormatter) var fhirDateFormatter: FHIRDateFormatter
-        var copy = pharmacy
-
-        copy.specialClosingHours = copy.specialClosingHours
-            .filter {
-                guard let end = $0.endDate,
-                      let endDate = fhirDateFormatter.date(from: end) else { return false }
-                return endDate >= today
-            }
-
-        copy.emergencyServiceHours = copy.emergencyServiceHours
-            .filter {
-                guard let end = $0.endDate,
-                      let endDate = fhirDateFormatter.date(from: end) else { return false }
-                return endDate >= today
-            }
-
-        return copy
-    }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(pharmacyLocation.id)
-        hasher.combine(openingHours)
-        hasher.combine(specialClosingHours)
-        hasher.combine(emergencyServiceHours)
-        hasher.combine(distanceInM)
-        hasher.combine(formattedDistance)
-        hasher.combine(todayOpeningState)
-    }
-}
-
-// swiftlint:enable type_body_length
-enum EmergencyServiceImage {
-    case bell
-    case moon
-
-    var symbolName: String {
-        switch self {
-        case .bell: return SFSymbolName.bell
-        case .moon: return SFSymbolName.moon
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .bell: return Colors.yellow700
-        case .moon: return Colors.primary600
-        }
-    }
-}
-
-extension String {
-    func dateStringWithOrWithoutHours() -> String? {
-        @Dependency(\.fhirDateFormatter) var fhirDateFormatter
-        @Dependency(\.uiDateFormatter) var uiDateFormatter
-        // string with time component will have an ":"
-        if !contains(":") {
-            return uiDateFormatter.date(self)
-        } else if let date = fhirDateFormatter.date(from: self) {
-            return uiDateFormatter.compactDateAndTimeFormatter
-                .string(from: date)
-                .replacingOccurrences(of: " ", with: "\u{00A0}")
-        }
-        return nil
-    }
 }
 
 extension PharmacyLocation.HoursOfOperation {
@@ -417,31 +278,20 @@ extension PharmacyLocation.HoursOfOperation {
     }
 }
 
-extension PharmacyLocation.PhysicalFeature {
-    var localizedDisplayName: StringAsset {
-        switch self {
-        case .parking: return L10n.phaDetailPhysicalFeatureParking
-        case .publicTransport: return L10n.phaDetailPhysicalFeaturePublicTransport
-        case .barrierFree: return L10n.phaDetailPhysicalFeatureBarrierFree
-        case .pickupAutomat: return L10n.phaDetailPhysicalFeaturePickupAutomat
+extension Array where Element == PharmacyLocationViewModel {
+    func filter(by filterOptions: [PharmacySearchFilterDomain.PharmacyFilterOption]) -> [PharmacyLocationViewModel] {
+        // Filter Pharmacies that are closed
+        if filterOptions.contains(.open) {
+            return filter { location in
+                switch location.todayOpeningState {
+                case .open, .closingSoon:
+                    return true
+                default:
+                    return false
+                }
+            }
         }
-    }
-}
-
-extension PharmacyLocation.Speciality {
-    var localizedDisplayName: StringAsset {
-        switch self {
-        case .sterileCompounding: return L10n.phaDetailSpecialitySterileCompounding
-        case .hypertension: return L10n.phaDetailSpecialityHypertension
-        case .inhalationTechnique: return L10n.phaDetailSpecialityInhalation
-        case .polymedication: return L10n.phaDetailSpecialityPolymedication
-        case .oralCancerTherapy: return L10n.phaDetailSpecialityOralCancerTherapy
-        case .organTransplantation: return L10n.phaDetailSpecialityOrganTransplantation
-        case .vaccination: return L10n.phaDetailSpecialityVaccination
-        case .bodyMeasurements: return L10n.phaDetailSpecialityBodyMeasurements
-        case .allergyTest: return L10n.phaDetailSpecialityAllergyTest
-        case .travelMedicineConsultation: return L10n.phaDetailSpecialityTravelMedicine
-        }
+        return self
     }
 }
 
@@ -457,20 +307,22 @@ extension PharmacyLocationViewModel {
             referenceDate: PharmacyLocation.Dummies.referenceDate
         )
 
-        static let pharmacies = PharmacyLocation.Dummies.pharmacies.map { pharmacy in
-            PharmacyLocationViewModel(
-                pharmacy: pharmacy,
-                referenceLocation: .init(
-                    altitude: 5,
-                    coordinate: .init(latitude: 49.247034, longitude: 8.8668786),
-                    course: 0,
-                    horizontalAccuracy: 0.0,
-                    speed: 0.0,
-                    timestamp: Date(),
-                    verticalAccuracy: 0
-                ),
-                referenceDate: PharmacyLocation.Dummies.referenceDate
-            )
-        }
+        static let pharmacies = {
+            PharmacyLocation.Dummies.pharmacies.map { pharmacy in
+                PharmacyLocationViewModel(
+                    pharmacy: pharmacy,
+                    referenceLocation: .init(
+                        altitude: 5,
+                        coordinate: .init(latitude: 49.247034, longitude: 8.8668786),
+                        course: 0,
+                        horizontalAccuracy: 0.0,
+                        speed: 0.0,
+                        timestamp: Date(),
+                        verticalAccuracy: 0
+                    ),
+                    referenceDate: PharmacyLocation.Dummies.referenceDate
+                )
+            }
+        }()
     }
 }

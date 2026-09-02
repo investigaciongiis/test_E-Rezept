@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 #if ENABLE_DEBUG_VIEW
@@ -29,9 +25,9 @@ import SwiftUI
 
 struct X509ScannerView: View {
     @Binding var show: Bool
-    /// name read from the certificate
+    // name read from the certificate
     @Binding var name: String
-    /// Base64 DER representation of a scanned HCI encryption certificate (C.HCI.ENC)
+    // Base64 DER representation of a scanned HCI encryption certificate (C.HCI.ENC)
     @Binding var derBase64: String
 
     @State var validCertFound = false
@@ -66,7 +62,7 @@ struct X509ScannerView: View {
             }
 
             VStack(alignment: .leading) {
-                if let error {
+                if let error = error {
                     Text(error)
                         .padding()
                         .background(Color(.systemBackground))
@@ -77,7 +73,7 @@ struct X509ScannerView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Image(systemName: validCertFound ? SFSymbolName.checkmark : SFSymbolName.crossIcon)
-                            .foregroundColor(validCertFound ? Colors.secondary600 : Colors.red700)
+                            .foregroundColor(validCertFound ? Colors.secondary600 : Colors.red600)
                         Text("C.HCI.ENC")
                         Text(name)
                     }
@@ -86,12 +82,9 @@ struct X509ScannerView: View {
                 .background(Color(.systemBackground))
                 .cornerRadius(16)
 
-                Button {
+                PrimaryTextButton(text: "Accept", a11y: "Accept") {
                     show = false
-                } label: {
-                    Text("Accept")
                 }
-                .accessibilityIdentifier("Accept")
             }
             .padding()
         }

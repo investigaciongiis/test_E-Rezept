@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -61,7 +57,7 @@ struct DebugPharmacy: Identifiable, Codable, CustomStringConvertible, Equatable,
     struct Certificate: Identifiable, Codable, CustomStringConvertible, Equatable, Hashable {
         private(set) var id = UUID()
         var name: String
-        /// Base64 DER representation of a HCI encryption certificate (C.HCI.ENC)
+        // Base64 DER representation of a HCI encryption certificate (C.HCI.ENC)
         var derBase64: String
 
         init(id: UUID = UUID(), name: String, derBase64: String) {
@@ -120,7 +116,7 @@ struct DebugPharmacy: Identifiable, Codable, CustomStringConvertible, Equatable,
             var value: String = ""
             private(set) var id = UUID()
 
-            init(key: String = "", value: String = "", id: UUID = UUID()) {
+            internal init(key: String = "", value: String = "", id: UUID = UUID()) {
                 self.key = key
                 self.value = value
                 self.id = id
@@ -146,7 +142,16 @@ extension DebugPharmacy {
                 telematikID: "telematik-id",
                 name: name,
                 types: [],
-                hoursOfOperation: []
+                hoursOfOperation: [],
+                avsEndpoints: PharmacyLocation.AVSEndpoints(
+                    onPremiseUrl: onPremiseUrl.url,
+                    onPremiseUrlAdditionalHeaders: onPremiseUrl.additionalHeadersDict,
+                    shipmentUrl: shipmentUrl.url,
+                    shipmentUrlAdditionalHeaders: shipmentUrl.additionalHeadersDict,
+                    deliveryUrl: deliveryUrl.url,
+                    deliveryUrlAdditionalHeaders: deliveryUrl.additionalHeadersDict
+                ),
+                avsCertificates: certificates.compactMap(\.x509)
             )
         )
     }

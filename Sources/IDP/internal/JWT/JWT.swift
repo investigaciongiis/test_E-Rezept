@@ -1,27 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
-import CodedError
 import Combine
 import Foundation
 
@@ -44,7 +38,7 @@ public struct JWT {
     /// - Parameters:
     ///   - data: JWT data should be utf8 decodable
     /// - Throws: `JWT.Error`
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         guard let string = String(data: data, encoding: .ascii) else {
             throw Error.malformedJWT
         }
@@ -54,32 +48,31 @@ public struct JWT {
     /// Initialize a JWT from String
     /// - Parameters:
     ///   - string: JWT string that should be formatted according to the RFC-7519 JWT specification
-    ///   - decoder: JSONDecoder needed with dateDecodingStrategy = .secondsSince1970 and dataDecodingStrategy = .base64
     /// - Throws: `JWT.Error`
-    public init(from string: String, decoder: JSONDecoder = JSONDecoder.base1970DateDecoder) throws {
-        // Regex magic
-        // if we find a match we should have a parsable JWT structure.
-        // Note: the signature is not validated at this point
+    public init(from string: String) throws {
+        /// Regex magic
+        /// if we find a match we should have a parsable JWT structure.
+        /// Note: the signature is not validated at this point
         let result = Self.jwtRegex.matches(in: string, range: NSRange(location: 0, length: string.count))
         guard !result.isEmpty else {
             throw Error.malformedJWT
         }
-        // We should have one match
-        // Match locations:
-        // 0: Entire string that matched
-        // 1: Header
-        // 2: Payload
-        // 3: The dot (.) between payload and signature. Is its own group since it's optional
-        // 4: The signature. The signature payload subgroup of 3. ^^
-        //
-        // Example:
-        // Regex: `^([A-Za-z0-9-_]+)\.([A-Za-z0-9-_]+)(\.([A-Za-z0-9-_]+))?$`
-        // JWT: eyAiYWxnIjogIm5vbmUiIH0.eyJwYXlsb2FkIjoidGV4dCJ9.MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
-        // 0: eyAiYWxnIjogIm5vbmUiIH0.eyJwYXlsb2FkIjoidGV4dCJ9.MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
-        // 1: eyAiYWxnIjogIm5vbmUiIH0
-        // 2:                         eyJwYXlsb2FkIjoidGV4dCJ9
-        // 3:                                                 .MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
-        // 4:                                                  MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
+        /// We should have one match
+        /// Match locations:
+        /// 0: Entire string that matched
+        /// 1: Header
+        /// 2: Payload
+        /// 3: The dot (.) between payload and signature. Is its own group since it's optional
+        /// 4: The signature. The signature payload subgroup of 3. ^^
+        ///
+        /// Example:
+        /// Regex: `^([A-Za-z0-9-_]+)\.([A-Za-z0-9-_]+)(\.([A-Za-z0-9-_]+))?$`
+        /// JWT: eyAiYWxnIjogIm5vbmUiIH0.eyJwYXlsb2FkIjoidGV4dCJ9.MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
+        /// 0: eyAiYWxnIjogIm5vbmUiIH0.eyJwYXlsb2FkIjoidGV4dCJ9.MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
+        /// 1: eyAiYWxnIjogIm5vbmUiIH0
+        /// 2:                         eyJwYXlsb2FkIjoidGV4dCJ9
+        /// 3:                                                 .MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
+        /// 4:                                                  MXUq3IrpzRL6Rc0Q8RP1987yAvUm2JoRQjvtGgJBNeg-MF6QJiuQQ
         guard let rawHeader = (string as NSString).substring(with: result[0].range(at: 1)).data(using: .ascii),
               let payload = (string as NSString).substring(with: result[0].range(at: 2)).data(using: .ascii) else {
             throw Error.encodingError
@@ -98,8 +91,15 @@ public struct JWT {
                 nil
             )
         }
-        header = try Self.header(from: rawHeader, parser: decoder)
+        header = try Self.header(from: rawHeader, parser: Self.jsonDecoder)
     }
+
+    private static var jsonDecoder: JSONDecoder = {
+        let jsonParser = JSONDecoder()
+        jsonParser.dateDecodingStrategy = .secondsSince1970
+        jsonParser.dataDecodingStrategy = .base64
+        return jsonParser
+    }()
 
     private static func header(from data: Base64URLEncodedData, parser: JSONDecoder) throws -> Header {
         guard let decodedData = data.decodeBase64URLEncoded() else {
@@ -118,12 +118,12 @@ public struct JWT {
         guard let decodedPayload = backing.payload.decodeBase64URLEncoded() else {
             throw Error.encodingError
         }
-        return try JSONDecoder.base1970DateDecoder.decode(type, from: decodedPayload)
+        return try Self.jsonDecoder.decode(type, from: decodedPayload)
     }
 
     /// Verify the JWT by checking the signature
     public func verify(with verifier: JWTSignatureVerifier) throws -> Bool {
-        guard let signature else {
+        guard let signature = signature else {
             throw Error.noSignature
         }
         return try verifier.verify(signature: signature, message: backing.rawHeader + Self.dot + backing.payload)
@@ -136,16 +136,16 @@ public struct JWT {
     /// - Parameter signer: `JWTSigner` that is used to create the signature
     /// - Returns: A stream that publishes the signed `JWT` if successful, an `Swift.Error` otherwise.
     public func sign(with signer: JWTSigner) -> AnyPublisher<JWT, Swift.Error> {
-        let data = backing.rawHeader + Self.dot + backing.payload
-        return Future {
-            try await signer.sign(message: data)
-        }
-        .tryMap { (signature: Data) -> JWT in
-            guard let encodedSignature = signature.encodeBase64UrlSafe()
-            else { throw Error.encodingError }
-            return try JWT(from: data + Self.dot + encodedSignature)
-        }
-        .eraseToAnyPublisher()
+        Deferred { () -> AnyPublisher<JWT, Swift.Error> in
+            let data = backing.rawHeader + Self.dot + backing.payload
+            return signer.sign(message: data)
+                .tryMap { signature in
+                    guard let encodedSignature = signature.encodeBase64UrlSafe()
+                    else { throw Error.encodingError }
+                    return try JWT(from: data + Self.dot + encodedSignature)
+                }
+                .eraseToAnyPublisher()
+        }.eraseToAnyPublisher()
     }
 
     /// Serialize the JWT
@@ -153,7 +153,7 @@ public struct JWT {
     /// - Returns: serialized base64 urlsafe encoded string
     public func serialize() -> String {
         var data = backing.rawHeader + Self.dot + backing.payload
-        if let signature,
+        if let signature = signature,
            let encodedSignature = signature.encodeBase64UrlSafe() {
             data.append(Self.dot) // .
             data.append(encodedSignature)
@@ -232,7 +232,7 @@ extension JWT {
     ///   - header: the JWT Header
     ///   - payload: JSON encodable payload
     /// - Throws: `Swift.Error` upon JSON encoding error
-    public init(header: Header, payload: some Claims) throws {
+    public init<E: Claims>(header: Header, payload: E) throws {
         let jsonEncoder = JSONEncoder()
         jsonEncoder.dateEncodingStrategy = .secondsSince1970
         jsonEncoder.outputFormatting = .sortedKeys
@@ -255,17 +255,17 @@ extension JWT {
 }
 
 extension JWT {
-    @CodedError("104")
+    // sourcery: CodedError = "104"
     public enum Error: Swift.Error, LocalizedError {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case malformedJWT
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case noSignature
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case encodingError
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case invalidSignature
-        @ErrorCode("05")
+        // sourcery: errorCode = "05"
         case invalidExpirationDate
 
         public var errorDescription: String? {
@@ -278,14 +278,4 @@ extension JWT {
             }
         }
     }
-}
-
-extension JSONDecoder {
-    /// A JSONDecoder that uses .secondsSince1970 and .base64 for dateDecodingStrategy
-    public static var base1970DateDecoder: JSONDecoder = {
-        let jsonParser = JSONDecoder()
-        jsonParser.dateDecodingStrategy = .secondsSince1970
-        jsonParser.dataDecodingStrategy = .base64
-        return jsonParser
-    }()
 }

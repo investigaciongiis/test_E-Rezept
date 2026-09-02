@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -25,14 +21,12 @@ import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureCommunication
-import FeatureHelpers
 import Nimble
 import XCTest
 
 @MainActor
 final class AppStartDomainTests: XCTestCase {
-    var mockUserDataStore: UserDataStoreMock!
+    var mockUserDataStore: MockUserDataStore!
     static let now = Date()
 
     typealias TestStore = TestStoreOf<AppStartDomain>
@@ -40,15 +34,13 @@ final class AppStartDomainTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        mockUserDataStore = UserDataStoreMock()
+        mockUserDataStore = MockUserDataStore()
     }
 
     private func testStore(with state: AppStartDomain.State = .init()) -> TestStore {
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
         return TestStore(initialState: state) {
             AppStartDomain()
         } withDependencies: { dependencies in
@@ -57,8 +49,8 @@ final class AppStartDomainTests: XCTestCase {
             dependencies.schedulers = Schedulers(
                 uiScheduler: DispatchQueue.immediate.eraseToAnyScheduler()
             )
-            dependencies.appSecurityManager = AppSecurityManagerMock()
-            dependencies.router = RoutingMock()
+            dependencies.appSecurityManager = MockAppSecurityManager()
+            dependencies.router = MockRouting()
             dependencies.date = DateGenerator.constant(Self.now)
         }
     }
@@ -72,10 +64,10 @@ final class AppStartDomainTests: XCTestCase {
         store.dependencies.currentAppVersion = .previewValue
 
         await store.send(.refreshOnboardingState)
-        // when receiving onboarding with version
-        await store.receive(.refreshOnboardingStateReceived(version: OnboardingDomain.Version.none)) {
+        // when receiving onboarding with composition
+        await store.receive(.refreshOnboardingStateReceived(OnboardingDomain.Composition.allPages)) {
             // onboarding should be presented
-            $0.destination = .onboarding(OnboardingDomain.State(version: OnboardingDomain.Version.none))
+            $0.destination = .onboarding(OnboardingDomain.State(composition: OnboardingDomain.Composition.allPages))
         }
 
         // when onboarding was dismissed
@@ -88,18 +80,17 @@ final class AppStartDomainTests: XCTestCase {
                         prescriptionListState: PrescriptionListDomain.State(),
                         horizontalProfileSelectionState: HorizontalProfileSelectionDomain.State()
                     ),
-                    pharmacy: PharmacyContainerDomain.State(
-                        pharmacySearch: PharmacySearchDomain.State(
-                            selectedPrescriptions: Shared(value: []),
-                            inRedeemProcess: false,
-                            pharmacyFilterOptions: Shared(value: [])
-                        )
+                    pharmacySearch: PharmacySearchDomain.State(
+                        selectedPrescriptions: Shared([]),
+                        inRedeemProcess: false,
+                        pharmacyRedeemState: Shared(nil),
+                        pharmacyFilterOptions: Shared([])
                     ),
-                    orders: OrdersDomain.State(communicationMessage: Shared(value: [])),
-                    messages: MessageThreadListDomain.State(),
-                    settings: SettingsDomain.State(),
+                    orders: OrdersDomain.State(communicationMessage: []),
+                    settings: SettingsDomain.State(isDemoMode: false),
                     unreadOrderMessageCount: 0,
-                    unreadInternalCommunicationCount: 0
+                    unreadInternalCommunicationCount: 0,
+                    isDemoMode: false
                 )
             )
         }
@@ -112,7 +103,7 @@ final class AppStartDomainTests: XCTestCase {
 
         await store.send(.refreshOnboardingState)
         await store.receive(.refreshOnboardingStateReceived(
-            version: OnboardingDomain.Version(rawVersion: "3.10.0")
+            OnboardingDomain.Composition()
         )) {
             $0.destination = .app(
                 AppDomain.State(
@@ -121,18 +112,15 @@ final class AppStartDomainTests: XCTestCase {
                         prescriptionListState: PrescriptionListDomain.State(),
                         horizontalProfileSelectionState: HorizontalProfileSelectionDomain.State()
                     ),
-                    pharmacy: PharmacyContainerDomain.State(
-                        pharmacySearch: PharmacySearchDomain.State(
-                            selectedPrescriptions: Shared(value: []),
-                            inRedeemProcess: false,
-                            pharmacyFilterOptions: Shared(value: [])
-                        )
-                    ),
-                    orders: OrdersDomain.State(communicationMessage: Shared(value: [])),
-                    messages: MessageThreadListDomain.State(),
-                    settings: .init(),
+                    pharmacySearch: PharmacySearchDomain.State(selectedPrescriptions: Shared([]),
+                                                               inRedeemProcess: false,
+                                                               pharmacyRedeemState: Shared(nil),
+                                                               pharmacyFilterOptions: Shared([])),
+                    orders: OrdersDomain.State(communicationMessage: []),
+                    settings: .init(isDemoMode: false),
                     unreadOrderMessageCount: 0,
-                    unreadInternalCommunicationCount: 0
+                    unreadInternalCommunicationCount: 0,
+                    isDemoMode: false
                 )
             )
         }

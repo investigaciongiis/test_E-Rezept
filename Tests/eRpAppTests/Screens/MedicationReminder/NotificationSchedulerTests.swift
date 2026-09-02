@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Dependencies
@@ -29,14 +25,13 @@ import XCTest
 
 final class NotificationSchedulerTests: XCTestCase {
     static let calendar = Calendar.current
-
-    func testNotificationsFromSchedulesAllWeekdays() {
+    func testNotificationsFromSchedules() {
         // given
         let schedules = [
-            Self.Fixtures.medicationScheduleOneEntryAllWeekdays,
-            Self.Fixtures.medicationScheduleTwoEntriesEndsInTwoDaysAllWeekdays,
-            Self.Fixtures.medicationScheduleOneEntryEndDistantFutureAllWeekdays,
-            Self.Fixtures.medicationScheduleInactiveAllWeekdays,
+            Self.Fixtures.medicationScheduleOneEntry,
+            Self.Fixtures.medicationScheduleTwoEntriesTwoDays,
+            Self.Fixtures.medicationScheduleOneEntryEndDistantFuture,
+            Self.Fixtures.medicationScheduleInactive,
         ]
         let uuid = UUIDGenerator.incrementing
 
@@ -51,13 +46,13 @@ final class NotificationSchedulerTests: XCTestCase {
         expect(notifications.count) == 6
     }
 
-    func testNotificationsFromInactiveScheduleAllWeekdays() {
+    func testNotificationsFromInactiveSchedule() {
         // given
         let uuid = UUIDGenerator.incrementing
 
         // when
         let notifications = NotificationScheduler.from(
-            schedules: [Self.Fixtures.medicationScheduleInactiveAllWeekdays],
+            schedules: [Self.Fixtures.medicationScheduleInactive],
             calendar: Self.calendar,
             uuid: uuid
         )
@@ -66,24 +61,23 @@ final class NotificationSchedulerTests: XCTestCase {
         expect(notifications.count) == 0
     }
 
-    func testRequestCreator_triggerRepeatingAllWeekdays() {
+    func testRequestCreator_triggerRepeating() {
         // given
-        let oneEntryDistantFuture = Self.Fixtures.medicationScheduleOneEntryEndDistantFutureAllWeekdays
+        let oneEntryDistantFuture = Self.Fixtures.medicationScheduleOneEntryEndDistantFuture
         let uuid = UUIDGenerator.incrementing
 
         // when
-        let notificationsFromOneEntry = NotificationScheduler.Request.Creator
-            .oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
-                schedule: oneEntryDistantFuture,
-                calendar: Self.calendar,
-                uuid: uuid
-            )
+        let notificationsFromOneEntry = NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntry(
+            schedule: oneEntryDistantFuture,
+            calendar: Self.calendar,
+            uuid: uuid
+        )
 
         // then
         guard let notification = notificationsFromOneEntry.first,
               let trigger = notification.trigger as? UNCalendarNotificationTrigger
         else {
-            Nimble.fail("Expected at least one Notification and corresponding trigger")
+            Nimble.fail("Expected at least one Notification or malformed trigger")
             return
         }
 
@@ -100,24 +94,23 @@ final class NotificationSchedulerTests: XCTestCase {
         expect(trigger.nextTriggerDate()).toNot(beNil())
     }
 
-    func testRequestCreator_triggerNonRepeatingAllWeekdays() {
+    func testRequestCreator_triggerNonRepeating() {
         // given
-        let oneEntry = Self.Fixtures.medicationScheduleOneEntryAllWeekdays
+        let oneEntry = Self.Fixtures.medicationScheduleOneEntry
         let uuid = UUIDGenerator.incrementing
 
         // when
-        let notificationRequestsFromOneEntry = NotificationScheduler.Request.Creator
-            .oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
-                schedule: oneEntry,
-                calendar: Self.calendar,
-                uuid: uuid
-            )
+        let notificationRequestsFromOneEntry = NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntry(
+            schedule: oneEntry,
+            calendar: Self.calendar,
+            uuid: uuid
+        )
 
         // then
         guard let notificationRequest = notificationRequestsFromOneEntry.first,
               let trigger = notificationRequest.trigger as? UNCalendarNotificationTrigger
         else {
-            Nimble.fail("Expected at least one Notification and corresponding trigger")
+            Nimble.fail("Expected at least one Notification or malformed trigger")
             return
         }
 
@@ -134,20 +127,19 @@ final class NotificationSchedulerTests: XCTestCase {
         expect(trigger.nextTriggerDate()).toNot(beNil())
     }
 
-    func testRequestCreator_triggerNonRepeatingInThePastAllWeekdays() {
+    func testRequestCreator_triggerNonRepeatingInThePast() {
         let uuid = UUIDGenerator.incrementing
 
-        let oneEntryInThePast = Self.Fixtures.medicationScheduleOneEntryInThePastAllWeekdays
-        let notificationsFromOneEntry = NotificationScheduler.Request.Creator
-            .oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
-                schedule: oneEntryInThePast,
-                calendar: Self.calendar,
-                uuid: uuid
-            )
+        let oneEntryInThePast = Self.Fixtures.medicationScheduleOneEntryInThePast
+        let notificationsFromOneEntry = NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntry(
+            schedule: oneEntryInThePast,
+            calendar: Self.calendar,
+            uuid: uuid
+        )
         guard let notification = notificationsFromOneEntry.first,
               let trigger = notification.trigger as? UNCalendarNotificationTrigger
         else {
-            Nimble.fail("Expected at least one Notification and corresponding trigger")
+            Nimble.fail("Expected at least one Notification or malformed trigger")
             return
         }
 
@@ -156,87 +148,36 @@ final class NotificationSchedulerTests: XCTestCase {
         expect(trigger.nextTriggerDate()).to(beNil())
     }
 
-    func testRequestCreator_countAllWeekdays() {
+    func testRequestCreator_count() {
         let uuid = UUIDGenerator.incrementing
 
-        let oneEntry = Self.Fixtures.medicationScheduleOneEntryAllWeekdays
-        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
+        let oneEntry = Self.Fixtures.medicationScheduleOneEntry
+        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntry(
             schedule: oneEntry,
             calendar: Self.calendar,
             uuid: uuid
         ).count) == 1
 
-        let oneEntryEndDistantFuture = Self.Fixtures.medicationScheduleOneEntryEndDistantFutureAllWeekdays
-        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
+        let oneEntryEndDistantFuture = Self.Fixtures.medicationScheduleOneEntryEndDistantFuture
+        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntry(
             schedule: oneEntryEndDistantFuture,
             calendar: Self.calendar,
             uuid: uuid
         ).count) == 1
 
-        let twoEntries = Self.Fixtures.medicationScheduleTwoEntriesAllWeekdays
-        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
+        let twoEntries = Self.Fixtures.medicationScheduleTwoEntries
+        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntry(
             schedule: twoEntries,
             calendar: Self.calendar,
             uuid: uuid
         ).count) == 2
 
-        let twoEntriesTwoDays = Self.Fixtures.medicationScheduleTwoEntriesEndsInTwoDaysAllWeekdays
-        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
+        let twoEntriesTwoDays = Self.Fixtures.medicationScheduleTwoEntriesTwoDays
+        expect(NotificationScheduler.Request.Creator.oneNotificationRequestForEachEntry(
             schedule: twoEntriesTwoDays,
             calendar: Self.calendar,
             uuid: uuid
         ).count) == 4
-    }
-
-    func testRequestCreator_triggerRepeatingWeekdaysOnly() {
-        // given
-        let oneEntry = Self.Fixtures.medicationScheduleEndsInTwoWeeksMondaysOnly
-        let uuid = UUIDGenerator.incrementing
-
-        // when
-        let notificationsFromOneEntry = NotificationScheduler.Request.Creator
-            .oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
-                schedule: oneEntry,
-                calendar: Self.calendar,
-                uuid: uuid
-            )
-
-        // then
-        guard let notification = notificationsFromOneEntry.first,
-              let trigger: UNCalendarNotificationTrigger = notification.trigger as? UNCalendarNotificationTrigger
-        else {
-            Nimble.fail("Expected at least one Notification and corresponding trigger")
-            return
-        }
-
-        expect(notification.identifier) == "00000000-0000-0000-0000-000000000000"
-
-        expect(trigger.repeats) == false
-
-        expect(trigger.dateComponents.year).to(equal(2025))
-        expect(trigger.dateComponents.month).to(equal(4))
-        expect(trigger.dateComponents.day).to(equal(21))
-        expect(trigger.dateComponents.hour) == oneEntry.entries.first!.hourComponent
-        expect(trigger.dateComponents.minute) == oneEntry.entries.first!.minuteComponent
-        expect(trigger.dateComponents.weekday).to(beNil())
-        expect(trigger.nextTriggerDate()).to(beNil())
-
-        // A notification for Monday the week after was also requested
-        let notification2 = notificationsFromOneEntry[1]
-        guard let trigger2: UNCalendarNotificationTrigger = notification2.trigger as? UNCalendarNotificationTrigger
-        else {
-            Nimble.fail("Expected at least one Notification and corresponding trigger")
-            return
-        }
-        expect(notification2.identifier) == "00000000-0000-0000-0000-000000000001"
-        expect(trigger2.repeats) == false
-        expect(trigger2.dateComponents.year).to(equal(2025))
-        expect(trigger2.dateComponents.month).to(equal(4))
-        expect(trigger2.dateComponents.day).to(equal(28))
-        expect(trigger2.dateComponents.hour) == oneEntry.entries.first!.hourComponent
-        expect(trigger2.dateComponents.minute) == oneEntry.entries.first!.minuteComponent
-        expect(trigger2.dateComponents.weekday).to(beNil())
-        expect(trigger2.nextTriggerDate()).to(beNil())
     }
 }
 
@@ -245,171 +186,155 @@ extension NotificationSchedulerTests {
         static let now = Date.now
         static let calendar = Calendar.current
         static let oneHourLater = now.addingTimeInterval(60)
-        static let medicationScheduleOneEntryAllWeekdays: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId1",
-            isActive: true,
-            weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday],
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-            ]
-        )
+        static let medicationScheduleOneEntry: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId1",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "oneEntryFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourLater),
+                        minuteComponent: calendar.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                ]
+            )
+        }()
 
-        static let medicationScheduleOneEntryEndDistantFutureAllWeekdays: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: Date.distantFuture,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId1",
-            isActive: true,
-            weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday],
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-            ]
-        )
+        static let medicationScheduleOneEntryEndDistantFuture: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: Date.distantFuture,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId1",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "oneEntryFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourLater),
+                        minuteComponent: calendar.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                ]
+            )
+        }()
 
         static let oneHourEarlier = now.addingTimeInterval(-60)
-        static let medicationScheduleOneEntryInThePastAllWeekdays: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId1",
-            isActive: true,
-            weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday],
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourEarlier),
-                    minuteComponent: calendar.component(.minute, from: oneHourEarlier),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-            ]
-        )
+        static let medicationScheduleOneEntryInThePast: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId1",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "oneEntryFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourEarlier),
+                        minuteComponent: calendar.component(.minute, from: oneHourEarlier),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                ]
+            )
+        }()
 
         static let twoHoursLater = now.addingTimeInterval(60 * 2)
-        static let medicationScheduleTwoEntriesAllWeekdays: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId2",
-            isActive: true,
-            weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday],
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesSecondEntry",
-                    hourComponent: calendar.component(.hour, from: twoHoursLater),
-                    minuteComponent: calendar.component(.minute, from: twoHoursLater),
-                    dosageForm: "pill",
-                    amount: "2"
-                ),
-            ]
-        )
+        static let medicationScheduleTwoEntries: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId2",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourLater),
+                        minuteComponent: calendar.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesSecondEntry",
+                        hourComponent: calendar.component(.hour, from: twoHoursLater),
+                        minuteComponent: calendar.component(.minute, from: twoHoursLater),
+                        dosageForm: "pill",
+                        amount: "2"
+                    ),
+                ]
+            )
+        }()
 
-        static let medicationScheduleTwoEntriesEndsInTwoDaysAllWeekdays: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now.advanced(by: 60 * 60 * 24),
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId2",
-            isActive: true,
-            weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday],
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesSecondEntry",
-                    hourComponent: calendar.component(.hour, from: twoHoursLater),
-                    minuteComponent: calendar.component(.minute, from: twoHoursLater),
-                    dosageForm: "pill",
-                    amount: "2"
-                ),
-            ]
-        )
+        static let medicationScheduleTwoEntriesTwoDays: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now.advanced(by: 60 * 60 * 24),
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId2",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourLater),
+                        minuteComponent: calendar.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesSecondEntry",
+                        hourComponent: calendar.component(.hour, from: twoHoursLater),
+                        minuteComponent: calendar.component(.minute, from: twoHoursLater),
+                        dosageForm: "pill",
+                        amount: "2"
+                    ),
+                ]
+            )
+        }()
 
-        static let medicationScheduleInactiveAllWeekdays: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId3",
-            isActive: false,
-            weekdays: [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday],
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "3"
-                ),
-            ]
-        )
-
-        static let fixedData = Date(timeIntervalSinceReferenceDate: 766_565_081) // 2025-04-17 06:44:24 UTC
-        static let medicationScheduleEndsInTwoWeeksMondaysOnly: MedicationSchedule = .init(
-            id: UUID(),
-            start: Self.fixedData,
-            end: Self.fixedData.advanced(by: 60 * 60 * 24 * 15),
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId4",
-            isActive: true,
-            weekdays: [.monday],
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "3"
-                ),
-            ]
-        )
+        static let medicationScheduleInactive: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId3",
+                isActive: false,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "oneEntryFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourLater),
+                        minuteComponent: calendar.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "3"
+                    ),
+                ]
+            )
+        }()
     }
 
     private static func roundDownToMinute(_ date: Date) -> Date {

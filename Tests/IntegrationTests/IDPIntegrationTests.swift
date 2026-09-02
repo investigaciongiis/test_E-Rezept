@@ -1,33 +1,27 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
+import ASN1Kit
 import Combine
 @testable import eRpFeatures
 import Foundation
 import HTTPClient
-import HTTPClientLive
-import IDP
-@testable import IDPLive
+@testable import IDP
 import Nimble
 import OpenSSL
 import Security
@@ -72,10 +66,8 @@ final class IDPIntegrationTests: XCTestCase {
             ]
         )
 
-        let trustStoreSession = TrustStoreSessionMock()
-        trustStoreSession.validateEeCertificateX509BoolReturnValue = true
-
-        let schedulers = Schedulers(computeScheduler: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
+        let trustStoreSession = MockTrustStoreSession()
+        let schedulers = TestSchedulers(compute: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
         let session = DefaultIDPSession(
             config: configuration,
             storage: storage,
@@ -129,7 +121,7 @@ final class IDPIntegrationTests: XCTestCase {
 
         // invalid sso refresh
 
-        var elements = try XCTUnwrap(token.ssoToken?.split(separator: Character("."), omittingEmptySubsequences: false))
+        var elements = token.ssoToken!.split(separator: Character("."), omittingEmptySubsequences: false)
         elements[0] = "eyJlbmMiOiJBMjU2R0NNIiwiY3R5IjoiTkpXVCIsImV4cCI6MTYxODQ5MjE0MSwiYWxnIjoiZGlyIiwia2lkIjoiMDAwMSJ9"
 
         let newSSOToken: String = elements.joined(separator: ".")
@@ -174,21 +166,22 @@ final class IDPIntegrationTests: XCTestCase {
             case signatureFailed
         }
 
-        func sign(message: Data) async throws -> Data {
-            do {
-                return try privateKeyContainer.sign(data: message).derToConcat()
-            } catch {
-                throw Error.signatureFailed
+        func sign(message: Data) -> AnyPublisher<Data, Swift.Error> {
+            Future { [weak self] promise in
+                promise(Result {
+                    guard let result = try self?.privateKeyContainer.sign(data: message) else {
+                        throw Error.signatureFailed
+                    }
+                    return result
+                })
             }
+            .eraseToAnyPublisher()
         }
     }
 
     func testBiometrieFlow() throws {
-        let keyIdentifier = try generateSecureRandom(length: 32)
-        let keyTag = try XCTUnwrap(try String(
-            data: XCTUnwrap(keyIdentifier.encodeBase64UrlSafeIntTest()),
-            encoding: .utf8
-        ))
+        let keyIdentifier = try! generateSecureRandom(length: 32)
+        let keyTag = String(data: keyIdentifier.encodeBase64UrlSafeIntTest()!, encoding: .utf8)!
         let privateKeyContainer: PrivateKeyContainer
 
         do {
@@ -210,7 +203,7 @@ final class IDPIntegrationTests: XCTestCase {
             discoveryURL: environment.appConfiguration.idp,
             scopes: ["pairing", "openid"]
         )
-        let schedulers = Schedulers(computeScheduler: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
+        let schedulers = TestSchedulers(compute: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
         let httpClient = DefaultHTTPClient(
             urlSessionConfiguration: .ephemeral,
             interceptors: [
@@ -218,8 +211,7 @@ final class IDPIntegrationTests: XCTestCase {
                 LoggingInterceptor(log: .body),
             ]
         )
-        let trustStoreSession = TrustStoreSessionMock()
-        trustStoreSession.validateEeCertificateX509BoolReturnValue = true
+        let trustStoreSession = MockTrustStoreSession()
 
         let pairingIDPSession = DefaultIDPSession(
             config: pairingIDPSessionConfiguration,
@@ -288,7 +280,7 @@ final class IDPIntegrationTests: XCTestCase {
             privateKeyContainer
         }
 
-        let pairingSession = try secureEnclaveSignatureProvider.createPairingSession()
+        let pairingSession = try! secureEnclaveSignatureProvider.createPairingSession()
 
         secureEnclaveSignatureProvider.signPairingSession(pairingSession, with: signer, certificate: cert)
             .mapError { $0.asIDPError() }
@@ -351,7 +343,7 @@ final class IDPIntegrationTests: XCTestCase {
             discoveryURL: environment.appConfiguration.idp,
             scopes: ["pairing", "openid"]
         )
-        let schedulers = Schedulers(computeScheduler: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
+        let schedulers = TestSchedulers(compute: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
         let httpClient = DefaultHTTPClient(
             urlSessionConfiguration: .ephemeral,
             interceptors: [
@@ -359,8 +351,7 @@ final class IDPIntegrationTests: XCTestCase {
                 LoggingInterceptor(log: .body),
             ]
         )
-        let trustStoreSession = TrustStoreSessionMock()
-        trustStoreSession.validateEeCertificateX509BoolReturnValue = true
+        let trustStoreSession = MockTrustStoreSession()
 
         let pairingIDPSession = DefaultIDPSession(
             config: pairingIDPSessionConfiguration,
@@ -412,7 +403,7 @@ final class IDPIntegrationTests: XCTestCase {
                       success = true
 
                       Swift.print("DEVICES: ")
-                      for entry in devices.pairingEntries {
+                      devices.pairingEntries.forEach { entry in
                           Swift.print("Device: ", entry.name, entry.pairingEntryVersion)
                       }
                   },
@@ -420,7 +411,7 @@ final class IDPIntegrationTests: XCTestCase {
         expect(success) == true
     }
 
-    func testExternalAuthenticationLoginGid() async throws {
+    func testExternalAuthenticationLoginGid() throws {
         guard let idpsekServer = environment.idpsekURLServer else {
             throw XCTSkip("Skip test because no IDP Server was provided")
         }
@@ -441,9 +432,8 @@ final class IDPIntegrationTests: XCTestCase {
             ]
         )
 
-        let trustStoreSession = TrustStoreSessionMock()
-        trustStoreSession.validateEeCertificateX509BoolReturnValue = true
-        let schedulers = Schedulers(computeScheduler: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
+        let trustStoreSession = MockTrustStoreSession()
+        let schedulers = TestSchedulers(compute: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
         let session = DefaultIDPSession(
             config: configuration,
             storage: storage,
@@ -479,7 +469,7 @@ final class IDPIntegrationTests: XCTestCase {
         expect(success) == true
         expect(selectedEntry).toNot(beNil())
 
-        guard let selectedEntry else {
+        guard let selectedEntry = selectedEntry else {
             return
         }
 
@@ -492,7 +482,11 @@ final class IDPIntegrationTests: XCTestCase {
             .startExtAuth(entry: selectedEntry)
             .test(
                 timeout: 100,
+                failure: { error in
+                    fail("\(error)")
+                },
                 expectations: { list in
+
                     // MARK: - Step 2: Authentication Request Response
 
                     success = true
@@ -502,7 +496,8 @@ final class IDPIntegrationTests: XCTestCase {
                     .eraseToAnyScheduler()
             )
 
-        expect(redirectURL).toNot(beNil())
+        expect(selectedEntry).toNot(beNil())
+        expect(selectedEntry.gId).to(beTrue())
 
         // MARK: - Step 3: Universal Link - mocked by calling Step 4 - 7 within this test
 
@@ -516,7 +511,7 @@ final class IDPIntegrationTests: XCTestCase {
         components.host = idpsekURL.host
         components.port = idpsekURL.port
         components.path = idpsekURL.path
-        components.queryItems?.append(.init(name: "user_id", value: "P179293933"))
+        components.queryItems?.append(.init(name: "user_id", value: "X123456784"))
         if let clientIdIndex = components.queryItems?.firstIndex(where: { item in
             item.name == "client_id"
         }) {
@@ -533,18 +528,27 @@ final class IDPIntegrationTests: XCTestCase {
         let request = URLRequest(url: urlStep4)
 
         var urlStep7RedirectVal: URL?
-
-        let result = try await httpClient.send(
-            request: request,
-            interceptors: [
-                LoggingInterceptor(log: .url),
-                AdditionalHeaderInterceptor(additionalHeader: idpsekServer.header),
-            ]
-        ) { _, redirect in
-            urlStep7RedirectVal = redirect.url
-            return nil
-        }
-        print(result)
+        httpClient
+            .send(
+                request: request,
+                interceptors: [
+                    LoggingInterceptor(log: .url),
+                    AdditionalHeaderInterceptor(additionalHeader: idpsekServer.header),
+                ]
+            ) { _, redirect in
+                urlStep7RedirectVal = redirect.url
+                return nil
+            }
+            .test(
+                timeout: 10,
+                failure: { error in
+                    fail("\(error)")
+                },
+                expectations: { result in
+                    print(result)
+                },
+                subscribeScheduler: DispatchQueue.global().eraseToAnyScheduler()
+            )
 
         expect(urlStep7RedirectVal).toNot(beNil())
         guard let urlStep7Redirect = urlStep7RedirectVal else {
@@ -576,10 +580,7 @@ class Brainpool256r1Signer: JWTSigner {
     let x5c: X509
     let key: BrainpoolP256r1.Verify.PrivateKey
 
-    init(x5c path: String?, key filePath: String?) throws {
-        guard let path, let filePath else {
-            throw NSError(domain: "Invalid file paths", code: 0, userInfo: nil)
-        }
+    init(x5c path: String, key filePath: String) throws {
         x5c = try X509(der: path.readFileContents())
         key = try BrainpoolP256r1.Verify.PrivateKey(raw: filePath.readFileContents())
     }
@@ -588,8 +589,25 @@ class Brainpool256r1Signer: JWTSigner {
         [x5c.derBytes!]
     }
 
-    func sign(message: Data) async throws -> Data {
-        try key.sign(message: message).rawRepresentation
+    func sign(message: Data) -> AnyPublisher<Data, Error> {
+        Future { promise in
+            promise(Result {
+                try self.key.sign(message: message).rawRepresentation
+            })
+        }
+        .eraseToAnyPublisher()
+    }
+}
+
+class MockTrustStoreSession: TrustStoreSession {
+    func reset() {}
+
+    func validate(certificate _: X509) -> AnyPublisher<Bool, TrustStoreError> {
+        Just(true).setFailureType(to: TrustStoreError.self).eraseToAnyPublisher()
+    }
+
+    func loadVauCertificate() -> AnyPublisher<X509, TrustStoreError> {
+        Just(try! X509(der: Data())).setFailureType(to: TrustStoreError.self).eraseToAnyPublisher()
     }
 }
 

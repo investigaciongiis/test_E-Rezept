@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -28,14 +24,6 @@ import SwiftUI
 import XCTest
 
 final class MainViewSnapshotTests: ERPSnapshotTestCase {
-    override func invokeTest() {
-        withDependencies { dependencies in
-            dependencies.date.now = TestDate.defaultReferenceDate
-        } operation: {
-            super.invokeTest()
-        }
-    }
-
     private func store(for state: MainDomain.State) -> StoreOf<MainDomain> {
         StoreOf<MainDomain>(initialState: state) {
             EmptyReducer()
@@ -87,11 +75,11 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
         let sut = MainView(store: store(for: MainDomain.State(
             prescriptionListState: PrescriptionListDomain.State(
                 prescriptions: [],
-                profile: UserProfile.Fixtures.profileA
+                profile: UserProfile.Dummies.profileA
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.State(
-                profiles: [UserProfile.Fixtures.profileA],
-                selectedProfileId: UserProfile.Fixtures.profileA.id
+                profiles: [UserProfile.Dummies.profileA],
+                selectedProfileId: UserProfile.Dummies.profileA.id
             )
         )))
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
@@ -105,11 +93,11 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
         let sut = MainView(store: store(for: MainDomain.State(
             prescriptionListState: PrescriptionListDomain.State(
                 prescriptions: [prescription],
-                profile: UserProfile.Fixtures.profileA
+                profile: UserProfile.Dummies.profileA
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
         )))
-        .frame(width: 320, height: 700)
+            .frame(width: 320, height: 700)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
@@ -123,7 +111,7 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
         )))
-        .frame(width: 320, height: 700)
+            .frame(width: 320, height: 700)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
@@ -131,7 +119,7 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
         let sut = MainView(store: store(for: MainDomain.State(
             prescriptionListState: PrescriptionListDomain.State(
                 prescriptions: Prescription.Dummies.prescriptionsScanned,
-                profile: UserProfile.Fixtures.profileA
+                profile: UserProfile.Dummies.profileA
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
         )))
@@ -140,23 +128,30 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
     }
 
     func testMainView_ALotOfPrescriptions() {
-        let prescriptions = Prescription.Fixtures.prescriptions
+        withDependencies {
+            $0.date = DateGenerator { Date() }
+        } operation: {
+            let prescriptions = Prescription.Fixtures.prescriptions
 
-        let sut = MainView(store: store(for: MainDomain.State(
-            prescriptionListState: PrescriptionListDomain.State(
-                prescriptions: prescriptions,
-                profile: UserProfile.Fixtures.profileA
-            ),
-            horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
-        )))
-        .frame(width: 320, height: 2000)
+            let sut = MainView(store: store(for: MainDomain.State(
+                prescriptionListState: PrescriptionListDomain.State(
+                    prescriptions: prescriptions,
+                    profile: UserProfile.Dummies.profileA
+                ),
+                horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
+            )))
+                .frame(width: 320, height: 2000)
 
-        assertSnapshots(of: sut, as: snapshotModi())
+            assertSnapshots(of: sut, as: snapshotModi())
+        }
     }
 
     func testMainView_WelcomeDrawer() {
         let sut =
-            InsuranceDrawerView(root: .main) {} gkvInsuredAction: {} pkvInsuredAction: {} federalInsuredAction: {}
+            WelcomeDrawerView(store: store(for: MainDomain.State(
+                prescriptionListState: .init(),
+                horizontalProfileSelectionState: .init()
+            )))
 
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())

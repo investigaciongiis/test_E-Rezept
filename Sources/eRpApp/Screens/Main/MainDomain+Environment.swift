@@ -1,33 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import CombineSchedulers
 import ComposableArchitecture
-import ConsentService
 import eRpKit
-import eRpResources
-import ErxTaskRepository
-import FeatureHelpers
 import Foundation
 
 extension MainDomain {
@@ -42,56 +34,95 @@ extension MainDomain {
         var deviceSecurityManager: DeviceSecurityManager
         var profileSecureDataWiper: ProfileSecureDataWiper
         var profileDataStore: ProfileDataStore
-        var consentService: ConsentService
+        var chargeItemConsentService: ChargeItemConsentService
 
-        func checkForTaskDuplicatesThenSave(_ sharedTasks: [SharedTask],
-                                            profileId: UUID?) -> Effect<MainDomain.Action> {
+        enum DrawerEvaluationResult {
+            case welcomeDrawer
+            case consentDrawer
+            case none
+        }
+
+        func showDrawerEvaluation() async -> DrawerEvaluationResult {
+            // show welcome drawer?
+            if !userDataStore.hideWelcomeDrawer {
+                return .welcomeDrawer
+            }
+
+            // show consent drawer?
+            do {
+                let profile = try await userSession.profile().async(\MainDomain.Error.Cases.localStoreError)
+                if profile.insuranceType == .pKV,
+                   profile.hidePkvConsentDrawerOnMainView == false,
+                   // Only if the service responded successfully that the consent has not been granted yet
+                   // (== .success(false)) we want to show the consent drawer. Otherwise we don't.
+                   case .notGranted = try await chargeItemConsentService.checkForConsent(profile.id) {
+                    return .consentDrawer
+                }
+            } catch {
+                // fall-through in case of any error
+            }
+
+            return .none
+        }
+
+        func checkForTaskDuplicatesThenSave(_ sharedTasks: [SharedTask]) -> Effect<MainDomain.Action> {
             let authoredOn = fhirDateFormatter.stringWithLongUTCTimeZone(from: Date())
-            let erxTaskRepository = erxTaskRepository
+            let erxTaskRepository = self.erxTaskRepository
 
-            return .run { [profileId] send in
-                do {
-                    let tasks = try await checkForTaskDuplicatesInStore(sharedTasks)
-                    let erxTasks = tasks.asErxTasks(
-                        status: .ready,
-                        with: authoredOn,
-                        author: L10n.scnTxtAuthor.text
-                    ) { L10n.scnTxtMedication($0).text }
+            return .publisher(
+                checkForTaskDuplicatesInStore(sharedTasks)
+                    .flatMap { tasks -> AnyPublisher<[ErxTask], MainDomain.Error> in
+                        let erxTasks = tasks.asErxTasks(
+                            status: .ready,
+                            with: authoredOn,
+                            author: L10n.scnTxtAuthor.text
+                        ) { L10n.scnTxtMedication($0).text }
 
-                    try await erxTaskRepository.saveTask(erxTasks, profileId)
-                    await send(.response(.importReceived(.success(erxTasks))))
-                } catch let error as Error {
-                    await send(.response(.importReceived(.failure(error))))
-                }
-            }
-        }
-
-        func checkForTaskDuplicatesInStore(_ sharedTasks: [SharedTask]) async throws -> [SharedTask] {
-            var deduplicatedTasks = [SharedTask]()
-            for task in sharedTasks {
-                do {
-                    let localTask = try await erxTaskRepository.loadLocalTask(task.id, task.accessCode).async()
-                    if localTask == nil {
-                        deduplicatedTasks.append(task)
+                        return erxTaskRepository.save(
+                            erxTasks: erxTasks
+                        )
+                        .map { _ in erxTasks }
+                        .mapError(MainDomain.Error.repositoryError)
+                        .eraseToAnyPublisher()
                     }
-                } catch let error as ErxRepositoryError {
-                    throw MainDomain.Error.repositoryError(error)
-                }
-            }
-
-            if deduplicatedTasks.isEmpty {
-                throw MainDomain.Error.importDuplicate
-            } else {
-                return deduplicatedTasks
-            }
+                    .catchToPublisher()
+                    .map { .response(.importReceived($0)) }
+                    .receive(on: schedulers.main)
+                    .eraseToAnyPublisher
+            )
         }
 
-        func setHideWelcomeDrawerOnMainViewToTrue() async throws -> Bool {
-            let profileId = userSession.profileId
-            return try await profileDataStore.update(profileId: profileId) {
-                $0.hideWelcomeDrawerOnMainView = true
+        func checkForTaskDuplicatesInStore(_ sharedTasks: [SharedTask])
+            -> AnyPublisher<[SharedTask], MainDomain.Error> {
+            let findPublishers: [AnyPublisher<SharedTask?, Never>] = sharedTasks.map { sharedTask in
+                self.erxTaskRepository.loadLocal(by: sharedTask.id, accessCode: sharedTask.accessCode)
+                    .first()
+                    .map { erxTask -> SharedTask? in
+                        if erxTask != nil {
+                            return nil // by returning nil we sort out previously stored tasks
+                        } else {
+                            return sharedTask
+                        }
+                    }
+                    .catch { _ in Just(.none) }
+                    .eraseToAnyPublisher()
             }
-            .async(\MainDomain.Error.Cases.localStoreError)
+
+            return Publishers.MergeMany(findPublishers)
+                .collect(findPublishers.count)
+                .flatMap { optionalTasks -> AnyPublisher<[SharedTask], MainDomain.Error> in
+                    let tasks = optionalTasks.compactMap { $0 }
+                    if tasks.isEmpty {
+                        return Fail(error: MainDomain.Error.importDuplicate)
+                            .eraseToAnyPublisher()
+                    } else {
+                        return Just(tasks)
+                            .setFailureType(to: MainDomain.Error.self)
+                            .eraseToAnyPublisher()
+                    }
+                }
+                .receive(on: schedulers.main)
+                .eraseToAnyPublisher()
         }
 
         func setHidePkvConsentDrawerOnMainViewToTrue() async throws -> Bool {

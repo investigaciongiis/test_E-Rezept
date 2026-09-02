@@ -1,49 +1,49 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
 import eRpKit
 import eRpStyleKit
-import ErxTaskRepository
 import Perception
 import SwiftUI
 
 struct MedicationReminderOneDaySummaryView: View {
-    @Bindable var store: StoreOf<MedicationReminderOneDaySummaryDomain>
+    @Perception.Bindable var store: StoreOf<MedicationReminderOneDaySummaryDomain>
+
+    @ScaledMetric var headerPlusBottomPlusSomeHeight = 320 // use this for limiting the ScrollView's height
+
+    init(store: StoreOf<MedicationReminderOneDaySummaryDomain>) {
+        self.store = store
+    }
 
     @Dependency(\.uiDateFormatter) var dateFormatter
 
     var body: some View {
-        VStack(spacing: 0) {
-            HeaderView { store.send(.closeButtonTapped) }
-                .padding(.bottom, 32)
+        WithPerceptionTracking {
+            VStack(spacing: 40) {
+                HeaderView { store.send(.closeButtonTapped) }
 
-            ScrollView {
-                VStack(spacing: 20) {
-                    if store.medicationSchedules.isEmpty {
-                        EmptyMedicationEvent()
-                            .padding(.horizontal)
-                    } else {
-                        VStack(spacing: 0) {
+                if store.medicationSchedules.isEmpty {
+                    EmptyMedicationEvent()
+                        .padding(.horizontal)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 40) {
                             ForEach(store.medicationSchedules) { (schedule: MedicationSchedule) in
                                 VStack(spacing: 8) {
                                     Text(schedule.title)
@@ -63,27 +63,26 @@ struct MedicationReminderOneDaySummaryView: View {
                                     }
                                 }
                             }
-                            .padding(.bottom, 40)
                         }
                         .padding(.horizontal)
                     }
-
-                    Button {
-                        store.send(.goToMedicationReminderListButtonTapped)
-                    } label: {
-                        Text(L10n.medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundColor(Colors.primary700)
-                    .accessibilityIdentifier(A11y.medicationReminder
-                        .medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
+                    .frame(maxHeight: UIScreen.main.bounds.size.height - self.headerPlusBottomPlusSomeHeight)
                 }
+
+                Button {
+                    store.send(.goToMedicationReminderListButtonTapped)
+                } label: {
+                    Text(L10n.medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(Colors.primary600)
+                .accessibilityIdentifier(A11y.medicationReminder.medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Colors.systemBackground.ignoresSafeArea())
-        .onAppear {
-            store.send(.onAppear)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Colors.systemBackground.ignoresSafeArea())
+            .onAppear {
+                store.send(.onAppear)
+            }
         }
     }
 
@@ -93,6 +92,10 @@ struct MedicationReminderOneDaySummaryView: View {
         var body: some View {
             VStack(alignment: .center, spacing: 40) {
                 VStack(spacing: 0) {
+                    Capsule()
+                        .foregroundColor(Colors.systemLabelQuarternary)
+                        .frame(width: 32, height: 8, alignment: .center)
+
                     HStack(spacing: 0) {
                         Spacer()
 
@@ -101,13 +104,26 @@ struct MedicationReminderOneDaySummaryView: View {
                     }
                     .padding(.horizontal)
                 }
-                .padding(.vertical, 8)
 
                 Text(L10n.medReminderTxtOneDaySummaryTitle)
                     .font(.title3)
                     .fontWeight(.bold)
             }
             .padding(.top, 8)
+        }
+
+        struct CloseButton: View {
+            let action: () -> Void
+
+            var body: some View {
+                Button(action: action) {
+                    Image(systemName: SFSymbolName.crossIconPlain)
+                        .font(Font.caption.weight(.bold))
+                        .foregroundColor(Color(.secondaryLabel))
+                        .padding(6)
+                        .background(Circle().foregroundColor(Color(.systemGray6)))
+                }
+            }
         }
     }
 
@@ -199,9 +215,9 @@ struct MedicationReminderOneDaySummaryView: View {
             HStack(spacing: 8) {
                 Image(SFSymbolName
                     .alarm)
-                    .font(.largeTitle)
-                    .foregroundColor(Colors.primary700)
-                    .padding([.top, .bottom, .leading])
+                                    .font(.largeTitle)
+                                    .foregroundColor(Colors.primary600)
+                                    .padding([.top, .bottom, .leading])
 
                 VStack(alignment: .leading) {
                     Text(L10n.medReminderTxtOneDaySummaryEmptyEventTitle)

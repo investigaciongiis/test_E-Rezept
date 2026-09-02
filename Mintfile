@@ -1,4 +1,5 @@
-realm/SwiftLint@0.65.0
-yonaskolb/xcodegen@2.45.4
-nicklockwood/SwiftFormat@0.62.1
-jpsim/SourceKitten@0.37.3
+realm/SwiftLint@0.52.2
+yonaskolb/xcodegen@2.33.0
+nicklockwood/SwiftFormat@0.48.7
+jpsim/SourceKitten@0.34.1
+SwiftGen/SwiftGen@6.6.2

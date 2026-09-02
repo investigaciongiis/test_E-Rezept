@@ -1,39 +1,35 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
 import Nimble
 import XCTest
 
-@MainActor
 final class RedeemUITests: XCTestCase {
     var app: XCUIApplication!
 
-    override func tearDown() async throws {
-        try await super.tearDown()
+    override func tearDown() {
+        super.tearDown()
     }
 
-    override func setUp() async throws {
-        try await super.setUp()
+    @MainActor
+    override func setUp() {
+        super.setUp()
 
         app = XCUIApplication()
 
@@ -50,30 +46,18 @@ final class RedeemUITests: XCTestCase {
         _ = app.wait(for: .runningForeground, timeout: 10.0)
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-        // swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 
     @MainActor
     func testRedeemSuccessScreenShowsRatingDialog() async throws {
-        let redeemScreenNoPharm = TabBarScreen(app: app)
+        let redeemScreen = TabBarScreen(app: app)
             .tapPrescriptionsTab()
             .tapRedeem()
             .tapRedeemRemote()
-
-        expect(redeemScreenNoPharm.redeemButton().isEnabled).to(beFalse())
-
-        let redeemScreen = redeemScreenNoPharm
-            .tapAddPharmacy()
             .pharmacyDetailsForPharmacy("ZoTI_04_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-
-        redeemScreen.editPrescriptionButton().tap()
-        expect(self.app.buttons["Bdavomilproston, Noch 19 Tage einlösbar"].value as? String).to(equal("Ausgewählt"))
-        expect(self.app.buttons["Adavomilproston, Noch 19 Tage einlösbar"].value as? String).to(equal("Ausgewählt"))
-
-        app.buttons["Zurück"].tap()
+            .tapRedeem()
 
         let editAdressScreen = redeemScreen
             .tapEditAddress()
@@ -108,62 +92,6 @@ final class RedeemUITests: XCTestCase {
     }
 
     @MainActor
-    func testRedeemWithPickupSuccess() async throws {
-        let redeemScreenNoPharm = TabBarScreen(app: app)
-            .tapPrescriptionsTab()
-            .tapRedeem()
-            .tapRedeemRemote()
-
-        expect(redeemScreenNoPharm.redeemButton().isEnabled).to(beFalse())
-
-        let redeemScreen = redeemScreenNoPharm
-            .tapAddPharmacy()
-            .pharmacyDetailsForPharmacy("ZoTI_02_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-
-        redeemScreen.editPrescriptionButton().tap()
-        expect(self.app.buttons["Bdavomilproston, Noch 19 Tage einlösbar"].value as? String).to(equal("Ausgewählt"))
-        expect(self.app.buttons["Adavomilproston, Noch 19 Tage einlösbar"].value as? String).to(equal("Ausgewählt"))
-
-        app.buttons["Zurück"].tap()
-
-        try await redeemScreen
-            .tapRedeem()
-            .tapClose()
-    }
-
-    @MainActor
-    func testRedeemWithDelivierySuccess() async throws {
-        let redeemScreenNoPharm = TabBarScreen(app: app)
-            .tapPrescriptionsTab()
-            .tapRedeem()
-            .tapRedeemRemote()
-
-        expect(redeemScreenNoPharm.redeemButton().isEnabled).to(beFalse())
-
-        let redeemScreen = redeemScreenNoPharm
-            .tapAddPharmacy()
-            .pharmacyDetailsForPharmacy("ZoTI_03_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-
-        redeemScreen.editPrescriptionButton().tap()
-        expect(self.app.buttons["Bdavomilproston, Noch 19 Tage einlösbar"].value as? String).to(equal("Ausgewählt"))
-        expect(self.app.buttons["Adavomilproston, Noch 19 Tage einlösbar"].value as? String).to(equal("Ausgewählt"))
-
-        app.buttons["Zurück"].tap()
-
-        let editAdressScreen = redeemScreen
-            .tapEditAddress()
-
-        editAdressScreen.setPhoneNumber("1234567890")
-        try await editAdressScreen.tapSave()
-
-        try await redeemScreen
-            .tapRedeem()
-            .tapClose()
-    }
-
-    @MainActor
     func testRedeemChecksForInProgressPrescriptions() async throws {
         let bridge = UITestBridgeClient()
 
@@ -171,9 +99,8 @@ final class RedeemUITests: XCTestCase {
             .tapPrescriptionsTab()
             .tapRedeem()
             .tapRedeemRemote()
-            .tapAddPharmacy()
             .pharmacyDetailsForPharmacy("ZoTI_04_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
+            .tapRedeem()
 
         await bridge.sendMessage(.scenarioStep(1))
 
@@ -203,9 +130,8 @@ final class RedeemUITests: XCTestCase {
             .tapPrescriptionsTab()
             .tapRedeem()
             .tapRedeemRemote()
-            .tapAddPharmacy()
             .pharmacyDetailsForPharmacy("ZoTI_04_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
+            .tapRedeem()
 
         await bridge.sendMessage(.scenarioStep(1))
 
@@ -235,104 +161,19 @@ final class RedeemUITests: XCTestCase {
     }
 
     @MainActor
-    func testRedeemFromDetailsPharmacyRedeem() async throws {
+    func testRedeemFromDetailsPharmacyRedeem() {
         let details = TabBarScreen(app: app)
             .tapPrescriptionsTab()
             .tapDetailsForPrescriptionNamed("Adavomilproston")
 
-        let redeemScreen = details
+        _ = details
             .tapRedeemPharmacyButton()
-            .tapAddPharmacy()
             .pharmacyDetailsForPharmacy("ZoTI_04_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-
-        expect(redeemScreen.editPharmacyButton().exists).to(beTrue())
-
-        let prescriptions = redeemScreen.editPrescriptionButton()
-        expect(prescriptions.label).to(equal("Rezepte, Adavomilproston"))
-
-        let editAdressScreen = redeemScreen
-            .tapEditAddress()
-
-        editAdressScreen.setPhoneNumber("1234567890")
-        try await editAdressScreen.tapSave()
-
-        try await redeemScreen
             .tapRedeem()
-            .tapClose()
-    }
 
-    @MainActor
-    func testRedeemFromDetailsWithPickupSuccess() async throws {
-        let details = TabBarScreen(app: app)
-            .tapPrescriptionsTab()
-            .tapDetailsForPrescriptionNamed("Adavomilproston")
-
-        let redeemScreen = details
-            .tapRedeemPharmacyButton()
-            .tapAddPharmacy()
-            .pharmacyDetailsForPharmacy("ZoTI_02_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-
-        expect(redeemScreen.editPharmacyButton().exists).to(beTrue())
-        expect(redeemScreen.redeemButton().isEnabled).to(beTrue())
-
-        let prescriptions = redeemScreen.editPrescriptionButton()
-        expect(prescriptions.label).to(equal("Rezepte, Adavomilproston"))
-
-        try await redeemScreen
-            .tapRedeem()
-            .tapClose()
-    }
-
-    @MainActor
-    func testRedeemFromDetailsWithDeliverySuccess() async throws {
-        let details = TabBarScreen(app: app)
-            .tapPrescriptionsTab()
-            .tapDetailsForPrescriptionNamed("Adavomilproston")
-
-        let redeemScreen = details
-            .tapRedeemPharmacyButton()
-            .tapAddPharmacy()
-            .pharmacyDetailsForPharmacy("ZoTI_03_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-
-        expect(redeemScreen.editPharmacyButton().exists).to(beTrue())
-
-        let prescriptions = redeemScreen.editPrescriptionButton()
-        expect(prescriptions.label).to(equal("Rezepte, Adavomilproston"))
-
-        let editAdressScreen = redeemScreen
-            .tapEditAddress()
-
-        editAdressScreen.setPhoneNumber("1234567890")
-        try await editAdressScreen.tapSave()
-
-        try await redeemScreen
-            .tapRedeem()
-            .tapClose()
-    }
-
-    @MainActor
-    func testRedeemChangePharmacyAndServiceOptions() {
-        let details = TabBarScreen(app: app)
-            .tapPrescriptionsTab()
-            .tapDetailsForPrescriptionNamed("Adavomilproston")
-
-        let redeemScreen = details
-            .tapRedeemPharmacyButton()
-            .tapAddPharmacy()
-            .pharmacyDetailsForPharmacy("ZoTI_04_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-            .tapEditPharmacy()
-            .pharmacyDetailsForPharmacy("ZoTI_08_TEST-ONLY")
-            .tapRedeem(.pickupViaLogin)
-            .tapServiceOption(.delivery)
-            .tapServiceOption(.shipment)
-
-        let pharmacy = redeemScreen.editPharmacyButton()
-        expect(pharmacy.staticTexts["ZoTI_08_TEST-ONLY"].exists).to(beTrue())
-        expect(redeemScreen.editPharmacyButton().exists).to(beTrue())
+        let prescriptions = app.buttons["pha_redeem_btn_edit_prescription"]
+        expect(prescriptions.staticTexts["Adavomilproston"]).to(exist("Adavomilproston"))
+        expect(prescriptions.staticTexts["1 Rezepte"]).to(exist("1 Rezepte"))
     }
 
     @MainActor

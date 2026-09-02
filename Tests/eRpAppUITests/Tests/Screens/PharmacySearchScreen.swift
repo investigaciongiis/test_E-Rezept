@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import eRpResources
 import Nimble
 import XCTest
 
@@ -71,42 +66,11 @@ struct PharmacySearchScreen: Screen {
     }
 
     @discardableResult
-    func tapSearchCancelButton(fileID: String = #fileID, file: String = #filePath,
-                               line: UInt = #line) -> RedeemSelectionScreen {
-        // Renamed on iOS 26
-        // if iOS 26
-        if #available(iOS 26.0, *) {
-            button(within: app.navigationBars, by: "Schließen", fileID: fileID, file: file, line: line).tap()
-        } else {
-            button(within: app.navigationBars, by: "Abbrechen", fileID: fileID, file: file, line: line).tap()
-        }
-
-        return RedeemSelectionScreen(app: app)
-    }
-
-    @discardableResult
     func tapCancelButton(fileID: String = #fileID, file: String = #filePath,
                          line: UInt = #line) -> RedeemSelectionScreen {
+        print(app.debugDescription)
         button(within: app.navigationBars, by: "Abbrechen", fileID: fileID, file: file, line: line).tap()
 
         return RedeemSelectionScreen(app: app)
-    }
-
-    func tapQuickFilterDelivery(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) {
-        switches(by: A11y.pharmacySearchStart.phaSearchBtnQuickFilterDelivery, fileID: fileID, file: file, line: line)
-            .tap()
-    }
-
-    func tapTopBarFilterChip(
-        _ name: String,
-        fileID _: String = #fileID,
-        file _: String = #filePath,
-        line _: UInt = #line
-    ) {
-        app.otherElements[A11y.pharmacySearch.phaFilterFilterList]
-            .children(matching: .button)
-            .matching(identifier: name)
-            .element
-            .tap()
     }
 }

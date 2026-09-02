@@ -1,50 +1,45 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Foundation
 import HTTPClient
 
-@CodedError("540")
+// sourcery: CodedError = "540"
 public enum AVSError: Swift.Error {
+    // sourcery: errorCode = "01"
     /// In case of HTTP/Connection error
-    @ErrorCode("01")
     case network(error: HTTPClientError)
+    // sourcery: errorCode = "02"
     /// When failed to create an AVSMessage
-    @ErrorCode("02")
     case invalidAVSMessageInput
+    // sourcery: errorCode = "03"
     /// When an X509 certificate was of unexpected format
-    @ErrorCode("03")
     case invalidX509Input
+    // sourcery: errorCode = "04"
     /// Conversion error when trying to cast to `AVSError` but error type was different
-    @ErrorCode("04")
     case unspecified(error: Swift.Error)
+    // sourcery: errorCode = "05"
     /// Internal error
-    @ErrorCode("05")
     case `internal`(error: InternalError)
 
-    @CodedError("541")
+    // sourcery: CodedError = "541"
     public enum InternalError: Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case cmsContentCreation
     }
 }

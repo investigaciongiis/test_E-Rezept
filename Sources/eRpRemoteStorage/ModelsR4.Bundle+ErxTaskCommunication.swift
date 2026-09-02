@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -45,7 +41,7 @@ extension ModelsR4.Bundle {
         }
 
         guard let profileUrl = communication.meta?.profile?.first?.value?.url.absoluteString,
-              let profile = ErxTask.Communication.Profile(profileUrl: profileUrl) else {
+              let profile = ErxTask.Communication.Profile(rawValue: profileUrl) else {
             throw RemoteStorageBundleParsingError.parseError("Could not parse the communication profile")
         }
 
@@ -63,9 +59,8 @@ extension ModelsR4.Bundle {
             throw RemoteStorageBundleParsingError.parseError("Could not parse sent value from communication")
         }
 
-        var payloadJSON: String?
-        if let payloadContent = communication.payloadContent {
-            payloadJSON = payloadContent
+        guard let payloadContent = communication.payloadContent else {
+            throw RemoteStorageBundleParsingError.parseError("Could not parse payload value from communication")
         }
 
         return ErxTask.Communication(
@@ -76,7 +71,7 @@ extension ModelsR4.Bundle {
             telematikId: communication.telematikId(for: profile) ?? "",
             orderId: communication.orderId,
             timestamp: timestamp,
-            payloadJSON: payloadJSON,
+            payloadJSON: payloadContent,
             isRead: false
         )
     }
@@ -85,7 +80,7 @@ extension ModelsR4.Bundle {
 extension ModelsR4.Communication {
     func telematikId(for profile: ErxTask.Communication.Profile) -> String? {
         switch profile {
-        case .reply, .diga:
+        case .reply:
             if Workflow.Key.telematikIdKeys.contains(
                 where: { $0.value == sender?.identifier?.system?.value?.url.absoluteString }
             ) {
@@ -106,7 +101,7 @@ extension ModelsR4.Communication {
 
     func kvID(for profile: ErxTask.Communication.Profile) -> String? {
         switch profile {
-        case .reply, .diga:
+        case .reply:
             return recipient?.first { recipient in
                 Workflow.Key.kvIDKeys.contains {
                     $0.value == recipient.identifier?.system?.value?.url.absoluteString
@@ -145,37 +140,19 @@ extension ModelsR4.Communication {
 }
 
 extension ErxTask.Communication.Profile {
-    init?(profileUrl: String) {
-        let normalizedValue = profileUrl.split(separator: "|", maxSplits: 1).first.map(String.init) ?? profileUrl
-        switch normalizedValue {
+    init?(rawValue: RawValue) {
+        switch rawValue {
         case Workflow.Key.communicationReply[.v1_1_1],
-             Workflow.Key.communicationReply[.v1_2_0],
-             Workflow.Key.communicationReply[.v1_3_0],
-             Workflow.Key.communicationReply[.v1_4_3],
-             Workflow.Key.communicationReply[.v1_5_2],
-             Workflow.Key.communicationReply[.v1_6_1]:
+             Workflow.Key.communicationReply[.v1_2_0]:
             self = .reply
         case Workflow.Key.communicationDispReq[.v1_1_1],
-             Workflow.Key.communicationDispReq[.v1_2_0],
-             Workflow.Key.communicationDispReq[.v1_3_0],
-             Workflow.Key.communicationDispReq[.v1_4_3],
-             Workflow.Key.communicationDispReq[.v1_5_2],
-             Workflow.Key.communicationDispReq[.v1_6_1]:
+             Workflow.Key.communicationDispReq[.v1_2_0]:
             self = .dispReq
         case Workflow.Key.communicationInfoReq[.v1_1_1],
-             Workflow.Key.communicationInfoReq[.v1_2_0],
-             Workflow.Key.communicationInfoReq[.v1_3_0],
-             Workflow.Key.communicationInfoReq[.v1_4_3]:
+             Workflow.Key.communicationInfoReq[.v1_2_0]:
             self = .infoReq
-        case Workflow.Key.communicationDiga[.v1_5_2],
-             Workflow.Key.communicationDiga[.v1_6_1]:
-            self = .diga
         case Workflow.Key.communicationRepresentative[.v1_1_1],
-             Workflow.Key.communicationRepresentative[.v1_2_0],
-             Workflow.Key.communicationRepresentative[.v1_3_0],
-             Workflow.Key.communicationRepresentative[.v1_4_3],
-             Workflow.Key.communicationRepresentative[.v1_5_2],
-             Workflow.Key.communicationRepresentative[.v1_6_1]:
+             Workflow.Key.communicationRepresentative[.v1_2_0]:
             self = .representative
         default:
             self = .none
@@ -190,16 +167,19 @@ private struct TaskCheck: Identifiable, Hashable {
     let accessCode: String?
 
     private static let taskIdPattern = "^Task\\/([A-Za-z0-9-.]{1,64})"
-    private static let taskIdRegex =
+    private static let taskIdRegex = {
         try! NSRegularExpression(pattern: taskIdPattern) // swiftlint:disable:this force_try
+    }()
 
     private static let accessCodePattern = "([0-9a-fA-F]{64})$"
-    private static let accessCodeRegex =
+    private static let accessCodeRegex = {
         try! NSRegularExpression(pattern: accessCodePattern) // swiftlint:disable:this force_try
+    }()
 
     private static let taskStringPattern = "\(taskIdPattern)\\/\\$accept\\?ac=\(accessCodePattern)"
-    private static let taskStringRegex =
+    private static let taskStringRegex = {
         try! NSRegularExpression(pattern: taskStringPattern) // swiftlint:disable:this force_try
+    }()
 
     /// Initialize with an URL token. The initializer accepts one of the two formats:
     /// (1)     `Task/4711/$accept?ac=777bea0e13cc9c42ceec14aec3ddee2263325dc2c6c699db115f58fe423607ea`

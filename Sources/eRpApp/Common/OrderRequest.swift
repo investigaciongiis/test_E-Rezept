@@ -1,25 +1,22 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
+import AVS
 import eRpKit
 import Foundation
 import OpenSSL
@@ -29,7 +26,6 @@ import Pharmacy
 protocol eRpRemoteStorageOrder {
     var version: String { get }
     var redeemType: RedeemOption { get }
-    var flowType: String { get }
     var name: String? { get }
     var address: Address? { get }
     var hint: String? { get }
@@ -41,12 +37,27 @@ protocol eRpRemoteStorageOrder {
     var telematikId: String? { get }
 }
 
-struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
+protocol AVSOrder {
+    var version: String { get }
+    var redeemType: RedeemOption { get }
+    var name: String? { get }
+    var address: Address? { get }
+    var hint: String? { get }
+    var text: String? { get }
+    var phone: String? { get }
+    var mail: String? { get }
+    var transactionID: UUID { get }
+    var taskID: String { get }
+    var accessCode: String { get }
+    var endpoint: PharmacyLocation.AVSEndpoints.Endpoint? { get }
+    var recipients: [X509] { get }
+}
+
+struct OrderRequest: eRpRemoteStorageOrder, AVSOrder, Equatable, Codable {
     let orderID: UUID
     let redeemType: RedeemOption
     let version: String
     let name: String?
-    let flowType: String
     let address: Address?
     let hint: String?
     let text: String?
@@ -55,6 +66,7 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
     let transactionID: UUID
     let taskID: String
     let accessCode: String
+    let endpoint: PharmacyLocation.AVSEndpoints.Endpoint?
     let recipients: [X509]
     let telematikId: String?
 
@@ -63,7 +75,6 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         version: String = "2",
         redeemType: RedeemOption,
         name: String? = nil,
-        flowType: String,
         address: Address? = nil,
         hint: String? = nil,
         text: String? = nil,
@@ -72,6 +83,7 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         transactionID: UUID = UUID(),
         taskID: String,
         accessCode: String,
+        endpoint: PharmacyLocation.AVSEndpoints.Endpoint? = nil,
         recipients: [X509] = [],
         telematikId: String? = nil
     ) {
@@ -79,7 +91,6 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         self.version = version
         self.redeemType = redeemType
         self.name = name
-        self.flowType = flowType
         self.address = address
         self.hint = hint
         self.text = text
@@ -88,6 +99,7 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         self.transactionID = transactionID
         self.taskID = taskID
         self.accessCode = accessCode
+        self.endpoint = endpoint
         self.recipients = recipients
         self.telematikId = telematikId
     }
@@ -97,7 +109,6 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         case version
         case redeemType
         case name
-        case flowType
         case address
         case hint
         case text
@@ -117,7 +128,6 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         version = try container.decode(String.self, forKey: .version)
         redeemType = try container.decode(RedeemOption.self, forKey: .redeemType)
         name = try container.decodeIfPresent(String.self, forKey: .name)
-        flowType = try container.decode(String.self, forKey: .flowType)
         address = try container.decodeIfPresent(Address.self, forKey: .address)
         hint = try container.decodeIfPresent(String.self, forKey: .hint)
         text = try container.decodeIfPresent(String.self, forKey: .text)
@@ -126,6 +136,7 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         transactionID = try container.decode(UUID.self, forKey: .transactionID)
         taskID = try container.decode(String.self, forKey: .taskID)
         accessCode = try container.decode(String.self, forKey: .accessCode)
+        endpoint = try container.decodeIfPresent(PharmacyLocation.AVSEndpoints.Endpoint.self, forKey: .endpoint)
         recipients = try container.decode([Data].self, forKey: .recipients).map { try X509(der: $0) }
         telematikId = try container.decodeIfPresent(String.self, forKey: .telematikId)
     }
@@ -136,7 +147,6 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         try container.encode(version, forKey: .version)
         try container.encode(redeemType, forKey: .redeemType)
         try container.encodeIfPresent(name, forKey: .name)
-        try container.encode(flowType, forKey: .flowType)
         try container.encodeIfPresent(address, forKey: .address)
         try container.encodeIfPresent(hint, forKey: .hint)
         try container.encodeIfPresent(text, forKey: .text)
@@ -145,8 +155,29 @@ struct OrderRequest: eRpRemoteStorageOrder, Equatable, Codable {
         try container.encode(transactionID, forKey: .transactionID)
         try container.encode(taskID, forKey: .taskID)
         try container.encode(accessCode, forKey: .accessCode)
+        try container.encodeIfPresent(endpoint, forKey: .endpoint)
         try container.encode(recipients.map(\.derBytes), forKey: .recipients)
         try container.encodeIfPresent(telematikId, forKey: .telematikId)
+    }
+}
+
+extension AVSMessage.SupplyOptionsType {
+    var asRedeemOption: RedeemOption {
+        switch self {
+        case .onPremise: return .onPremise
+        case .delivery: return .delivery
+        case .shipment: return .shipment
+        }
+    }
+}
+
+extension RedeemOption {
+    var asSupplyOptionType: AVSMessage.SupplyOptionsType {
+        switch self {
+        case .onPremise: return .onPremise
+        case .delivery: return .delivery
+        case .shipment: return .shipment
+        }
     }
 }
 
@@ -180,14 +211,48 @@ extension ErxTaskOrder {
             identifier: order.orderID.uuidString,
             erxTaskId: order.taskID,
             accessCode: order.accessCode,
-            telematikId: telematikId,
-            flowType: order.flowType,
+            pharmacyTelematikId: telematikId,
             payload: payload
         )
     }
 }
 
-extension Sequence<ErxTask> {
+extension AVSMessage {
+    init(_ order: OrderRequest) throws {
+        guard let version = Int(order.version) else {
+            throw RedeemServiceError.InternalError.conversionVersionNumber
+        }
+        guard Validator().isValidAVSMessageInput(
+            version: version,
+            supplyOptionsType: order.redeemType.asSupplyOptionType,
+            name: order.name,
+            address: order.address,
+            hint: order.hint,
+            text: order.text,
+            phone: order.phone,
+            mail: order.mail
+        ) == .valid
+        else {
+            throw AVSError.invalidAVSMessageInput
+        }
+
+        self.init(
+            version: version,
+            supplyOptionsType: order.redeemType.asSupplyOptionType,
+            name: order.name,
+            address: order.address?.asArray(),
+            hint: order.hint,
+            text: order.text,
+            phone: order.phone,
+            mail: order.mail,
+            transactionID: order.transactionID,
+            taskID: order.taskID,
+            accessCode: order.accessCode
+        )
+    }
+}
+
+extension Sequence where Self.Element == ErxTask {
     func asOrders(
         orderId: UUID,
         option redeemOption: RedeemOption,
@@ -206,7 +271,6 @@ extension ErxTask {
             orderID: orderId,
             redeemType: redeemOption,
             name: shipmentInfo?.name,
-            flowType: flowType.rawValue,
             address: Address(
                 street: shipmentInfo?.street,
                 detail: shipmentInfo?.addressDetail,
@@ -220,6 +284,12 @@ extension ErxTask {
             transactionID: transactionId,
             taskID: id,
             accessCode: accessCode ?? "",
+            endpoint: pharmacy.avsEndpoints?.url(
+                for: redeemOption,
+                transactionId: transactionId.uuidString,
+                telematikId: pharmacy.telematikID
+            ),
+            recipients: pharmacy.avsCertificates,
             telematikId: pharmacy.telematikID
         )
     }

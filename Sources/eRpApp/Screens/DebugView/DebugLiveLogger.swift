@@ -1,29 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import Foundation
 import HTTPClient
-import Settings
 
 #if ENABLE_DEBUG_VIEW
 extension UserDefaults {
@@ -100,9 +95,9 @@ class DebugLiveLogger {
         } else {
             // If a Request already exists with same information, but with a `response`, just keep it and throw the new
             // one away
-            guard !requests.contains(where: { item in
+            guard requests.first(where: { item in
                 item.request == request && item.sentAt == sentAt
-            }) else {
+            }) == nil else {
                 return
             }
         }
@@ -112,12 +107,40 @@ class DebugLiveLogger {
     #endif
 
     class LogInterceptor: Interceptor {
-        func intercept(chain: Chain) async throws -> HTTPResponse {
+        func intercept(chain: Chain) -> AnyPublisher<HTTPResponse, HTTPClientError> {
             #if ENABLE_DEBUG_VIEW
             let request = chain.request
             let sentAt = Date()
 
-            let (data, response, status) = try await chain.proceed(request: request)
+            return chain.proceed(request: request)
+                .handleEvents(receiveOutput: { data, response, status in
+                                  DebugLiveLogger.shared.log(
+                                      request: request,
+                                      sentAt: sentAt,
+                                      response: (data, response, status),
+                                      receivedAt: Date()
+                                  )
+                              },
+                              receiveCancel: {
+                                  DebugLiveLogger.shared.log(
+                                      request: request,
+                                      sentAt: sentAt,
+                                      response: nil,
+                                      receivedAt: Date()
+                                  )
+                              })
+                .eraseToAnyPublisher()
+            #else
+            return chain.proceed(request: chain.request)
+            #endif
+        }
+
+        func interceptAsync(chain: Chain) async throws -> HTTPResponse {
+            #if ENABLE_DEBUG_VIEW
+            let request = chain.request
+            let sentAt = Date()
+
+            let (data, response, status) = try await chain.proceedAsync(request: request)
             DebugLiveLogger.shared.log(
                 request: request,
                 sentAt: sentAt,
@@ -126,7 +149,7 @@ class DebugLiveLogger {
             )
             return (data, response, status)
             #else
-            return try await chain.proceed(request: chain.request)
+            return try await chain.proceedAsync(request: chain.request)
             #endif
         }
     }
@@ -218,7 +241,7 @@ extension DebugLiveLogger {
 
             share += "\n# RESPONSE:\n\n"
 
-            if let response {
+            if let response = response {
                 share += "STATUS: \(response.status.rawValue)\n"
 
                 let fields = response.response.allHeaderFields

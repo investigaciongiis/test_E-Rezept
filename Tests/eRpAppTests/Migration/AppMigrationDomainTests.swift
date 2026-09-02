@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -25,16 +21,13 @@ import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
 import eRpLocalStorage
-import eRpResources
-import FeatureHelpers
 import Nimble
-import Sharing
 import XCTest
 
 @MainActor
 final class AppMigrationDomainTests: XCTestCase {
-    private var mockMigrationManager = ModelMigratingMock()
-    private var mockUserDataStore = UserDataStoreMock()
+    private var mockMigrationManager = MockModelMigrating()
+    private var mockUserDataStore = MockUserDataStore()
     private var finishedMigrationCalledCount: Int = 0
     private var finishedMigrationCalled: Bool {
         finishedMigrationCalledCount > 0
@@ -68,7 +61,7 @@ final class AppMigrationDomainTests: XCTestCase {
 
     typealias TestStore = TestStoreOf<AppMigrationDomain>
 
-    ///    let testScheduler = DispatchQueue.test
+//    let testScheduler = DispatchQueue.test
     private func testStore(with state: AppMigrationDomain.State = .init(migration: .none)) -> TestStore {
         TestStore(initialState: state) {
             AppMigrationDomain(
@@ -88,37 +81,19 @@ final class AppMigrationDomainTests: XCTestCase {
     }
 
     private func loadFactory() -> CoreDataControllerFactory {
-        let databaseFile = databaseFile!
         guard let factory = coreDataFactory else {
-            let factory: CoreDataControllerFactory = .init(databaseUrl: { databaseFile }) {
-                @Shared(.coreDataController) var coreDataController
+            #if os(macOS)
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: FileProtectionType(rawValue: "none")
+            )
 
-                let fileProtection: FileProtectionType = {
-                    #if os(macOS)
-                    return FileProtectionType(rawValue: "none")
-                    #else
-                    return .completeUnlessOpen
-                    #endif
-                }()
-
-                if let controller = coreDataController {
-                    return controller
-                }
-                guard Thread.isMainThread else {
-                    return try DispatchQueue.main.sync {
-                        try loadCoreDataController()
-                    }
-                }
-                func loadCoreDataController() throws -> CoreDataController {
-                    let controller = try CoreDataController(
-                        url: databaseFile,
-                        fileProtection: fileProtection
-                    )
-                    $coreDataController.withLock { $0 = controller }
-                    return controller
-                }
-                return try loadCoreDataController()
-            }
+            #else
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: .completeUnlessOpen
+            )
+            #endif
             coreDataFactory = factory
             return factory
         }
@@ -130,16 +105,13 @@ final class AppMigrationDomainTests: XCTestCase {
         let startVersion: ModelVersion = .displayName
         let endVersion: ModelVersion = .shouldAutoUpdateNameAtNextLogin
         mockMigrationManager
-            .startModelMigrationFromCurrentVersionModelVersionDefaultProfileNameStringAnyPublisherModelVersionMigrationErrorReturnValue =
-            CurrentValueSubject(endVersion)
-                .setFailureType(to: MigrationError.self)
-                .eraseToAnyPublisher()
+            .startModelMigrationFromDefaultProfileNameReturnValue = CurrentValueSubject(endVersion)
+            .setFailureType(to: MigrationError.self)
+            .eraseToAnyPublisher()
 
         mockUserDataStore.underlyingLatestCompatibleModelVersion = startVersion
         await store.send(.loadCurrentModelVersion)
-        expect(self.mockMigrationManager
-            .startModelMigrationFromCurrentVersionModelVersionDefaultProfileNameStringAnyPublisherModelVersionMigrationErrorCallsCount) ==
-            1
+        expect(self.mockMigrationManager.startModelMigrationFromDefaultProfileNameCallsCount) == 1
         await store.receive(.startMigration(from: startVersion)) { state in
             state.migration = .inProgress
         }
@@ -153,10 +125,8 @@ final class AppMigrationDomainTests: XCTestCase {
     func testMigratingWithErrorAndRetry() async {
         let store = testStore()
         let expectedError = MigrationError.initialization(error: LocalStoreError.notImplemented)
-        mockMigrationManager
-            .startModelMigrationFromCurrentVersionModelVersionDefaultProfileNameStringAnyPublisherModelVersionMigrationErrorReturnValue =
-            Fail(error: expectedError)
-                .eraseToAnyPublisher()
+        mockMigrationManager.startModelMigrationFromDefaultProfileNameReturnValue = Fail(error: expectedError)
+            .eraseToAnyPublisher()
         mockUserDataStore.underlyingLatestCompatibleModelVersion = .taskStatus
 
         await store.send(.startMigration(from: .taskStatus)) { state in

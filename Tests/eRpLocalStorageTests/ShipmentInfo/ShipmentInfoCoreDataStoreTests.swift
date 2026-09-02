@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -27,7 +23,6 @@ import eRpKit
 @testable import eRpLocalStorage
 import Foundation
 import Nimble
-import Sharing
 import XCTest
 
 final class ShipmentInfoCoreDataStoreTests: XCTestCase {
@@ -54,36 +49,20 @@ final class ShipmentInfoCoreDataStoreTests: XCTestCase {
     }
 
     private func loadFactory() -> CoreDataControllerFactory {
-        guard let factory else {
-            return .init(databaseUrl: { self.databaseFile }) {
-                @Shared(.coreDataController) var coreDataController
-
-                let fileProtection: FileProtectionType = {
-                    #if os(macOS)
-                    return FileProtectionType(rawValue: "none")
-                    #else
-                    return .completeUnlessOpen
-                    #endif
-                }()
-
-                if let controller = coreDataController {
-                    return controller
-                }
-                guard Thread.isMainThread else {
-                    return try DispatchQueue.main.sync {
-                        try loadCoreDataController()
-                    }
-                }
-                func loadCoreDataController() throws -> CoreDataController {
-                    let controller = try CoreDataController(
-                        url: self.databaseFile,
-                        fileProtection: fileProtection
-                    )
-                    $coreDataController.withLock { $0 = controller }
-                    return controller
-                }
-                return try loadCoreDataController()
-            }
+        guard let factory = factory else {
+            #if os(macOS)
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: FileProtectionType(rawValue: "none")
+            )
+            #else
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: .completeUnlessOpen
+            )
+            #endif
+            self.factory = factory
+            return factory
         }
 
         return factory
@@ -268,8 +247,6 @@ final class ShipmentInfoCoreDataStoreTests: XCTestCase {
         expect(receivedListAllShipmentInfoValues[0].count).to(equal(0))
         expect(receivedListAllShipmentInfoValues[1].count).to(equal(1))
         expect(receivedListAllShipmentInfoValues[1].first) == shipmentInfo1
-        expect(receivedListAllShipmentInfoValues[1].count).to(equal(1))
-        expect(receivedListAllShipmentInfoValues[1].first) == shipmentInfo1
         expect(receivedListAllShipmentInfoValues[2].count).to(equal(3))
         expect(receivedListAllShipmentInfoValues[2]).to(contain([shipmentInfo1, shipmentInfo2, shipmentInfo3]))
 
@@ -294,20 +271,20 @@ final class ShipmentInfoCoreDataStoreTests: XCTestCase {
         cancellable.cancel()
     }
 
-    func testSavingShipmentInfos() {
+    func testSavingShipmentInfos() throws {
         let sut = loadShipmentInfoCoreDataStore()
         let shipmentInfo1 = shipmentInfo(with: UUID())
         let shipmentInfo2 = shipmentInfo(with: UUID())
         sut.add(shipmentInfos: [shipmentInfo1, shipmentInfo2])
     }
 
-    func testSavingOneShipmentInfo() {
+    func testSavingOneShipmentInfo() throws {
         let sut = loadShipmentInfoCoreDataStore()
         let shipmentInfo = shipmentInfo(with: UUID())
         sut.add(shipmentInfo: shipmentInfo)
     }
 
-    func testSavingPreviousStoredShipmentInfo() {
+    func testSavingPreviousStoredShipmentInfo() throws {
         let sut = loadShipmentInfoCoreDataStore()
         let shipmentId = UUID()
         let shipmentInfo = shipmentInfo(with: shipmentId)
@@ -448,7 +425,7 @@ final class ShipmentInfoCoreDataStoreTests: XCTestCase {
         cancellable.cancel()
     }
 
-    func testUpdateShipmentInfoThatIsInStore() throws {
+    func testUpdateShipmentInfoThatIsInStore() {
         let sut = loadShipmentInfoCoreDataStore()
         let input = shipmentInfo()
         sut.add(shipmentInfo: input)
@@ -479,7 +456,7 @@ final class ShipmentInfoCoreDataStoreTests: XCTestCase {
 
         expect(receivedListAllShipmentInfosValues.count).to(equal(1))
         expect(receivedListAllShipmentInfosValues.first?.count) == 1
-        let result = try XCTUnwrap(receivedListAllShipmentInfosValues[0].first)
+        let result = receivedListAllShipmentInfosValues[0].first!
         expect(result) == expectedResult
 
         cancellable.cancel()

@@ -1,30 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 import eRpKit
-import eRpResources
-import FeatureHelpers
 import Foundation
 
 @Reducer
@@ -33,28 +27,25 @@ struct PharmacyContactDomain {
     struct State: Equatable {
         var contactInfo: ContactInfo
         @Presents var alertState: AlertState<Action.Alert>?
+        let service: RedeemServiceOption
 
         private let originalContactInfo: ContactInfo?
         var isNewContactInfo: Bool {
             contactInfo != originalContactInfo
         }
 
-        var serviceOption: RedeemServiceOption?
-
-        init(
-            shipmentInfo: ShipmentInfo?,
-            serviceOption: RedeemServiceOption? = nil
-        ) {
+        init(shipmentInfo: ShipmentInfo?, service: RedeemServiceOption) {
             let shipmentInfo = shipmentInfo ?? ShipmentInfo()
+            self.service = service
             contactInfo = .init(shipmentInfo)
             originalContactInfo = .init(shipmentInfo)
-            self.serviceOption = serviceOption
         }
     }
 
     enum Action: BindableAction, Equatable {
         case binding(BindingAction<State>)
         case save
+        case closeButtonTapped
 
         case alert(PresentationAction<Alert>)
         case response(Response)
@@ -73,7 +64,7 @@ struct PharmacyContactDomain {
 
     @Dependency(\.schedulers) var schedulers: Schedulers
     @Dependency(\.shipmentInfoDataStore) var shipmentInfoStore: ShipmentInfoDataStore
-    @Dependency(\.redeemOrderInputValidator) var validator: RedeemOrderInputValidator
+    @Dependency(\.redeemInputValidator) var validator: RedeemInputValidator
 
     var body: some Reducer<State, Action> {
         BindingReducer()
@@ -85,7 +76,7 @@ struct PharmacyContactDomain {
     func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .save:
-            if case let .invalid(errorMessage) = validator.type(state.serviceOption)?.validate(state.contactInfo) {
+            if case let .invalid(errorMessage) = validator.validate(state.contactInfo) {
                 state.alertState = Self.invalidInputAlert(with: errorMessage)
                 return .none
             }
@@ -113,32 +104,32 @@ struct PharmacyContactDomain {
                 message: { TextState(error.localizedDescriptionWithErrorList) }
             )
             return .none
+        case .closeButtonTapped:
+            return Effect.send(.delegate(.close))
         case .delegate:
             return .none
         case .binding(\.contactInfo.name):
-            if case let .invalid(error) = validator.type(state.serviceOption)?.isValid(name: state.contactInfo.name) {
+            if case let .invalid(error) = validator.isValid(name: state.contactInfo.name) {
                 state.alertState = Self.invalidInputAlert(with: error)
             }
             return .none
         case .binding(\.contactInfo.street):
-            if case let .invalid(error) = validator.type(state.serviceOption)?
-                .isValid(street: state.contactInfo.street) {
+            if case let .invalid(error) = validator.isValid(street: state.contactInfo.street) {
                 state.alertState = Self.invalidInputAlert(with: error)
             }
             return .none
         case .binding(\.contactInfo.zip):
-            if case let .invalid(error) = validator.type(state.serviceOption)?.isValid(zip: state.contactInfo.zip) {
+            if case let .invalid(error) = validator.isValid(zip: state.contactInfo.zip) {
                 state.alertState = Self.invalidInputAlert(with: error)
             }
             return .none
         case .binding(\.contactInfo.city):
-            if case let .invalid(error) = validator.type(state.serviceOption)?.isValid(city: state.contactInfo.city) {
+            if case let .invalid(error) = validator.isValid(city: state.contactInfo.city) {
                 state.alertState = Self.invalidInputAlert(with: error)
             }
             return .none
         case .binding(\.contactInfo.deliveryInfo):
-            if case let .invalid(error) = validator.type(state.serviceOption)?
-                .isValid(hint: state.contactInfo.deliveryInfo) {
+            if case let .invalid(error) = validator.isValid(hint: state.contactInfo.deliveryInfo) {
                 state.alertState = Self.invalidInputAlert(with: error)
             }
             return .none
@@ -190,6 +181,20 @@ struct PharmacyContactDomain {
                          mail: mail.isEmpty ? nil : mail,
                          deliveryInfo: deliveryInfo.isEmpty ? nil : deliveryInfo)
         }
+
+        static func ==(
+            lhs: PharmacyContactDomain.ContactInfo,
+            rhs: PharmacyContactDomain.ContactInfo
+        ) -> Bool {
+            lhs.identifier == rhs.identifier &&
+                lhs.name == rhs.name &&
+                lhs.street == rhs.street &&
+                lhs.zip == rhs.zip &&
+                lhs.city == rhs.city &&
+                lhs.phone == rhs.phone &&
+                lhs.mail == rhs.mail &&
+                lhs.deliveryInfo == rhs.deliveryInfo
+        }
     }
 }
 
@@ -224,15 +229,14 @@ extension RedeemInputValidator {
 extension PharmacyContactDomain {
     enum Dummies {
         static let state = State(
-            shipmentInfo: .init(
-                name: "Anna Vetter",
-                street: "Gartenstraße 5",
-                addressDetail: "",
-                zip: "102837",
-                city: "Berlin",
-                phone: "0987654321",
-                deliveryInfo: "im Hinterhaus"
-            )
+            shipmentInfo: .init(name: "Anna Vetter",
+                                street: "Gartenstraße 5",
+                                addressDetail: "",
+                                zip: "102837",
+                                city: "Berlin",
+                                phone: "0987654321",
+                                deliveryInfo: "im Hinterhaus"),
+            service: DemoRedeemInputValidator().service
         )
 
         static let store = Store(

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -37,8 +33,6 @@ public enum ErxTaskFHIROperation<Value, Handler: FHIRResponseHandler> where Hand
     case taskBy(id: ErxTask.ID, accessCode: String?, handler: Handler)
     /// Delete(/Abort) a specific task by it's taskID and accessCode
     case deleteTask(id: ErxTask.ID, accessCode: String?, handler: Handler)
-    /// Marks a specific task EU redeemable by the patient
-    case markTaskForEURedeem(id: ErxTask.ID, mark: Bool, handler: Handler)
     /// Request a specific audit event from the service in a certain format
     case auditEventBy(id: ErxAuditEvent.ID, handler: Handler)
     /// Request all audit events for a specific language after a specific reference date from the service
@@ -65,12 +59,6 @@ public enum ErxTaskFHIROperation<Value, Handler: FHIRResponseHandler> where Hand
     case revokeConsent(category: ErxConsent.Category, handler: Handler)
     /// Loads content for a given url. Used for paging.
     case auditEventsNextPage(url: URL, handler: Handler, locale: String?)
-    /// Request to redeem a `EuOrder`
-    case grantEuAccessPermission(accessCode: EuAccessCode, handler: Handler)
-    /// Request all the accessCodes for EU-Countries
-    case loadRemoteEuAccessCode(handler: Handler)
-    /// Delete EuAccessCode
-    case deleteEuAccessCode(handler: Handler)
 }
 
 extension ErxTaskFHIROperation: FHIRClientOperation {
@@ -81,7 +69,6 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
              let .tasksNextPage(_, handler),
              let .taskBy(_, _, handler),
              let .deleteTask(_, _, handler),
-             let .markTaskForEURedeem(_, _, handler),
              let .auditEventBy(_, handler),
              let .auditEvents(_, _, handler),
              let .redeem(order: _, handler),
@@ -94,10 +81,7 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
              let .consents(handler),
              let .grant(_, handler),
              let .revokeConsent(_, handler),
-             let .auditEventsNextPage(url: _, handler: handler, locale: _),
-             let .grantEuAccessPermission(_, handler),
-             let .loadRemoteEuAccessCode(handler),
-             let .deleteEuAccessCode(handler):
+             let .auditEventsNextPage(url: _, handler: handler, locale: _):
             return try handler.handle(response: response)
         }
     }
@@ -109,7 +93,7 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
         case let .allTasks(referenceDate, _):
             var components = URLComponents(string: "Task")
             // endpoint expects format like "ge2021-01-31T10:00Z" where "ge" represents greater or equal
-            if let referenceDate,
+            if let referenceDate = referenceDate,
                let fhirDate = FHIRDateFormatter.shared.date(from: referenceDate) {
                 let modifiedItem = URLQueryItem(
                     name: "modified",
@@ -120,11 +104,10 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
 
             return components?.string
         case let .deleteTask(taskId, _, _): return "Task/\(taskId)/$abort"
-        case let .markTaskForEURedeem(taskId, _, _): return "Task/\(taskId)"
         case let .auditEventBy(auditEventId, _): return "AuditEvent/\(auditEventId)"
         case let .auditEvents(referenceDate, _, _):
             var queryItems: [URLQueryItem] = [URLQueryItem(name: "_sort", value: "-date")]
-            if let referenceDate,
+            if let referenceDate = referenceDate,
                let fhirDate = FHIRDateFormatter.shared.date(from: referenceDate) {
                 let dateItem = URLQueryItem(
                     name: "date",
@@ -138,7 +121,7 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
         case .redeem: return "Communication"
         case let .allCommunications(referenceDate, handler: _):
             var components = URLComponents(string: "Communication")
-            if let referenceDate,
+            if let referenceDate = referenceDate,
                let fhirDate = FHIRDateFormatter.shared.date(from: referenceDate) {
                 let sentItem = URLQueryItem(
                     name: "sent",
@@ -161,7 +144,7 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
             return components?.string
         case let .allMedicationDispenses(referenceDate, handler: _):
             var components = URLComponents(string: "MedicationDispense")
-            if let referenceDate,
+            if let referenceDate = referenceDate,
                let fhirDate = FHIRDateFormatter.shared.date(from: referenceDate) {
                 let whenHandOverItem = URLQueryItem(
                     name: "whenHandedOver",
@@ -172,7 +155,7 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
             return components?.string
         case let .allChargeItems(referenceDate, handler: _):
             var components = URLComponents(string: "ChargeItem")
-            if let referenceDate,
+            if let referenceDate = referenceDate,
                let fhirDate = FHIRDateFormatter.shared.date(from: referenceDate) {
                 let enteredDate = URLQueryItem(
                     name: "enteredDate",
@@ -197,13 +180,10 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
         case let .auditEventsNextPage(url: url, handler: _, locale: _),
              let .tasksNextPage(url: url, handler: _):
             return url.absoluteString
-        case .grantEuAccessPermission: return "$grant-eu-access-permission"
-        case .loadRemoteEuAccessCode: return "$read-eu-access-permission"
-        case .deleteEuAccessCode: return "$revoke-eu-access-permission"
         }
     }
 
-    /// Note: Only .json for now
+    // Note: Only .json for now
     public var httpHeaders: [String: String] {
         var headers: [String: String] = [:]
         headers["Accept"] = acceptFormat.httpHeaderValue
@@ -222,29 +202,15 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
             }
         case let .deleteChargeItem(_, accessCode, _):
             headers["X-AccessCode"] = accessCode
-        case .grant,
-             .markTaskForEURedeem,
-             .grantEuAccessPermission:
+        case .grant:
             headers["Content-Type"] = acceptFormat.httpHeaderValue
             if let dataLength = httpBody?.count, dataLength > 0 {
                 headers["Content-Length"] = String(dataLength)
             }
         case .revokeConsent:
             headers["Content-Type"] = acceptFormat.httpHeaderValue
-        case .allTasks,
-             .auditEventBy,
-             .allCommunications,
-             .capabilityStatement,
-             .tasksNextPage,
-             .medicationDispenses,
-             .allMedicationDispenses,
-             .allChargeItems,
-             .chargeItemBy,
-             .consents,
-             .loadRemoteEuAccessCode,
-             .deleteEuAccessCode:
+        default: break
             // do nothing
-            break
         }
         return headers
     }
@@ -253,29 +219,12 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
         switch self {
         case .deleteTask,
              .redeem,
-             .grant,
-             .grantEuAccessPermission:
+             .grant:
             return .post
         case .deleteChargeItem,
-             .revokeConsent,
-             .deleteEuAccessCode:
+             .revokeConsent:
             return .delete
-        case .markTaskForEURedeem:
-            return .patch
-        case .capabilityStatement,
-             .allTasks,
-             .tasksNextPage,
-             .taskBy,
-             .auditEventBy,
-             .auditEvents,
-             .allCommunications,
-             .medicationDispenses,
-             .allMedicationDispenses,
-             .allChargeItems,
-             .chargeItemBy,
-             .consents,
-             .auditEventsNextPage,
-             .loadRemoteEuAccessCode:
+        default:
             return .get
         }
     }
@@ -297,18 +246,12 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
              .deleteChargeItem,
              .consents,
              .revokeConsent,
-             .auditEventsNextPage,
-             .loadRemoteEuAccessCode,
-             .deleteEuAccessCode:
+             .auditEventsNextPage:
             return nil
-        case let .markTaskForEURedeem(_, mark: patientAuthorization, _):
-            return try? ErxTask.fhirParameterEURedeem(byPatientAuthorization: patientAuthorization)
         case let .redeem(order: order, _):
             return try? order.asCommunicationResource()
         case let .grant(consent: consent, _):
             return try? consent.asConsentResource()
-        case let .grantEuAccessPermission(accessCode: accessCode, _):
-            return try? accessCode.asParametersResource()
         }
     }
 
@@ -319,7 +262,6 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
              let .taskBy(_, _, handler),
              let .tasksNextPage(_, handler),
              let .deleteTask(_, _, handler),
-             let .markTaskForEURedeem(_, _, handler),
              let .auditEventBy(_, handler),
              let .auditEvents(_, _, handler),
              let .redeem(_, handler),
@@ -332,10 +274,7 @@ extension ErxTaskFHIROperation: FHIRClientOperation {
              let .consents(handler: handler),
              let .grant(_, handler: handler),
              let .revokeConsent(_, handler: handler),
-             let .auditEventsNextPage(url: _, handler: handler, locale: _),
-             let .grantEuAccessPermission(_, handler),
-             let .loadRemoteEuAccessCode(handler: handler),
-             let .deleteEuAccessCode(handler: handler):
+             let .auditEventsNextPage(url: _, handler: handler, locale: _):
             return handler.acceptFormat
         }
     }

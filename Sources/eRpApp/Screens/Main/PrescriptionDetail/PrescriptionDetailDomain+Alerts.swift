@@ -1,35 +1,27 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import ComposableArchitecture
-import ConsentService
 import eRpKit
-import eRpResources
-import FeatureHelpers
 import FHIRClient
 import SwiftUI
 
-extension ConsentService.AlertState {
+extension ChargeItemConsentService.AlertState {
     var prescriptionDetailDomainErpAlertState: ErpAlertState<PrescriptionDetailDomain.Destination.Alert> {
         erpAlertState(
             actionForOkay: PrescriptionDetailDomain.Destination.Alert.consentServiceErrorOkay,
@@ -56,31 +48,35 @@ extension PrescriptionDetailDomain {
             return activity
         }
 
-        static var confirmDeleteAlertState: ErpAlertState<Destination.Alert> = .init(
-            title: L10n.dtlTxtDeleteAlertTitle,
-            actions: {
-                ButtonState(role: .destructive, action: .confirmedDelete) {
-                    .init(L10n.dtlTxtDeleteYes)
-                }
-                ButtonState(role: .cancel, action: .dismiss) {
-                    .init(L10n.dtlTxtDeleteNo)
-                }
-            },
-            message: L10n.dtlTxtDeleteAlertMessage
-        )
+        static var confirmDeleteAlertState: ErpAlertState<Destination.Alert> = {
+            .init(
+                title: L10n.dtlTxtDeleteAlertTitle,
+                actions: {
+                    ButtonState(role: .destructive, action: .confirmedDelete) {
+                        .init(L10n.dtlTxtDeleteYes)
+                    }
+                    ButtonState(role: .cancel, action: .dismiss) {
+                        .init(L10n.dtlTxtDeleteNo)
+                    }
+                },
+                message: L10n.dtlTxtDeleteAlertMessage
+            )
+        }()
 
-        static var confirmDeleteWithChargeItemAlertState: ErpAlertState<Destination.Alert> = .init(
-            title: L10n.dtlTxtDeleteWithChargeItemAlertTitle,
-            actions: {
-                ButtonState(role: .destructive, action: .confirmedDeleteWithChargeItem) {
-                    .init(L10n.dtlTxtDeleteYes)
-                }
-                ButtonState(role: .cancel, action: .dismiss) {
-                    .init(L10n.dtlTxtDeleteNo)
-                }
-            },
-            message: L10n.dtlTxtDeleteWithChargeItemAlertMessage
-        )
+        static var confirmDeleteWithChargeItemAlertState: ErpAlertState<Destination.Alert> = {
+            .init(
+                title: L10n.dtlTxtDeleteWithChargeItemAlertTitle,
+                actions: {
+                    ButtonState(role: .destructive, action: .confirmedDeleteWithChargeItem) {
+                        .init(L10n.dtlTxtDeleteYes)
+                    }
+                    ButtonState(role: .cancel, action: .dismiss) {
+                        .init(L10n.dtlTxtDeleteNo)
+                    }
+                },
+                message: L10n.dtlTxtDeleteWithChargeItemAlertMessage
+            )
+        }()
 
         static func deletionNotAllowedAlertState(_ prescription: Prescription)
             -> ErpAlertState<Destination.Alert> {
@@ -130,34 +126,34 @@ extension PrescriptionDetailDomain {
         }
 
         static func changeNameReceivedAlertState(error: CodedError) -> ErpAlertState<Destination.Alert> {
-            .init(
-                for: error,
-                title: nil
-            ) {
+            // swiftlint:disable:next trailing_closure
+            .init(for: error, actions: {
                 ButtonState(role: .cancel, action: .dismiss) {
                     .init(L10n.alertBtnOk)
                 }
-            }
+            })
         }
 
-        static let grantConsentRequest: ErpAlertState<Destination.Alert> = .init(
-            title: L10n.stgTxtChargeItemListAlertGrantConsentTitle,
-            actions: {
-                ButtonState(action: .grantConsent) {
-                    .init(L10n.stgTxtChargeItemListAlertGrantConsentButtonActivate)
-                }
-                ButtonState(role: .cancel, action: .grantConsentDeny) {
-                    .init(L10n.stgTxtChargeItemListAlertGrantConsentButtonCancel)
-                }
-            },
-            message: L10n.stgTxtChargeItemListAlertGrantConsentMessage
-        )
+        static let grantConsentRequest: ErpAlertState<Destination.Alert> = {
+            .init(
+                title: L10n.stgTxtChargeItemListAlertGrantConsentTitle,
+                actions: {
+                    ButtonState(action: .grantConsent) {
+                        .init(L10n.stgTxtChargeItemListAlertGrantConsentButtonActivate)
+                    }
+                    ButtonState(role: .cancel, action: .grantConsentDeny) {
+                        .init(L10n.stgTxtChargeItemListAlertGrantConsentButtonCancel)
+                    }
+                },
+                message: L10n.stgTxtChargeItemListAlertGrantConsentMessage
+            )
+        }()
     }
 
     enum ToastStates {
         typealias Action = PrescriptionDetailDomain.Destination.Toast
 
         static let conflictToast: ToastState<Action> =
-            .init(style: .simple(ConsentService.ToastState.conflict.message))
+            .init(style: .simple(ChargeItemConsentService.ToastState.conflict.message))
     }
 }

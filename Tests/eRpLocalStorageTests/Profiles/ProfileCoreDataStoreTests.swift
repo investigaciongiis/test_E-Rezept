@@ -1,40 +1,34 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import CombineSchedulers
 import CoreData
-import Dependencies
 import eRpKit
 @testable import eRpLocalStorage
 import Foundation
 import Nimble
-import Sharing
 import XCTest
 
 final class ProfileCoreDataStoreTests: XCTestCase {
     private var databaseFile: URL!
     private let fileManager = FileManager.default
-    private var coreDataFactory: CoreDataControllerFactory?
+    private var factory: CoreDataControllerFactory?
 
     override func setUp() {
         super.setUp()
@@ -43,7 +37,7 @@ final class ProfileCoreDataStoreTests: XCTestCase {
 
     override func tearDown() {
         // important to destory the store so that each test starts with an empty database
-        if let controller = try? coreDataFactory?.loadCoreDataController() {
+        if let controller = try? factory?.loadCoreDataController() {
             expect(try controller.destroyPersistentStore(at: self.databaseFile)).toNot(throwError())
         }
 
@@ -51,39 +45,22 @@ final class ProfileCoreDataStoreTests: XCTestCase {
     }
 
     private func loadFactory() -> CoreDataControllerFactory {
-        guard let factory = coreDataFactory else {
-            let factory: CoreDataControllerFactory = .init(databaseUrl: { self.databaseFile }) {
-                @Shared(.coreDataController) var coreDataController
-
-                let fileProtection: FileProtectionType = {
-                    #if os(macOS)
-                    return FileProtectionType(rawValue: "none")
-                    #else
-                    return .completeUnlessOpen
-                    #endif
-                }()
-
-                if let controller = coreDataController {
-                    return controller
-                }
-                guard Thread.isMainThread else {
-                    return try DispatchQueue.main.sync {
-                        try loadCoreDataController()
-                    }
-                }
-                func loadCoreDataController() throws -> CoreDataController {
-                    let controller = try CoreDataController(
-                        url: self.databaseFile,
-                        fileProtection: fileProtection
-                    )
-                    $coreDataController.withLock { $0 = controller }
-                    return controller
-                }
-                return try loadCoreDataController()
-            }
-            coreDataFactory = factory
+        guard let factory = factory else {
+            #if os(macOS)
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: FileProtectionType(rawValue: "none")
+            )
+            #else
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: .completeUnlessOpen
+            )
+            #endif
+            self.factory = factory
             return factory
         }
+
         return factory
     }
 
@@ -98,8 +75,9 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         )
     }
 
-    private func loadErxCoreDataStore() throws -> ErxTaskCoreDataStore {
+    private func loadErxCoreDataStore(for profileId: UUID? = nil) throws -> ErxTaskCoreDataStore {
         DefaultErxTaskCoreDataStore(
+            profileId: profileId,
             coreDataControllerFactory: loadFactory(),
             foregroundQueue: foregroundQueue,
             backgroundQueue: backgroundQueue,
@@ -107,36 +85,42 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         )
     }
 
-    private lazy var profileSimple: Profile = .init(
-        name: "Karl",
-        identifier: UUID(),
-        color: .grey
-    )
+    private lazy var profileSimple: Profile = {
+        Profile(
+            name: "Karl",
+            identifier: UUID(),
+            color: .grey
+        )
+    }()
 
-    private lazy var profileAuthenticated: Profile = .init(
-        name: "Karl",
-        identifier: UUID(),
-        givenName: "Karl",
-        familyName: "Heinz",
-        insurance: "Random BKK",
-        insuranceId: "k1234",
-        color: .grey,
-        lastAuthenticated: Date()
-    )
+    private lazy var profileAuthenticated: Profile = {
+        Profile(
+            name: "Karl",
+            identifier: UUID(),
+            givenName: "Karl",
+            familyName: "Heinz",
+            insurance: "Random BKK",
+            insuranceId: "k1234",
+            color: .grey,
+            lastAuthenticated: Date()
+        )
+    }()
 
-    private lazy var profileWithTasks: Profile = .init(
-        name: "Karl",
-        identifier: UUID(),
-        givenName: "Karl",
-        familyName: "Heinz",
-        insurance: "Random BKK",
-        insuranceId: "k1234",
-        color: .grey,
-        image: .boyWithCard,
-        lastAuthenticated: Date(),
-        erxTasks: [ErxTask(identifier: "id1", status: .ready, flowType: .pharmacyOnly, accessCode: "accessCode1"),
-                   ErxTask(identifier: "id2", status: .ready, flowType: .pharmacyOnly, accessCode: "accessCode2")]
-    )
+    private lazy var profileWithTasks: Profile = {
+        Profile(
+            name: "Karl",
+            identifier: UUID(),
+            givenName: "Karl",
+            familyName: "Heinz",
+            insurance: "Random BKK",
+            insuranceId: "k1234",
+            color: .grey,
+            image: .boyWithCard,
+            lastAuthenticated: Date(),
+            erxTasks: [ErxTask(identifier: "id1", status: .ready, accessCode: "accessCode1"),
+                       ErxTask(identifier: "id2", status: .ready, accessCode: "accessCode2")]
+        )
+    }()
 
     func testHasProfileWithoutProfiles() throws {
         let store = loadProfileCoreDataStore()
@@ -208,12 +192,9 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         cancellable.cancel()
     }
 
-    func testSaveProfilesWithFailingLoadingDatabase() {
-        let factory = CoreDataControllerFactory(databaseUrl: {
-            self.databaseFile
-        }, loadCoreDataController: {
-            throw LocalStoreError.notImplemented
-        })
+    func testSaveProfilesWithFailingLoadingDatabase() throws {
+        let factory = MockCoreDataControllerFactory()
+        factory.loadCoreDataControllerThrowableError = LocalStoreError.notImplemented
         let store = ProfileCoreDataStore(
             coreDataControllerFactory: factory,
             backgroundQueue: AnyScheduler.main
@@ -232,6 +213,8 @@ final class ProfileCoreDataStoreTests: XCTestCase {
 
         expect(receivedSaveResults.count).to(equal(0))
         expect(receivedSaveCompletions.count).to(equal(1))
+        expect(receivedSaveCompletions.first) ==
+            .failure(LocalStoreError.initialization(error: factory.loadCoreDataControllerThrowableError!))
 
         cancellable.cancel()
     }
@@ -281,7 +264,7 @@ final class ProfileCoreDataStoreTests: XCTestCase {
             insuranceId: "k1234",
             color: .red,
             lastAuthenticated: Date(),
-            erxTasks: [ErxTask(identifier: "id", status: .ready, flowType: .pharmacyOnly, accessCode: "access")]
+            erxTasks: [ErxTask(identifier: "id", status: .ready, accessCode: "access")]
         )
         // when updating the saved profile
         try store.add(profiles: [updatedProfile])
@@ -316,7 +299,7 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         // given when we store a profile and related tasks and audit events
         let store = loadProfileCoreDataStore()
         try store.add(profiles: [profileWithTasks])
-        let erxTaskStore = try loadErxCoreDataStore()
+        let erxTaskStore = try loadErxCoreDataStore(for: profileWithTasks.identifier)
         // task and audit events have to be stored separately
         try erxTaskStore.add(tasks: profileWithTasks.erxTasks)
 
@@ -348,7 +331,7 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         expect(receivedListAllProfileValues.first?.count) == 0
 
         var receivedListAllErxTasksValues = [[ErxTask]]()
-        _ = erxTaskStore.listAllTasks(of: profileWithTasks.identifier)
+        _ = erxTaskStore.listAllTasks()
             .sink(receiveCompletion: { _ in
                 fail("did not expect to complete")
             }, receiveValue: { erxTasks in
@@ -381,7 +364,7 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         cancellable.cancel()
     }
 
-    func testFetchProfileByIdNoResults() {
+    func testFetchProfileByIdNoResults() throws {
         let store = loadProfileCoreDataStore()
         let profileToFetch = Profile(name: "profileToFetch")
 
@@ -437,7 +420,7 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         cancellable.cancel()
     }
 
-    func testUpdateProfileWithoutMatchingProfileInStore() {
+    func testUpdateProfileWithoutMatchingProfileInStore() throws {
         let store = loadProfileCoreDataStore()
         var receivedUpdateValues = [Bool]()
         var receivedCompletions = [Subscribers.Completion<LocalStoreError>]()
@@ -463,9 +446,9 @@ final class ProfileCoreDataStoreTests: XCTestCase {
         // given
         let profileStore = loadProfileCoreDataStore()
         try profileStore.add(profiles: [profileWithTasks])
-        let erxTaskStore = try loadErxCoreDataStore()
+        let erxTaskStore = try loadErxCoreDataStore(for: profileWithTasks.identifier)
         // task and audit events have to be stored separately
-        try erxTaskStore.add(tasks: profileWithTasks.erxTasks, profileId: profileWithTasks.identifier)
+        try erxTaskStore.add(tasks: profileWithTasks.erxTasks)
 
         // when fetching ...
         var receivedListAllProfileValues = [[Profile]]()

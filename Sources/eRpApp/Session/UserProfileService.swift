@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import ComposableArchitecture
 import Dependencies
@@ -79,10 +74,10 @@ class DummyUserProfileService: UserProfileService {
     static let dummyProfile = Profile(name: "Dummy Profile")
 }
 
-@CodedError("022")
+// sourcery: CodedError = "022"
 @CasePathable
 enum UserProfileServiceError: Error, Equatable {
-    @ErrorCode("01")
+    // sourcery: errorCode = "01"
     case localStoreError(LocalStoreError)
 }
 
@@ -123,10 +118,10 @@ struct DefaultUserProfileService: UserProfileService {
     private let userSession: UserSession
     private let userSessionProvider: UserSessionProvider
 
-    init(profileDataStore: ProfileDataStore,
-         profileOnlineChecker: ProfileOnlineChecker,
-         userSession: UserSession,
-         userSessionProvider: UserSessionProvider) {
+    internal init(profileDataStore: ProfileDataStore,
+                  profileOnlineChecker: ProfileOnlineChecker,
+                  userSession: UserSession,
+                  userSessionProvider: UserSessionProvider) {
         self.profileDataStore = profileDataStore
         self.profileOnlineChecker = profileOnlineChecker
         self.userSession = userSession
@@ -168,17 +163,19 @@ struct DefaultUserProfileService: UserProfileService {
     func activeUserProfilePublisher() -> AnyPublisher<UserProfile, UserProfileServiceError> {
         userSession.profile()
             .mapError(UserProfileServiceError.localStoreError)
-            .map { (profile: Profile) -> AnyPublisher<UserProfile, Never> in
-                Just(profile)
-                    .combineLatest(
-                        profileOnlineChecker.token(for: profile),
-                        userSessionProvider.userSession(for: profile.id).activityIndicating.isActive
-                    )
-                    .map(UserProfile.init)
-                    .removeDuplicates()
+            .combineLatest(
+                userSession.isAuthenticated
+                    .catch { _ in
+                        Just(false)
+                    }
+                    .setFailureType(to: UserProfileServiceError.self)
+                    .eraseToAnyPublisher(),
+                userSession.activityIndicating.isActive
+                    .setFailureType(to: UserProfileServiceError.self)
                     .eraseToAnyPublisher()
-            }
-            .switchToLatest()
+            )
+            .map(UserProfile.init)
+            .removeDuplicates()
             .eraseToAnyPublisher()
     }
 
@@ -202,10 +199,13 @@ protocol ProfileOnlineChecker {
 
 struct DefaultProfileOnlineChecker: ProfileOnlineChecker {
     func token(for profile: Profile) -> AnyPublisher<IDPToken?, Never> {
-        @Dependency(\.userSessionProvider) var userSessionProvider
-        return userSessionProvider.userSession(for: profile.id).secureUserStore.token
+        KeychainStorage(profileId: profile.id).token
     }
 }
+
+// MARK: TCA Dependency
+
+extension DefaultUserProfileService {}
 
 struct UserProfileServiceDependency: DependencyKey {
     static var live: DefaultUserProfileService {

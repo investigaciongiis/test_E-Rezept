@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Foundation
 
 /// Represents a record of a healthcare consumer’s choices, which permits or denies identified recipient(s) or
@@ -45,10 +40,7 @@ public struct ErxConsent: Identifiable, Hashable, Codable {
     }
 
     /// Id of the consent
-    public var id: String {
-        identifier
-    }
-
+    public var id: String { identifier }
     /// Identifier of the consent
     public let identifier: String
     /// Health card insurance identifier a.k.a. kvnr (e.g: X764228533)
@@ -65,8 +57,6 @@ public struct ErxConsent: Identifiable, Hashable, Codable {
     public enum Category: String, Equatable, Codable {
         /// Consent for saving electronic charge item
         case chargcons = "CHARGCONS"
-        /// Consent for redeeming e-prescriptions in EU countries
-        case euDispense = "EUDISPCONS"
     }
 
     public enum Scope: String, Equatable, Codable {
@@ -87,13 +77,13 @@ public struct ErxConsent: Identifiable, Hashable, Codable {
 }
 
 extension ErxConsent {
-    @CodedError("206")
+    // sourcery: CodedError = "206"
     public enum Error: Swift.Error {
+        // sourcery: errorCode = "01"
         /// Unable to construct consent request
-        @ErrorCode("01")
         case unableToConstructConsentRequest
+        // sourcery: errorCode = "02"
         /// Invalid ErxConsent input
-        @ErrorCode("02")
         case invalidErxConsentInput(String)
     }
 }

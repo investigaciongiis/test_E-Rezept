@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -33,7 +29,7 @@ class DefaultCoreDataCrudable: CoreDataCrudable {
     /// Factory that provides the underlying CoreDataController with a NSPersistentContainer
     let coreDataControllerFactory: CoreDataControllerFactory
 
-    init(
+    internal init(
         foregroundQueue: AnySchedulerOf<DispatchQueue>,
         backgroundQueue: AnySchedulerOf<DispatchQueue>,
         coreDataControllerFactory: CoreDataControllerFactory
@@ -70,12 +66,12 @@ protocol CoreDataCrudable {
     /// Deletes all results of the passed NSFetchRequest on a background context
     /// and returns the success or failure state of the operation in a publisher
     /// - Parameter fetchRequest: NSFetchRequest of the entities that should be deleted
-    func delete(
-        resultsOf fetchRequest: NSFetchRequest<some NSManagedObject>
+    func delete<Entity: NSManagedObject>(
+        resultsOf fetchRequest: NSFetchRequest<Entity>
     ) -> AnyPublisher<Bool, LocalStoreError>
 
-    func delete(
-        with fetchRequest: NSFetchRequest<some NSManagedObject>
+    func delete<Entity: NSManagedObject>(
+        with fetchRequest: NSFetchRequest<Entity>
     ) throws
 
     /// Executes the passed NSFetchRequest on the `viewContext` and returns the results in a publisher
@@ -144,9 +140,6 @@ extension CoreDataCrudable {
                         promise(.failure(error))
                         moc.reset()
                     }
-                }
-                foregroundQueue.schedule {
-                    coreData.container.viewContext.refreshAllObjects()
                 }
             }
         }
@@ -234,7 +227,7 @@ extension CoreDataCrudable {
         }
     }
 
-    func delete(resultsOf fetchRequest: NSFetchRequest<some NSManagedObject>) -> AnyPublisher<Bool, Error> {
+    func delete<Entity: NSManagedObject>(resultsOf fetchRequest: NSFetchRequest<Entity>) -> AnyPublisher<Bool, Error> {
         let coreData: CoreDataController
         do {
             coreData = try coreDataControllerFactory.loadCoreDataController()
@@ -267,8 +260,8 @@ extension CoreDataCrudable {
         .eraseToAnyPublisher()
     }
 
-    func delete(
-        with fetchRequest: NSFetchRequest<some NSManagedObject>
+    func delete<Entity: NSManagedObject>(
+        with fetchRequest: NSFetchRequest<Entity>
     ) throws {
         let coreData: CoreDataController
         do {

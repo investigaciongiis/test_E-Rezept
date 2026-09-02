@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -43,7 +39,7 @@ struct TooltipModifier<TooltipContent: View>: ViewModifier {
     let tooltipContent: TooltipContent
     let tooltipId: any TooltipId
 
-    /// This value will be loaded onAppear and updated on tooltip dismiss
+    // This value will be loaded onAppear and updated on tooltip dismiss
     @State var tooltipHidden = true
 
     init(id: any TooltipId, tooltipContent: TooltipContent) {
@@ -58,7 +54,7 @@ struct TooltipModifier<TooltipContent: View>: ViewModifier {
         if tooltipHidden || !isEnabled {
             content
                 .onAppear {
-                    tooltipHidden = tooltipDisplayStorage.tooltipHidden(tooltipId.description)
+                    self.tooltipHidden = tooltipDisplayStorage.tooltipHidden(tooltipId.description)
                 }
         } else {
             content
@@ -133,9 +129,7 @@ enum PlaygroundTooltipId: UInt, TooltipId {
         lhs.rawValue < rhs.rawValue
     }
 
-    var description: String {
-        "PlaygroundTooltipId_\(rawValue)"
-    }
+    var description: String { "PlaygroundTooltipId_\(rawValue)" }
 
     case tooltipA = 100
     case tooltipB = 200
@@ -149,9 +143,7 @@ enum PlaygroundTooltipId: UInt, TooltipId {
     case tooltipJ = 850
     case tooltipK = 750
 
-    var priority: UInt {
-        rawValue
-    }
+    var priority: UInt { rawValue }
 }
 
 struct TooltipPlayground: View {
@@ -204,9 +196,9 @@ struct TooltipPlayground: View {
                         }
 
                         Text("Lorem ipsum dolor sit amet...")
-                            .background(Colors.secondary700)
+                            .background(Color.green)
                         Text("Lorem ipsum dolor sit amet...")
-                            .background(Colors.secondary700)
+                            .background(Color.green)
 
                         HStack {
                             Btn()
@@ -238,12 +230,12 @@ struct TooltipPlayground: View {
                                 }
                         }
                         Text("Lorem ipsum dolor sit amet...")
-                            .background(Colors.secondary700)
+                            .background(Color.green)
 
                         Text("Lorem ipsum dolor sit amet...")
                         Text("Lorem ipsum dolor sit amet...")
                         Text("Lorem ipsum dolor sit amet...")
-                            .background(Colors.secondary700)
+                            .background(Color.green)
 
                         HStack {
                             Btn()

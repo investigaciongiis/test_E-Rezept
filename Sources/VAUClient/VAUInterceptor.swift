@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
 import Combine
 import Foundation
 import HTTPClient
@@ -28,7 +23,7 @@ import HTTPClient
 /// The VAU (trusted execution environment) http Interceptor to encrypt HTTP-Requests before sending them
 /// and decrypting the received encrypted responses.
 /// [REQ:BSI-eRp-ePA:O.Ntwk_6#2] Interceptor implementing request and response encryption.
-public class VAUInterceptor: Interceptor {
+class VAUInterceptor: Interceptor {
     private let vauAccessTokenProvider: VAUAccessTokenProvider
     private let vauCertificateProvider: VAUCertificateProvider
     private let vauCryptoProvider: VAUCryptoProvider
@@ -46,49 +41,37 @@ public class VAUInterceptor: Interceptor {
         self.vauEndpointHandler = vauEndpointHandler
     }
 
-    public func intercept(chain: Chain) async throws -> HTTPResponse {
+    func intercept(chain: Chain) -> AnyPublisher<HTTPResponse, HTTPClientError> {
         let request = chain.request
         guard let originalUrl = request.url else {
-            throw HTTPClientError.vauError(VAUError.internalError("Could not prepare request for VAU service"))
+            return Fail(error: HTTPClientError
+                .vauError(VAUError.internalError("Could not prepare request for VAU service")))
+                            .eraseToAnyPublisher()
         }
-        // [REQ:gemSpec_eRp_FdV:A_19187] VAU Bearer must be set to trigger a request
-        async let vauBearerToken = vauAccessTokenProvider.vauBearerToken.async()
-        async let vauCertificate = vauCertificateProvider.loadAndVerifyVauCertificate().async()
-        async let vauEndPoint = vauEndpointHandler.vauEndpoint.async()
 
-        let vauRequest: URLRequest
-        let vauCrypto: VAUCrypto
-        do {
+        // [REQ:gemSpec_eRp_FdV:A_19187] VAU Bearer must be set to trigger a request
+        return vauAccessTokenProvider.vauBearerToken
+            .zip(
+                vauCertificateProvider.loadAndVerifyVauCertificate(),
+                vauEndpointHandler.vauEndpoint
+            )
+            .first()
             // Prepare outer request (encrypt original request and embed it into a new one)
             // [REQ:gemSpec_Krypt:A_20161-01#3] Encapsulate "real" HTTPRequest into VAU envelop
-            (vauCrypto, vauRequest) = try await VAUInterceptor.processToVauRequest(
-                urlRequest: request,
-                vauCryptoProvider: vauCryptoProvider,
-                vauEndPoint: vauEndPoint,
-                bearerToken: vauBearerToken,
-                vauCertificate: vauCertificate
-            )
-        } catch {
-            throw HTTPClientError.vauError(error)
-        }
+            .processToVauRequest(urlRequest: request, vauCryptoProvider: vauCryptoProvider)
+            .flatMap { vauCrypto, vauRequest -> AnyPublisher<HTTPResponse, HTTPClientError> in
+                chain.proceed(request: vauRequest)
+                    // Process VAU server response (validate and extract+decrypt inner FHIR service response)
+                    // [REQ:gemSpec_Krypt:A_20174#12] 2: Handle userpseudonym
+                    .handleUserPseudonym(vauEndpointHandler: self.vauEndpointHandler)
+                    // [REQ:gemSpec_Krypt:A_20174#16] 6: Remove the envelop
+                    .processVauResponse(vauCrypto: vauCrypto, originalUrl: originalUrl)
+            }
+            .eraseToAnyPublisher()
+    }
 
-        let vauResponse = try await chain.proceed(request: vauRequest)
-        // Process VAU server response (validate and extract+decrypt inner FHIR service response)
-        // [REQ:gemSpec_Krypt:A_20174#12] 2: Handle userpseudonym
-        vauEndpointHandler.didReceiveUserPseudonym(in: vauResponse)
-
-        let processedVauResponse: HTTPResponse
-        do {
-            // [REQ:gemSpec_Krypt:A_20174#16] 6: Remove the envelop
-            processedVauResponse = try VAUInterceptor.processVauResponse(
-                httpResponse: vauResponse,
-                vauCrypto: vauCrypto,
-                originalUrl: originalUrl
-            )
-        } catch {
-            throw HTTPClientError.vauError(error)
-        }
-        return processedVauResponse
+    func interceptAsync(chain _: Chain) async throws -> HTTPResponse {
+        throw HTTPClientError.internalError("notImplemented")
     }
 }
 
@@ -140,11 +123,10 @@ extension VAUInterceptor {
 
 extension Publisher where Output == HTTPResponse, Failure == HTTPClientError {
     func handleUserPseudonym(vauEndpointHandler: VAUEndpointHandler) -> AnyPublisher<HTTPResponse, HTTPClientError> {
-        handleEvents(
+        handleEvents( // swiftlint:disable:this trailing_closure
             receiveOutput: { httpResponse in
                 vauEndpointHandler.didReceiveUserPseudonym(in: httpResponse)
-            },
-            receiveRequest: nil
+            }
         )
         .eraseToAnyPublisher()
     }
@@ -174,6 +156,7 @@ extension VAUInterceptor {
         }
         let extracted = httpResponse.data
         let decrypted = try vauCrypto.decrypt(data: extracted)
-        return try decrypted.decodeToHTTPResponse(url: originalUrl)
+        let decoded = try decrypted.decodeToHTTPResponse(url: originalUrl)
+        return decoded
     }
 }

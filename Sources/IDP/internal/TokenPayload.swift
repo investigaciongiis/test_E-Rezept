@@ -1,28 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import CryptoKit
 import Foundation
+import OpenSSL
 
 /// TokenPayload - gemSpec_IDP_Dienst#5.2.2
 public struct TokenPayload: Codable {
@@ -31,20 +27,6 @@ public struct TokenPayload: Codable {
     public var idToken: String
     public let ssoToken: String?
     public let tokenType: String
-
-    public init(
-        accessToken: String,
-        expiresIn: Int,
-        idToken: String,
-        ssoToken: String? = nil,
-        tokenType: String
-    ) {
-        self.accessToken = accessToken
-        self.expiresIn = expiresIn
-        self.idToken = idToken
-        self.ssoToken = ssoToken
-        self.tokenType = tokenType
-    }
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
@@ -66,7 +48,7 @@ public struct TokenPayload: Codable {
         let njwt: String
     }
 
-    public struct AccessTokenPayload: Claims {
+    public struct AccesTokenPayload: Claims {
         public let exp: Date?
     }
 
@@ -87,8 +69,6 @@ public struct TokenPayload: Codable {
         public let displayName: String?
         /// Organization name
         public let organizationName: String?
-        /// Organization IK-Number
-        public let organizationIK: String?
         /// Profession ID of the user (e.g.: "1.2.276.0.76.4.49")
         public let professionOID: String?
         /// Health card number (e.g.: "X110443874")
@@ -117,7 +97,6 @@ public struct TokenPayload: Codable {
             case familyName = "family_name"
             case displayName = "display_name"
             case organizationName
-            case organizationIK
             case professionOID
             case idNummer
             case azp
@@ -135,21 +114,17 @@ public struct TokenPayload: Codable {
 }
 
 extension TokenPayload {
-    @CodedError("106")
+    // sourcery: CodedError = "106"
     public enum Error: Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case dataEncoding
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case stringConversion
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case decryption(Swift.Error)
     }
 
-    /// Decrypt the token payload using the provided AES key
-    /// - Parameter aesKey: AES symmetric key for decryption
-    /// - Returns: Decrypted TokenPayload with access and ID tokens
-    /// - Throws: TokenPayload.Error if decryption fails
-    public func decrypted(with aesKey: SymmetricKey) throws -> TokenPayload {
+    func decrypted(with aesKey: SymmetricKey) throws -> TokenPayload {
         guard let accessTokenData = accessToken.data(using: .utf8),
               let idTokenData = idToken.data(using: .utf8) else {
             throw Error.dataEncoding
@@ -177,3 +152,67 @@ extension TokenPayload {
 }
 
 extension TokenPayload: Equatable {}
+
+// [REQ:gemSpec_IDP_Frontend:A_21324#2] Token-key and code-verifier are encoded into KeyVerifier.
+public struct KeyVerifier: Codable {
+    /// data string key that is used by the server to encrypt the access token response
+    let tokenKey: String
+    ///  random generated verifier code that was created and sent with the request challenge API call
+    let verifierCode: VerifierCode
+
+    init(with key: SymmetricKey, codeVerifier: String) throws {
+        guard let encoded = key.withUnsafeBytes({ Data(Array($0)) }).encodeBase64UrlSafe(),
+              let keyDataString = String(bytes: encoded, encoding: .utf8) else {
+            throw Error.stringConversion
+        }
+        tokenKey = keyDataString
+        verifierCode = codeVerifier
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case tokenKey = "token_key"
+        case verifierCode = "code_verifier"
+    }
+
+    // sourcery: CodedError = "105"
+    public enum Error: Swift.Error {
+        // sourcery: errorCode = "01"
+        case stringConversion
+    }
+
+    func encrypted(with publicKey: BrainpoolP256r1.KeyExchange.PublicKey,
+                   using cryptoBox: IDPCrypto) throws -> JWE {
+        // [REQ:gemSpec_IDP_Frontend:A_21323#2] Encode into JSON object
+        // [REQ:gemSpec_IDP_Frontend:A_21324#3] Encode into JSON object
+        guard let keyVerifierEncoded = try? KeyVerifier.jsonEncoder.encode(self) else {
+            throw IDPError.internal(error: .keyVerifierEncoding)
+        }
+
+        let keyExchangeContext = JWE.Algorithm.KeyExchangeContext.bpp256r1(
+            publicKey,
+            keyPairGenerator: cryptoBox.brainpoolKeyPairGenerator
+        )
+
+        // [REQ:BSI-eRp-ePA:O.Cryp_1#6] Signature via ecdh ephemeral-static
+        // [REQ:BSI-eRp-ePA:O.Cryp_4#2] one time usage for JWE ECDH-ES Encryption
+        guard let jweHeader = try? JWE.Header(algorithm: JWE.Algorithm.ecdh_es(keyExchangeContext),
+                                              encryption: .a256gcm,
+                                              contentType: "JWT") else {
+            throw IDPError.internal(error: .keyVerifierJweHeaderEncryption)
+        }
+
+        guard let jwe = try? JWE(header: jweHeader,
+                                 payload: keyVerifierEncoded,
+                                 nonceGenerator: cryptoBox.aesNonceGenerator) else {
+            throw IDPError.internal(error: .keyVerifierJwePayloadEncryption)
+        }
+
+        return jwe
+    }
+
+    private static var jsonEncoder: JSONEncoder = {
+        let jsonEncoder = JSONEncoder()
+        jsonEncoder.dataEncodingStrategy = .base64
+        return jsonEncoder
+    }()
+}

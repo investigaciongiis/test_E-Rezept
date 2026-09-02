@@ -1,40 +1,26 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AsyncHelpers
 import Combine
 import ComposableArchitecture
-import CryptoKit
 import eRpKit
-import eRpLocalStorage
-import eRpRemoteStorage
-import ErxTaskRepository
-import FeatureCardWall
-import FeatureHelpers
-import FHIRVZD
 import Foundation
 import IDP
-import PushNotificationCrypto
-import Settings
 
 // swiftlint:disable type_body_length file_length
 @Reducer
@@ -44,21 +30,6 @@ struct DebugDomain {
         var trackingOptIn: Bool
 
         #if ENABLE_DEBUG_VIEW
-        @Shared(.showDebugPharmacies) var showDebugPharmacies
-        @Shared(.fhirVZDToken) var fhirVZDToken
-        @Shared(.overwriteDIGAIK) var overwriteDIGAIK
-        @Shared(.appDefaults) var appDefaults
-        @Shared(.euRedeemPrescriptionsFeature) var euRedeemPrescriptionsFeature: Bool
-        @Shared(.communicationsV3Feature) var communicationsV3Feature: Bool
-        @Shared(.useWorkflow16ForSending) var useWorkflow16: Bool
-        @Shared(.enablePushNotifications) var enablePushNotifications: Bool
-
-        @Shared(.isVirtualEGKEnabled) var isVirtualEGKEnabled
-        @Shared(.virtualEGKCCHAut) var virtualEGKCCHAut
-        @Shared(.virtualEGKPrkCHAut) var virtualEGKPrkCHAut
-
-        @Shared(.selectedProfileId) var profileId
-
         var localTasks: [ErxTask] = []
         var hideOnboarding = true
 
@@ -74,11 +45,13 @@ struct DebugDomain {
         var accessCodeText: String = ""
         var lastIDPToken: IDPToken?
         var profile: Profile?
-        var hidePkvConsentDrawerOnMainView: Bool {
-            profile?.hidePkvConsentDrawerOnMainView ?? false
-        }
+        var hidePkvConsentDrawerOnMainView: Bool { profile?.hidePkvConsentDrawerOnMainView ?? false }
 
         var fakeTaskStatus = String(ErxTask.minTimeIntervalForCompletion)
+
+        var useVirtualLogin: Bool = UserDefaults.standard.isVirtualEGKEnabled
+        var virtualLoginPrivateKey: String = UserDefaults.standard.virtualEGKPrkCHAut ?? ""
+        var virtualLoginCertKey: String = UserDefaults.standard.virtualEGKCCHAut ?? ""
 
         var vauUrlText: String = "http://some-service.com:8003/"
         var idpUrlText: String = "http://some-service.com:8003/"
@@ -99,10 +72,6 @@ struct DebugDomain {
         var showAlert = false
         var alertText: String?
         var logState = DebugLogsDomain.State(logs: [])
-        var encryptedCiphertext: String = ""
-        var timeMessageEncrypted: String = ""
-        var deviceToken: String = ""
-        var tokenError: String = ""
         #endif
 
         struct ServerEnvironment: Identifiable, Equatable {
@@ -121,7 +90,6 @@ struct DebugDomain {
         #if ENABLE_DEBUG_VIEW
         case hideOnboardingReceived(String?)
         case hideCardWallIntroReceived(Bool)
-        case resetPnKeyGenerationsButtonTapped
         case resetCanButtonTapped
         case deleteKeyAndEGKAuthCertForBiometric
         case loadAllLocalTasksReceived(Result<[ErxTask], ErxRepositoryError>)
@@ -130,7 +98,7 @@ struct DebugDomain {
         case markCommunicationsAsRead
         case deleteSSOToken
         case falsifySSOToken
-        case resetTrustStoreButtonTapped
+        case resetOcspAndCertListButtonTapped
         case isAuthenticatedReceived(Bool?)
         case logoutButtonTapped
         case invalidateAccessToken
@@ -143,14 +111,9 @@ struct DebugDomain {
         case setServerEnvironment(String?)
         case showAlert(Bool)
         case resetAlertText
-        case resetAppDefaults
         case appear
         case resetTooltips
         case logAction(action: DebugLogsDomain.Action)
-        case initializePushNotificationKeyChain(iss: String, timeISSCreated: String, keyIdentifier: String)
-        case encryptPushNotificationPayload(plaintext: String, keyIdentifier: String)
-        case requestPushPermissionAndRegister
-        case pushNotificationRegisterReceived(deviceToken: String?, error: String?)
         #endif
     }
 
@@ -159,11 +122,9 @@ struct DebugDomain {
     @Dependency(\.userDataStore) var localUserStore: UserDataStore
     @Dependency(\.tracker) var tracker: Tracker
     @Dependency(\.userProfileService) var userProfileService: UserProfileService
-    @Dependency(\.erxTaskRepository) var erxTaskRepository: ErxTaskRepository
+
+    @Dependency(\.secureEnclaveSignatureProvider) var signatureProvider: SecureEnclaveSignatureProvider
     @Dependency(\.serviceLocatorDebugAccess) var serviceLocatorDebugAccess: ServiceLocatorDebugAccess
-    @Dependency(\.pushNotificationCrypto) var pushNotificationCrypto: PushNotificationCrypto
-    @Dependency(\.pushNotificationCryptoStorage) var pushNotificationCryptoStorage: PushNotificationCryptoStorage
-    @Dependency(\.apnsRegistrationService) var apnsRegistrationService: APNSRegistrationService
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
     func core(into state: inout State, action: Action) -> Effect<Action> {
@@ -182,22 +143,6 @@ struct DebugDomain {
         case let .hideCardWallIntroReceived(hideCardWallIntro):
             state.hideCardWallIntro = hideCardWallIntro
             return .none
-        case .resetPnKeyGenerationsButtonTapped:
-            return .run { _ in
-                // Use the same keyIdentifier that's used in DebugPushNotificationView
-                let keyIdentifier = "123e4567-e89b-12d3-a456-426614174000"
-                do {
-                    let allGenerations = try pushNotificationCryptoStorage.loadAllKeyGenerations(keyIdentifier)
-                    let yearMonths = allGenerations.map(\.yearMonth)
-                    if !yearMonths.isEmpty {
-                        try pushNotificationCryptoStorage.deleteKeyGenerations(keyIdentifier, yearMonths)
-                    }
-                } catch {
-                    // Silently handle errors in debug tool
-                    print("Failed to reset push notification key generations: \(error)")
-                }
-                print("Ran resetPnKeyGenerationsButtonTapped ")
-            }
         case .resetCanButtonTapped:
             userSession.secureUserStore.set(can: nil)
             return .none
@@ -255,7 +200,7 @@ struct DebugDomain {
             userSession.secureUserStore.set(keyIdentifier: nil)
             userSession.secureUserStore.set(certificate: nil)
             return .none
-        case .resetTrustStoreButtonTapped:
+        case .resetOcspAndCertListButtonTapped:
             userSession.trustStoreSession.reset()
             return .none
         case .binding(\.useDebugDeviceCapabilities):
@@ -274,6 +219,15 @@ struct DebugDomain {
             return .none
         case let .isAuthenticatedReceived(isAuthenticated):
             state.isAuthenticated = isAuthenticated
+            return .none
+        case .binding(\.useVirtualLogin):
+            UserDefaults.standard.isVirtualEGKEnabled = state.useVirtualLogin
+            return .none
+        case .binding(\.virtualLoginCertKey):
+            UserDefaults.standard.virtualEGKCCHAut = state.virtualLoginCertKey
+            return .none
+        case .binding(\.virtualLoginPrivateKey):
+            UserDefaults.standard.virtualEGKPrkCHAut = state.virtualLoginPrivateKey
             return .none
         case .binding(\.fakeTaskStatus):
             ErxTask.minTimeIntervalForCompletion = Double(state.fakeTaskStatus) ?? 0
@@ -298,6 +252,7 @@ struct DebugDomain {
             }
             userSession.secureUserStore.set(token: nil)
             return .none
+
         case let .loadAllLocalTasksReceived(result):
             switch result {
             case let .success(tasks):
@@ -311,11 +266,12 @@ struct DebugDomain {
             guard !state.localTasks.isEmpty else {
                 return .none
             }
-            return .run { [tasks = state.localTasks, profileId = state.profileId] send in
+            return .run { [tasks = state.localTasks] send in
                 var responses: [Response<ErxTask>] = []
                 for task in tasks {
                     do {
-                        _ = try await erxTaskRepository.deleteTask([task], profileId)
+                        _ = try await userSession.erxTaskRepository.delete(erxTasks: [task])
+                            .async(\.self)
                         responses.append(.init(value: task, result: .success))
                     } catch {
                         responses.append(.init(value: task, result: .failure(error)))
@@ -350,20 +306,21 @@ struct DebugDomain {
                     return readCommunication
                 }
 
-            return .run { [profileId = state.profileId, profile = state.profile] _ in
-                _ = try await erxTaskRepository.saveLocalCommunications(communications, profileId)
+            return .run { [profile = state.profile] _ in
+                _ = try await userSession.erxTaskRepository.saveLocal(communications: communications).async()
                 if profile?.insuranceType == .pKV {
                     for taskId in Set(communications.map(\.taskId)) {
-                        if var chargeItem = try await erxTaskRepository.loadLocalChargeItem(profileId, taskId)?
+                        if var chargeItem = try await userSession.erxTaskRepository.loadLocal(by: taskId).async()?
                             .chargeItem {
                             chargeItem.isRead = true
-                            _ = try await erxTaskRepository.saveChargeItems([chargeItem.sparseChargeItem], profileId)
+                            _ = try await userSession.erxTaskRepository.save(chargeItems: [chargeItem.sparseChargeItem])
+                                .async()
                         }
                     }
                 }
             }
         case let .deleteAllTasksReceived(localizedError):
-            if let localizedError {
+            if let localizedError = localizedError {
                 state.alertText = localizedError
             } else {
                 state.alertText = "Did delete all tasks!"
@@ -377,9 +334,6 @@ struct DebugDomain {
             userSession.vauStorage.set(userPseudonym: nil)
             userSession.trustStoreSession.reset()
             userSession.secureUserStore.set(discovery: nil)
-
-            @Shared(.fhirVZDToken) var token
-            $token.withLock { $0 = nil }
 
             localUserStore.set(serverEnvironmentConfiguration: name)
             return .none
@@ -399,8 +353,10 @@ struct DebugDomain {
                 loadAllLocalTasks(),
                 onReceiveHideOnboarding(),
                 onReceiveHideCardWallIntro(),
+                onReceiveIsAuthenticated(),
                 onReceiveToken(),
                 onReceiveConfigurationName(for: state.availableEnvironments),
+                onReceiveVirtualEGK(),
                 onReceiveCurrentProfile()
             )
         case let .profileReceived(.success(profile)):
@@ -418,7 +374,7 @@ struct DebugDomain {
 
             return setProfileInsuranceTypeToPKV(profileId: profile.id)
         case .hidePkvConsentDrawerMainViewToggleTapped:
-            guard let profile = state.profile, profile.insuranceType.canReceiveChargeItems else {
+            guard let profile = state.profile, profile.insuranceType == .pKV else {
                 return .none
             }
             let newValue = !profile.hidePkvConsentDrawerOnMainView
@@ -427,60 +383,10 @@ struct DebugDomain {
         case .resetTooltips:
             UserDefaults.standard.setValue([String: Any](), forKey: "TOOLTIPS")
             return .none
-        case .resetAppDefaults:
-            state.$appDefaults.withLock { $0 = AppDefaults() }
-            return .none
         case let .tokenReceived(token):
             state.token = token
             return .none
         case .logAction:
-            return .none
-        case let .initializePushNotificationKeyChain(iss, timeISSCreated, keyIdentifier):
-            return .run { _ in
-                let issData = try Data(hex: iss)
-                try pushNotificationCrypto.initializeKeyChain(issData, timeISSCreated, keyIdentifier)
-            }
-        case let .encryptPushNotificationPayload(plaintext, keyIdentifier):
-            do {
-                let allGenerations = try pushNotificationCryptoStorage.loadAllKeyGenerations(keyIdentifier)
-                guard let latestGeneration = allGenerations.last else {
-                    throw PushNotificationCryptoError.noKeyAvailable
-                }
-
-                let encryptedPayload = encryptPushNotificationPayload(
-                    plaintext: plaintext,
-                    aesGCMKey: latestGeneration.aesGCMKey
-                )
-                state.encryptedCiphertext = encryptedPayload
-
-                state.timeMessageEncrypted = latestGeneration.yearMonth
-            } catch {
-                state.encryptedCiphertext = "Encryption failed: \(error.localizedDescription)"
-            }
-            return .none
-        case .requestPushPermissionAndRegister:
-            return .run { send in
-                do {
-                    let token = try await apnsRegistrationService.requestAuthorizationAndRegister()
-                    let hexToken = token.map { String(format: "%02x", $0) }.joined()
-                    await send(.pushNotificationRegisterReceived(deviceToken: hexToken, error: nil))
-                } catch APNSRegistrationError.permissionDenied {
-                    await send(.pushNotificationRegisterReceived(
-                        deviceToken: nil,
-                        error: "Notification permission denied."
-                    ))
-                } catch {
-                    await send(.pushNotificationRegisterReceived(deviceToken: nil, error: error.localizedDescription))
-                }
-            }
-        case let .pushNotificationRegisterReceived(deviceToken, error):
-            if let deviceToken {
-                state.deviceToken = deviceToken
-                state.tokenError = ""
-            } else {
-                state.deviceToken = ""
-                state.tokenError = error ?? "Unknown error"
-            }
             return .none
         case .binding:
             return .none
@@ -488,22 +394,6 @@ struct DebugDomain {
         #else
         return .none
         #endif
-    }
-
-    func encryptPushNotificationPayload(plaintext: String, aesGCMKey: Data) -> String {
-        do {
-            let framedPayload = PNM1Framing.apply(Data(plaintext.utf8))
-
-            // AES/GCM encrypt
-            let symmetricKey = SymmetricKey(data: aesGCMKey)
-            let sealedBox = try AES.GCM.seal(framedPayload, using: symmetricKey)
-            guard let combined = sealedBox.combined else {
-                return "Encryption failed: Unable to combine sealed box components."
-            }
-            return combined.base64EncodedString()
-        } catch {
-            return "Encryption failed: \(error.localizedDescription)"
-        }
     }
 
     var body: some Reducer<State, Action> {
@@ -514,7 +404,7 @@ struct DebugDomain {
 
         BindingReducer()
 
-        Reduce(core)
+        Reduce(self.core)
         #else
         EmptyReducer()
         #endif
@@ -528,14 +418,6 @@ struct DebugDomain {
             case success
             case failure(Error)
         }
-    }
-}
-
-extension SharedReaderKey
-    where Self == AppStorageKey<Bool>.Default {
-    /// A key to determine whether the app should show settings for push notifications.
-    public static var enablePushNotifications: Self {
-        Self[.appStorage("enable_push_notifications"), default: false]
     }
 }
 
@@ -568,7 +450,7 @@ extension DebugDomain {
 
     func loadAllLocalTasks() -> Effect<DebugDomain.Action> {
         .publisher(
-            erxTaskRepository.loadLocalAllTasks(nil)
+            userSession.erxTaskRepository.loadLocalAll()
                 .catchToPublisher()
                 .receive(on: schedulers.main)
                 .map(DebugDomain.Action.loadAllLocalTasksReceived)
@@ -590,6 +472,18 @@ extension DebugDomain {
             localUserStore.hideCardWallIntro
                 .receive(on: schedulers.main)
                 .map(DebugDomain.Action.hideCardWallIntroReceived)
+                .eraseToAnyPublisher
+        )
+    }
+
+    func onReceiveIsAuthenticated() -> Effect<DebugDomain.Action> {
+        .publisher(
+            userSession.isAuthenticated
+                .receive(on: schedulers.main)
+                .map(DebugDomain.Action.isAuthenticatedReceived)
+                .catch { _ in
+                    Just(DebugDomain.Action.isAuthenticatedReceived(nil))
+                }
                 .eraseToAnyPublisher
         )
     }
@@ -623,6 +517,14 @@ extension DebugDomain {
         )
     }
 
+    func onReceiveVirtualEGK() -> Effect<DebugDomain.Action> {
+        .run { send in
+            await send(.binding(.set(\.useVirtualLogin, UserDefaults.standard.isVirtualEGKEnabled)))
+            await send(.binding(.set(\.virtualLoginPrivateKey, UserDefaults.standard.virtualEGKPrkCHAut ?? "")))
+            await send(.binding(.set(\.virtualLoginCertKey, UserDefaults.standard.virtualEGKCCHAut ?? "")))
+        }
+    }
+
     func onReceiveCurrentProfile() -> Effect<DebugDomain.Action> {
         .publisher(
             userProfileService
@@ -635,7 +537,7 @@ extension DebugDomain {
     }
 
     func setProfileInsuranceTypeToPKV(profileId: UUID) -> Effect<DebugDomain.Action> {
-        let userProfileService = userProfileService
+        let userProfileService = self.userProfileService
 
         return .run { _ in
             _ = try await userProfileService
@@ -648,7 +550,7 @@ extension DebugDomain {
     }
 
     func setHidePkvConsentDrawerOnMainView(to value: Bool, profileId: UUID) -> Effect<DebugDomain.Action> {
-        let userProfileService = userProfileService
+        let userProfileService = self.userProfileService
 
         return .run { _ in
             _ = try await userProfileService

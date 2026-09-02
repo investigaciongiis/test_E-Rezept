@@ -1,26 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
+import Combine
 import Foundation
+import OpenSSL
 
 /// Bundles data needed for creating and verifiying a pairing.
 /// [REQ:gemSpec_IDP_Dienst:A_21415:Registration_Data]
@@ -37,7 +35,7 @@ public struct RegistrationData: Claims, Codable {
         registrationDataVersion = "1.0"
     }
 
-    /// Certificate of the eGK
+    // Certificate of the eGK
     public let authCert: String
     // JWT
     public let signedParingData: String
@@ -107,5 +105,35 @@ public struct RegistrationData: Claims, Codable {
             case deviceInformationDataVersion = "device_information_data_version"
             case deviceType = "device_type"
         }
+    }
+
+    private static var defaultEncoder: JSONEncoder = {
+        let jsonEncoder = JSONEncoder()
+        jsonEncoder.dataEncodingStrategy = .base64
+        return jsonEncoder
+    }()
+
+    /// [REQ:gemSpec_IDP_Dienst:A_21415:Encrypted_Registration_Data] Returns JWE encrypted Registration_Data
+    /// [REQ:gemSpec_IDP_Frontend:A_21416] Encryption
+    func encrypted(with publicKey: BrainpoolP256r1.KeyExchange.PublicKey,
+                   using cryptoBox: IDPCrypto) throws -> JWE {
+        // [REQ:BSI-eRp-ePA:O.Cryp_1#4] Signature via ecdh ephemeral-static
+        // [REQ:BSI-eRp-ePA:O.Cryp_4#3] one time usage for JWE ECDH-ES Encryption
+        let algorithm = JWE.Algorithm.ecdh_es(JWE.Algorithm.KeyExchangeContext.bpp256r1(
+            publicKey,
+            keyPairGenerator: cryptoBox.brainpoolKeyPairGenerator
+        ))
+        guard let jweHeader = try? JWE.Header(algorithm: algorithm,
+                                              encryption: .a256gcm,
+                                              contentType: "JSON",
+                                              type: "JWT"),
+            let jwePayload = try? RegistrationData.defaultEncoder.encode(self),
+            let signedChallengeJWE = try? JWE(header: jweHeader,
+                                              payload: jwePayload,
+                                              nonceGenerator: cryptoBox.aesNonceGenerator) else {
+            throw IDPError.internal(error: .registrationDataEncryption)
+        }
+
+        return signedChallengeJWE
     }
 }

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -38,10 +34,12 @@ final class MedicationReminderSetupDomainTests: XCTestCase {
     }
 
     func testStore(
-        with state: MedicationReminderSetupDomain.State = MedicationReminderSetupDomain.State(
-            medicationSchedule: MedicationReminderSetupDomainTests.Fixtures.medicationScheduleZeroEntries,
-            destination: nil
-        )
+        with state: MedicationReminderSetupDomain.State = {
+            MedicationReminderSetupDomain.State(
+                medicationSchedule: MedicationReminderSetupDomainTests.Fixtures.medicationScheduleZeroEntries,
+                destination: nil
+            )
+        }()
     ) -> TestStore {
         TestStore(
             initialState: state
@@ -144,18 +142,15 @@ final class MedicationReminderSetupDomainTests: XCTestCase {
 
 extension MedicationReminderSetupDomainTests {
     enum Fixtures {
-        static let medicationScheduleZeroEntries: MedicationSchedule = {
-            let now = Date()
-            return MedicationSchedule(
-                id: UUID(),
-                start: now,
-                end: now.addingTimeInterval(60 * 60 * 24 * 7),
-                title: "",
-                dosageInstructions: "",
-                taskId: "123.4567.8901",
-                isActive: true,
-                entries: []
-            )
-        }()
+        static let medicationScheduleZeroEntries = MedicationSchedule(
+            id: UUID(),
+            start: MedicationReminderSetupDomainTests.now,
+            end: MedicationReminderSetupDomainTests.now.addingTimeInterval(60 * 60 * 24 * 7),
+            title: "",
+            dosageInstructions: "",
+            taskId: "123.4567.8901",
+            isActive: true,
+            entries: []
+        )
     }
 }

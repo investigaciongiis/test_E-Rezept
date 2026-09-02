@@ -1,29 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
-import FeatureHelpers
 import HealthCardControl
 import Nimble
 import TestUtils
@@ -33,17 +28,19 @@ import XCTest
 final class HealthCardPasswordReadCardDomainTests: XCTestCase {
     typealias TestStore = TestStoreOf<HealthCardPasswordReadCardDomain>
 
-    var mockNFCSessionController: NFCHealthCardPasswordControllerMock!
+    var mockNFCSessionController: MockNFCHealthCardPasswordController!
 
     let uiScheduler = DispatchQueue.test
-    lazy var schedulers: Schedulers = .init(
-        uiScheduler: self.uiScheduler.eraseToAnyScheduler()
-    )
+    lazy var schedulers: Schedulers = {
+        Schedulers(
+            uiScheduler: self.uiScheduler.eraseToAnyScheduler()
+        )
+    }()
 
     override func setUp() {
         super.setUp()
 
-        mockNFCSessionController = NFCHealthCardPasswordControllerMock()
+        mockNFCSessionController = MockNFCHealthCardPasswordController()
     }
 
     func testStore(for state: HealthCardPasswordReadCardDomain.State) -> TestStore {
@@ -55,14 +52,13 @@ final class HealthCardPasswordReadCardDomainTests: XCTestCase {
         }
     }
 
-    func testUnlockCard_Success() async {
+    func testUnlockCard_Success() async throws {
         let sut = testStore(
             for: .init(mode: .healthCardResetPinCounterNoNewSecret(can: "123123", puk: "12345678"))
         )
 
         mockNFCSessionController
-            .resetEgkMrPinRetryCounterCanStringPukStringModeNFCResetRetryCounterModeResultNFCHealthCardPasswordControllerResponseNFCHealthCardPasswordControllerErrorReturnValue =
-            .success(NFCHealthCardPasswordControllerResponse.success)
+            .resetEgkMrPinRetryCounterCanPukModeReturnValue = .success(NFCHealthCardPasswordControllerResponse.success)
 
         await sut.send(.readCard)
         await uiScheduler.advance()
@@ -84,9 +80,7 @@ final class HealthCardPasswordReadCardDomainTests: XCTestCase {
             )
         )
 
-        mockNFCSessionController
-            .changeReferenceDataCanStringOldStringNewStringModeNFCChangeReferenceDataModeResultNFCHealthCardPasswordControllerResponseNFCHealthCardPasswordControllerErrorReturnValue =
-            .success(.success)
+        mockNFCSessionController.changeReferenceDataCanOldNewModeReturnValue = .success(.success)
 
         await sut.send(.readCard)
         await uiScheduler.advance()
@@ -108,9 +102,7 @@ final class HealthCardPasswordReadCardDomainTests: XCTestCase {
             )
         )
 
-        mockNFCSessionController
-            .changeReferenceDataCanStringOldStringNewStringModeNFCChangeReferenceDataModeResultNFCHealthCardPasswordControllerResponseNFCHealthCardPasswordControllerErrorReturnValue =
-            .success(.commandBlocked)
+        mockNFCSessionController.changeReferenceDataCanOldNewModeReturnValue = .success(.commandBlocked)
 
         await sut.send(.readCard)
         await uiScheduler.advance()

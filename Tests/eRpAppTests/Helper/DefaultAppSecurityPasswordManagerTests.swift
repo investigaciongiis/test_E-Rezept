@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 @testable import eRpFeatures
@@ -28,23 +24,23 @@ import XCTest
 
 final class DefaultAppSecurityPasswordManagerTests: XCTestCase {
     func testSavePasswordCallsKeychainHelper() {
-        let keychainAccess = KeychainAccessHelperMock()
-        keychainAccess.setGenericPasswordPasswordDataForAccountDataServiceDataBoolReturnValue = true
+        let keychainAccess = MockKeychainAccessHelper()
+        keychainAccess.setGenericPasswordForServiceReturnValue = true
         let sut = DefaultAppSecurityManager(keychainAccess: keychainAccess)
 
         expect(try sut.save(password: "abc")).to(beTrue())
 
-        expect(keychainAccess.setGenericPasswordPasswordDataForAccountDataServiceDataBoolCalled).to(beTrue())
+        expect(keychainAccess.setGenericPasswordForServiceCalled).to(beTrue())
     }
 
     func testMatchingPasswordUsesSalt() throws {
-        let storedHash = Data("stored_hash".utf8)
-        let storedSalt = Data("stored_salt".utf8)
-        let passwordData = Data("password".utf8)
+        let storedHash = "stored_hash".data(using: .utf8)!
+        let storedSalt = "stored_salt".data(using: .utf8)!
+        let passwordData = "password".data(using: .utf8)!
 
         var dataToHash: Data?
 
-        let keychainAccess = KeychainAccessHelperMock()
+        let keychainAccess = MockKeychainAccessHelper()
 
         let sut = DefaultAppSecurityManager(
             keychainAccess: keychainAccess,
@@ -54,17 +50,17 @@ final class DefaultAppSecurityPasswordManagerTests: XCTestCase {
             }
         )
 
-        expect(keychainAccess.setGenericPasswordPasswordDataForAccountDataServiceDataBoolCalled).to(beFalse())
-        expect(keychainAccess.genericPasswordForAccountDataOfServiceServiceDataDataCalled).to(beFalse())
+        expect(keychainAccess.setGenericPasswordForServiceCalled).to(beFalse())
+        expect(keychainAccess.genericPasswordForOfServiceCalled).to(beFalse())
 
-        keychainAccess.genericPasswordForAccountDataOfServiceServiceDataDataClosure = { service, _ in
+        keychainAccess.genericPasswordForOfServiceClosure = { service, _ in
             switch String(data: service, encoding: .utf8) {
             case "de.gematik.DefaultAppSecurityPasswordManagerSalt":
                 return storedSalt
             case "de.gematik.DefaultAppSecurityPasswordManagerHash":
                 return storedHash
             case "de.gematik.DefaultAppSecurityPasswordManager":
-                return Data("".utf8)
+                return "".data(using: .utf8)
             default:
                 return nil
             }
@@ -77,26 +73,26 @@ final class DefaultAppSecurityPasswordManagerTests: XCTestCase {
     }
 
     func testMigrationOfPasswordToSalt() {
-        let keychainAccess = KeychainAccessHelperMock()
+        let keychainAccess = MockKeychainAccessHelper()
         let sut = DefaultAppSecurityManager(keychainAccess: keychainAccess)
 
-        expect(keychainAccess.setGenericPasswordPasswordDataForAccountDataServiceDataBoolCalled).to(beFalse())
-        expect(keychainAccess.genericPasswordForAccountDataOfServiceServiceDataDataCalled).to(beFalse())
+        expect(keychainAccess.setGenericPasswordForServiceCalled).to(beFalse())
+        expect(keychainAccess.genericPasswordForOfServiceCalled).to(beFalse())
 
-        keychainAccess.genericPasswordForAccountDataOfServiceServiceDataDataClosure = { service, _ in
+        keychainAccess.genericPasswordForOfServiceClosure = { service, _ in
             switch String(data: service, encoding: .utf8) {
             case "de.gematik.DefaultAppSecurityPasswordManagerSalt":
                 return nil
             case "de.gematik.DefaultAppSecurityPasswordManagerHash":
-                return Data("hashed".utf8)
+                return "hashed".data(using: .utf8)
             case "de.gematik.DefaultAppSecurityPasswordManager":
-                return Data("1234".utf8)
+                return "1234".data(using: .utf8)
             default:
                 return nil
             }
         }
 
-        keychainAccess.setGenericPasswordPasswordDataForAccountDataServiceDataBoolClosure = { password, service, data in
+        keychainAccess.setGenericPasswordForServiceClosure = { password, service, data in
             print("""
             setGenericPasswordForServiceClosure:
             \(String(describing: String(data: password, encoding: .utf8)))
@@ -108,9 +104,8 @@ final class DefaultAppSecurityPasswordManagerTests: XCTestCase {
 
         expect(try sut.migrate()).toNot(throwError())
 
-        expect(keychainAccess.setGenericPasswordPasswordDataForAccountDataServiceDataBoolCalled).to(beTrue())
-        expect(keychainAccess.setGenericPasswordPasswordDataForAccountDataServiceDataBoolCallsCount)
-            .to(equal(3)) // set salt, set password
-        expect(keychainAccess.genericPasswordForAccountDataOfServiceServiceDataDataCalled).to(beTrue())
+        expect(keychainAccess.setGenericPasswordForServiceCalled).to(beTrue())
+        expect(keychainAccess.setGenericPasswordForServiceCallsCount).to(equal(3)) // set salt, set password
+        expect(keychainAccess.genericPasswordForOfServiceCalled).to(beTrue())
     }
 }

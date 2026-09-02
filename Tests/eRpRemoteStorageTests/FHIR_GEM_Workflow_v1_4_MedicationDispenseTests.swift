@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -29,8 +25,8 @@ import SwiftUI
 import TestUtils
 import XCTest
 
-/// FHIRBundle tests with
-/// - workflow bundle version: 1.4.3
+// FHIRBundle tests with
+// - workflow bundle version: 1.4.3
 final class FHIR_GEM_Workflow_v1_4_MedicationDispenseTests: XCTestCase {
     func testParseSimpleMedicationDispenseBundle() throws {
         let medicationDispenseBundle = try decode(
@@ -51,7 +47,7 @@ final class FHIR_GEM_Workflow_v1_4_MedicationDispenseTests: XCTestCase {
         expect(medicationDispense.medication) == nil
 
         expect(medicationDispense.epaMedication) != nil
-        let epaMedication = try XCTUnwrap(medicationDispense.epaMedication)
+        let epaMedication = medicationDispense.epaMedication!
         let expectedEpaMedication: ErxEpaMedication = .init(
             epaMedicationType: nil,
             drugCategory: nil,
@@ -107,7 +103,7 @@ final class FHIR_GEM_Workflow_v1_4_MedicationDispenseTests: XCTestCase {
         expect(medicationDispense.epaMedication?.epaMedicationType) == .extemporaneousPreparation
         expect(medicationDispense.epaMedication?.ingredients.count) == 2
 
-        let ingredient01 = try XCTUnwrap(medicationDispense.epaMedication?.ingredients[0])
+        let ingredient01 = medicationDispense.epaMedication!.ingredients[0]
         let expectedIngredient01Item: EpaMedicationIngredient.Item = .epaMedication(
             ErxEpaMedication(
                 epaMedicationType: .medicinalProductPackage,
@@ -132,7 +128,7 @@ final class FHIR_GEM_Workflow_v1_4_MedicationDispenseTests: XCTestCase {
         )
         expect(ingredient01.item).to(nodiff(expectedIngredient01Item))
 
-        let ingredient02 = try XCTUnwrap(medicationDispense.epaMedication?.ingredients[1])
+        let ingredient02 = medicationDispense.epaMedication!.ingredients[1]
         let expectedIngredient02Item: EpaMedicationIngredient.Item = .epaMedication(
             ErxEpaMedication(
                 epaMedicationType: .medicinalProductPackage,
@@ -240,7 +236,7 @@ final class FHIR_GEM_Workflow_v1_4_MedicationDispenseTests: XCTestCase {
 
     // MARK: - Medication
 
-    /// Sumatripan
+    // Sumatripan
     func testParseEpaMedicationSumatripan() throws {
         let modelsR4Medication = try decode(
             resource: "Medication-SumatripanMedication.json",
@@ -268,7 +264,7 @@ final class FHIR_GEM_Workflow_v1_4_MedicationDispenseTests: XCTestCase {
         expect(medication.batch?.lotNumber) == "1234567890"
     }
 
-    /// Rezeptur
+    // Rezeptur
     func testParseEpaMedicationExtemporaneousPreparation() throws {
         let modelsR4Medication = try decode(
             resource: "Medication-Medication-Rezeptur.json",
@@ -399,7 +395,7 @@ final class FHIR_GEM_Workflow_v1_4_MedicationDispenseTests: XCTestCase {
         expect(ingredient02.darreichungsForm) == nil
     }
 
-    /// Kombipackung
+    // Kombipackung
     func testParseEpaMedicationMedicinalProductPackage() throws {
         let modelsR4Medication = try decode(
             resource: "Medication-Medication-Kombipackung.json",

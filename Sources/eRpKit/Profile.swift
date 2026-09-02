@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
@@ -34,14 +30,12 @@ public struct Profile: Identifiable, Hashable, Equatable, Codable {
         displayName: String? = nil,
         insurance: String? = nil,
         insuranceId: String? = nil,
-        insuranceIK: String? = nil,
         insuranceType: InsuranceType = .unknown,
         color: Color = Color.grey,
         image: ProfilePictureType = .none,
         userImageData: Data? = nil,
         lastAuthenticated: Date? = nil,
         erxTasks: [ErxTask] = [],
-        hideWelcomeDrawerOnMainView: Bool = false,
         hidePkvConsentDrawerOnMainView: Bool = false,
         shouldAutoUpdateNameAtNextLogin: Bool = false,
         gIdEntry: KKAppDirectory.Entry? = nil
@@ -55,14 +49,12 @@ public struct Profile: Identifiable, Hashable, Equatable, Codable {
             .trimmingCharacters(in: .whitespaces)
         self.insurance = insurance
         self.insuranceId = insuranceId
-        self.insuranceIK = insuranceIK
         self.insuranceType = insuranceType
         self.color = color
         self.image = image
         self.userImageData = userImageData
         self.lastAuthenticated = lastAuthenticated
         self.erxTasks = erxTasks
-        self.hideWelcomeDrawerOnMainView = hideWelcomeDrawerOnMainView
         self.hidePkvConsentDrawerOnMainView = hidePkvConsentDrawerOnMainView
         self.shouldAutoUpdateNameAtNextLogin = shouldAutoUpdateNameAtNextLogin
         self.gIdEntry = gIdEntry
@@ -80,7 +72,6 @@ public struct Profile: Identifiable, Hashable, Equatable, Codable {
     public var displayName: String?
     public var insurance: String?
     public var insuranceId: String?
-    public var insuranceIK: String?
     public var insuranceType: InsuranceType
     public var color: Color
     public var image: ProfilePictureType
@@ -88,7 +79,6 @@ public struct Profile: Identifiable, Hashable, Equatable, Codable {
     public var lastAuthenticated: Date?
     public var erxTasks: [ErxTask]
     // Note: When the list of preferences per Profile keeps growing, consider extracting them to separate struct.
-    public var hideWelcomeDrawerOnMainView: Bool
     public var hidePkvConsentDrawerOnMainView: Bool
     public var shouldAutoUpdateNameAtNextLogin: Bool
     public var gIdEntry: KKAppDirectory.Entry?
@@ -111,19 +101,6 @@ public struct Profile: Identifiable, Hashable, Equatable, Codable {
         case unknown
         case gKV
         case pKV
-        /// Federal institutions, e.g. Bundespolizei
-        case federalKV
-
-        public static let federalKVAlias = "Heilfürsorge"
-
-        public var canReceiveChargeItems: Bool {
-            switch self {
-            case .unknown, .gKV:
-                return false
-            case .federalKV, .pKV:
-                return true
-            }
-        }
     }
 
     public enum Color: String, CaseIterable, Codable {
@@ -136,8 +113,8 @@ public struct Profile: Identifiable, Hashable, Equatable, Codable {
         static var lastUsedColor: Color?
 
         public static func next() -> Color {
-            guard let lastColor = lastUsedColor,
-                  let index = allCases.firstIndex(of: lastColor) else {
+            guard let lastColor = Self.lastUsedColor,
+                  let index = Self.allCases.firstIndex(of: lastColor) else {
                 let newColor = Self.random()
                 Self.lastUsedColor = newColor
                 return newColor
@@ -154,7 +131,7 @@ public struct Profile: Identifiable, Hashable, Equatable, Codable {
             return Color.random(using: &generator)
         }
 
-        private static func random(using generator: inout some RandomNumberGenerator) -> Color {
+        private static func random<G: RandomNumberGenerator>(using generator: inout G) -> Color {
             Color.allCases.randomElement(using: &generator) ?? .grey
         }
     }

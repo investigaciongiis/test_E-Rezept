@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 // swiftlint:disable file_length
 
@@ -46,9 +42,7 @@ extension FHIRClient {
                 // fall back to JSON dictionary parsing
                 let accessCode = fhirResponse.body.recoverAccessCode
                 let pvsPruefnummer = fhirResponse.body.recoverPvsPruefnummer
-                let flowType = fhirResponse.body.recoverFlowType.map {
-                    ErxTask.FlowType(rawValue: $0)
-                } ?? ErxTask.FlowType(taskId: id)
+                let recoverdFlowType = fhirResponse.body.recoverFlowType
                 let authoredOn = fhirResponse.body.recoverAuthoredOn
                 let prettyCodingPath = context.codingPath.reduce("") { partialResult, key -> String in
                     partialResult + "\(key.intValue?.description ?? key.stringValue)."
@@ -63,7 +57,7 @@ extension FHIRClient {
                         debug description: \(context.debugDescription)
                         """
                     )),
-                    flowType: flowType,
+                    flowType: ErxTask.FlowType(rawValue: recoverdFlowType),
                     accessCode: accessCode,
                     authoredOn: authoredOn
                 )
@@ -169,32 +163,6 @@ extension FHIRClient {
             }
             .mapError { $0 as? FHIRClient.Error ?? FHIRClient.Error.unknown($0) }
             .eraseToAnyPublisher()
-    }
-
-    /// Convenience function for marking a `ErxTask` EU redeemable
-    ///
-    /// - Parameters:
-    ///   - id: The ID of the task to be requested
-    ///   - byPatientAuthorization: marks the task as EU redeemable `true` or `false`
-    /// - Returns: `AnyPublisher` that emits the task or nil when not found
-    public func markEURedeemable(for id: ErxTask.ID,
-                                 byPatientAuthorization: Bool) -> AnyPublisher<ErxTask?, FHIRClient.Error> {
-        let handler = DefaultFHIRResponseHandler { (fhirResponse: FHIRClient.Response) -> ErxTask? in
-            let resource: ModelsR4.Bundle
-            do {
-                let task = try FHIRClient.decoder.decode(ModelsR4.Task.self, from: fhirResponse.body)
-                resource = ModelsR4.Bundle(
-                    entry: [BundleEntry(resource: .task(task))],
-                    type: FHIRPrimitive<BundleType>(.searchset)
-                )
-            } catch {
-                throw Error.decoding(error)
-            }
-            return resource.parseErxTask(taskId: id)
-        }
-
-        return execute(operation: ErxTaskFHIROperation
-            .markTaskForEURedeem(id: id, mark: byPatientAuthorization, handler: handler))
     }
 
     /// Convenience function for requesting a certain audit event by ID
@@ -391,23 +359,23 @@ extension FHIRClient {
 
         return execute(operation: ErxTaskFHIROperation
             .deleteChargeItem(id: id, accessCode: accessCode, handler: handler))
-            .tryCatch { error -> AnyPublisher<Bool, FHIRClient.Error> in
-                // When the server responds with 410 (gone | processing) or 404 (notFound)
-                // we handle this as a success case for deletion.
-                // The response code 410 indicates that access to the target resource is no longer
-                // available at the origin server and that this condition is likely to be permanent.
-                // The response code 404 indicates that server does not know the task which means we can
-                // safely delete it locally as well. Also see comments in ticket ERA-800.
-                if case let FHIRClient.Error.http(fhirClientHttpError) = error,
-                   let operationOutcome = fhirClientHttpError.operationOutcome,
-                   let type = operationOutcome.issue.first?.code,
-                   type == IssueType.processing || type == IssueType.notFound {
-                    return Just(true).setFailureType(to: FHIRClient.Error.self).eraseToAnyPublisher()
-                }
-                throw error
-            }
-            .mapError { $0 as? FHIRClient.Error ?? FHIRClient.Error.unknown($0) }
-            .eraseToAnyPublisher()
+                    .tryCatch { error -> AnyPublisher<Bool, FHIRClient.Error> in
+                        // When the server responds with 410 (gone | processing) or 404 (notFound)
+                        // we handle this as a success case for deletion.
+                        // The response code 410 indicates that access to the target resource is no longer
+                        // available at the origin server and that this condition is likely to be permanent.
+                        // The response code 404 indicates that server does not know the task which means we can
+                        // safely delete it locally as well. Also see comments in ticket ERA-800.
+                        if case let FHIRClient.Error.http(fhirClientHttpError) = error,
+                           let operationOutcome = fhirClientHttpError.operationOutcome,
+                           let type = operationOutcome.issue.first?.code,
+                           type == IssueType.processing || type == IssueType.notFound {
+                            return Just(true).setFailureType(to: FHIRClient.Error.self).eraseToAnyPublisher()
+                        }
+                        throw error
+                    }
+                    .mapError { $0 as? FHIRClient.Error ?? FHIRClient.Error.unknown($0) }
+                    .eraseToAnyPublisher()
     }
 
     /// Loads All consents of a given profile
@@ -459,53 +427,6 @@ extension FHIRClient {
         }
 
         return execute(operation: ErxTaskFHIROperation.revokeConsent(category: category, handler: handler))
-    }
-
-    /// Loads all `EuAccessCode` that exits on Fachdienst
-    /// - Returns: Publisher for the load request
-    public func grantEuAccessPermission(accessCode: EuAccessCode) -> AnyPublisher<EuAccessCode?, FHIRClient.Error> {
-        let handler = DefaultFHIRResponseHandler { (fhirResponse: FHIRClient.Response) -> EuAccessCode? in
-            do {
-                let resource = try FHIRClient.decoder.decode(ModelsR4.Parameters.self, from: fhirResponse.body)
-                return try resource.parse()
-            } catch {
-                throw Error.decoding(error)
-            }
-        }
-
-        return execute(operation: ErxTaskFHIROperation
-            .grantEuAccessPermission(accessCode: accessCode, handler: handler))
-    }
-
-    /// Loads all `EuAccessCode` that exits on Fachdienst
-    /// - Returns: Publisher for the load request
-    public func loadRemoteEuAccessCode() -> AnyPublisher<EuAccessCode?, FHIRClient.Error> {
-        let handler = DefaultFHIRResponseHandler { (fhirResponse: FHIRClient.Response) -> EuAccessCode? in
-            do {
-                let resource = try FHIRClient.decoder.decode(ModelsR4.Parameters.self, from: fhirResponse.body)
-                return try resource.parse()
-            } catch {
-                throw Error.decoding(error)
-            }
-        }
-
-        return execute(operation: ErxTaskFHIROperation.loadRemoteEuAccessCode(handler: handler))
-    }
-
-    /// Deletes `EuAccessCode` that exits on Fachdienst
-    /// - Returns: `AnyPublisher` that emits true if the item was deleted
-    public func deleteEuAccessCode() -> AnyPublisher<Bool, FHIRClient.Error> {
-        let handler = DefaultFHIRResponseHandler { (fhirResponse: FHIRClient.Response) -> Bool in
-            if fhirResponse.status.isNoContent {
-                // Successful deletion is supposed to produce return code 204 and an empty body.
-                // So we actually do not need to parse anything
-                return true
-            }
-
-            throw FHIRClient.Error.inconsistentResponse
-        }
-
-        return execute(operation: ErxTaskFHIROperation.deleteEuAccessCode(handler: handler))
     }
 
     static var decoder: JSONDecoder {

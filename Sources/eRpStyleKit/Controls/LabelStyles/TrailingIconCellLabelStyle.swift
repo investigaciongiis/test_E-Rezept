@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import SwiftUI
@@ -25,17 +21,17 @@ import SwiftUI
 /// `LabelStyle` applying font and color for full width action buttons within `SectionContainer`s. This style is applied
 /// automatically within `SectionContainer`.
 public struct TrailingIconCellLabelStyle: LabelStyle {
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
+    @Environment(\.sectionContainerIsLastElement) var isLastElement: Bool
 
     public func makeBody(configuration: Configuration) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 16) {
                 configuration.title
-                    .foregroundColor(Colors.systemLabel)
+                    .foregroundColor(Color(.label))
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 configuration.icon
-                    .foregroundColor(Colors.systemLabelSecondary)
+                    .foregroundColor(Color(.tertiaryLabel))
                     .frame(width: 22, height: 22, alignment: .center)
                     .font(.body.weight(.semibold))
             }
@@ -45,21 +41,20 @@ public struct TrailingIconCellLabelStyle: LabelStyle {
                 Divider()
             }
         }
+
         .subTitleStyle(PlainSectionContainerSubTitleStyle())
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .padding([.leading])
     }
 }
 
-extension LabelStyle where Self == TrailingIconCellLabelStyle {
+extension LabelStyle where Self == SectionContainerLabelStyle {
     /// A label style that applies standard border artwork based on the
     /// button's context.
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View/buttonStyle(_:)`` modifier.
-    public static var trailingIconCell: TrailingIconCellLabelStyle {
-        TrailingIconCellLabelStyle()
-    }
+    public static var trailingIconCell: TrailingIconCellLabelStyle { TrailingIconCellLabelStyle() }
 }
 
 struct TrailingIconCellLabelStyle_Preview: PreviewProvider {

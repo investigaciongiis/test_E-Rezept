@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -64,98 +60,60 @@ extension PharmacySearchDomain {
             }
 
         static let stateEmpty = State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             searchText: "Apothekesdfwerwerasdf",
             pharmacies: [],
-            pharmacyFilterOptions: Shared(value: []),
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([]),
             searchState: .searchResultEmpty
         )
 
         static let stateSearchResultOk = State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             searchText: "",
             pharmacies: pharmaciesLocationViewModel,
-            pharmacyFilterOptions: Shared(value: []),
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([]),
             searchState: .searchResultOk
         )
 
         static let stateSearchRunning = State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             searchText: "Apotheke",
             pharmacies: [],
-            pharmacyFilterOptions: Shared(value: []),
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([]),
             searchState: .searchRunning
         )
         static let stateFilterItems = State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             pharmacies: [],
-            pharmacyFilterOptions: Shared(value: [
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([
                 PharmacySearchFilterDomain.PharmacyFilterOption.delivery,
             ])
         )
         static let stateError = State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             pharmacies: [],
-            pharmacyFilterOptions: Shared(value: []),
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([]),
             searchState: .error
         )
         static let stateStartView = State(
-            selectedPrescriptions: Shared(value: []),
+            selectedPrescriptions: Shared([]),
             inRedeemProcess: false,
             searchText: "",
             pharmacies: pharmaciesLocationViewModel,
-            pharmacyFilterOptions: Shared(value: []),
+            pharmacyRedeemState: Shared(nil),
+            pharmacyFilterOptions: Shared([]),
             searchState: .startView(loading: false)
-        )
-        static let stateStartViewWithFavorites = State(
-            selectedPrescriptions: Shared(value: []),
-            inRedeemProcess: false,
-            searchText: "",
-            pharmacies: [],
-            localPharmacies: PharmacyLocation.Dummies.pharmacies
-                .prefix(2)
-                .map { pharmacy in
-                    var copy = pharmacy
-                    copy.isFavorite = true
-                    return PharmacyLocationViewModel(
-                        pharmacy: copy,
-                        referenceDate: openHoursReferenceDate
-                    )
-                },
-            pharmacyFilterOptions: Shared(value: []),
-            searchState: .startView(loading: false)
-        )
-        static let stateStartViewWithRecentlyUsed = State(
-            selectedPrescriptions: Shared(value: []),
-            inRedeemProcess: false,
-            searchText: "",
-            pharmacies: [],
-            localPharmacies: PharmacyLocation.Dummies.pharmacies
-                .prefix(5)
-                .map { pharmacy in
-                    var copy = pharmacy
-                    copy.lastUsed = Date()
-                    return PharmacyLocationViewModel(
-                        pharmacy: copy,
-                        referenceDate: openHoursReferenceDate
-                    )
-                },
-            pharmacyFilterOptions: Shared(value: []),
-            searchState: .startView(loading: false)
-        )
-        static let stateStartViewLoading = State(
-            selectedPrescriptions: Shared(value: []),
-            inRedeemProcess: false,
-            searchText: "",
-            pharmacies: [],
-            localPharmacies: pharmaciesLocationViewModel,
-            pharmacyFilterOptions: Shared(value: []),
-            searchState: .startView(loading: true)
+            // .searchResultOk(pharmaciesLocationViewModel)
         )
         static var openHoursReferenceDate: Date? {
             // Current dummy-time is set to 10:00am on 16th (WED) June 2021...

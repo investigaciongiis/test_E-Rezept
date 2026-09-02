@@ -1,31 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 import eRpKit
-import eRpResources
-import ErxTaskRepository
-import FeatureHelpers
 import Foundation
 import UIKit
 import Vision
@@ -45,7 +38,6 @@ struct ScannerDomain {
 
     @ObservableState
     struct State: Equatable {
-        @Shared(.selectedProfileId) var profileId
         /// Presents the current state of the scanning process. Errors are displayed as hints
         var scanState: LoadingState<[ScannedErxTask], ScannerDomain.Error> = .idle
         /// Array of all accepted tasks which are ready for saving
@@ -88,7 +80,7 @@ struct ScannerDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = scanner_imageGallery
         case imageGallery(ImageGallery)
@@ -127,14 +119,17 @@ struct ScannerDomain {
             case let .saveAndClose(scannedBatches):
                 let authoredOn = dateFormatter.stringWithLongUTCTimeZone(from: Date())
                 let erxTasks = scannedBatches.flatMap { $0 }.asErxTasks(status: .ready, with: authoredOn)
-                return .run { [profileId = state.profileId] send in
-                    do {
-                        try await repository.saveTask(erxTasks, profileId)
-                        await send(.response(.saveAndCloseReceived(.success(true))))
-                    } catch let error as ErxRepositoryError {
-                        await send(.response(.saveAndCloseReceived(.failure(error))))
-                    }
-                }
+
+                return .publisher(
+                    repository.save(erxTasks: erxTasks)
+                        .first()
+                        .receive(on: scheduler.main)
+                        .map { .response(.saveAndCloseReceived(.success($0))) }
+                        .catch { error in
+                            Just(Action.response(.saveAndCloseReceived(.failure(error))))
+                        }
+                        .eraseToAnyPublisher
+                )
                 .cancellable(id: CancelID.saveErxTasks)
             case .response(.saveAndCloseReceived(.failure)):
                 state.destination = .alert(Self.savingAlertState)
@@ -151,12 +146,6 @@ struct ScannerDomain {
                         return checkForTaskDuplicatesInStore(scannedTasks)
                             .cancellable(id: CancelID.loadErxTask)
                     case let .url(universalLink):
-                        // Only handle supported universal links --> ignore foreign URLs
-                        guard Endpoint.isUniversalLinkSupported(universalLink) else {
-                            state.scanState = .idle
-                            return .none
-                        }
-
                         return .run { _ in
                             @Dependency(\.dismiss) var dismiss
 
@@ -212,14 +201,14 @@ struct ScannerDomain {
             case let .response(.galleryImageReceived(image)):
                 guard let image else { return .none }
                 return .run { send in
-                    try await send(.analyse(scanOutput: barcodeDetection.detectImage(image)))
+                    await send(.analyse(scanOutput: try await barcodeDetection.detectImage(image)))
                 }
             case let .response(.documentFileReceived(.success(result))):
                 guard let documentURL = result.first else {
                     return .none
                 }
                 return .run { send in
-                    try await send(.analyse(scanOutput: barcodeDetection.detectDocument(documentURL)))
+                    await send(.analyse(scanOutput: try await barcodeDetection.detectDocument(documentURL)))
                 }
             case .response(.documentFileReceived(.failure)):
                 return .none
@@ -233,49 +222,55 @@ struct ScannerDomain {
         .ifLet(\.$destination, action: \.destination)
     }
 
-    static let closeAlertState: AlertState<Destination.Alert> = AlertState {
-        TextState(L10n.camTxtWarnCancelTitle)
-    } actions: {
-        ButtonState(role: .destructive, action: .send(.closeAlertCancel)) {
-            TextState(L10n.camTxtWarnContinue)
-        }
-        ButtonState(role: .cancel, action: .send(.none)) {
-            TextState(L10n.camTxtWarnCancel)
-        }
-    }
-
-    static let savingAlertState: AlertState<Destination.Alert> = AlertState {
-        TextState(L10n.alertErrorTitle)
-    } actions: {
-        ButtonState(role: .cancel, action: .send(.none)) {
-            TextState(L10n.alertBtnOk)
-        }
-    } message: {
-        TextState(L10n.scnMsgSavingError)
-    }
-
-    static let confirmationDialogState: ConfirmationDialogState<Destination.Sheet> = ConfirmationDialogState(
-        titleVisibility: .visible,
-        title: {
-            TextState(L10n.camTxtGallerySheetTitle)
-        }, actions: {
-            ButtonState(action: .send(.openImageGallery)) {
-                TextState(L10n.camBtnGallerySheetPicture)
-            }
-            ButtonState(action: .send(.openDocumentImporter)) {
-                TextState(L10n.camBtnGallerySheetDocument)
+    static let closeAlertState: AlertState<Destination.Alert> = {
+        AlertState {
+            TextState(L10n.camTxtWarnCancelTitle)
+        } actions: {
+            ButtonState(role: .destructive, action: .send(.closeAlertCancel)) {
+                TextState(L10n.camTxtWarnContinue)
             }
             ButtonState(role: .cancel, action: .send(.none)) {
-                TextState(L10n.camBtnGallerySheetCancel)
+                TextState(L10n.camTxtWarnCancel)
             }
         }
-    )
+    }()
+
+    static let savingAlertState: AlertState<Destination.Alert> = {
+        AlertState {
+            TextState(L10n.alertErrorTitle)
+        } actions: {
+            ButtonState(role: .cancel, action: .send(.none)) {
+                TextState(L10n.alertBtnOk)
+            }
+        } message: {
+            TextState(L10n.scnMsgSavingError)
+        }
+    }()
+
+    static let confirmationDialogState: ConfirmationDialogState<Destination.Sheet> = {
+        ConfirmationDialogState(
+            titleVisibility: .visible,
+            title: {
+                TextState(L10n.camTxtGallerySheetTitle)
+            }, actions: {
+                ButtonState(action: .send(.openImageGallery)) {
+                    TextState(L10n.camBtnGallerySheetPicture)
+                }
+                ButtonState(action: .send(.openDocumentImporter)) {
+                    TextState(L10n.camBtnGallerySheetDocument)
+                }
+                ButtonState(role: .cancel, action: .send(.none)) {
+                    TextState(L10n.camBtnGallerySheetCancel)
+                }
+            }
+        )
+    }()
 }
 
 extension ScannerDomain {
     func checkForTaskDuplicatesInStore(_ scannedTasks: [ScannedErxTask]) -> Effect<ScannerDomain.Action> {
         let findPublishers: [AnyPublisher<ScannedErxTask?, Never>] = scannedTasks.map { scannedTask in
-            repository.loadLocalTask(scannedTask.id, scannedTask.accessCode)
+            self.repository.loadLocal(by: scannedTask.id, accessCode: scannedTask.accessCode)
                 .map { erxTask -> ScannedErxTask? in
                     if erxTask != nil {
                         return nil // by returning nil we sort out previously stored tasks
@@ -283,7 +278,7 @@ extension ScannerDomain {
                         return scannedTask
                     }
                 }
-                .catch { _ in Just(scannedTask) }
+                .catch { _ in Just(.none) }
                 .eraseToAnyPublisher()
         }
 
@@ -304,7 +299,7 @@ extension ScannerDomain {
     }
 }
 
-extension Sequence<ScannedErxTask> {
+extension Sequence where Element == ScannedErxTask {
     func asErxTasks(status: ErxTask.Status, with authoredOn: String) -> [ErxTask] {
         var prescriptionCount = 1
         var tasks = [ErxTask]()
@@ -312,7 +307,6 @@ extension Sequence<ScannedErxTask> {
             let task = ErxTask(
                 identifier: scannedTask.id,
                 status: status,
-                flowType: ErxTask.FlowType(taskId: scannedTask.id),
                 accessCode: scannedTask.accessCode,
                 authoredOn: authoredOn,
                 author: L10n.scnTxtAuthor.text,
@@ -340,6 +334,3 @@ extension ScannerDomain {
         static let state = State()
     }
 }
-
-extension ScannerDomain.Destination.State: Equatable {}
-extension ScannerDomain.Destination.Action: Equatable {}

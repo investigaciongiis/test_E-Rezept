@@ -1,187 +1,178 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 import eRpKit
-import eRpResources
 import eRpStyleKit
-import FeatureCardWall
 import SwiftUI
 
 struct HealthCardPasswordCanView: View {
-    @Bindable var store: StoreOf<HealthCardPasswordCanDomain>
+    @Perception.Bindable var store: StoreOf<HealthCardPasswordCanDomain>
 
     var body: some View {
-        VStack(spacing: 0) {
-            CANView(store: store)
+        WithPerceptionTracking {
+            VStack {
+                CANView(store: store)
 
-            Spacer()
+                Spacer(minLength: 0)
 
-            GreyDivider()
+                GreyDivider()
 
-            if store.mode == .forgotPin {
-                // Unlock card and set new secret
-                Rectangle()
-                    .frame(width: 0, height: 0, alignment: .center)
-                    .navigationDestination(
-                        item: $store.scope(
-                            state: \.destination?.puk,
-                            action: \.destination.puk
-                        )
-                    ) { store in
-                        HealthCardPasswordPukView(store: store)
-                    }
-                    .accessibility(hidden: true)
+                if store.mode == .forgotPin {
+                    // Unlock card and set new secret
+                    Rectangle()
+                        .frame(width: 0, height: 0, alignment: .center)
+                        .navigationDestination(
+                            item: $store.scope(
+                                state: \.destination?.puk,
+                                action: \.destination.puk
+                            )
+                        ) { store in
+                            HealthCardPasswordPukView(store: store)
+                        }
+                        .accessibility(hidden: true)
+                }
+
+                if store.mode == .setCustomPin {
+                    // Set custom PIN
+                    Rectangle()
+                        .frame(width: 0, height: 0, alignment: .center)
+                        .navigationDestination(
+                            item: $store.scope(
+                                state: \.destination?.oldPin,
+                                action: \.destination.oldPin
+                            )
+                        ) { store in
+                            HealthCardPasswordOldPinView(store: store)
+                        }
+                        .accessibility(hidden: true)
+                }
+
+                if store.mode == .unlockCard {
+                    // Unlock card
+                    Rectangle()
+                        .frame(width: 0, height: 0, alignment: .center)
+                        .navigationDestination(
+                            item: $store.scope(
+                                state: \.destination?.puk,
+                                action: \.destination.puk
+                            )
+                        ) { store in
+                            HealthCardPasswordPukView(store: store)
+                        }
+                        .accessibility(hidden: true)
+                }
+
+                Button(
+                    action: {
+                        // workaround: dismiss keyboard to fix safearea bug for iOS 16
+                        if #available(iOS 16, *) {
+                            UIApplication.shared.dismissKeyboard()
+                        }
+                        store.send(.advance)
+                    },
+                    label: { Text(L10n.stgBtnCardResetAdvance) }
+                )
+                .disabled(!store.canMayAdvance)
+                .buttonStyle(eRpStyleKit.PrimaryButtonStyle(enabled: store.canMayAdvance, destructive: false))
+                .accessibility(identifier: A11y.settings.card.stgBtnCardResetAdvance)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
             }
-
-            if store.mode == .setCustomPin {
-                // Set custom PIN
-                Rectangle()
-                    .frame(width: 0, height: 0, alignment: .center)
-                    .navigationDestination(
-                        item: $store.scope(
-                            state: \.destination?.oldPin,
-                            action: \.destination.oldPin
-                        )
-                    ) { store in
-                        HealthCardPasswordOldPinView(store: store)
-                    }
-                    .accessibility(hidden: true)
-            }
-
-            if store.mode == .unlockCard {
-                // Unlock card
-                Rectangle()
-                    .frame(width: 0, height: 0, alignment: .center)
-                    .navigationDestination(
-                        item: $store.scope(
-                            state: \.destination?.puk,
-                            action: \.destination.puk
-                        )
-                    ) { store in
-                        HealthCardPasswordPukView(store: store)
-                    }
-                    .accessibility(hidden: true)
-            }
-
-            Button(
-                action: {
-                    // workaround: dismiss keyboard to fix safearea bug for iOS 16
-                    if #available(iOS 16, *) {
-                        UIApplication.shared.dismissKeyboard()
-                    }
-                    store.send(.advance)
-                },
-                label: { Text(L10n.stgBtnCardResetAdvance) }
-            )
-            .buttonStyle(.primary(isEnabled: store.canMayAdvance, width: .wideHugging))
-            .accessibility(identifier: A11y.settings.card.stgBtnCardResetAdvance)
-            .padding(.horizontal)
-            .padding(.vertical, 8)
         }
     }
 
     private struct CANView: View {
-        @Bindable var store: StoreOf<HealthCardPasswordCanDomain>
+        @Perception.Bindable var store: StoreOf<HealthCardPasswordCanDomain>
         @State var showAnimation = true
         @State var scannedcan: ScanCAN?
 
         var body: some View {
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 56) {
-                    if showAnimation {
-                        HStack(alignment: .center) {
-                            Spacer()
-                            Image(asset: Asset.CardWall.cardwallCardWithArrow)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(maxWidth: 343, maxHeight: 215, alignment: .center)
-                                .accessibility(identifier: A11y.cardWall.canInput.cdwImgCanCard)
-                                .accessibility(label: Text(L10n.cdwImgCanCardLabel))
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing),
-                                    removal: .move(edge: .leading)
-                                ))
+            WithPerceptionTracking {
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if showAnimation {
+                            HStack(alignment: .center) {
+                                Spacer()
+                                Image(asset: Asset.CardWall.cardwallCard)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxWidth: 343, maxHeight: 215, alignment: .center)
+                                    .accessibility(identifier: A11y.cardWall.canInput.cdwImgCanCard)
+                                    .accessibility(label: Text(L10n.cdwImgCanCardLabel))
+                                    .padding(.bottom, 24)
+                                    .transition(.asymmetric(insertion: .move(edge: .trailing),
+                                                            removal: .move(edge: .leading)))
 
-                            Spacer()
+                                Spacer()
+                            }
                         }
-                    }
-                    VStack(alignment: .leading, spacing: 16) {
                         Text(L10n.cdwTxtCanSubtitle)
                             .foregroundColor(Colors.systemLabel)
-                            .font(.title)
+                            .font(.title2)
                             .bold()
+                            .padding(.top)
                             .accessibility(identifier: A11y.cardWall.canInput.cdwTctCanHeader)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityAddTraits(.isHeader)
 
                         Text(L10n.cdwTxtCanDescription)
                             .foregroundColor(Colors.systemLabel)
                             .font(.body)
                             .accessibility(identifier: A11y.cardWall.canInput.cdwTxtCanInstruction)
                     }
-                }
-                .padding()
+                    .padding()
 
-                CardWallCANInputView(
-                    can: $store.can.sending(\.updateCan)
-                ) {}
+                    CardWallCANInputView(
+                        can: $store.can.sending(\.updateCan)
+                        //                    can: store.binding(get: \.can) { .canUpdateCan($0) }
+                    ) {}
+                        .padding(.top)
 
-                Button {
-                    store.send(.showScannerView)
-                } label: {
-                    Label(L10n.cdwBtnCanScanner, systemImage: SFSymbolName.cameraViewfinder)
-                }
-                .buttonStyle(.tertiary)
-                .accessibilityIdentifier(A11y.cardWall.canInput.cdwBtnCanScan)
-                .padding()
-                .fullScreenCover(isPresented: Binding<Bool>(
-                    get: { store.state.destination == .scanner },
-                    set: { show in
-                        if !show {
-                            store.send(.resetNavigation)
-                        }
+                    TertiaryListButton(
+                        text: L10n.cdwBtnCanScanner,
+                        imageName: SFSymbolName.cameraViewfinder,
+                        accessibilityIdentifier: A11y.cardWall.canInput.cdwBtnCanScan
+                    ) {
+                        store.send(.showScannerView)
                     }
-                ),
-                onDismiss: {},
-                content: {
-                    NavigationStack {
-                        CANCameraScanner(
-                            canScan: $scannedcan,
-                            onSuccessfulScanAction: {
-                                store.send(.successfulScan)
-                            },
-                            closeAction: { _ in
+                    .padding()
+                    .fullScreenCover(isPresented: Binding<Bool>(
+                        get: { store.state.destination == .scanner },
+                        set: { show in
+                            if !show {
+                                store.send(.resetNavigation)
+                            }
+                        }
+                    ),
+                    onDismiss: {},
+                    content: {
+                        NavigationStack {
+                            CANCameraScanner(canScan: $scannedcan) { canScan in
                                 if let canScan = scannedcan {
-                                    store.send(.updateCan(canScan.value))
+                                    store.send(.updateCan(canScan))
                                 }
                                 store.send(.resetNavigation)
                             }
-                        )
-                    }
-                    .tint(Colors.primary700)
-                    .navigationViewStyle(StackNavigationViewStyle())
-                })
+                        }
+                        .accentColor(Colors.primary700)
+                        .navigationViewStyle(StackNavigationViewStyle())
+                    })
+                }
             }
             .onReceive(NotificationCenter.default
                 .publisher(for: UIResponder.keyboardDidShowNotification)) { _ in

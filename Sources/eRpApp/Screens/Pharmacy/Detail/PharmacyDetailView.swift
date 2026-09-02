@@ -1,26 +1,20 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
 //
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
-//
-
-// swiftlint:disable file_length
 
 import ComposableArchitecture
 import eRpKit
@@ -31,147 +25,127 @@ import SwiftUI
 import SwiftUIIntrospect
 
 struct PharmacyDetailView: View {
-    @Bindable var store: StoreOf<PharmacyDetailDomain>
+    @Perception.Bindable var store: StoreOf<PharmacyDetailDomain>
 
     var body: some View {
-        VStack(spacing: 0) {
-            if store.inOrdersMessage {
-                VStack(alignment: .leading) {
-                    HStack {
-                        Spacer()
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                if store.inOrdersMessage {
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Spacer()
 
-                        Button(action: { store.send(.delegate(.close)) }, label: {
-                            Image(systemName: SFSymbolName.crossIconPlain)
-                                .font(Font.caption.weight(.bold))
-                                .foregroundColor(Colors.primary)
-                                .padding(12)
-                                .background(Circle().foregroundColor(Colors.systemGray6))
-                        })
-                        .accessibilityIdentifier(A11y.pharmacyDetail.phaDetailBtnClose)
-                    }
-                }
-                .padding(.top)
-                .padding(.horizontal)
-            }
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(store.pharmacy.name ?? L10n.phaDetailTxtSubtitleFallback.text)
-                                .font(.title2)
-                                .accessibility(identifier: A11y.pharmacyDetail.phaDetailTxtSubtitle)
-
-                            if let address = store.pharmacy.address?.fullAddress {
-                                Button {
-                                    store.send(.openMapApp)
-                                } label: {
-                                    Label {
-                                        Text(address)
-                                    } icon: {
-                                        Image(systemName: SFSymbolName.map)
-                                    }
-                                }
-                                .accessibilityLabel(L10n.phaDetailLblLocation(address))
-                                .labelStyle(.trailingIcon)
-                                .buttonStyle(.tertiary(isEnabled: store.pharmacy.canBeDisplayedInMap))
-                                .accessibility(identifier: A11y.pharmacyDetail.phaDetailBtnLocation)
-                            }
+                            Button(action: { store.send(.delegate(.close)) }, label: {
+                                Image(systemName: SFSymbolName.crossIconPlain)
+                                    .font(Font.caption.weight(.bold))
+                                    .foregroundColor(Colors.primary)
+                                    .padding(12)
+                                    .background(Circle().foregroundColor(Colors.systemGray6))
+                            })
+                                .accessibilityIdentifier(A11y.pharmacyDetail.phaDetailBtnClose)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        Button(
-                            action: { store.send(.toggleIsFavorite) },
-                            label: {
-                                Image(systemName: store.pharmacy.isFavorite
-                                    ? SFSymbolName.starFill
-                                    : SFSymbolName.star)
-                                    .foregroundColor(
-                                        store.pharmacy.isFavorite ? Colors.starYellow : Color.gray
-                                    )
-                                    .font(.title3)
+                    }
+                    .padding(.top)
+                    .padding(.horizontal)
+                }
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(store.pharmacy.name ?? L10n.phaDetailTxtSubtitleFallback.text)
+                                    .font(.title2)
+                                    .accessibility(identifier: A11y.pharmacyDetail.phaDetailTxtSubtitle)
+
+                                if let address = store.pharmacy.address?.fullAddress {
+                                    TertiaryButton(text: LocalizedStringKey(address),
+                                                   isEnabled: store.pharmacy.canBeDisplayedInMap,
+                                                   imageName: SFSymbolName.map) {
+                                        store.send(.openMapApp)
+                                    }
+                                    .accessibility(identifier: A11y.pharmacyDetail.phaDetailBtnLocation)
+                                }
                             }
-                        )
-                        .accessibilityValue(Text(
-                            store.pharmacy.isFavorite
-                                ? L10n.phaDetailBtnFavoriteA11yValueEnabled
-                                : L10n.phaDetailBtnFavoriteA11yValueDisabled
-                        ))
-                        .accessibilityHint(Text(
-                            store.pharmacy.isFavorite
-                                ? L10n.phaDetailBtnFavoriteA11yValueEnabledHint
-                                : L10n.phaDetailBtnFavoriteA11yValueDisabledHint
-                        ))
-                    }.padding(.bottom, 24)
+                            Button(
+                                action: { store.send(.toggleIsFavorite) },
+                                label: {
+                                    Image(systemName: store.pharmacy.isFavorite
+                                        ? SFSymbolName.starFill
+                                        : SFSymbolName.star)
+                                        .foregroundColor(
+                                            store.pharmacy.isFavorite ? Colors.starYellow : Color.gray
+                                        )
+                                        .font(.title3)
+                                }
+                            )
+                        }.padding(.bottom, 24)
 
-                    if store.inOrdersMessage {
-                        ContactOptionsView(store: store)
-                    }
+                        if store.inOrdersMessage {
+                            ContactOptionsView(store: store)
+                        }
 
-                    if !store.serviceOptionState.availableOptions.isEmpty, !store.inOrdersMessage {
-                        ServiceOptionView(store: store.scope(
-                            state: \.serviceOptionState,
-                            action: \.serviceOption
-                        ))
-                    }
+                        if !(store.serviceIsMissing.count == 3), !store.inOrdersMessage {
+                            ServiceOptionsView(store: store)
+                        }
 
-                    if !store.pharmacy.hoursOfOperation.isEmpty {
-                        OpeningHoursView(dailyOpenHours: store.pharmacyViewModel.openingHours)
-                            .padding(.bottom, 8)
-                    }
+                        if !store.state.pharmacy.hoursOfOperation.isEmpty {
+                            OpeningHoursView(dailyOpenHours: store.pharmacyViewModel.openingHours)
+                                .padding(.bottom, 8)
+                        }
 
-                    // "Vor Ort"
-                    if !store.pharmacy.physicalFeatures.isEmpty {
-                        PhysicalFeaturesView(physicalFeatures: store.pharmacy.physicalFeatures)
-                            .padding(.bottom, 8)
-                    }
+                        ContactView(store: store)
 
-                    if !store.pharmacy.specialities.isEmpty {
-                        SpecialitiesView(specialities: store.pharmacy.specialities)
-                            .padding(.bottom, 8)
-                    }
+                        Footer()
+                            .padding(.top, 4)
 
-                    if !store.pharmacy.emergencyServiceHours.isEmpty {
-                        EmergencyServiceView(specialOpening: store.pharmacyViewModel.emergencyServiceHours)
-                            .padding(.bottom, 8)
-                    }
-
-                    if !store.pharmacy.specialClosingHours.isEmpty {
-                        SpecialClosingView(specialClosings: store.pharmacyViewModel.specialClosingHours)
-                            .padding(.bottom, 8)
-                    }
-
-                    ContactView(store: store)
-
-                    Footer()
-                        .padding(.top, 4)
-                }.padding()
+                        if !store.onMapView {
+                            Rectangle()
+                                .frame(width: 0, height: 0, alignment: .center)
+                                .navigationDestination(
+                                    item: $store.scope(
+                                        state: \.destination?.redeemViaAVS,
+                                        action: \.destination.redeemViaAVS
+                                    )
+                                ) { store in
+                                    PharmacyRedeemView(store: store)
+                                }
+                                .navigationDestination(
+                                    item: $store.scope(
+                                        state: \.destination?.redeemViaErxTaskRepository,
+                                        action: \.destination.redeemViaErxTaskRepository
+                                    )
+                                ) { store in
+                                    PharmacyRedeemView(store: store)
+                                }
+                                .accessibility(hidden: true)
+                        }
+                    }.padding()
+                }
             }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(store.inOrdersMessage)
-        .task {
-            await store.send(.task).finish()
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                if store.inRedeemProcess {
-                    NavigationBarCloseItem {
-                        store.send(.delegate(.close))
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(store.inOrdersMessage)
+            .task {
+                await store.send(.task).finish()
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    if store.inRedeemProcess {
+                        NavigationBarCloseItem {
+                            store.send(.delegate(.close))
+                        }
                     }
                 }
             }
+            .toast($store.scope(state: \.destination?.toast, action: \.destination.toast))
         }
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
-        .toast($store.scope(state: \.destination?.toast, action: \.destination.toast))
     }
 
     struct ContactOptionsView: View {
-        @Bindable var store: StoreOf<PharmacyDetailDomain>
+        @Perception.Bindable var store: StoreOf<PharmacyDetailDomain>
 
         var body: some View {
-            HStack {
-                if store.pharmacy.position?.longitude?.doubleValue != nil,
-                   store.pharmacy.position?.latitude?.doubleValue != nil {
+            WithPerceptionTracking {
+                HStack {
                     Button {
                         store.send(.openMapApp)
                     } label: {
@@ -180,14 +154,12 @@ struct PharmacyDetailView: View {
                         } icon: {
                             Image(systemName: SFSymbolName.mapPinEllipse)
                                 .font(.title2)
-                                .foregroundColor(Colors.primary700)
+                                .foregroundColor(Colors.primary600)
                         }
                     }
                     .buttonStyle(.picture(isActive: true))
                     .accessibilityIdentifier(A11y.pharmacyDetail.phaDetailBtnOpenMap)
-                }
 
-                if store.pharmacy.telecom?.phone != nil {
                     Button {
                         store.send(.openPhoneApp)
                     } label: {
@@ -196,14 +168,12 @@ struct PharmacyDetailView: View {
                         } icon: {
                             Image(systemName: SFSymbolName.phone)
                                 .font(.title2)
-                                .foregroundColor(Colors.primary700)
+                                .foregroundColor(Colors.primary600)
                         }
                     }
                     .buttonStyle(.picture(isActive: true))
                     .accessibilityIdentifier(A11y.pharmacyDetail.phaDetailBtnOpenPhone)
-                }
 
-                if store.pharmacy.telecom?.email != nil {
                     Button {
                         store.send(.openMailApp)
                     } label: {
@@ -212,14 +182,86 @@ struct PharmacyDetailView: View {
                         } icon: {
                             Image(systemName: SFSymbolName.envelope)
                                 .font(.title2)
-                                .foregroundColor(Colors.primary700)
+                                .foregroundColor(Colors.primary600)
                         }
                     }
                     .buttonStyle(.picture(isActive: true))
                     .accessibilityIdentifier(A11y.pharmacyDetail.phaDetailBtnOpenMail)
                 }
+                .padding(.bottom, 24)
             }
-            .padding(.bottom, 24)
+        }
+    }
+
+    struct ServiceOptionsView: View {
+        @Perception.Bindable var store: StoreOf<PharmacyDetailDomain>
+
+        var body: some View {
+            WithPerceptionTracking {
+                HStack(alignment: .top, spacing: 16) {
+                    if store.reservationService.hasService {
+                        Button(
+                            action: { store.send(.tappedRedeemOption(.onPremise)) },
+                            label: {
+                                Label {
+                                    Text(L10n.phaDetailBtnPickup)
+                                } icon: {
+                                    Image(asset: Asset.Pharmacy.btnApoLarge)
+                                        .resizable()
+                                        .padding(4)
+                                }
+                            }
+                        ).buttonStyle(.picture(style: .supplyLarge, isActive: false))
+                            .opacity(store.hasRedeemableTasks ? 1 : 0.25)
+                            .accessibility(identifier: store.reservationService.hasServiceAfterLogin ? A11y
+                                .pharmacyDetail.phaDetailBtnPickupViaLogin : A11y.pharmacyDetail
+                                .phaDetailBtnPickup)
+                    }
+
+                    if store.deliveryService.hasService {
+                        Button(
+                            action: { store.send(.tappedRedeemOption(.delivery)) },
+                            label: {
+                                Label {
+                                    Text(L10n.phaDetailBtnDelivery)
+                                } icon: {
+                                    Image(asset: Asset.Pharmacy.btnCarLarge)
+                                        .resizable()
+                                        .padding(4)
+                                }
+                            }
+                        ).buttonStyle(.picture(style: .supplyLarge, isActive: false))
+                            .opacity(store.hasRedeemableTasks ? 1 : 0.25)
+                            .accessibility(identifier: store.deliveryService.hasServiceAfterLogin ? A11y
+                                .pharmacyDetail.phaDetailBtnDeliveryViaLogin : A11y.pharmacyDetail
+                                .phaDetailBtnDelivery)
+                    }
+
+                    if store.shipmentService.hasService {
+                        Button(
+                            action: { store.send(.tappedRedeemOption(.shipment)) },
+                            label: {
+                                Label {
+                                    Text(L10n.phaDetailBtnShipment)
+                                } icon: {
+                                    Image(asset: Asset.Pharmacy.btnLkwLarge)
+                                        .resizable()
+                                        .padding(4)
+                                }
+                            }
+                        ).buttonStyle(.picture(style: .supplyLarge, isActive: false))
+                            .opacity(store.hasRedeemableTasks ? 1 : 0.25)
+                            .accessibility(identifier: store.shipmentService.hasServiceAfterLogin ? A11y
+                                .pharmacyDetail.phaDetailBtnShipmentViaLogin : A11y.pharmacyDetail
+                                .phaDetailBtnShipment)
+                    }
+
+                    ForEach(Array(store.serviceIsMissing.enumerated()), id: \.offset) { _ in
+                        EmptyService()
+                    }
+
+                }.frame(maxWidth: .infinity, alignment: .center)
+            }
         }
     }
 }
@@ -249,15 +291,10 @@ extension PharmacyDetailView {
         @Dependency(\.date) var date
 
         var body: some View {
-            HStack {
-                Text(L10n.phaDetailOpeningTime)
-                    .font(.headline)
-                    .foregroundColor(Colors.systemLabel)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding([.top])
-                    .padding(.bottom, 8)
-                Spacer()
-            }
+            SectionHeaderView(
+                text: L10n.phaDetailOpeningTime,
+                a11y: ""
+            ).padding(.bottom, 8)
 
             // .weekday starts with 1 being sunday, +5 % 7 to let monday be 0 and the first day
             let todayWeekNumber = (Calendar.current.component(.weekday, from: date()) + 5) % 7
@@ -296,7 +333,7 @@ extension PharmacyDetailView {
                                 .font(Font.monospacedDigit(.body)())
                                 .foregroundColor(
                                     hop.openingState.isOpen ?
-                                        Colors.secondary700 : Colors.systemLabelSecondary
+                                        Colors.secondary600 : Colors.systemLabelSecondary
                                 )
                         }
                     }
@@ -317,215 +354,64 @@ extension PharmacyDetailView {
         }
     }
 
-    /// "Vor Ort"
-    struct PhysicalFeaturesView: View {
-        let physicalFeatures: [PharmacyLocation.PhysicalFeature]
-
-        var body: some View {
-            HStack {
-                Text("Vor Ort")
-                    .font(.headline)
-                    .foregroundColor(Colors.systemLabel)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding([.top])
-                Spacer()
-            }
-
-            // Bullet points sorted alphabetically by their localized display name
-            VStack(alignment: .leading, spacing: 8) {
-                let sortedEntries = physicalFeatures.sorted { lhs, rhs in
-                    lhs.localizedDisplayName.text < rhs.localizedDisplayName.text
-                }
-                ForEach(sortedEntries, id: \.self) { feature in
-                    HStack(spacing: 4) {
-                        Image(systemName: SFSymbolName.checkmarkCircleFill)
-                            .font(.subheadline)
-                            .foregroundColor(Colors.secondary600)
-                            .accessibility(hidden: true)
-
-                        Text(feature.localizedDisplayName.text)
-                            .font(.body)
-                            .foregroundColor(Colors.systemLabel)
-                    }
-                }
-            }
-        }
-    }
-
-    struct SpecialitiesView: View {
-        let specialities: [PharmacyLocation.Speciality]
-
-        var body: some View {
-            HStack {
-                Text(L10n.phaDetailSpecialities)
-                    .font(.headline)
-                    .foregroundColor(Colors.systemLabel)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding([.top])
-                Spacer()
-            }
-
-            let sorted = specialities.sorted { $0.localizedDisplayName.text < $1.localizedDisplayName.text }
-            PharmacySearchFlowLayout(spacing: 8) {
-                ForEach(sorted, id: \.self) { speciality in
-                    ServiceChip(text: speciality.localizedDisplayName.text)
-                }
-            }
-        }
-
-        private struct ServiceChip: View {
-            let text: String
-
-            var body: some View {
-                Text(text)
-                    .font(.subheadline)
-                    .foregroundColor(Colors.primary900)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 4)
-                    .background(Colors.primary100)
-                    .cornerRadius(8)
-            }
-        }
-    }
-
-    struct EmergencyServiceView: View {
-        let specialOpening: [PharmacyLocationViewModel.SpecialOperationHoursPeriod]
-        var body: some View {
-            HStack {
-                Text(L10n.phaDetailEmergencyService)
-                    .font(.headline)
-                    .foregroundColor(Colors.systemLabel)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding([.top])
-                Spacer()
-            }
-
-            ForEach(specialOpening, id: \.self) { specialHours in
-                HStack(spacing: 16) {
-                    VStack {
-                        Image(systemName: specialHours.imageName.symbolName)
-                            .font(Font.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(specialHours.imageName.color)
-                            .accessibilityHidden(true)
-
-                        Spacer(minLength: 0)
-                    }
-                    HStack(spacing: 4) {
-                        Text(specialHours.displayPeriod)
-                            .font(Font.body)
-                            .foregroundColor(specialHours.isActive ? Colors.secondary700 : Colors
-                                .systemLabelSecondary)
-                            .fontWeight(specialHours.isActive ? .semibold : .regular)
-                            .accessibility(label: Text(specialHours.accessiblilityLabel))
-                        Spacer(minLength: 0)
-                    }
-                }.padding(.leading, 16)
-                Divider()
-            }
-        }
-    }
-
-    struct SpecialClosingView: View {
-        let specialClosings: [PharmacyLocationViewModel.SpecialOperationHoursPeriod]
-        var body: some View {
-            HStack {
-                Text(L10n.phaDetailSpecialClosing)
-                    .font(.headline)
-                    .foregroundColor(Colors.systemLabel)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding([.top])
-                Spacer()
-            }
-
-            ForEach(specialClosings, id: \.self) { closing in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(closing.reason)
-                        .font(.footnote)
-                        .italic()
-                        .foregroundColor(closing.isActive ? Colors.secondary700 : Colors.systemLabelSecondary)
-                        .fontWeight(closing.isActive ? .semibold : .regular)
-
-                    HStack {
-                        Text(closing.displayPeriod)
-                            .font(Font.body)
-                            .foregroundColor(closing.isActive ? Colors.secondary700 : Colors
-                                .systemLabelSecondary)
-                            .fontWeight(closing.isActive ? .semibold : .regular)
-                            .accessibility(label: Text(closing.accessiblilityLabel))
-                            .multilineTextAlignment(.leading)
-                        Spacer(minLength: 0)
-                    }
-                    Spacer(minLength: 0)
-                }.padding([.vertical, .leading], 8)
-                Divider()
-            }
-        }
-    }
-
     struct ContactView: View {
-        @Bindable var store: StoreOf<PharmacyDetailDomain>
+        @Perception.Bindable var store: StoreOf<PharmacyDetailDomain>
 
         var body: some View {
-            VStack {
-                HStack {
-                    Text(L10n.phaDetailContact)
-                        .font(.headline)
-                        .foregroundColor(Colors.systemLabel)
-                        .accessibilityIdentifier(A11y.pharmacyDetail.phaDetailContact)
-                        .accessibilityAddTraits(.isHeader)
-                        .padding([.top])
-                    Spacer()
-                }
+            WithPerceptionTracking {
+                VStack {
+                    SectionHeaderView(text: L10n.phaDetailContact,
+                                      a11y: A11y.pharmacyDetail.phaDetailContact)
 
-                if let phone = store.pharmacy.telecom?.phone {
-                    Button(action: { store.send(.openPhoneApp) }, label: {
-                        DetailedIconCellView(title: L10n.phaDetailPhone,
-                                             value: phone,
-                                             imageName: SFSymbolName.phone,
-                                             a11y: A11y.pharmacyDetail.phaDetailPhone)
-                    })
-                }
-                if let email = store.pharmacy.telecom?.email {
-                    Button(action: { store.send(.openMailApp) }, label: {
-                        DetailedIconCellView(title: L10n.phaDetailMail,
-                                             value: email,
-                                             imageName: SFSymbolName.mail,
-                                             a11y: A11y.pharmacyDetail.phaDetailMail)
-                    })
-                }
-                if let web = store.pharmacy.telecom?.web {
-                    Button(action: { store.send(.openBrowserApp) }, label: {
-                        DetailedIconCellView(title: L10n.phaDetailWeb,
-                                             value: web,
-                                             imageName: SFSymbolName.arrowUpForward,
-                                             a11y: A11y.pharmacyDetail.phaDetailWeb)
-                    })
+                    if let phone = store.pharmacy.telecom?.phone {
+                        Button(action: { store.send(.openPhoneApp) }, label: {
+                            DetailedIconCellView(title: L10n.phaDetailPhone,
+                                                 value: phone,
+                                                 imageName: SFSymbolName.phone,
+                                                 a11y: A11y.pharmacyDetail.phaDetailPhone)
+                        })
+                    }
+                    if let email = store.pharmacy.telecom?.email {
+                        Button(action: { store.send(.openMailApp) }, label: {
+                            DetailedIconCellView(title: L10n.phaDetailMail,
+                                                 value: email,
+                                                 imageName: SFSymbolName.mail,
+                                                 a11y: A11y.pharmacyDetail.phaDetailMail)
+                        })
+                    }
+                    if let web = store.pharmacy.telecom?.web {
+                        Button(action: { store.send(.openBrowserApp) }, label: {
+                            DetailedIconCellView(title: L10n.phaDetailWeb,
+                                                 value: web,
+                                                 imageName: SFSymbolName.arrowUpForward,
+                                                 a11y: A11y.pharmacyDetail.phaDetailWeb)
+                        })
+                    }
                 }
             }
         }
     }
 
     struct Footer: View {
-        var text: Text = .init(L10n.phaDetailTxtFooterStart)
-            .foregroundColor(Colors.systemLabelSecondary) +
-            Text(L10n.phaDetailTxtFooterMid)
-            .foregroundColor(Colors.primary)
-            .underline() +
-            Text(L10n.phaDetailTxtFooterEnd)
-            .foregroundColor(Colors.systemLabelSecondary)
+        var text: Text = {
+            Text(L10n.phaDetailTxtFooterStart)
+                .foregroundColor(Color(.secondaryLabel)) +
+                Text(L10n.phaDetailTxtFooterMid)
+                .foregroundColor(Colors.primary) +
+                Text(L10n.phaDetailTxtFooterEnd)
+                .foregroundColor(Color(.secondaryLabel))
+        }()
 
         var body: some View {
             VStack(alignment: .trailing, spacing: 8) {
                 Button(action: {
-                    guard let url = URL(string: "https://www.verzeichnis-ti.de/"),
+                    guard let url = URL(string: "https://mein-apothekenportal.de"),
                           UIApplication.shared.canOpenURL(url) else { return }
 
                     UIApplication.shared.open(url)
                 }, label: {
                     text
                         .multilineTextAlignment(.leading)
-                        .accentColor(Colors.primary)
                 })
                 Button(action: {
                     guard let url = URL(string: "https://www.gematik.de/anwendungen/e-rezept/faq/meine-apotheke/"),
@@ -533,15 +419,9 @@ extension PharmacyDetailView {
 
                     UIApplication.shared.open(url)
                 }, label: {
-                    Label {
-                        Text(L10n.phaDetailBtnFooter)
-                    } icon: {
-                        Image(systemName: SFSymbolName.arrowUpForward)
-                    }
+                    Text(L10n.phaDetailBtnFooter)
+                        .foregroundColor(Colors.primary)
                 })
-                .accessibilityLabel(L10n.phaDetailLblFooter)
-                .labelStyle(.trailingIcon)
-                .buttonStyle(.tertiary)
             }
             .font(.footnote)
         }
@@ -558,10 +438,11 @@ struct PharmacyDetailView_Previews: PreviewProvider {
             PharmacyDetailView(
                 store: StoreOf<PharmacyDetailDomain>(
                     initialState: PharmacyDetailDomain.State(
-                        prescriptions: Shared(value: PharmacyDetailDomain.Dummies.prescriptions),
-                        selectedPrescriptions: Shared(value: []),
+                        prescriptions: Shared(PharmacyDetailDomain.Dummies.prescriptions),
+                        selectedPrescriptions: Shared([]),
                         inRedeemProcess: false,
-                        pharmacyViewModel: PharmacyDetailDomain.Dummies.pharmacyInactiveViewModel
+                        pharmacyViewModel: PharmacyDetailDomain.Dummies.pharmacyInactiveViewModel,
+                        pharmacyRedeemState: Shared(nil)
                     )
                 ) {
                     PharmacyDetailDomain()
@@ -573,10 +454,11 @@ struct PharmacyDetailView_Previews: PreviewProvider {
             PharmacyDetailView(
                 store: StoreOf<PharmacyDetailDomain>(
                     initialState: PharmacyDetailDomain.State(
-                        prescriptions: Shared(value: PharmacyDetailDomain.Dummies.prescriptions),
-                        selectedPrescriptions: Shared(value: []),
+                        prescriptions: Shared(PharmacyDetailDomain.Dummies.prescriptions),
+                        selectedPrescriptions: Shared([]),
                         inRedeemProcess: false,
-                        pharmacyViewModel: PharmacyDetailDomain.Dummies.pharmacyInactiveViewModel
+                        pharmacyViewModel: PharmacyDetailDomain.Dummies.pharmacyInactiveViewModel,
+                        pharmacyRedeemState: Shared(nil)
                     )
                 ) {
                     PharmacyDetailDomain()
@@ -584,23 +466,4 @@ struct PharmacyDetailView_Previews: PreviewProvider {
             )
         }
     }
-}
-
-#Preview("Specialities - Large Font") {
-    ScrollView {
-        PharmacyDetailView.SpecialitiesView(specialities: [
-            .vaccination,
-            .bodyMeasurements,
-            .sterileCompounding,
-            .allergyTest,
-            .travelMedicineConsultation,
-            .oralCancerTherapy,
-            .organTransplantation,
-            .polymedication,
-            .inhalationTechnique,
-            .hypertension,
-        ])
-        .padding()
-    }
-    .environment(\.sizeCategory, .accessibilityExtraExtraExtraLarge)
 }

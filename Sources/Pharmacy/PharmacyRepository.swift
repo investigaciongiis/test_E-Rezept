@@ -1,164 +1,136 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
-import Dependencies
-import DependenciesMacros
 import eRpKit
 import Foundation
 import OpenSSL
 
 /// Interface for the app to the Pharmacy data layer
 /// sourcery: StreamWrapped
-@DependencyClient
-public struct PharmacyRepository: Sendable {
+public protocol PharmacyRepository {
     /// Loads the `PharmacyLocation` by its telematik ID from a remote server and updates *only* properties
-    /// that are loaded from remote. If pharmacy is not yet in local store, this method will return an error.
-    ///
-    /// - Parameter telematikId: The telematik ID of the pharmacy
-    /// - Returns: A `PharmacyLocation` or throws a `PharmacyRepositoryError`
-    public var updateFromRemote: @Sendable (_ telematikId: String) async throws -> PharmacyLocation
-
-    /// Loads the `PharmacyLocation` by its telematik ID from disk or if not present from a remote server.
-    ///
-    /// - Parameter telematikId: The telematik ID of the pharmacy
-    /// - Returns: A `PharmacyLocation?` or throws a `PharmacyRepositoryError`
-    public var loadCached: @Sendable (_ telematikId: String) async throws -> PharmacyLocation?
-
-    /// Searches `PharmacyLocation`s from a remote server using a search term and filters.
+    /// that are loaded from remote. If pharmacy is not jet in local store this method will return an error
     ///
     /// - Parameters:
-    ///   - searchTerm: Search string for the pharmacy
-    ///   - position: Location to use as search center
-    ///   - filter: Optional filters
-    /// - Returns: An array of matching `PharmacyLocation`s or throws a `PharmacyRepositoryError`
-    public var searchRemote: @Sendable (
-        _ searchTerm: String,
-        _ position: Position?,
-        _ filter: [PharmacyRepositoryFilter]
-    ) async throws -> [PharmacyLocation]
+    ///   - telematikId: The telematik ID of the pharmacy
+    /// - Returns: Publisher for the load and saved request or fails
+    func updateFromRemote(by telematikId: String) -> AnyPublisher<PharmacyLocation, PharmacyRepositoryError>
 
-    /// Loads a local `PharmacyLocation` by its telematik ID.
+    /// Loads the `PharmacyLocation` by its telematik ID from disk or if not present from a remote (server).
     ///
-    /// - Parameter telematikId: The telematik ID of the pharmacy
-    /// - Returns: A `PharmacyLocation?` or throws a `PharmacyRepositoryError`
-    public var loadLocalById: @Sendable (_ telematikId: String) async throws -> PharmacyLocation?
-
-    /// Loads up to `count` local `PharmacyLocation`s.
-    ///
-    /// - Parameter count: Optional number of results to limit
-    /// - Returns: An array of `PharmacyLocation`s or throws a `PharmacyRepositoryError`
-    public var loadLocalCount: @Sendable (_ count: Int?) async throws -> [PharmacyLocation]
-
-    /// Saves an array of `PharmacyLocation`s.
-    ///
-    /// - Parameter pharmacies: The locations to save
-    /// - Returns: `true` if successful, or throws a `PharmacyRepositoryError`
-    public var saveMultiple: @Sendable (_ pharmacies: [PharmacyLocation]) async throws -> Bool
-
-    /// Deletes an array of `PharmacyLocation`s.
-    ///
-    /// - Parameter pharmacies: The locations to delete
-    /// - Returns: `true` if successful, or throws a `PharmacyRepositoryError`
-    public var deleteMultiple: @Sendable (_ pharmacies: [PharmacyLocation]) async throws -> Bool
-
-    /// Loads an insurance record by IK number.
-    ///
-    /// - Parameter ikNumber: Insurance institution identifier
-    /// - Returns: The insurance or `nil`, or throws a `PharmacyRepositoryError`
-    public var fetchInsurance: @Sendable (_ ikNumber: String) async throws -> Insurance?
-
-    /// Loads all known insurances.
-    ///
-    /// - Returns: Array of `Insurance` or throws a `PharmacyRepositoryError`
-    public var fetchAllInsurances: @Sendable () async throws -> [Insurance]
-
-    /// Loads an array of `Country` from a remote (server).
     /// - Parameters:
-    /// - Returns: `AnyPublisher` that emits array of `Country` or empty when nothing is found
-    public var fetchEuCountries: @Sendable () async throws -> [Country]
+    ///   - telematikId: the telematik ID of the pharmacy
+    /// - Returns: Publisher for the load request
+    func loadCached(by telematikId: String)
+        -> AnyPublisher<PharmacyLocation?, PharmacyRepositoryError>
 
-    // MARK: - Convenience Methods
+    /// Loads `PharmacyLocation`s  with search term from a remote (server).
+    ///
+    /// - Parameters:
+    ///   - searchTerm: the `searchTerm` for the pharmacy
+    ///   - position: the Position which is used as a search point for an "around me" search
+    ///   - filter: further filter parameters for pharmacies
+    /// - Returns: `AnyPublisher` that emits a list of `PharmacyLocation`s or is empty when not found
+    func searchRemote(searchTerm: String,
+                      position: Position?,
+                      filter: [PharmacyRepositoryFilter])
+        -> AnyPublisher<[PharmacyLocation], PharmacyRepositoryError>
 
-    /// Saves a single `PharmacyLocation`.
-    public func save(pharmacy: PharmacyLocation) async throws -> Bool {
-        try await saveMultiple([pharmacy])
-    }
+    /// Loads the `PharmacyLocation` by its telematik ID from disk
+    ///
+    /// - Parameters:
+    ///   - telematikId: the telematik ID of the pharmacy
+    /// - Returns: Publisher for the load request
+    func loadLocal(by telematikId: String)
+        -> AnyPublisher<PharmacyLocation?, PharmacyRepositoryError>
 
-    /// Deletes a single `PharmacyLocation`.
-    public func delete(pharmacy: PharmacyLocation) async throws -> Bool {
-        try await deleteMultiple([pharmacy])
-    }
+    /// Load `count` local `PharmacyLocation`s (from disk)
+    /// - Parameter count: Count of pharmacies to fetch, Nil if no fetch limit should be applied
+    /// - Returns: Publisher for the load request
+    func loadLocal(count: Int?) -> AnyPublisher<[PharmacyLocation], PharmacyRepositoryError>
+
+    /// Saves an array of `PharmacyLocation`s
+    /// - Parameters:
+    ///   - pharmacies: the `PharmacyLocation`s to be saved
+    /// - Returns: `AnyPublisher` that emits a boolean on success or fails with a `PharmacyRepositoryError`
+    func save(pharmacies: [PharmacyLocation]) -> AnyPublisher<Bool, PharmacyRepositoryError>
+
+    /// Delete an array of `PharmacyLocation`s
+    /// - Parameters:
+    ///   - pharmacies: the `PharmacyLocation`s to be deleted
+    /// - Returns: `AnyPublisher` that emits a boolean on success or fails with a `PharmacyRepositoryError`
+    func delete(pharmacies: [PharmacyLocation]) -> AnyPublisher<Bool, PharmacyRepositoryError>
+
+    /// Load certificates for a given `PharmacyLocation` id
+    /// - Parameter id: id of `PharmacyLocation` from which to load the certificate
+    /// - Returns: Emits an array of certificates on success or fails with a `PharmacyRepositoryError`
+    func loadAvsCertificates(for id: String) -> AnyPublisher<[X509], PharmacyRepositoryError>
 }
 
-extension DependencyValues {
-    /// Access to the pharmacyRepository dependency.
-    public var pharmacyRepository: PharmacyRepository {
-        get { self[PharmacyRepository.self] }
-        set { self[PharmacyRepository.self] = newValue }
+extension PharmacyRepository {
+    /// Creates or updates a `PharmacyLocation` into the store. Updates if the identifier does already exist in store
+    /// - Parameter pharmacy: Instance of `PharmacyLocation` to be saved
+    ///
+    /// sourcery: SkipStreamWrapped
+    public func save(pharmacy: PharmacyLocation) -> AnyPublisher<Bool, PharmacyRepositoryError> {
+        save(pharmacies: [pharmacy])
+            .eraseToAnyPublisher()
     }
-}
 
-extension PharmacyRepository: TestDependencyKey {
-    public static let testValue: PharmacyRepository = Self()
+    /// Deletes a `PharmacyLocation` from the store with the related identifier
+    /// - Parameter pharmacy: Instance of `PharmacyLocation` to be deleted
+    ///
+    /// sourcery: SkipStreamWrapped
+    public func delete(pharmacy: PharmacyLocation) -> AnyPublisher<Bool, PharmacyRepositoryError> {
+        delete(pharmacies: [pharmacy])
+            .eraseToAnyPublisher()
+    }
 }
 
 /// Available filters for the Pharmacy Repository
-public enum PharmacyRepositoryFilter: Equatable {
+public enum PharmacyRepositoryFilter {
     /// Matching pharmacies are marked as E-Rezept ready
     case ready
     /// Matching pharmacies provide online service for ordering medications
     case shipment
     /// Matching pharmacies provide local delivery services (Botendienst)
     case delivery
-    /// Matching pharmacies provide in-store pickup (Handverkauf)
-    case pickup
-    /// Matching pharmacies have on-site physical features (characteristic)
-    case characteristic(Characteristic)
-    /// Matching pharmacies offer a specific service (specialty)
-    case specialty(Specialty)
+}
 
-    /// Physical feature characteristics that can be queried via the FHIR `characteristic` search parameter.
-    public enum Characteristic: String, Equatable, CaseIterable {
-        case parking = "parkmoeglichkeit"
-        case publicTransport = "oepnv"
-        case barrierFree = "barrierefrei"
-        case pickupAutomat = "abholautomat"
+extension PharmacyRepositoryFilter {
+    var asAPIFilter: (String, String)? {
+        switch self {
+        case .ready:
+            return ("status", "active")
+        case .shipment:
+            return ("type", "mobl")
+        case .delivery:
+            return nil
+        }
     }
+}
 
-    /// Service specialties that can be queried via the FHIR `specialty` search parameter.
-    public enum Specialty: String, Equatable, CaseIterable {
-        // PharmacyHealthcareSpecialtyCS (codes 50+)
-        case sterileCompounding = "50"
-        case hypertension = "60"
-        case inhalationTechnique = "70"
-        case polymedication = "80"
-        case oralCancerTherapy = "90"
-        case organTransplantation = "100"
-        // HealthcareServiceSpecialtyCS
-        case vaccination = "impfung"
-        case bodyMeasurements = "koerperwerte"
-        case allergyTest = "allergietest"
-        case travelMedicineConsultation = "reisemedizin-beratung"
+// swiftlint:disable:next no_extension_access_modifier
+public extension Collection where Element == PharmacyRepositoryFilter {
+    /// Group elements for `PharmacyRepositoryFilter` elements
+    func asAPIFilter() -> [String: String] {
+        Dictionary(uniqueKeysWithValues: compactMap(\.asAPIFilter))
     }
 }
 

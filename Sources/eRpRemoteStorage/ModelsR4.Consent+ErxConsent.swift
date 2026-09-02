@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
@@ -30,7 +26,7 @@ extension ModelsR4.Consent {
             throw RemoteStorageBundleParsingError.parseError("Could not parse id from self.")
         }
 
-        guard let scopeRaw = scope.coding?.first(where: { coding in
+        guard let scopeRaw = self.scope.coding?.first(where: { coding in
             coding.system?.value?.url.absoluteString == Terminology.Key.CodeSystem.consentScope
         })?.code?.value?.string,
             let scope = ErxConsent.Scope(rawValue: scopeRaw)
@@ -38,15 +34,12 @@ extension ModelsR4.Consent {
             throw RemoteStorageBundleParsingError.parseError("Could not parse scope from self.")
         }
 
-        guard let categoryRaw = category.compactMap(\.coding)
+        guard let categoryRaw = self.category.compactMap(\.coding)
             .flatMap({ $0 })
             .first(where: { coding in
                 ErpCharge.Key.Consent.consentType.contains {
                     $0.value == coding.system?.value?.url.absoluteString
-                } ||
-                    EURedeem.Key.Consent.consentType.contains {
-                        $0.value == coding.system?.value?.url.absoluteString
-                    }
+                }
             })?.code?.value?.string,
             let category = ErxConsent.Category(rawValue: categoryRaw)
         else {
@@ -61,7 +54,7 @@ extension ModelsR4.Consent {
             throw RemoteStorageBundleParsingError.parseError("Could not parse dateTime from self.")
         }
 
-        guard let policyRuleRaw = policyRule?.coding?.first(where: { coding in
+        guard let policyRuleRaw = self.policyRule?.coding?.first(where: { coding in
             coding.system?.value?.url.absoluteString == Terminology.Key.CodeSystem.actCode
         })?.code?.value?.string,
             let policyRule = ErxConsent.Act(rawValue: policyRuleRaw)

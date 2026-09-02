@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import CombineSchedulers
 import CoreData
@@ -131,7 +126,7 @@ public class ProfileCoreDataStore: ProfileDataStore, CoreDataCrudable {
             .eraseToAnyPublisher()
     }
 
-    /// creates or updates a `Profile`. Note that the `erxTasks` relationship will not be saved
+    // creates or updates a `Profile`. Note that the `erxTasks` relationship will not be saved
     public func save(profiles: [Profile]) -> AnyPublisher<Bool, LocalStoreError> {
         save(mergePolicy: NSMergePolicy.error) { moc in
             _ = profiles.map { profile -> ProfileEntity in
@@ -145,7 +140,6 @@ public class ProfileCoreDataStore: ProfileDataStore, CoreDataCrudable {
                     profileEntity.name = profile.name
                     profileEntity.insuranceId = profile.insuranceId
                     profileEntity.insuranceType = profile.insuranceType.rawValue
-                    profileEntity.insuranceIK = profile.insuranceIK
                     profileEntity.insurance = profile.insurance
                     profileEntity.givenName = profile.givenName
                     profileEntity.familyName = profile.familyName
@@ -154,7 +148,6 @@ public class ProfileCoreDataStore: ProfileDataStore, CoreDataCrudable {
                     profileEntity.image = profile.image.rawValue
                     profileEntity.userImageData = profile.userImageData
                     profileEntity.lastAuthenticated = profile.lastAuthenticated
-                    profileEntity.hideWelcomeDrawerOnMainView = profile.hideWelcomeDrawerOnMainView
                     profileEntity.hidePkvConsentDrawerOnMainView = profile.hidePkvConsentDrawerOnMainView
                     profileEntity.shouldAutoUpdateNameAtNextLogin = profile.shouldAutoUpdateNameAtNextLogin
                     profileEntity.gIdEntry = try? ProfileCoreDataStore.encoder.encode(profile.gIdEntry)
@@ -184,7 +177,6 @@ public class ProfileCoreDataStore: ProfileDataStore, CoreDataCrudable {
                 profileEntity.name = profile.name
                 profileEntity.insuranceId = profile.insuranceId
                 profileEntity.insuranceType = profile.insuranceType.rawValue
-                profileEntity.insuranceIK = profile.insuranceIK
                 profileEntity.insurance = profile.insurance
                 profileEntity.givenName = profile.givenName
                 profileEntity.familyName = profile.familyName
@@ -193,7 +185,6 @@ public class ProfileCoreDataStore: ProfileDataStore, CoreDataCrudable {
                 profileEntity.image = profile.image.rawValue
                 profileEntity.userImageData = profile.userImageData
                 profileEntity.lastAuthenticated = profile.lastAuthenticated
-                profileEntity.hideWelcomeDrawerOnMainView = profile.hideWelcomeDrawerOnMainView
                 profileEntity.hidePkvConsentDrawerOnMainView = profile.hidePkvConsentDrawerOnMainView
                 profileEntity.shouldAutoUpdateNameAtNextLogin = profile.shouldAutoUpdateNameAtNextLogin
                 profileEntity.gIdEntry = try? ProfileCoreDataStore.encoder.encode(profile.gIdEntry)
@@ -211,11 +202,11 @@ public class ProfileCoreDataStore: ProfileDataStore, CoreDataCrudable {
         return delete(resultsOf: request)
     }
 
-    @CodedError("502")
+    // sourcery: CodedError = "502"
     public enum Error: Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case noMatchingEntity
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case initialization(error: Swift.Error)
     }
 }

@@ -1,50 +1,41 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import ComposableArchitecture
 import eRpKit
-import eRpResources
-import FeatureCardWall
-import FeatureHelpers
 import Foundation
 import IDP
-import Settings
 import UIKit
 
-@CodedError("039")
+// sourcery: CodedError = "039"
 enum SettingsDomainError: Swift.Error, Equatable {
-    @ErrorCode("01")
+    // sourcery: errorCode = "01"
     case organDonorJumpError(OrganDonorJumpServiceError)
-    @ErrorCode("02")
+    // sourcery: errorCode = "02"
     case organDonorUnknownError
 }
 
-@Reducer
+@Reducer // swiftlint:disable:next type_body_length
 struct SettingsDomain {
     @ObservableState
     struct State: Equatable {
-        @Shared(.isDemoMode) var isDemoMode
+        var isDemoMode: Bool
         var profiles = ProfilesDomain.State(profiles: [], selectedProfileId: nil)
         var appVersion = AppVersion.current
         var trackerOptIn = false
@@ -52,7 +43,7 @@ struct SettingsDomain {
         @Presents var destination: Destination.State?
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         case debug(DebugDomain)
         // sourcery: AnalyticsScreen = alert
@@ -64,7 +55,7 @@ struct SettingsDomain {
         case healthCardPasswordSetCustomPin(HealthCardPasswordIntroductionDomain)
         // sourcery: AnalyticsScreen = healthCardPassword_unlockCard
         case healthCardPasswordUnlockCard(HealthCardPasswordIntroductionDomain)
-        ///
+        //
         case appSecurity(AppSecurityDomain)
         // sourcery: AnalyticsScreen = settings_productImprovements_complyTracking
         case complyTracking(EmptyDomain)
@@ -81,7 +72,7 @@ struct SettingsDomain {
         // sourcery: AnalyticsScreen = profile
         case editProfile(EditProfileDomain)
         // sourcery: AnalyticsScreen = settings_newProfile
-        case newProfile(CreateProfileDomain)
+        case newProfile(NewProfileDomain)
         // sourcery: AnalyticsScreen = settings_medicationReminderList
         case medicationReminderList(MedicationReminderListDomain)
 
@@ -125,6 +116,7 @@ struct SettingsDomain {
 
         enum Response: Equatable {
             case trackerStatusReceived(Bool)
+            case demoModeStatusReceived(Bool)
             case showChargeItemListReceived(UserProfile)
             case showAlert(SettingsDomainError)
         }
@@ -133,7 +125,7 @@ struct SettingsDomain {
     @Dependency(\.changeableUserSessionContainer) var changeableUserSessionContainer: UsersSessionContainer
     @Dependency(\.userProfileService) var userProfileService: UserProfileService
     @Dependency(\.tracker) var tracker: Tracker
-    @Dependency(\.openURLHandler) var openURLHandler
+    @Dependency(\.resourceHandler) var resourceHandler: ResourceHandler
     @Dependency(\.organDonorJumpService) var organDonorJumpService: OrganDonorJumpService
 
     var body: some Reducer<State, Action> {
@@ -149,11 +141,21 @@ struct SettingsDomain {
     func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .task:
-            return .publisher(
-                tracker.optInPublisher
-                    .map { .response(.trackerStatusReceived($0)) }
-                    .eraseToAnyPublisher
+            return .merge(
+                .publisher(
+                    tracker.optInPublisher
+                        .map { .response(.trackerStatusReceived($0)) }
+                        .eraseToAnyPublisher
+                ),
+                .publisher(
+                    changeableUserSessionContainer.isDemoMode
+                        .map { .response(.demoModeStatusReceived($0)) }
+                        .eraseToAnyPublisher
+                )
             )
+        case let .response(.demoModeStatusReceived(isDemo)):
+            state.isDemoMode = isDemo
+            return .none
         case let .response(.trackerStatusReceived(value)):
             state.trackerOptIn = value
             return .none
@@ -162,13 +164,13 @@ struct SettingsDomain {
         // Demo-Mode
         case let .toggleDemoModeSwitch(isDemo):
             state.destination = .alert(.info(state.isDemoMode ? Self.demoModeOffAlertState : Self.demoModeOnAlertState))
-            state.$isDemoMode.withLock { $0 = isDemo }
             if isDemo {
                 changeableUserSessionContainer.switchToDemoMode()
             } else {
                 changeableUserSessionContainer.switchToStandardMode()
             }
             return .none
+
         // Tracking
         // [REQ:gemSpec_eRp_FdV:A_19088, A_19089-01#5, A_19092-01#4, A_19097-01#1] React to later opt-in or deactivation
         // of usage analytics
@@ -192,12 +194,10 @@ struct SettingsDomain {
             state.destination = nil
             return .none
         case .destination(.presented(.alert(.openSettings))):
-            guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else {
-                return .none
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                resourceHandler.open(url)
             }
-            return .run { _ in
-                _ = await openURLHandler.open(url)
-            }
+            return .none
         case .destination(.presented(.healthCardPasswordUnlockCard(.delegate(.navigateToSettings)))),
              .destination(.presented(.healthCardPasswordForgotPin(.delegate(.navigateToSettings)))),
              .destination(.presented(.healthCardPasswordSetCustomPin(.delegate(.navigateToSettings)))):
@@ -279,7 +279,7 @@ struct SettingsDomain {
             case let .showEditProfile(editProfileState):
                 state.destination = .editProfile(editProfileState)
             case .showNewProfile:
-                state.destination = .newProfile(.init())
+                state.destination = .newProfile(.init(name: "", color: .blue))
             case let .alert(alert):
                 state.destination = .alert(
                     alert.pullback { action in
@@ -318,9 +318,6 @@ struct SettingsDomain {
             case .close:
                 state.destination = nil
                 return .none
-            case let .failure(error):
-                state.destination = .alert(.init(for: error))
-                return .none
             }
         case .popToRootView:
             state.destination = nil
@@ -347,25 +344,29 @@ extension SettingsDomain {
             message: { TextState(L10n.stgTxtLanguageSettingsAlertDescription) }
         )
 
-    static var demoModeOnAlertState: AlertState<Destination.Alert> = AlertState(
-        title: { TextState(L10n.stgTxtAlertTitleDemoMode) },
-        actions: {
-            ButtonState(role: .cancel, action: .send(.dismiss)) {
-                TextState(L10n.alertBtnOk)
-            }
-        },
-        message: { TextState(L10n.stgTxtAlertMessageDemoModeOn) }
-    )
+    static var demoModeOnAlertState: AlertState<Destination.Alert> = {
+        AlertState(
+            title: { TextState(L10n.stgTxtAlertTitleDemoMode) },
+            actions: {
+                ButtonState(role: .cancel, action: .send(.dismiss)) {
+                    TextState(L10n.alertBtnOk)
+                }
+            },
+            message: { TextState(L10n.stgTxtAlertMessageDemoModeOn) }
+        )
+    }()
 
-    static var demoModeOffAlertState: AlertState<Destination.Alert> = AlertState(
-        title: { TextState(L10n.stgTxtAlertTitleDemoModeOff) },
-        actions: {
-            ButtonState(role: .cancel, action: .send(.dismiss)) {
-                TextState(L10n.alertBtnOk)
-            }
-        },
-        message: { TextState(L10n.stgTxtAlertMessageDemoModeOff) }
-    )
+    static var demoModeOffAlertState: AlertState<Destination.Alert> = {
+        AlertState(
+            title: { TextState(L10n.stgTxtAlertTitleDemoModeOff) },
+            actions: {
+                ButtonState(role: .cancel, action: .send(.dismiss)) {
+                    TextState(L10n.alertBtnOk)
+                }
+            },
+            message: { TextState(L10n.stgTxtAlertMessageDemoModeOff) }
+        )
+    }()
 
     static var donorRegisterAlertState: AlertState<Destination.Alert> =
         AlertState(
@@ -385,6 +386,7 @@ extension SettingsDomain {
 extension SettingsDomain {
     enum Dummies {
         static let state = State(
+            isDemoMode: false,
             profiles: ProfilesDomain.Dummies.state,
             appVersion: AppVersion(productVersion: "1.0",
                                    buildNumber: "LOCAL BUILD",
@@ -402,6 +404,3 @@ extension SettingsDomain {
         }
     }
 }
-
-extension SettingsDomain.Destination.State: Equatable {}
-extension SettingsDomain.Destination.Action: Equatable {}

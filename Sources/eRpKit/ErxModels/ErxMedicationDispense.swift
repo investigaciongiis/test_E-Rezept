@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
@@ -39,8 +35,7 @@ public struct ErxMedicationDispense: Hashable, Codable, Sendable {
         quantity: ErxMedication.Quantity? = nil,
         noteText: String? = nil,
         medication: ErxMedication?,
-        epaMedication: ErxEpaMedication?,
-        diGaDispense: DiGaDispense?
+        epaMedication: ErxEpaMedication?
     ) {
         self.identifier = identifier
         self.taskId = taskId
@@ -52,7 +47,6 @@ public struct ErxMedicationDispense: Hashable, Codable, Sendable {
         self.noteText = noteText
         self.medication = medication
         self.epaMedication = epaMedication
-        self.diGaDispense = diGaDispense
     }
 
     /// unique identifier in each `ErxTask`
@@ -78,6 +72,4 @@ public struct ErxMedicationDispense: Hashable, Codable, Sendable {
     /// Beginning with GemWorkflow 1.4 the MedicationDispense's Medication is derived from the profile
     /// `GEM_ERP_PR_Medication` hence it replaces the now outdated `ErxMedication`
     public let epaMedication: ErxEpaMedication?
-    /// Dispense information for an DiGa - Task
-    public let diGaDispense: DiGaDispense?
 }

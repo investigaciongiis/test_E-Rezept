@@ -1,31 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureCardWall
-import FeatureHelpers
 import IDP
 import Nimble
 import XCTest
@@ -37,9 +31,11 @@ final class RegisteredDevicesDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.test
     var schedulers: Schedulers!
     var mockUserSession: MockUserSession!
-    var mockUserSessionProvider: UserSessionProviderMock!
-    var mockSecureEnclaveSignatureProvider: SecureEnclaveSignatureProviderMock!
-    var mockRegisteredDevicesService: RegisteredDevicesServiceMock!
+    var mockUserSessionProvider: MockUserSessionProvider!
+    var mockSecureEnclaveSignatureProvider: MockSecureEnclaveSignatureProvider!
+    var mockNFCSignatureProvider: MockNFCSignatureProvider!
+    var mockSessionProvider: MockProfileBasedSessionProvider!
+    var mockRegisteredDevicesService: MockRegisteredDevicesService!
     let uidateFormatter = UIDateFormatter(fhirDateFormatter: FHIRDateFormatter.shared)
 
     override func setUp() {
@@ -47,9 +43,11 @@ final class RegisteredDevicesDomainTests: XCTestCase {
 
         schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
         mockUserSession = MockUserSession()
-        mockUserSessionProvider = UserSessionProviderMock()
-        mockSecureEnclaveSignatureProvider = SecureEnclaveSignatureProviderMock()
-        mockRegisteredDevicesService = RegisteredDevicesServiceMock()
+        mockUserSessionProvider = MockUserSessionProvider()
+        mockSecureEnclaveSignatureProvider = MockSecureEnclaveSignatureProvider()
+        mockNFCSignatureProvider = MockNFCSignatureProvider()
+        mockSessionProvider = MockProfileBasedSessionProvider()
+        mockRegisteredDevicesService = MockRegisteredDevicesService()
     }
 
     private func testStore(for state: RegisteredDevicesDomain.State) -> TestStore {
@@ -69,20 +67,19 @@ final class RegisteredDevicesDomainTests: XCTestCase {
     func testLoadDevicesTriggersCardwall() async {
         let store = testStore(for: .init(profileId: testProfileId))
         let cardWallState = CardWallCANDomain.State(
+            isDemoModus: false,
             profileId: testProfileId,
             can: ""
         )
 
-        mockRegisteredDevicesService
-            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
+        mockRegisteredDevicesService.registeredDevicesForReturnValue =
             Fail(error: RegisteredDevicesServiceError.missingAuthentication)
                 .eraseToAnyPublisher()
 
-        mockRegisteredDevicesService.deviceIdForProfileIdUUIDAnyPublisherStringNeverReturnValue = Just(nil)
+        mockRegisteredDevicesService.deviceIdForReturnValue = Just(nil)
             .eraseToAnyPublisher()
 
-        mockRegisteredDevicesService
-            .cardWallForProfileIdUUIDAnyPublisherCardWallCANDomainStateNeverReturnValue = Just(cardWallState)
+        mockRegisteredDevicesService.cardWallForReturnValue = Just(cardWallState)
             .eraseToAnyPublisher()
 
         await store.send(.loadDevices) { state in
@@ -103,22 +100,20 @@ final class RegisteredDevicesDomainTests: XCTestCase {
     func testWhenReturningFromCardwallThatReloadIsTriggered() async {
         let store = testStore(for: .init(profileId: testProfileId))
         let cardWallState = CardWallCANDomain.State(
+            isDemoModus: false,
             profileId: testProfileId,
             can: ""
         )
 
         let expectedDevices = Fixtures.pairingEntriesSetB
-        mockRegisteredDevicesService
-            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
-            Just(expectedDevices)
-                .setFailureType(to: RegisteredDevicesServiceError.self)
-                .eraseToAnyPublisher()
-
-        mockRegisteredDevicesService.deviceIdForProfileIdUUIDAnyPublisherStringNeverReturnValue = Just(nil)
+        mockRegisteredDevicesService.registeredDevicesForReturnValue = Just(expectedDevices)
+            .setFailureType(to: RegisteredDevicesServiceError.self)
             .eraseToAnyPublisher()
 
-        mockRegisteredDevicesService
-            .cardWallForProfileIdUUIDAnyPublisherCardWallCANDomainStateNeverReturnValue = Just(cardWallState)
+        mockRegisteredDevicesService.deviceIdForReturnValue = Just(nil)
+            .eraseToAnyPublisher()
+
+        mockRegisteredDevicesService.cardWallForReturnValue = Just(cardWallState)
             .eraseToAnyPublisher()
 
         await store.send(.showCardWall(cardWallState)) { state in
@@ -152,12 +147,11 @@ final class RegisteredDevicesDomainTests: XCTestCase {
     func testLoadDevicesAuthenticationErrorShows() async {
         let store = testStore(for: .init(profileId: testProfileId))
 
-        mockRegisteredDevicesService
-            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
+        mockRegisteredDevicesService.registeredDevicesForReturnValue =
             Fail(error: RegisteredDevicesServiceError.missingToken)
                 .eraseToAnyPublisher()
 
-        mockRegisteredDevicesService.deviceIdForProfileIdUUIDAnyPublisherStringNeverReturnValue = Just(nil)
+        mockRegisteredDevicesService.deviceIdForReturnValue = Just(nil)
             .eraseToAnyPublisher()
 
         await store.send(.loadDevices) { state in
@@ -184,14 +178,12 @@ final class RegisteredDevicesDomainTests: XCTestCase {
 
         let deviceId = "KEY234567890"
 
-        mockRegisteredDevicesService
-            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorReturnValue =
+        mockRegisteredDevicesService.deleteDeviceOfReturnValue =
             Just(true)
                 .setFailureType(to: RegisteredDevicesServiceError.self)
                 .eraseToAnyPublisher()
 
-        mockRegisteredDevicesService
-            .registeredDevicesForProfileIdUUIDAnyPublisherPairingEntriesRegisteredDevicesServiceErrorReturnValue =
+        mockRegisteredDevicesService.registeredDevicesForReturnValue =
             Just(Fixtures.pairingEntriesSetB)
                 .setFailureType(to: RegisteredDevicesServiceError.self)
                 .eraseToAnyPublisher()
@@ -200,8 +192,7 @@ final class RegisteredDevicesDomainTests: XCTestCase {
 
         await testScheduler.run()
 
-        expect(self.mockRegisteredDevicesService
-            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorCalled).to(beTrue())
+        expect(self.mockRegisteredDevicesService.deleteDeviceOfCalled).to(beTrue())
 
         await store.receive(.response(.deleteDeviceReceived(.success(true))))
 
@@ -222,8 +213,7 @@ final class RegisteredDevicesDomainTests: XCTestCase {
 
         let deviceId = "KEY234567890"
 
-        mockRegisteredDevicesService
-            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorReturnValue =
+        mockRegisteredDevicesService.deleteDeviceOfReturnValue =
             Fail(error: RegisteredDevicesServiceError.missingToken)
                 .eraseToAnyPublisher()
 
@@ -231,8 +221,7 @@ final class RegisteredDevicesDomainTests: XCTestCase {
 
         await testScheduler.run()
 
-        expect(self.mockRegisteredDevicesService
-            .deleteDeviceDeviceStringOfProfileIdUUIDAnyPublisherBoolRegisteredDevicesServiceErrorCalled).to(beTrue())
+        expect(self.mockRegisteredDevicesService.deleteDeviceOfCalled).to(beTrue())
 
         await store
             .receive(.response(.deleteDeviceReceived(.failure(RegisteredDevicesServiceError.missingToken)))) { state in

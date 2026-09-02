@@ -1,35 +1,28 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
 import eRpKit
-import eRpResources
-import FeatureEURedeem
-import FeatureHelpers
 import Foundation
 import UIKit
 
 extension PrescriptionDetailDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = chargeItemDetails
         case chargeItem(ChargeItemDomain)
@@ -45,8 +38,6 @@ extension PrescriptionDetailDomain {
         case organization(OrganizationDomain)
         // sourcery: AnalyticsScreen = prescriptionDetail_accidentInfo
         case accidentInfo(AccidentInfoDomain)
-        // sourcery: AnalyticsScreen = prescriptionDetail_teratogenicInfo
-        case teratogenicInfo(TeratogenicInfoDomain)
         // sourcery: AnalyticsScreen = prescriptionDetail_technicalInfo
         case technicalInformations(TechnicalInformationsDomain)
         // sourcery: AnalyticsScreen = alert
@@ -70,8 +61,6 @@ extension PrescriptionDetailDomain {
         case emergencyServiceFeeInfo(EmptyDomain)
         // sourcery: AnalyticsScreen = prescriptionDetail_selfPayerPrescriptionBottomSheet
         case selfPayerInfo(EmptyDomain)
-        // sourcery: AnalyticsScreen = prescriptionDetail_teratogenicInfo
-        case tPrescriptionInfo(EmptyDomain)
         // sourcery: AnalyticsScreen = prescriptionDetail_toast
         @ReducerCaseEphemeral
         case toast(ToastState<Toast>)
@@ -106,7 +95,6 @@ extension PrescriptionDetailDomain {
             case practitioner
             case organization
             case accidentInfo
-            case teratogenicInfo
             case technicalInformations
             case alert
             case sharePrescription
@@ -118,7 +106,6 @@ extension PrescriptionDetailDomain {
             case coPaymentInfo
             case emergencyServiceFeeInfo
             case selfPayerInfo
-            case tPrescriptionInfo
             case toast
             case medicationReminder
             case dosageInstructionsInfo
@@ -149,22 +136,9 @@ struct CoPaymentDomain {
         }
     }
 
-    enum Action: Equatable {
-        case delegate(DelegateAction)
-    }
+    enum Action: Equatable {}
 
-    enum DelegateAction: Equatable {
-        case close
-    }
-
-    var body: some ReducerOf<Self> {
-        Reduce { _, action in
-            switch action {
-            case .delegate:
-                return .none
-            }
-        }
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -185,22 +159,9 @@ struct SubstitutionInfoDomain {
         }
     }
 
-    enum Action: Equatable {
-        case delegate(DelegateAction)
-    }
+    enum Action: Equatable {}
 
-    enum DelegateAction: Equatable {
-        case close
-    }
-
-    var body: some ReducerOf<Self> {
-        Reduce { _, action in
-            switch action {
-            case .delegate:
-                return .none
-            }
-        }
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -213,7 +174,7 @@ struct PrescriptionDosageInstructionsDomain {
         init(dosageInstructions: String?) {
             title = L10n.prscDtlTxtDosageInstructions.text
 
-            guard let dosageInstructions, !dosageInstructions.isEmpty else {
+            guard let dosageInstructions = dosageInstructions, !dosageInstructions.isEmpty else {
                 description = L10n.prscDtlTxtMissingDosageInstructions.text
                 return
             }
@@ -232,22 +193,9 @@ struct PrescriptionDosageInstructionsDomain {
         }
     }
 
-    enum Action: Equatable {
-        case delegate(DelegateAction)
-    }
+    enum Action: Equatable {}
 
-    enum DelegateAction: Equatable {
-        case close
-    }
-
-    var body: some ReducerOf<Self> {
-        Reduce { _, action in
-            switch action {
-            case .delegate:
-                return .none
-            }
-        }
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -261,22 +209,9 @@ struct PrescriptionValidityDomain {
         let isMVO: Bool
     }
 
-    enum Action: Equatable {
-        case delegate(DelegateAction)
-    }
+    enum Action: Equatable {}
 
-    enum DelegateAction: Equatable {
-        case close
-    }
-
-    var body: some ReducerOf<Self> {
-        Reduce { _, action in
-            switch action {
-            case .delegate:
-                return .none
-            }
-        }
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -285,37 +220,11 @@ struct TechnicalInformationsDomain {
     struct State: Equatable {
         let taskId: String
         let accessCode: String?
-
-        init(taskId: String, accessCode: String?) {
-            self.taskId = taskId
-
-            if let accessCode {
-                let softBreak = "\u{200B}"
-                var result = ""
-                var currentIndex = accessCode.startIndex
-
-                while currentIndex < accessCode.endIndex {
-                    let nextIndex = accessCode
-                        .index(currentIndex, offsetBy: 4, limitedBy: accessCode.endIndex) ?? accessCode.endIndex
-                    result.append(contentsOf: accessCode[currentIndex ..< nextIndex])
-                    if nextIndex < accessCode.endIndex {
-                        result.append(softBreak)
-                    }
-                    currentIndex = nextIndex
-                }
-
-                self.accessCode = result
-            } else {
-                self.accessCode = nil
-            }
-        }
     }
 
     enum Action: Equatable {}
 
-    var body: some ReducerOf<Self> {
-        EmptyReducer()
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -327,9 +236,7 @@ struct PatientDomain {
 
     enum Action: Equatable {}
 
-    var body: some ReducerOf<Self> {
-        EmptyReducer()
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -341,9 +248,7 @@ struct PractitionerDomain {
 
     enum Action: Equatable {}
 
-    var body: some ReducerOf<Self> {
-        EmptyReducer()
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -355,9 +260,7 @@ struct OrganizationDomain {
 
     enum Action: Equatable {}
 
-    var body: some ReducerOf<Self> {
-        EmptyReducer()
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
 
 @Reducer
@@ -369,24 +272,5 @@ struct AccidentInfoDomain {
 
     enum Action: Equatable {}
 
-    var body: some ReducerOf<Self> {
-        EmptyReducer()
-    }
+    var body: some ReducerOf<Self> { EmptyReducer() }
 }
-
-@Reducer
-struct TeratogenicInfoDomain {
-    @ObservableState
-    struct State: Equatable {
-        let teratogenicInfo: TeratogenicRelatedInformation
-    }
-
-    enum Action: Equatable {}
-
-    var body: some ReducerOf<Self> {
-        EmptyReducer()
-    }
-}
-
-extension PrescriptionDetailDomain.Destination.State: Equatable {}
-extension PrescriptionDetailDomain.Destination.Action: Equatable {}

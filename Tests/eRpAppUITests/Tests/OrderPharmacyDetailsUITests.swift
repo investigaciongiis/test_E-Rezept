@@ -1,35 +1,31 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
 import Nimble
 import XCTest
 
-@MainActor
 class OrderPharmacyDetailsUITests: XCTestCase {
     var app: XCUIApplication!
 
-    override func setUp() async throws {
-        try await super.setUp()
+    @MainActor
+    override func setUp() {
+        super.setUp()
 
         app = XCUIApplication()
 
@@ -46,23 +42,14 @@ class OrderPharmacyDetailsUITests: XCTestCase {
         _ = app.wait(for: .runningForeground, timeout: 10.0)
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-        // swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 
     @MainActor
-    func testPharmacyDetails() async {
-        let bridge = UITestBridgeClient()
+    func testPharmacyDetails() {
         let pharmacyName = "Schloss Apotheke"
         let tabBar = TabBarScreen(app: app)
-
-        // Prefill local Pharmacy by adding favorites
-        let pharmacySearch = tabBar.tapPharmacySearchTab()
-        let details = pharmacySearch.pharmacyDetailsForPharmacy(pharmacyName)
-        details.tapFavorite()
-        details.tapBackButton()
-
         let orderView = tabBar.tapOrderTab()
 
         let orderDetailsView = orderView.tapOrderDetailsForPharmacyNamed(pharmacyName)
@@ -75,23 +62,6 @@ class OrderPharmacyDetailsUITests: XCTestCase {
         pharmacyDetails.expandSheet()
 
         expect(pharmacyDetails.contactSectionHeader().exists).to(beTrue())
-
-        pharmacyDetails.tapClose()
-
-        await bridge.sendMessage(.scenarioStep(1))
-
-        let pharmacyDetails2 = orderDetailsView.tapOpenPharmacyDetails()
-
-        expect(pharmacyDetails2.buttonForContact(.mail).exists).to(beTrue())
-        expect(pharmacyDetails2.buttonForContact(.map).exists).to(beTrue())
-
-        pharmacyDetails.tapClose()
-
-        await bridge.sendMessage(.scenarioStep(2))
-
-        let pharmacyDetails3 = orderDetailsView.tapOpenPharmacyDetails()
-
-        expect(pharmacyDetails3.buttonForContact(.map).exists).to(beTrue())
 
         pharmacyDetails.tapClose()
     }

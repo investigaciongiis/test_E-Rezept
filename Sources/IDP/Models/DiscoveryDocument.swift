@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Foundation
@@ -28,46 +24,90 @@ public protocol IDPEndpoint {
     /// Endpoint URL
     var url: URL { get }
     /// Certificate that can validate responses from `url`
-    var cert: IDPX509 { get }
+    var cert: X509 { get }
+}
+
+extension BrainpoolP256r1.KeyExchange.PublicKey: @retroactive
+Equatable {
+    public static func ==(lhs: BrainpoolP256r1.KeyExchange.PublicKey,
+                          rhs: BrainpoolP256r1.KeyExchange.PublicKey) -> Bool {
+        guard let lhsValue = try? lhs.rawValue(),
+              let rhsValue = try? rhs.rawValue() else {
+            return false
+        }
+        return lhsValue == rhsValue
+    }
 }
 
 /// IDP Discovery document
-public struct DiscoveryDocument {
-    /// The date on which this discovery document was created/fetched
-    public let createdOn: Date
-    /// The raw JWT backing this discovery document
-    public let backing: JWT
-    /// The decoded payload of the discovery document JWT
-    public let payload: DiscoveryDocumentPayload
-    /// The IDP X.509 certificate used to validate the discovery document
-    public let discKey: IDPX509
-    /// The IDP Authentication endpoint public key, used to derivce the encryption key to encrypt the JWE‘s
-    public let encryptionPublicKey: BrainpoolP256r1.KeyExchange.PublicKey
-    /// The IDP X.509 certificate that is used to check signatures
-    public let signingCert: IDPX509
+public struct DiscoveryDocument: Codable {
+    let createdOn: Date
 
-    /// Creates a new `DiscoveryDocument`
-    /// - Parameters:
-    ///   - createdOn: The date on which this document was created/fetched
-    ///   - backing: The raw JWT backing this document
-    ///   - payload: The decoded payload of the discovery document JWT
-    ///   - discKey: The X.509 certificate used to validate this discovery document
-    ///   - encryptionPublicKey: The public key used to derive the JWE encryption key
-    ///   - signingCert: The X.509 certificate used to verify signatures
-    public init(
-        createdOn: Date,
-        backing: JWT,
-        payload: DiscoveryDocumentPayload,
-        discKey: IDPX509,
-        encryptionPublicKey: BrainpoolP256r1.KeyExchange.PublicKey,
-        signingCert: IDPX509
-    ) {
+    let backing: JWT
+    let payload: DiscoveryDocumentPayload
+    /// The IDP X.509 certificate used to validate the discovery document
+    public let discKey: X509
+    /// The IDP Authentication endpoint public key, used to derivce the encryption key to encrypt the JWE‘s
+    let encryptionPublicKey: BrainpoolP256r1.KeyExchange.PublicKey
+    /// The IDP X.509 certificate that is used to check signatures
+    public let signingCert: X509
+
+    /// Initialize as Decodable
+    ///
+    /// - Parameter decoder: the decoder
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        backing = try container.decode(JWT.self, forKey: .payload)
+        payload = try backing.decodePayload(type: DiscoveryDocumentPayload.self)
+        encryptionPublicKey = try BrainpoolP256r1.KeyExchange
+            .PublicKey(x962: try container.decode(Data.self, forKey: .encryptionPublicKey))
+        signingCert = try X509(der: container.decode(Data.self, forKey: .tokenKey))
+        guard let discHeaderX5C = backing.header.x5c?.first else {
+            throw IDPError.noCertificateFound
+        }
+        discKey = try X509(der: discHeaderX5C)
+        createdOn = try container.decode(Date.self, forKey: .createdOn)
+    }
+
+    /// Encode the DiscoveryDocument according to the Encodable protocol
+    ///
+    /// - Parameter encoder: the encoder
+    /// - Throws:
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(backing, forKey: .payload)
+        try container.encode(encryptionPublicKey.x962Value(), forKey: .encryptionPublicKey)
+        try container.encode(signingCert.derBytes, forKey: .tokenKey)
+        try container.encode(createdOn, forKey: .createdOn)
+    }
+
+    internal init(jwt: JWT, encryptPuks: JWK, signingPuks: JWK, createdOn: Date = Date()) throws {
+        backing = jwt
+        /// Get from every set the first key we encounter and use/set it accordingly
+        guard let signingX5C = signingPuks.x5c?.first else {
+            throw IDPError.noCertificateFound
+        }
+        signingCert = try X509(der: signingX5C)
+
+        if let encryptX5c = encryptPuks.x5c?.first,
+           let certPublicKey = try X509(der: encryptX5c).brainpoolP256r1KeyExchangePublicKey() {
+            encryptionPublicKey = certPublicKey
+        } else {
+            do {
+                guard let pubKeyX962 = encryptPuks.publicKeyX962UncompressedRepresentation() else {
+                    throw IDPError.noCertificateFound
+                }
+                encryptionPublicKey = try BrainpoolP256r1.KeyExchange.PublicKey(x962: pubKeyX962)
+            } catch {
+                throw IDPError.noCertificateFound
+            }
+        }
+        guard let discHeaderX5C = jwt.header.x5c?.first else {
+            throw IDPError.noCertificateFound
+        }
+        discKey = try X509(der: discHeaderX5C)
+        payload = try jwt.decodePayload(type: DiscoveryDocumentPayload.self)
         self.createdOn = createdOn
-        self.backing = backing
-        self.payload = payload
-        self.discKey = discKey
-        self.encryptionPublicKey = encryptionPublicKey
-        self.signingCert = signingCert
     }
 
     /// IDP Authentication endpoint
@@ -85,17 +125,14 @@ public struct DiscoveryDocument {
         Endpoint(url: payload.token.correct(), cert: signingCert)
     }
 
-    /// IDP Pairing endpoint
     public var pairing: IDPEndpoint {
         Endpoint(url: payload.pairing, cert: signingCert)
     }
 
-    /// IDP Authentication endpoint for paired devices
     public var authenticationPaired: IDPEndpoint {
         Endpoint(url: payload.authenticationPair.correct(), cert: signingCert)
     }
 
-    /// IDP KK app directory endpoint
     @available(*, deprecated, renamed: "directoryKKAppsgId", message: "Not allowed anymore by 01.01.2024")
     public var directoryKKApps: IDPEndpoint? {
         guard let url = payload.kkAppList else {
@@ -104,7 +141,6 @@ public struct DiscoveryDocument {
         return Endpoint(url: url.correct(), cert: signingCert)
     }
 
-    /// IDP KK app directory endpoint using gId
     public var directoryKKAppsgId: IDPEndpoint? {
         guard let url = payload.kkAppListgId else {
             return nil
@@ -112,7 +148,6 @@ public struct DiscoveryDocument {
         return Endpoint(url: url.correct(), cert: signingCert)
     }
 
-    /// IDP third-party authentication endpoint, if supported by this IDP
     public var thirdPartyAuth: IDPEndpoint? {
         guard let url = payload.thirdPartyAuth else {
             return nil
@@ -120,7 +155,6 @@ public struct DiscoveryDocument {
         return Endpoint(url: url.correct(), cert: signingCert)
     }
 
-    /// IDP federation authentication endpoint, if supported by this IDP
     public var federationAuth: IDPEndpoint? {
         guard let url = payload.federationAuth else {
             return nil
@@ -139,21 +173,42 @@ public struct DiscoveryDocument {
     }
 }
 
+extension DiscoveryDocument: Equatable {}
+
 extension DiscoveryDocument {
     struct Endpoint: IDPEndpoint {
         let url: URL
-        let cert: IDPX509
+        let cert: X509
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case payload
+        case authKey = "puk_auth"
+        case tokenKey = "puk_token"
+        case encryptionPublicKey
+        case createdOn
     }
 }
 
 extension DiscoveryDocument {
     // [REQ:gemSpec_IDP_Frontend:A_20512#2|5] Validation by expiration date checking + maximum of 24h window
-    /// Check if the discovery document is valid on the given date
-    /// - Parameter date: Date to check validity against
-    /// - Returns: Boolean indicating if the document is valid
-    public func isValid(on date: Date) -> Bool {
+    func isValid(on date: Date) -> Bool {
         date <= expiresOn &&
             date >= createdOn &&
             date <= createdOn.addingTimeInterval(60 * 60 * 24)
+    }
+}
+
+extension URL {
+    func domainReplacingOccurrences(of find: String, with replace: String) -> URL {
+        // swiftlint:disable force_unwrapping
+        var components = URLComponents(url: self, resolvingAgainstBaseURL: true)!
+        components.host = components.host!.replacingOccurrences(of: find, with: replace)
+        return components.url!
+        // swiftlint:enable force_unwrapping
+    }
+
+    func correct() -> URL {
+        domainReplacingOccurrences(of: ".zentral.idp.splitdns.ti-dienste.de", with: ".app.ti-dienste.de")
     }
 }

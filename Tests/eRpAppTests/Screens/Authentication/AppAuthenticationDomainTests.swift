@@ -1,30 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureHelpers
 import Nimble
 import XCTest
 
@@ -43,22 +38,20 @@ final class AppAuthenticationDomainTests: XCTestCase {
         }
     }
 
-    var appSecurityPasswordManager: AppSecurityManagerMock!
-    var userDataStore: UserDataStoreMock!
+    var appSecurityPasswordManager: MockAppSecurityManager!
+    var userDataStore: MockUserDataStore!
 
     override func setUp() {
         super.setUp()
 
-        appSecurityPasswordManager = AppSecurityManagerMock()
-        userDataStore = UserDataStoreMock()
+        appSecurityPasswordManager = MockAppSecurityManager()
+        userDataStore = MockUserDataStore()
     }
 
     private func testStore(for authenticationOption: AppSecurityOption) -> TestStore {
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
         return TestStore(initialState: AppAuthenticationDomain.State()) {
             AppAuthenticationDomain {}
         } withDependencies: { dependencies in
@@ -116,11 +109,9 @@ final class AppAuthenticationDomainTests: XCTestCase {
             didCompleteAuthenticationCalledCount > 0
         }
 
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
 
         let store = TestStore(
             initialState: AppAuthenticationDomain.State(
@@ -132,7 +123,7 @@ final class AppAuthenticationDomainTests: XCTestCase {
         ) {
             AppAuthenticationDomain { didCompleteAuthenticationCalledCount += 1 }
         } withDependencies: { dependencies in
-            dependencies.userDataStore = UserDataStoreMock()
+            dependencies.userDataStore = MockUserDataStore()
             dependencies.schedulers = Schedulers(
                 uiScheduler: testScheduler.eraseToAnyScheduler()
             )
@@ -179,11 +170,9 @@ final class AppAuthenticationDomainTests: XCTestCase {
             didCompleteAuthenticationCalledCount > 0
         }
 
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
 
         let store = TestStore(
             initialState: AppAuthenticationDomain.State(
@@ -192,7 +181,7 @@ final class AppAuthenticationDomainTests: XCTestCase {
         ) {
             AppAuthenticationDomain { didCompleteAuthenticationCalledCount += 1 }
         } withDependencies: { dependencies in
-            dependencies.userDataStore = UserDataStoreMock()
+            dependencies.userDataStore = MockUserDataStore()
             dependencies.schedulers = Schedulers(
                 uiScheduler: testScheduler.eraseToAnyScheduler()
             )

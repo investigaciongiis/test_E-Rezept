@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpStyleKit
@@ -47,23 +43,23 @@ struct ProfileCell: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(profile.name)
-                    .foregroundColor(Colors.systemLabel)
+                    .foregroundColor(Color(.label))
                     .font(.body)
 
                 if let date = profile.lastSuccessfulSync {
                     RelativeTimerView(date: date)
-                        .foregroundColor(Colors.systemLabelSecondary)
+                        .foregroundColor(Color(.secondaryLabel))
                         .font(.caption)
                 } else {
                     Text(L10n.ctlTxtProfileCellNotConnected)
-                        .foregroundColor(Colors.systemLabelSecondary)
+                        .foregroundColor(Color(.secondaryLabel))
                         .font(.caption)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
 
             if showAsNavigationLink {
                 Image(systemName: SFSymbolName.chevronForward)
-                    .foregroundColor(Colors.systemLabelSecondary)
+                    .foregroundColor(Color(.tertiaryLabel))
                     .font(.body.weight(.semibold))
             }
         }
@@ -79,7 +75,7 @@ struct ProfileCell: View {
                     .fill(Color(.systemBackground))
                     .frame(width: 12, height: 12)
                     .overlay(Circle()
-                        .fill(status == .connected ? Colors.secondary600 : Colors.red700)
+                        .fill(status == .connected ? Colors.secondary600 : Colors.red600)
                         .frame(width: 8, height: 8))
             }
         }

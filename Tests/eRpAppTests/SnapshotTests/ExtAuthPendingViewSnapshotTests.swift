@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -25,7 +21,6 @@ import CombineSchedulers
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureHelpers
 import IDP
 import SnapshotTesting
 import SwiftUI
@@ -35,12 +30,14 @@ final class ExtAuthPendingViewSnapshotTests: ERPSnapshotTestCase {
     let networkScheduler = DispatchQueue.immediate
     let uiScheduler = DispatchQueue.immediate
 
-    lazy var schedulers: Schedulers = .init(
-        uiScheduler: uiScheduler.eraseToAnyScheduler(),
-        networkScheduler: networkScheduler.eraseToAnyScheduler(),
-        ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
-        computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
-    )
+    lazy var schedulers: Schedulers = {
+        Schedulers(
+            uiScheduler: uiScheduler.eraseToAnyScheduler(),
+            networkScheduler: networkScheduler.eraseToAnyScheduler(),
+            ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
+            computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
+        )
+    }()
 
     func testExtAuthPendingView_WithSuccess() {
         let mockUserSession = MockUserSession()
@@ -48,7 +45,7 @@ final class ExtAuthPendingViewSnapshotTests: ERPSnapshotTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         mockUserSession.mockUserDataStore.underlyingSelectedProfileId = Just(UUID()).eraseToAnyPublisher()
-        mockUserSession.mockProfileDataStore.listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue =
+        mockUserSession.mockProfileDataStore.listAllProfilesReturnValue =
             Just([])
                 .setFailureType(to: LocalStoreError.self)
                 .eraseToAnyPublisher()
@@ -75,7 +72,7 @@ final class ExtAuthPendingViewSnapshotTests: ERPSnapshotTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         mockUserSession.mockUserDataStore.underlyingSelectedProfileId = Just(UUID()).eraseToAnyPublisher()
-        mockUserSession.mockProfileDataStore.listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue =
+        mockUserSession.mockProfileDataStore.listAllProfilesReturnValue =
             Just([])
                 .setFailureType(to: LocalStoreError.self)
                 .eraseToAnyPublisher()

@@ -1,78 +1,61 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Foundation
 import HTTPClient
 
-@CodedError("560")
+// sourcery: CodedError = "560"
 public enum TrustStoreError: Swift.Error {
+    // sourcery: errorCode = "01"
     /// In case of HTTP/Connection error
-    @ErrorCode("01")
     case network(error: HTTPClientError)
+    // sourcery: errorCode = "02"
     /// When failed to extract a certificate from the CertList
-    @ErrorCode("02")
     case noCertificateFound
+    // sourcery: errorCode = "03"
     /// When one (or more) OCSP response(s) can not be parsed or do not meet expiry conditions
-    @ErrorCode("03")
     case invalidOCSPResponse
+    // sourcery: errorCode = "04"
     /// When one (or more) end entity certificate cannot be status verified by given OCSP responses
-    @ErrorCode("04")
     case eeCertificateOCSPStatusVerification
+    // sourcery: errorCode = "05"
     /// Other error cases
-    @ErrorCode("05")
     case unspecified(error: Swift.Error)
+    // sourcery: errorCode = "06"
     /// Internal error
-    @ErrorCode("06")
     case `internal`(error: InternalError)
-    /// When no valid VAU certificate can be provided by the system at the moment
-    @ErrorCode("07")
-    case noValidVauCertificateAvailable
-    /// When a certificate is of unexpected (e.g. not parsable) format
-    @ErrorCode("08")
-    case malformedCertificate
 
-    @CodedError("561")
+    // sourcery: CodedError = "561"
     public enum InternalError: Swift.Error {
-        @ErrorCode("01")
+        // sourcery: errorCode = 01
         case loadOCSPCheckedTrustStoreUnexpectedNil
-        @ErrorCode("02")
+        // sourcery: errorCode = 02
         case loadCertListFromServerUnexpectedNil
-        @ErrorCode("03")
+        // sourcery: errorCode = 03
         case loadOCSPListFromServerUnexpectedNil
-        @ErrorCode("04")
+        // sourcery: errorCode = 04
         case trustStoreCertListUnexpectedNil
-        @ErrorCode("05")
+        // sourcery: errorCode = 05
         case loadOCSPResponsesUnexpectedNil
-        @ErrorCode("06")
+        // sourcery: errorCode = 06
         case missingSignerForEECertificate
-        @ErrorCode("07")
+        // sourcery: errorCode = 07
         case notImplemented
-        @ErrorCode("08")
-        case trustAnchorUnexpectedFormat
-        @ErrorCode("09")
-        case vauCertificateUnexpectedFormat
-        @ErrorCode("10")
-        case trustStoreCreationFailed
     }
 }
 
@@ -112,8 +95,6 @@ extension TrustStoreError: Equatable, LocalizedError {
         case .eeCertificateOCSPStatusVerification: return "TrustStoreError.eeCertificateOCSPStatusVerification"
         case let .unspecified(error: error): return error.localizedDescription
         case let .internal(error: error): return error.localizedDescription
-        case .noValidVauCertificateAvailable: return "TrustStoreError.noValidVauCertificateAvailable"
-        case .malformedCertificate: return "TrustStoreError.malformedCertificate"
         }
     }
 }

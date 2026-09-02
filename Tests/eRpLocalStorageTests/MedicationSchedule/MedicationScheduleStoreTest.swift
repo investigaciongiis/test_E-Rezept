@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -27,7 +23,6 @@ import eRpKit
 @testable import eRpLocalStorage
 import Foundation
 import Nimble
-import Sharing
 import TestUtils
 import XCTest
 
@@ -55,37 +50,21 @@ final class MedicationScheduleStoreTest: XCTestCase {
 
     private func loadFactory() -> CoreDataControllerFactory {
         guard let factory = coreDataFactory else {
-            return .init(databaseUrl: { self.databaseFile }) {
-                @Shared(.coreDataController) var coreDataController
+            #if os(macOS)
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: FileProtectionType(rawValue: "none")
+            )
 
-                let fileProtection: FileProtectionType = {
-                    #if os(macOS)
-                    return FileProtectionType(rawValue: "none")
-                    #else
-                    return .completeUnlessOpen
-                    #endif
-                }()
-
-                if let controller = coreDataController {
-                    return controller
-                }
-                guard Thread.isMainThread else {
-                    return try DispatchQueue.main.sync {
-                        try loadCoreDataController()
-                    }
-                }
-                func loadCoreDataController() throws -> CoreDataController {
-                    let controller = try CoreDataController(
-                        url: self.databaseFile,
-                        fileProtection: fileProtection
-                    )
-                    $coreDataController.withLock { $0 = controller }
-                    return controller
-                }
-                return try loadCoreDataController()
-            }
+            #else
+            let factory = LocalStoreFactory(
+                url: databaseFile,
+                fileProtection: .completeUnlessOpen
+            )
+            #endif
+            coreDataFactory = factory
+            return factory
         }
-
         return factory
     }
 
@@ -97,8 +76,9 @@ final class MedicationScheduleStoreTest: XCTestCase {
         )
     }
 
-    private func loadErxTaskCoreDataStore() -> ErxTaskCoreDataStore {
+    private func loadErxTaskCoreDataStore(for profileId: UUID? = nil) -> ErxTaskCoreDataStore {
         DefaultErxTaskCoreDataStore(
+            profileId: profileId,
             coreDataControllerFactory: loadFactory(),
             foregroundQueue: .immediate,
             backgroundQueue: .main,
@@ -122,15 +102,15 @@ final class MedicationScheduleStoreTest: XCTestCase {
         let saveResult = try sut.save(medicationSchedules: initialSchedules)
         expect(saveResult).to(equal(initialSchedules))
 
-        let updatedTask1Schedule = try MedicationSchedule(
-            start: XCTUnwrap("2021-06-11T10:55:06+02:00".date),
-            end: XCTUnwrap("2021-07-10T10:55:06+02:00".date),
+        let updatedTask1Schedule = MedicationSchedule(
+            start: "2021-06-11T10:55:06+02:00".date!,
+            end: "2021-07-10T10:55:06+02:00".date!,
             title: "Test Schedule updated",
             dosageInstructions: "Two times a day",
             taskId: task1Schedule.taskId,
             isActive: true,
             entries: [
-                XCTUnwrap(task1Schedule.entries.first),
+                task1Schedule.entries.first!,
                 .init(hourComponent: 16, minuteComponent: 50, dosageForm: "Dosis", amount: "2"),
             ]
         )
@@ -184,7 +164,7 @@ final class MedicationScheduleStoreTest: XCTestCase {
         let saveResult = try sut.save(medicationSchedules: scheduleInStore)
         expect(saveResult).to(equal(scheduleInStore))
 
-        let entryId = try XCTUnwrap(task.medicationSchedule?.entries.first?.id)
+        let entryId = task.medicationSchedule!.entries.first!.id
         let resultByEntityId = try sut.fetch(byEntryId: entryId, dateProvider: { Date() })
 
         let expectedResult = MedicationScheduleFetchByEntryIdResponse(

@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 #if ENABLE_DEBUG_VIEW
@@ -156,7 +152,7 @@ struct URLTester: View {
             request.httpMethod = method.rawValue
             let task = URLSession.shared.dataTask(with: request) { [weak self] _, urlresponse, error in
                 DispatchQueue.main.async {
-                    guard let self else { return }
+                    guard let self = self else { return }
 
                     if let urlresponse = urlresponse as? HTTPURLResponse {
                         self.httpStatusCode = urlresponse.statusCode
@@ -211,7 +207,7 @@ struct URLTester: View {
             } else {
                 Text("Ungültige URL, bitte URLEncoden sie alle Sonderzeichen abseits der vorgegebenen Platzhalter.")
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundColor(Colors.red700)
+                    .foregroundColor(Colors.red600)
                     .font(.footnote)
             }
 
@@ -242,10 +238,10 @@ struct URLTester: View {
             viewModel.url = url
             viewModel.headers = headers
         }
-        .onChange(of: url) { _, newValue in
+        .onChange(of: url) { newValue in
             viewModel.url = newValue
         }
-        .onChange(of: headers) { _, newValue in
+        .onChange(of: headers) { newValue in
             viewModel.headers = newValue
         }
     }

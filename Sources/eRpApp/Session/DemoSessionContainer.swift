@@ -1,46 +1,37 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import BfArM
+import AVS
 import Combine
-import Dependencies
 import eRpKit
 import eRpLocalStorage
-import FeatureCardWall
-import FeatureHelpers
 import FHIRClient
-import FHIRVZD
 import Foundation
 import HTTPClient
-import HTTPClientLive
 import IDP
 import Pharmacy
 import TrustStore
 import VAUClient
 
 class DemoSessionContainer: UserSession {
-    init(schedulers: Schedulers,
-         extAuthRequestStorage: ExtAuthRequestStorage = DummyExtAuthRequestStorage(),
-         profileDataStore: ProfileDataStore = DemoProfileDataStore()) {
+    internal init(schedulers: Schedulers,
+                  extAuthRequestStorage: ExtAuthRequestStorage = DummyExtAuthRequestStorage(),
+                  profileDataStore: ProfileDataStore = DemoProfileDataStore()) {
         self.schedulers = schedulers
         self.extAuthRequestStorage = extAuthRequestStorage
         self.profileDataStore = profileDataStore
@@ -48,40 +39,58 @@ class DemoSessionContainer: UserSession {
 
     private lazy var memoryStorage = MemoryStorage()
 
+    var isDemoMode: Bool {
+        true
+    }
+
     private let schedulers: Schedulers
 
-    lazy var idpSession: IDPSession = DemoIDPSession(storage: secureUserStore)
+    lazy var idpSession: IDPSession = {
+        DemoIDPSession(storage: secureUserStore)
+    }()
 
     var extAuthRequestStorage: ExtAuthRequestStorage
 
     var profileDataStore: ProfileDataStore
 
-    lazy var pairingIdpSession: IDPSession = DemoIDPSession(storage: secureUserStore)
+    lazy var pairingIdpSession: IDPSession = {
+        DemoIDPSession(storage: secureUserStore)
+    }()
 
-    lazy var secureUserStore: SecureUserDataStore = memoryStorage
+    lazy var secureUserStore: SecureUserDataStore = {
+        memoryStorage
+    }()
 
-    lazy var vauStorage: VAUStorage = DemoVAUStorage()
+    lazy var vauStorage: VAUStorage = {
+        DemoVAUStorage()
+    }()
 
-    lazy var localUserStore: UserDataStore = DemoUserDefaultsStore()
+    lazy var localUserStore: UserDataStore = {
+        DemoUserDefaultsStore()
+    }()
 
-    lazy var shipmentInfoDataStore: ShipmentInfoDataStore = DemoShipmentInfoStore()
+    lazy var shipmentInfoDataStore: ShipmentInfoDataStore = {
+        DemoShipmentInfoStore()
+    }()
 
-    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = idpSession.isLoggedIn
-        .mapError { UserSessionError.idpError(error: $0) }
-        .eraseToAnyPublisher()
+    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = {
+        idpSession.isLoggedIn
+            .mapError { UserSessionError.idpError(error: $0) }
+            .eraseToAnyPublisher()
+    }()
 
-    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = DefaultNFCResetRetryCounterController()
+    lazy var nfcSessionProvider: NFCSignatureProvider = {
+        DemoSignatureProvider()
+    }()
 
-    lazy var bfarmSession: BfArMSession = {
-        let appConfiguration = UserDefaultsStore().appConfiguration
-
-        return BfArMSession(fetchBfArMInfo: { _ in nil }, fetchCachedImage: { _ in nil })
+    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = {
+        DefaultNFCResetRetryCounterController()
     }()
 
     lazy var pharmacyRepository: PharmacyRepository = {
         let appConfiguration = UserDefaultsStore().appConfiguration
         let interceptors: [Interceptor] = [
-            AdditionalHeaderInterceptor(additionalHeader: appConfiguration.fhirVzdAdditionalHeader),
+            AdditionalHeaderInterceptor(additionalHeader: appConfiguration.apoVzdAdditionalHeader),
             LoggingInterceptor(log: .body), // Logging interceptor (DEBUG ONLY)
             DebugLiveLogger.LogInterceptor(),
         ]
@@ -91,29 +100,53 @@ class DemoSessionContainer: UserSession {
             urlSessionConfiguration: .ephemeral,
             interceptors: interceptors
         )
-
-        @Dependency(\.fhirVZDSession) var fhirVZDSession: FHIRVZDSession
-
-        return PharmacyRepository.dummyPharmacyRepository(cloud: HealthcareServiceFHIRDataSource(
-            fhirClient: FHIRClient(
-                server: appConfiguration.fhirVzd,
-                httpClient: client
+        return DemoPharmacyRepository(
+            cloud: PharmacyFHIRDataSource(
+                fhirClient: FHIRClient(
+                    server: appConfiguration.apoVzd,
+                    httpClient: client
+                )
             ),
-            session: fhirVZDSession
-        ))
+            requestDelayInSeconds: 0.9,
+            schedulers: Schedulers()
+        )
     }()
 
     var updateChecker = UpdateChecker {
         false
     }
 
-    lazy var ordersRepository: OrdersRepository = DemoOrdersRepository()
+    private lazy var demoErxTaskRepository: ErxTaskRepository = {
+        DemoErxTaskRepository(
+            requestDelayInSeconds: 0.9,
+            schedulers: schedulers,
+            secureUserStore: secureUserStore
+        )
+    }()
 
-    lazy var trustStoreSession: TrustStoreSession = DemoTrustStoreSession()
+    lazy var erxTaskRepository: ErxTaskRepository = {
+        demoErxTaskRepository
+    }()
 
-    lazy var appSecurityManager: AppSecurityManager = DemoAppSecurityPasswordManager()
+    lazy var entireErxTaskRepository: eRpKit.ErxTaskRepository = {
+        demoErxTaskRepository
+    }()
 
-    private(set) lazy var deviceSecurityManager: DeviceSecurityManager = DemoDeviceSecurityManager()
+    lazy var ordersRepository: OrdersRepository = {
+        DemoOrdersRepository()
+    }()
+
+    lazy var trustStoreSession: TrustStoreSession = {
+        DemoTrustStoreSession()
+    }()
+
+    lazy var appSecurityManager: AppSecurityManager = {
+        DemoAppSecurityPasswordManager()
+    }()
+
+    private(set) lazy var deviceSecurityManager: DeviceSecurityManager = {
+        DemoDeviceSecurityManager()
+    }()
 
     let profileId = DemoProfileDataStore.anna.id
 
@@ -129,27 +162,46 @@ class DemoSessionContainer: UserSession {
 
     lazy var profileSecureDataWiper: ProfileSecureDataWiper = DemoProfileSecureDataWiper()
 
-    lazy var avsTransactionDataStore: AVSTransactionDataStore = DemoAVSTransactionDataStore()
+    lazy var avsSession: AVSSession = {
+        DemoAVSSession()
+    }()
 
-    private lazy var demoPrescriptionRepositoryWithActivity: DefaultPrescriptionRepository = .init(
-        loginHandler: idpSessionLoginHandler
-    )
+    lazy var avsTransactionDataStore: AVSTransactionDataStore = {
+        DemoAVSTransactionDataStore()
+    }()
 
-    lazy var prescriptionRepository: PrescriptionRepository = demoPrescriptionRepositoryWithActivity
+    private lazy var demoPrescriptionRepositoryWithActivity: DefaultPrescriptionRepository = {
+        DefaultPrescriptionRepository(
+            loginHandler: idpSessionLoginHandler,
+            erxTaskRepository: self.erxTaskRepository
+        )
+    }()
 
-    lazy var activityIndicating: ActivityIndicating = demoPrescriptionRepositoryWithActivity
+    lazy var prescriptionRepository: PrescriptionRepository = {
+        demoPrescriptionRepositoryWithActivity
+    }()
 
-    lazy var idpSessionLoginHandler: LoginHandler = DefaultLoginHandler(
-        idpSession: idpSession,
-        signatureProvider: secureEnclaveSignatureProvider
-    )
+    lazy var activityIndicating: ActivityIndicating = {
+        demoPrescriptionRepositoryWithActivity
+    }()
 
-    lazy var pairingIdpSessionLoginHandler: LoginHandler = DefaultLoginHandler(
-        idpSession: pairingIdpSession,
-        signatureProvider: secureEnclaveSignatureProvider
-    )
+    lazy var idpSessionLoginHandler: LoginHandler = {
+        DefaultLoginHandler(
+            idpSession: idpSession,
+            signatureProvider: secureEnclaveSignatureProvider
+        )
+    }()
 
-    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = DummySecureEnclaveSignatureProvider()
+    lazy var pairingIdpSessionLoginHandler: LoginHandler = {
+        DefaultLoginHandler(
+            idpSession: pairingIdpSession,
+            signatureProvider: secureEnclaveSignatureProvider
+        )
+    }()
+
+    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = {
+        DummySecureEnclaveSignatureProvider()
+    }()
 }
 
 class DummySessionContainer: DemoSessionContainer {

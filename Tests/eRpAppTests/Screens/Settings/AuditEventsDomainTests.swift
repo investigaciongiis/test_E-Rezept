@@ -1,37 +1,32 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureHelpers
 import IDP
 import Nimble
 import XCTest
 
 @MainActor
 final class AuditEventsDomainTests: XCTestCase {
-    let mockAuditEventsService = AuditEventsServiceMock()
+    let mockAuditEventsService = MockAuditEventsService()
     let fhirDateFormatter = FHIRDateFormatter.shared
     let uiDateFormatter = UIDateFormatter(fhirDateFormatter: FHIRDateFormatter.shared)
 
@@ -56,10 +51,8 @@ final class AuditEventsDomainTests: XCTestCase {
     func testLoadingEmptyAuditEventList() async {
         let sut = testStore()
         let expectedResponse = PagedContent(content: [ErxAuditEvent](), next: nil)
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(expectedResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Just(expectedResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
 
         await sut.send(.task)
         await sut.receive(.response(.taskReceived(.success(expectedResponse)))) {
@@ -70,9 +63,7 @@ final class AuditEventsDomainTests: XCTestCase {
     func testLoadingAuditEventWhenNotLoggedIn() async {
         let sut = testStore()
         let expectedResponse = AuditEventsServiceError.missingAuthentication
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Fail(error: expectedResponse).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Fail(error: expectedResponse).eraseToAnyPublisher()
 
         await sut.send(.task)
         await sut.receive(.response(.taskReceived(.failure(expectedResponse)))) {
@@ -90,10 +81,8 @@ final class AuditEventsDomainTests: XCTestCase {
 
         // emulate login and close card wall
         let expectedResponse = PagedContent(content: ErxAuditEvent.Fixtures.auditEvents, next: nil)
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(expectedResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Just(expectedResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
         await sut.send(.destination(.presented(.cardWall(.delegate(.close))))) {
             $0.destination = nil
         }
@@ -116,10 +105,8 @@ final class AuditEventsDomainTests: XCTestCase {
             content: ErxAuditEvent.Fixtures.auditEvents,
             next: URL(string: "https://next.link")
         )
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(firstResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Just(firstResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
         let secondPageResponse = PagedContent(
             content: [ErxAuditEvent(identifier: "105",
                                     locale: "de",
@@ -127,10 +114,8 @@ final class AuditEventsDomainTests: XCTestCase {
                                     timestamp: "2021-04-11T12:45:34.123473321+00:00",
                                     taskId: "7390f983-1e67-11b2-8555-63bf44e43fb8")], next: nil
         )
-        mockAuditEventsService
-            .loadNextAuditEventsForProfileIdUUIDUrlURLLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(secondPageResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadNextAuditEventsForUrlLocaleReturnValue = Just(secondPageResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
 
         await sut.send(.task)
         await sut.receive(.response(.taskReceived(.success(firstResponse)))) { state in

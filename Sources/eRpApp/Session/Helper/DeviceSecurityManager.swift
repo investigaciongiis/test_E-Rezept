@@ -1,31 +1,25 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import Dependencies
 import eRpKit
-import FeatureHelpers
 import LocalAuthentication
-import Sharing
 
 protocol DeviceSecurityManager {
     /// If true, a dialog should be presented with a system warning
@@ -49,19 +43,29 @@ enum DeviceSecurityWarningType {
     case none
 }
 
+@objc
+protocol SecurityPolicyEvaluator: NSObjectProtocol {
+    @objc
+    func canEvaluatePolicy(_ policy: LAPolicy, error: NSErrorPointer) -> Bool
+}
+
+extension LAContext: SecurityPolicyEvaluator {}
+
 struct DefaultDeviceSecurityManager: DeviceSecurityManager {
     let passwordIdentifier = "de.gematik.DefaultDeviceSecurityManager"
 
-    @Dependency(\.securityPolicyEvaluator) var securityPolicyEvaluator: SecurityPolicyEvaluator
+    private let laContext: SecurityPolicyEvaluator
     private let deviceSecurityManagerSessionStorage: DeviceSecurityManagerSessionStorage
     private var userDataStore: UserDataStore
 
     init(
         userDataStore: UserDataStore,
-        sessionStorage: DeviceSecurityManagerSessionStorage = DefaultDeviceSecurityManagerSessionStorage()
+        sessionStorage: DeviceSecurityManagerSessionStorage = DefaultDeviceSecurityManagerSessionStorage(),
+        laContext: SecurityPolicyEvaluator = LAContext()
     ) {
         deviceSecurityManagerSessionStorage = sessionStorage
         self.userDataStore = userDataStore
+        self.laContext = laContext
     }
 
     // [REQ:BSI-eRp-ePA:O.Arch_6#3,O.Resi_2#3,O.Plat_1#3] calculate system risk for jailbreak and missing device pin
@@ -77,8 +81,8 @@ struct DefaultDeviceSecurityManager: DeviceSecurityManager {
     // [REQ:BSI-eRp-ePA:O.Plat_1#4] Missing system pin detection
     var informMissingSystemPin: AnyPublisher<Bool, Never> {
         var error: NSError?
-        let localAuthenticationEvaluationSuccess = securityPolicyEvaluator.canEvaluatePolicy(
-            policy: .deviceOwnerAuthentication,
+        let localAuthenticationEvaluationSuccess = laContext.canEvaluatePolicy(
+            .deviceOwnerAuthentication,
             error: &error
         )
         return Just(localAuthenticationEvaluationSuccess)
@@ -96,7 +100,7 @@ struct DefaultDeviceSecurityManager: DeviceSecurityManager {
         deviceSecurityManagerSessionStorage
             .ignoreDeviceNotSecuredWarningForSession
             .map { (ignore: Bool?) -> Bool in
-                if let ignore {
+                if let ignore = ignore {
                     return ignore
                 } else {
                     return false
@@ -224,17 +228,9 @@ private let filesToCheck = [
 // MARK: TCA Dependency
 
 struct DeviceSecurityManagerDependency: DependencyKey {
-    static var liveValue: DeviceSecurityManager = {
-        @Shared(.isDemoMode) var isDemoMode: Bool
-
-        if isDemoMode {
-            return DemoDeviceSecurityManager()
-        } else {
-            return DefaultDeviceSecurityManager(
-                userDataStore: UserDataStoreDependency.liveValue
-            )
-        }
-    }()
+    static var liveValue: DeviceSecurityManager = DefaultDeviceSecurityManager(
+        userDataStore: UserDataStoreDependency.liveValue
+    )
 
     static var previewValue: DeviceSecurityManager = DummyDeviceSecurityManager()
 

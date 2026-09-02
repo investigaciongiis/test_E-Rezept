@@ -1,33 +1,26 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Combine
 import Dependencies
 import eRpKit
 import eRpLocalStorage
-import FeatureHelpers
 import Foundation
-import Settings
 
 protocol UserSessionProvider {
     func userSession(for uuid: UUID) -> UserSession
@@ -37,9 +30,9 @@ protocol UserSessionProviderControl: UserSessionProvider {
     func resetSession(with config: AppConfiguration)
 }
 
-@CodedError("007")
+// sourcery: CodedError = "007"
 enum UserSessionProviderError: Error {
-    @ErrorCode("01")
+    // sourcery: errorCode = "01"
     case unavailable
 }
 
@@ -56,13 +49,16 @@ class DefaultUserSessionProvider: UserSessionProvider, UserSessionProviderContro
     var disposeBag: Set<AnyCancellable> = []
 
     let schedulers: Schedulers
+    let coreDataControllerFactory: CoreDataControllerFactory
     let profileDataStore: ProfileDataStore
 
     init(initialUserSession: UserSession,
          schedulers: Schedulers,
+         coreDataControllerFactory: CoreDataControllerFactory,
          profileDataStore: ProfileDataStore,
          appConfiguration: AppConfiguration) {
         self.schedulers = schedulers
+        self.coreDataControllerFactory = coreDataControllerFactory
         self.profileDataStore = profileDataStore
         self.appConfiguration = appConfiguration
 
@@ -74,11 +70,16 @@ class DefaultUserSessionProvider: UserSessionProvider, UserSessionProviderContro
             return session
         }
 
-        @Dependency(\.coreDataControllerFactory) var coreDataControllerFactory: CoreDataControllerFactory
+        @Dependency(\.erxTaskCoreDataStoreFactory) var erxTaskCoreDataStoreFactory: ErxTaskCoreDataStoreFactory
+        let erxTaskCoreDataStore = erxTaskCoreDataStoreFactory.construct(uuid, coreDataControllerFactory)
+        let entireCoreDataStore = erxTaskCoreDataStoreFactory.construct(nil, coreDataControllerFactory)
 
         let session = StandardSessionContainer(
             for: uuid,
             schedulers: schedulers,
+            erxTaskCoreDataStore: erxTaskCoreDataStore,
+            entireCoreDataStore: entireCoreDataStore,
+            pharmacyCoreDataStore: PharmacyCoreDataStore(coreDataControllerFactory: coreDataControllerFactory),
             profileDataStore: profileDataStore,
             shipmentInfoDataStore: ShipmentInfoCoreDataStore(coreDataControllerFactory: coreDataControllerFactory),
             avsTransactionDataStore: AVSTransactionCoreDataStore(coreDataControllerFactory: coreDataControllerFactory),
@@ -100,6 +101,7 @@ extension DefaultUserSessionProvider {
     static let liveValue = DefaultUserSessionProvider(
         initialUserSession: UserSessionDependency.initialValue,
         schedulers: Schedulers.liveValue,
+        coreDataControllerFactory: CoreDataControllerFactoryDependency.liveValue,
         profileDataStore: ProfileDataStoreDependency.initialValue,
         appConfiguration: UserDataStoreDependency.liveValue.appConfiguration
     )

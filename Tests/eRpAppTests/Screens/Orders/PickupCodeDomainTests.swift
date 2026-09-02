@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -25,22 +21,21 @@ import CombineSchedulers
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureHelpers
 import Nimble
 import XCTest
 
 @MainActor
 final class PickupCodeDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.test
-    var matrixCodeGenerator: MatrixCodeGeneratorMock!
+    var matrixCodeGenerator: MockMatrixCodeGenerator!
 
     override func setUp() {
         super.setUp()
 
-        matrixCodeGenerator = MatrixCodeGeneratorMock()
+        matrixCodeGenerator = MockMatrixCodeGenerator()
         let uiImage = Asset.qrcode.image
         let cgImage = uiImage.cgImage!
-        matrixCodeGenerator.generateImageForContentsStringWidthIntHeightIntCGImageReturnValue = cgImage
+        matrixCodeGenerator.generateImageForWidthHeightReturnValue = cgImage
     }
 
     typealias TestStore = TestStoreOf<PickupCodeDomain>
@@ -90,7 +85,7 @@ final class PickupCodeDomainTests: XCTestCase {
             $0.pickupCodeHR = nil
             $0.pickupCodeDMC = "Data Matrix Code Content"
             $0.dmcImage = expectedImage
-            expect(self.matrixCodeGenerator.generateImageForContentsStringWidthIntHeightIntCGImageCallsCount) == 2
+            expect(self.matrixCodeGenerator.generateImageForWidthHeightCallsCount) == 2
         }
     }
 
@@ -108,7 +103,7 @@ final class PickupCodeDomainTests: XCTestCase {
             $0.pickupCodeHR = "4711"
             $0.pickupCodeDMC = "Data Matrix Code Content"
             $0.dmcImage = expectedImage
-            expect(self.matrixCodeGenerator.generateImageForContentsStringWidthIntHeightIntCGImageCallsCount) == 2
+            expect(self.matrixCodeGenerator.generateImageForWidthHeightCallsCount) == 2
         }
         await store.send(.loadMatrixCodeImage(screenSize: size))
     }

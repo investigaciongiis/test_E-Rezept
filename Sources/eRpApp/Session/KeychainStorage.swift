@@ -1,32 +1,26 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import eRpKit
-import FeatureHelpers
 import Foundation
 import IDP
 import OpenSSL
-import Profiles
 
 // [REQ:gemSpec_eRp_FdV:A_19186]
 // [REQ:gemSpec_eRp_FdV:A_19188] Deletion of data saved here is managed by the OS.
@@ -39,7 +33,7 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
     @Published private var tokenState: IDPToken?
     @Published private var accessTokenState: String?
 
-    var keychainHelper: KeychainAccessHelper = SystemKeychainAccessHelper()
+    internal var keychainHelper: KeychainAccessHelper = SystemKeychainAccessHelper()
 
     private let profileId: UUID
 
@@ -96,7 +90,7 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
     func set(can: String?) {
         let success: Bool
         do {
-            if let can {
+            if let can = can {
                 // tag::KeychainStorageIdentifierExample3[]
                 success = try keychainHelper.setGenericPassword(can, for: egkPasswordIdentifier)
                 // end::KeychainStorageIdentifierExample3[]
@@ -142,7 +136,7 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
         // [REQ:gemSpec_IDP_Frontend:A_21328#3] KeychainStorage implementation
         let success: Bool
         do {
-            if let token,
+            if let token = token,
                let tokenData = try? JSONEncoder().encode(token) {
                 success = try keychainHelper.setGenericPassword(tokenData, for: idpTokenIdentifier)
             } else {
@@ -183,7 +177,7 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
     func set(discovery document: DiscoveryDocument?) {
         let success: Bool
         do {
-            if let document {
+            if let document = document {
                 let archiver = NSKeyedArchiver(requiringSecureCoding: true)
                 archiver.outputFormat = .binary
                 try archiver.encodeEncodable(document, forKey: NSKeyedArchiveRootObjectKey)
@@ -201,8 +195,8 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
         }
     }
 
-    private func retrieveCertificate() -> AnyPublisher<IDPX509?, Never> {
-        Deferred { [keychainHelper, egkAuthCertIdentifier] () -> AnyPublisher<IDPX509?, Never> in
+    private func retrieveCertificate() -> AnyPublisher<X509?, Never> {
+        Deferred { [keychainHelper, egkAuthCertIdentifier] () -> AnyPublisher<X509?, Never> in
             guard let derBytes = try? keychainHelper.genericPasswordData(for: egkAuthCertIdentifier),
                   let certificate = try? X509(der: derBytes)
             else {
@@ -214,11 +208,11 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
         .eraseToAnyPublisher()
     }
 
-    var certificate: AnyPublisher<IDPX509?, Never> {
+    var certificate: AnyPublisher<X509?, Never> {
         retrieveCertificate()
     }
 
-    func set(certificate: IDPX509?) {
+    func set(certificate: X509?) {
         if let derBytes = certificate?.derBytes {
             // [REQ:gemSpec_IDP_Frontend:A_21595] Store within keychain
             _ = try? keychainHelper.setGenericPassword(derBytes, for: egkAuthCertIdentifier)
@@ -236,7 +230,7 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
         .eraseToAnyPublisher()
     }
 
-    /// idp pairing identifier for registered device
+    // idp pairing identifier for registered device
     var keyIdentifier: AnyPublisher<Data?, Never> {
         retrieveKeyIdentifier()
     }
@@ -246,7 +240,7 @@ class KeychainStorage: SecureUserDataStore, IDPStorage, SecureEGKCertificateStor
     func set(keyIdentifier: Data?) {
         let success: Bool
         do {
-            if let keyIdentifier {
+            if let keyIdentifier = keyIdentifier {
                 // [REQ:gemSpec_IDP_Frontend:A_21595] Store within keychain
                 success = try keychainHelper.setGenericPassword(keyIdentifier, for: idpBiometricKeyIdentifier)
             } else {

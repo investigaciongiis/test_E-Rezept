@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -30,7 +26,7 @@ import HTTPClient
 struct DebugLogsDomain {
     enum Token: CaseIterable, Hashable {}
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         case share(ShareSheetDomain)
         case logDetail(DebugLogDomain)
@@ -49,9 +45,7 @@ struct DebugLogsDomain {
         var filter: String = ""
 
         enum Sort: String, Equatable, CaseIterable, Identifiable {
-            var id: Sort {
-                self
-            }
+            var id: Sort { self }
 
             case byNameAsc = "by name ↑"
             case byNameDesc = "by name ↓"
@@ -75,7 +69,7 @@ struct DebugLogsDomain {
         mutating func updateLogs(from store: DebugLiveLogger) {
             var logs = store.requests
 
-            let filter = filter.lowercased()
+            let filter = self.filter.lowercased()
 
             if filter.lengthOfBytes(using: .utf8) > 0 {
                 logs = logs.filter { $0.requestUrl.lowercased().contains(filter) }
@@ -129,7 +123,7 @@ struct DebugLogsDomain {
 
     var body: some ReducerOf<DebugLogsDomain> {
         BindingReducer()
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 }
@@ -159,7 +153,7 @@ extension DebugLogsDomain {
             var request = URLRequest(url: URL(string: "http://google.com")!)
             request.setValue("12345", forHTTPHeaderField: "X-api-key")
             let response: HTTPResponse = (
-                data: Data("abcdef".utf8),
+                data: "abcdef".data(using: .utf8)!,
                 response: HTTPURLResponse(
                     url: URL(string: "http://google.com")!,
                     statusCode: 200,
@@ -181,7 +175,7 @@ extension DebugLogsDomain {
             var request = URLRequest(url: URL(string: "http://google.com")!)
             request.setValue("12345", forHTTPHeaderField: "X-api-key")
             let response: HTTPResponse = (
-                data: Data("abcdef".utf8),
+                data: "abcdef".data(using: .utf8)!,
                 response: HTTPURLResponse(
                     url: URL(string: "http://google.com")!,
                     statusCode: HTTPStatusCode.found.rawValue,
@@ -203,7 +197,7 @@ extension DebugLogsDomain {
             var request = URLRequest(url: URL(string: "http://google.com")!)
             request.setValue("12345", forHTTPHeaderField: "X-api-key")
             let response: HTTPResponse = (
-                data: Data("abcdef".utf8),
+                data: "abcdef".data(using: .utf8)!,
                 response: HTTPURLResponse(
                     url: URL(string: "http://google.com")!,
                     statusCode: HTTPStatusCode.forbidden.rawValue,
@@ -251,8 +245,4 @@ extension DebugLogsDomain {
         // swiftlint:enable force_unwrapping
     }
 }
-
-extension DebugLogsDomain.Destination.State: Equatable {}
-extension DebugLogsDomain.Destination.Action: Equatable {}
-
 #endif

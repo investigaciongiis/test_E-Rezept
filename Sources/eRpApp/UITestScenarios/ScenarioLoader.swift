@@ -1,42 +1,32 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 // swiftlint:disable file_length
 
 import ComposableArchitecture
-import ConsentService
 import Dependencies
 import eRpKit
 import eRpLocalStorage
 import eRpRemoteStorage
 import eRpStyleKit
-import ErxTaskRepository
-import FeatureCardWall
-import FeatureEURedeem
 import FHIRClient
-import FHIRVZD
 import Foundation
 import IDP
 import Pharmacy
-import Profiles
 import SwiftUI
 
 extension View {
@@ -66,9 +56,7 @@ extension View {
 extension SceneDelegate {
     func setupUITests() {
         #if DEBUG
-        if ProcessInfo.processInfo.environment["UITEST.SCENARIO_NAME"] != nil {
-            _ = try? UITestBridgeServer.shared()
-        }
+        _ = try? UITestBridgeServer.shared()
 
         if ProcessInfo.processInfo.environment["UITEST.DISABLE_ANIMATIONS"] != nil {
             mainWindow?.layer.speed = 1000
@@ -87,12 +75,9 @@ extension SceneDelegate {
                 UserDefaults.standard.removePersistentDomain(forName: domain)
                 UserDefaults.standard.synchronize()
             }
-            _ = try? FileManager.default.removeItem(at: CoreDataControllerFactory.defaultDatabaseUrl)
+            _ = try? FileManager.default.removeItem(at: LocalStoreFactory.defaultDatabaseUrl)
 
             _ = try? appSecurityManager.save(password: "")
-
-            @Shared(.appDefaults) var appDefaults
-            $appDefaults.withLock { $0 = AppDefaults() }
         }
         if let password = ProcessInfo.processInfo.environment["UITEST.SET_APPLICATION_PASSWORD"] {
             _ = try? appSecurityManager.save(password: password)
@@ -106,19 +91,12 @@ extension SceneDelegate {
                 UserDefaults.standard.synchronize()
             }
         }
-
-        if let iknr = ProcessInfo.processInfo.environment["UITEST.SET_IKNR"] {
-            @Shared(.overwriteDIGAIK) var overwriteDIGAIK
-
-            $overwriteDIGAIK.withLock { $0 = iknr }
-        }
         #endif
     }
 }
 
 #if DEBUG
 extension Reducer {
-    // swiftlint:disable:next function_body_length
     func setupUITests() -> some Reducer<Self.State, Self.Action> {
         let isRecording = ProcessInfo.processInfo.environment["UITEST.RECORD_MOCKS"] != nil
         let scenario: Scenario?
@@ -130,58 +108,42 @@ extension Reducer {
             scenario = nil
         }
 
-        let euConsentGranted = LockIsolated(false)
         // swiftformat:disable:next redundantSelf
         return self.transformDependency(\.self) { dependencies in
             guard scenario != nil || isRecording else { return }
 
             dependencies.userDataStore = SmartMocks.shared.smartMockUserDataStore(scenario, isRecording)
-
-            dependencies.erxLocalDataStore = SmartMocks.shared.smartMockErxTaskCoreDataStore(scenario, isRecording)
-            dependencies.erxRemoteDataStore = SmartMocks.shared.smartMockErxRemoteDataStore(
-                factory: { [dependencies] profileId in
-                    dependencies.fhirClientServiceFactory.erpClientForProfile(profileId)
-                },
-                scenario,
-                isRecording
-            )
-
+            dependencies.pharmacyServiceFactory = PharmacyServiceFactory { fhirClient in
+                SmartMocks.shared.smartMockPharmacyService(fhirClient: fhirClient, scenario, isRecording)
+            }
+            dependencies.erxTaskCoreDataStoreFactory = ErxTaskCoreDataStoreFactory { uuid, coreDataControllerFactory in
+                SmartMocks.shared.smartMockErxTaskCoreDataStore(
+                    uuid: uuid,
+                    coreDataControllerFactory: coreDataControllerFactory,
+                    scenario,
+                    isRecording
+                )
+            }
+            dependencies.erxRemoteDataStoreFactory = ErxRemoteDataStoreFactory { fhirClient in
+                SmartMocks.shared.smartMockErxRemoteDataStore(fhirClient: fhirClient, scenario, isRecording)
+            }
             // this clashes with erxRemoteDataStoreFactory, as accessing the underlying IDPSession calls the usersession
             // that then prematurely calls the erxRemoteDataStoreFactory from above. The `if`can be removed as soon as
             // we use shared state for the current user
             if scenario?.idpSession != nil {
                 dependencies.idpSession = SmartMocks.shared.smartMockIDPSession(scenario, isRecording)
-                dependencies.profileBasedSessionProvider.idpSession = { _ in
-                    SmartMocks.shared.smartMockIDPSession(scenario, isRecording)
-                }
+            }
+            @Dependency(\.userSession) var userSession
+
+            let loginHandler = UITestLoginHandler()
+
+            dependencies.loginHandlerServiceFactory = LoginHandlerServiceFactory { _, _ in
+                loginHandler
             }
 
-            if !isRecording {
-                let loginHandler = UITestLoginHandler()
-                dependencies.loginHandlerServiceFactory = LoginHandlerServiceFactory { _, _ in
-                    loginHandler
-                }
-                dependencies.consentService = ConsentService(
-                    checkForConsent: { _, _ in
-                        euConsentGranted.value ? .granted : .notGranted
-                    },
-                    grantConsent: { _, _ in
-                        euConsentGranted.withValue { $0 = true }
-                        return .success
-                    },
-                    revokeConsent: { _, _ in
-                        euConsentGranted.withValue { $0 = false }
-                        return .success
-                    }
-                )
+            dependencies.avsRedeemService = {
+                SmartMocks.shared.smartMockRedeemService(scenario, isRecording, loginHandler)
             }
-
-            dependencies.drawerEvaluation.showDrawerEvaluation = { .none }
-            dependencies.bfArMSession = SmartMocks.shared.smartMockBfArMSession(scenario, isRecording)
-            dependencies.pharmacyRemoteDataStore = SmartMocks.shared.smartMockPharmacyRemoteDataStore(
-                scenario,
-                isRecording
-            )
         }
     }
 }
@@ -200,7 +162,7 @@ struct UITestLoginHandler: LoginHandler {
     }
 }
 
-/// Keep static instances of SmartMocks to avoid multiple creations while reducers are called multiple times
+// Keep static instances of SmartMocks to avoid multiple creations while reducers are called multiple times
 struct SmartMocks {
     @Dependency(\.smartMockRegister) var smartMockRegister: SmartMockRegister
     static var shared = SmartMocks()
@@ -222,37 +184,41 @@ struct SmartMocks {
         return mock
     }
 
-    private var smartMockPharmacyRemoteDataStore: PharmacyRemoteDataStore?
-    mutating func smartMockPharmacyRemoteDataStore(
-        _ scenario: Scenario?,
-        _ isRecording: Bool
-    ) -> PharmacyRemoteDataStore {
-        if let existingMock = smartMockPharmacyRemoteDataStore {
+    private var smartMockPharmacyService: SmartMockPharmacyRemoteDataStore?
+    mutating func smartMockPharmacyService(fhirClient: FHIRClient, _ scenario: Scenario?,
+                                           _ isRecording: Bool) -> PharmacyRemoteDataStore {
+        if let existingMock = smartMockPharmacyService {
             return existingMock
         }
+        let pharmacyFhirDataSource = PharmacyFHIRDataSource(fhirClient: fhirClient)
 
-        @Dependency(\.pharmacyRemoteDataStore) var pharmacyRemoteDataStore
-        let mock = PharmacyRemoteDataStore.smartMock(
-            wrapped: pharmacyRemoteDataStore,
+        let mock = SmartMockPharmacyRemoteDataStore(
+            wrapped: pharmacyFhirDataSource,
             mocks: scenario?.pharmacyRemoteDataStore,
             isRecording: isRecording
         )
         smartMockRegister.register(mock)
-        smartMockPharmacyRemoteDataStore = mock
+        smartMockPharmacyService = mock
         return mock
     }
 
-    private var smartMockErxTaskCoreDataStore: SmartMockErxLocalDataStore?
+    private var smartMockErxTaskCoreDataStore: SmartMockErxTaskCoreDataStore?
     mutating func smartMockErxTaskCoreDataStore(
+        uuid: UUID?,
+        coreDataControllerFactory: CoreDataControllerFactory,
         _ scenario: Scenario?,
         _ isRecording: Bool
-    ) -> SmartMockErxLocalDataStore {
+    ) -> ErxTaskCoreDataStore {
         if let existingMock = smartMockErxTaskCoreDataStore {
             return existingMock
         }
-        @Dependency(\.erxLocalDataStore) var erxLocalDataStore
-        let mock = SmartMockErxLocalDataStore(
-            wrapped: erxLocalDataStore,
+        let erxTaskCoreDataStore = DefaultErxTaskCoreDataStore(
+            profileId: uuid,
+            coreDataControllerFactory: coreDataControllerFactory
+        )
+
+        let mock = SmartMockErxTaskCoreDataStore(
+            wrapped: erxTaskCoreDataStore,
             mocks: scenario?.erxTaskCoreDataStore,
             isRecording: isRecording
         )
@@ -263,14 +229,14 @@ struct SmartMocks {
 
     private var smartMockErxRemoteDataStore: SmartMockErxRemoteDataStore?
     mutating func smartMockErxRemoteDataStore(
-        factory: @escaping (UUID) -> FHIRClient,
+        fhirClient: FHIRClient,
         _ scenario: Scenario?,
         _ isRecording: Bool
     ) -> ErxRemoteDataStore {
         if let existingMock = smartMockErxRemoteDataStore {
             return existingMock
         }
-        let erxTaskFHIRDataStore = ErxTaskFHIRDataStore(factory: factory)
+        let erxTaskFHIRDataStore = ErxTaskFHIRDataStore(fhirClient: fhirClient)
 
         let mock = SmartMockErxRemoteDataStore(
             wrapped: erxTaskFHIRDataStore,
@@ -289,9 +255,11 @@ struct SmartMocks {
             return existingMock
         }
         @Dependency(\.redeemService) var redeemService: RedeemService
+
         @Dependency(\.userSession) var userSession
 
         let erxTaskRepositoryRedeemService = ErxTaskRepositoryRedeemService(
+            erxTaskRepository: userSession.erxTaskRepository,
             loginHandler: loginHandler
         )
 
@@ -320,32 +288,15 @@ struct SmartMocks {
         smartMockIDPSession = mock
         return mock
     }
-
-    private var smartMockBfArMSession: BfArMSession?
-    mutating func smartMockBfArMSession(_ scenario: Scenario?, _ isRecording: Bool) -> BfArMSession {
-        if let existingMock = smartMockBfArMSession {
-            return existingMock
-        }
-        @Dependency(\.bfArMSession) var bfArMSession: BfArMSession
-        let mock = BfArMSession.smartMock(
-            wrapped: bfArMSession,
-            mocks: scenario?.bfArMSession,
-            isRecording: isRecording
-        )
-        smartMockRegister.register(mock)
-        smartMockBfArMSession = mock
-        return mock
-    }
 }
 
 struct Scenario {
     var userDataStore: SmartMockUserDataStore.Mocks?
-    var pharmacyRemoteDataStore: PharmacyRemoteDataStore.Mocks?
-    var erxTaskCoreDataStore: SmartMockErxLocalDataStore.Mocks?
+    var pharmacyRemoteDataStore: SmartMockPharmacyRemoteDataStore.Mocks?
+    var erxTaskCoreDataStore: SmartMockErxTaskCoreDataStore.Mocks?
     var erxRemoteDataStore: SmartMockErxRemoteDataStore.Mocks?
     var redeemService: SmartMockRedeemService.Mocks?
     var idpSession: SmartMockIDPSession.Mocks?
-    var bfArMSession: BfArMSession.Mocks?
 }
 
 struct ScenarioLoader {
@@ -367,11 +318,11 @@ struct ScenarioLoader {
             scenarioUrl: scenarioPath,
             with: "UserDataStore"
         )
-        let pharmacyMock: PharmacyRemoteDataStore.Mocks? = loadMockData(
+        let pharmacyMock: SmartMockPharmacyRemoteDataStore.Mocks? = loadMockData(
             scenarioUrl: scenarioPath,
             with: "PharmacyRemoteDataStore"
         )
-        let erxTaskCoreDataStore: SmartMockErxLocalDataStore.Mocks? = loadMockData(
+        let erxTaskCoreDataStore: SmartMockErxTaskCoreDataStore.Mocks? = loadMockData(
             scenarioUrl: scenarioPath,
             with: "ErxTaskCoreDataStore"
         )
@@ -387,10 +338,6 @@ struct ScenarioLoader {
             scenarioUrl: scenarioPath,
             with: "IDPSession"
         )
-        let bfarmSession: BfArMSession.Mocks? = loadMockData(
-            scenarioUrl: scenarioPath,
-            with: "BfArMSession"
-        )
 
         return Scenario(
             userDataStore: userDataStoreMock,
@@ -398,38 +345,19 @@ struct ScenarioLoader {
             erxTaskCoreDataStore: erxTaskCoreDataStore,
             erxRemoteDataStore: erxRemoteDataStore,
             redeemService: redeemService,
-            idpSession: idpSession,
-            bfArMSession: bfarmSession
+            idpSession: idpSession
         )
     }
 
-    private func loadMockData<T: VerifiableMock>(scenarioUrl: URL, with name: String) -> T? {
+    private func loadMockData<T>(scenarioUrl: URL, with name: String) -> T? where T: Codable {
         let filePath = scenarioUrl.appendingPathComponent("\(name).json", isDirectory: false)
         guard FileManager.default.fileExists(atPath: filePath.path),
               let jsonData = try? Data(contentsOf: filePath).applyingDynamicReplacements(scenarioUrl) else {
             return nil
         }
         do {
-            if let jsonObject = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-                let jsonKeys = Set(jsonObject.keys)
-                let unexpectedKeys = jsonKeys.subtracting(T.expectedKeys)
-                if !unexpectedKeys.isEmpty {
-                    fatalError(
-                        "Scenario file '\(name).json' contains unexpected keys: \(unexpectedKeys.sorted()). " +
-                            "Expected keys: \(T.expectedKeys.sorted()). " +
-                            "The mock data file may need to be updated to match the current protocol/struct definition."
-                    )
-                }
-            }
             return try JSONDecoder().decode(T.self, from: jsonData)
-        } catch let DecodingError.typeMismatch(type, context) {
-            print(String(data: jsonData, encoding: .utf8) ?? "")
-            print("Type mismatch error: \(type)")
-            print("Context: \(context)")
-            fatalError("Failed to decode scenario file")
         } catch let error as DecodingError {
-            print(String(data: jsonData, encoding: .utf8) ?? "")
-            print("wait")
             switch error {
             case let .valueNotFound(_, context),
                  let .dataCorrupted(context),
@@ -447,7 +375,7 @@ struct ScenarioLoader {
 }
 
 extension Data {
-    /// This method loads a JSON file and expands all template variables and file references.
+    // This method loads a JSON file and expands all template variables and file references.
     func applyingDynamicReplacements(_ baseUrl: URL) -> Data {
         // Expand file references
         let expandedFileReferences = expandFileReferences(baseUrl)
@@ -458,8 +386,6 @@ extension Data {
             // replace placeholders
             .applyingDateReplacements()
             .applyingUUIDReplacements()
-            .applyingBoolReplacements()
-            .applyingNumberReplacements()
             .data(using: .utf8) else {
             fatalError("Something went wrong while converting JSON String back to Data")
         }
@@ -468,7 +394,7 @@ extension Data {
     }
 }
 
-/// Load the corresponding json file into a json object and return the element the given keypath.
+// Load the corresponding json file into a json object and return the element the given keypath.
 func jsonFile(from filePath: URL, at keyPath: String) -> [String: Any] {
     guard FileManager.default.fileExists(atPath: filePath.path),
           let jsonData = try? Data(contentsOf: filePath) else {
@@ -490,7 +416,7 @@ func jsonFile(from filePath: URL, at keyPath: String) -> [String: Any] {
     return result
 }
 
-extension [String: Any] {
+extension Dictionary where Self.Key == String, Self.Value == Any {
     mutating func expandFileReferences(_ baseUrl: URL) {
         traverse { dictionary in
             dictionary.performFileReplacements(baseUrl)
@@ -547,7 +473,7 @@ extension [String: Any] {
     }
 }
 
-extension [Any] {
+extension Array where Element == Any {
     mutating func traverse(_ alterDictionary: (inout [String: Any]) -> Void) {
         for index in 0 ..< count {
             if let dictionary = self[index] as? [String: Any] {
@@ -563,13 +489,13 @@ extension [Any] {
 }
 
 extension Data {
-    /// This extension method expands file references in the JSON data. It replaces all objects with occurrences of the
-    /// `_FILE` key with the corresponding file content. The value of the `_FILE` key must be a string with the format
-    /// `<filename>#<keypath>`. The `<filename>` is the name of the file to load and the `<keypath>` is the path to the
-    /// object within the JSON file. The method returns the expanded JSON data.
-    /// Another key named `_REPLACE` can be used to replace placeholders in the JSON file. The value of the `_REPLACE`
-    /// key is a dictionary with the format `<find>: <replace>`. The method replaces all occurrences of `<find>` with
-    /// `<replace>` in the JSON file.
+    // This extension method expands file references in the JSON data. It replaces all objects with occurrences of the
+    // `_FILE` key with the corresponding file content. The value of the `_FILE` key must be a string with the format
+    // `<filename>#<keypath>`. The `<filename>` is the name of the file to load and the `<keypath>` is the path to the
+    // object within the JSON file. The method returns the expanded JSON data.
+    // Another key named `_REPLACE` can be used to replace placeholders in the JSON file. The value of the `_REPLACE`
+    // key is a dictionary with the format `<find>: <replace>`. The method replaces all occurrences of `<find>` with
+    // `<replace>` in the JSON file.
     func expandFileReferences(_ baseUrl: URL) -> Data {
         guard var json = try? JSONSerialization.jsonObject(with: self, options: []) else {
             return self
@@ -595,9 +521,8 @@ extension Data {
 }
 
 extension String {
-    /// This extension method applies UUID replacements to the string using a specific pattern.
-    /// The pattern is defined as "{{UUID}}".
-    /// It replaces each occurrenc of the pattern with a new UUID string.
+    // This extension method applies UUID replacements to the string using a specific pattern. The pattern is defined as
+    // "{{UUID}}". It replaces each occurrenc of the pattern with a new UUID string.
     func applyingUUIDReplacements() -> String {
         let pattern = #"\{\{UUID\}\}"#
 
@@ -621,28 +546,6 @@ extension String {
         }
 
         // Return the final result with applied UUID replacements.
-        return result
-    }
-
-    /// This extension method applies Bool replacements to the string.
-    /// The pattern is "{{BOOL:value}}" where value is `true` or `false`.
-    func applyingBoolReplacements() -> String {
-        let pattern = #""?\{\{BOOL:(true|false)\}\}"?"#
-        let regex: NSRegularExpression
-        do {
-            regex = try NSRegularExpression(pattern: pattern)
-        } catch {
-            fatalError(error.localizedDescription)
-        }
-
-        var result = self
-        let matches = regex.matches(in: self, range: NSRange(location: 0, length: count))
-        for match in matches.reversed() {
-            guard let fullRange = Range(match.range, in: result),
-                  let valueRange = Range(match.range(at: 1), in: result) else { continue }
-            let value = String(result[valueRange]) // "true" or "false"
-            result.replaceSubrange(fullRange, with: value)
-        }
         return result
     }
 
@@ -765,50 +668,15 @@ extension String {
             return "yyyy-MM-dd"
         }
     }
-
-    // Applies number replacements to the string.
-    // The pattern is `{{NUMBER:value}}` where value is any numeric literal.
-    // Surrounding JSON quotes are stripped so the value becomes a bare JSON number.
-    //
-    // Example: `"{{NUMBER:4102444800.0}}"` → `4102444800.0`
-    func applyingNumberReplacements() -> String {
-        let pattern = #""?\{\{NUMBER:(?<value>-?[\d.]+)\}\}"?"#
-        let regex: NSRegularExpression
-        do {
-            regex = try NSRegularExpression(pattern: pattern)
-        } catch {
-            fatalError(error.localizedDescription)
-        }
-
-        var result = self
-        let matches = regex.matches(in: self, range: NSRange(location: 0, length: count))
-
-        for match in matches.reversed() {
-            guard let fullRange = Range(match.range, in: result),
-                  let valueRange = Range(match.range(at: 1), in: result) else { continue }
-            let value = String(result[valueRange])
-            result.replaceSubrange(fullRange, with: value)
-        }
-
-        return result
-    }
 }
 
 // sourcery:begin: SmartMock
 extension UserDataStore {}
+extension PharmacyRemoteDataStore {}
+extension ErxTaskCoreDataStore {}
 extension ErxRemoteDataStore {}
-extension ErxLocalDataStore {}
 extension RedeemService {}
 extension IDPSession {}
-// sourcery:end
-
-import BfArM
-
-// sourcery:begin: SmartMockStruct
-extension BfArMSession {}
-extension PharmacyRemoteDataStore {}
-// extension ConsentService {}
-// extension EuRedeemService {}
 // sourcery:end
 
 #endif

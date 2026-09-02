@@ -1,29 +1,23 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
-import FeatureCardWall
-import FeatureHelpers
 import HealthCardControl
 
 @Reducer
@@ -45,7 +39,7 @@ struct HealthCardPasswordReadCardDomain {
 
     enum Action: Equatable {
         case readCard
-        case openHelpView
+        case backButtonTapped
 
         case resetNavigation
         case destination(PresentationAction<Destination.Action>)
@@ -69,13 +63,11 @@ struct HealthCardPasswordReadCardDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         @ReducerCaseEphemeral
         // sourcery: AnalyticsScreen = errorAlert
         case alert(ErpAlertState<Alert>)
-        /// Screen tracking handled inside
-        case help(ReadCardHelpDomain)
 
         enum Alert: Equatable {
             case settings
@@ -109,6 +101,7 @@ struct HealthCardPasswordReadCardDomain {
                 }
                 await send(action)
             }
+
         case let .response(.nfcHealthCardPasswordControllerResponseReceived(nfcHealthCardPasswordControllerResponse)):
             switch (nfcHealthCardPasswordControllerResponse, state.mode) {
             // success
@@ -118,12 +111,14 @@ struct HealthCardPasswordReadCardDomain {
                 state.destination = .alert(AlertStates.cardUnlocked)
             case (.success, .healthCardSetNewPinSecret):
                 state.destination = .alert(AlertStates.setNewPin)
+
             // warning: retry counter
             case let (.wrongSecretWarning(retryCount: retriesLeft), .healthCardResetPinCounterWithNewSecret),
                  let (.wrongSecretWarning(retryCount: retriesLeft), .healthCardResetPinCounterNoNewSecret):
                 state.destination = .alert(AlertStates.pukIncorrect(retriesLeft: retriesLeft))
             case let (.wrongSecretWarning(retryCount: retriesLeft), .healthCardSetNewPinSecret):
                 state.destination = .alert(AlertStates.pinIncorrect(retriesLeft: retriesLeft))
+
             // error: blocked
             case (.commandBlocked, .healthCardResetPinCounterWithNewSecret):
                 state.destination = .alert(AlertStates.pukCounterExhaustedWithSetNewPin)
@@ -131,6 +126,7 @@ struct HealthCardPasswordReadCardDomain {
                 state.destination = .alert(AlertStates.pukCounterExhausted)
             case (.commandBlocked, .healthCardSetNewPinSecret):
                 state.destination = .alert(AlertStates.pinCounterExhausted)
+
             // error: others
             case (.passwordNotFound, _):
                 state.destination = .alert(AlertStates.passwordNotFound)
@@ -144,6 +140,7 @@ struct HealthCardPasswordReadCardDomain {
                 state.destination = .alert(AlertStates.unknownError)
             }
             return .none
+
         case let .response(.nfcHealthCardPasswordControllerErrorReceived(nfcHealthCardPasswordControllerError)):
             if case .wrongCan = nfcHealthCardPasswordControllerError {
                 state.destination = .alert(AlertStates.wrongCan)
@@ -159,9 +156,10 @@ struct HealthCardPasswordReadCardDomain {
                 state.destination = .alert(AlertStates.alertFor(nfcHealthCardPasswordControllerError))
             }
             return .none
-        case .openHelpView:
-            state.destination = .help(.init())
-            return .none
+
+        case .backButtonTapped:
+            state.destination = nil
+            return .send(.delegate(.close))
         case .destination(.presented(.alert(.settings))):
             state.destination = nil
             return .run { send in
@@ -193,9 +191,6 @@ struct HealthCardPasswordReadCardDomain {
         case .resetNavigation:
             state.destination = nil
             return .none
-        case .destination(.presented(.help(.delegate(.close)))):
-            state.destination = nil
-            return .none
         case .delegate,
              .destination:
             return .none
@@ -218,7 +213,7 @@ extension HealthCardPasswordReadCardDomain {
             newPin: String? = nil
         ) async -> HealthCardPasswordReadCardDomain.Action {
             let mode: NFCResetRetryCounterMode
-            if let newPin {
+            if let newPin = newPin {
                 mode = .resetEgkMrPinRetryCountWithNewSecret(newPin)
             } else {
                 mode = .resetEgkMrPinRetryCountWithoutNewSecret
@@ -261,6 +256,3 @@ extension HealthCardPasswordReadCardDomain {
         }
     }
 }
-
-extension HealthCardPasswordReadCardDomain.Destination.State: Equatable {}
-extension HealthCardPasswordReadCardDomain.Destination.Action: Equatable {}

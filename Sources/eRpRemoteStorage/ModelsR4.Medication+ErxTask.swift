@@ -1,33 +1,29 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
 import Foundation
 import ModelsR4
 
-/// Note: All values should be implemented in a loosely manner so that
-/// medications from any profile type can be parsed. This is relevant because medications
-/// are created during MedicationDispense by the DAV and they are not restricted
-/// to use the KBV profiles
+// Note: All values should be implemented in a loosely manner so that
+// medications from any profile type can be parsed. This is relevant because medications
+// are created during MedicationDispense by the DAV and they are not restricted
+// to use the KBV profiles
 extension ModelsR4.Medication {
     var profileType: ErxMedication.ProfileType? {
         guard let profileType = meta?.profile?.first?.value?.url.absoluteString else {
@@ -38,11 +34,11 @@ extension ModelsR4.Medication {
     }
 
     var version: ErpPrescription.Version? {
-        guard let medicationCanonical = meta?.profile?.first?.value?.version else {
+        guard let kbvVersion = meta?.profile?.first?.value?.version else {
             return nil
         }
 
-        return ErpPrescription.Version(medicationCanonical: medicationCanonical)
+        return ErpPrescription.Version(rawValue: kbvVersion)
     }
 
     // TODO: Consider grouping medicationText and pzn in `Code` and also fill code //swiftlint:disable:this todo
@@ -290,7 +286,7 @@ private func createRatio(for amount: Ratio?, for version: ErpPrescription.Versio
             numerator: ErxMedication.Quantity(value: value, unit: numeratorUnit),
             denominator: denominator
         )
-    case .v1_1_0, .v1_2_0, .v1_3_2, .v1_4_1:
+    case .v1_1_0:
         if let value = numeratorValue {
             return ErxMedication.Ratio(
                 numerator: ErxMedication.Quantity(value: value, unit: numeratorUnit),

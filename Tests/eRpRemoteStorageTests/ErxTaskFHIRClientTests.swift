@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
@@ -26,7 +22,6 @@ import eRpKit
 import FHIRClient
 import Foundation
 import HTTPClient
-import HTTPClientLive
 import ModelsR4
 import Nimble
 import OHHTTPStubs
@@ -45,14 +40,10 @@ final class ErxTaskFHIRClientTests: XCTestCase {
 
         host = "some-fhir-service.com"
         service = URL(string: "http://\(host ?? "")")!
-        fhirClient = FHIRClient(
-            server: service,
-            httpClient: DefaultHTTPClient(urlSessionConfiguration: .ephemeral)
-        )
-        sut = FHIRClient(
-            server: service,
-            httpClient: DefaultHTTPClient(urlSessionConfiguration: .ephemeral)
-        )
+        fhirClient = FHIRClient(server: service, httpClient: DefaultHTTPClient(urlSessionConfiguration: .default))
+        sut = FHIRClient(server: service,
+                         httpClient: DefaultHTTPClient(urlSessionConfiguration: .default),
+                         receiveQueue: .immediate)
     }
 
     func testFHIRClientTaskByIdJson() {
@@ -62,17 +53,15 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         )
 
         var counter = 0
-        stub(
-            condition: isPath("/Task/61704e3f-1e4f-11b2-80f4-b806a73c0cd0") && isMethodGET() &&
-                hasHeaderNamed("X-AccessCode", value: "access-now") &&
-                hasHeaderNamed("Accept", value: "application/fhir+json")
-        ) { _ in
-            counter += 1
-            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/fhir+json"])
+        stub(condition: isPath("/Task/61704e3f-1e4f-11b2-80f4-b806a73c0cd0") && isMethodGET() &&
+            hasHeaderNamed("X-AccessCode", value: "access-now") &&
+            hasHeaderNamed("Accept", value: "application/fhir+json")) { _ in
+                counter += 1
+                return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/fhir+json"])
         }
 
         sut.fetchTask(by: "61704e3f-1e4f-11b2-80f4-b806a73c0cd0", accessCode: "access-now")
-            .testWait(expectations: { erxTaskBundle in
+            .test(expectations: { erxTaskBundle in
                 expect(counter) == 1
 
                 expect(erxTaskBundle?.id) == "61704e3f-1e4f-11b2-80f4-b806a73c0cd0"
@@ -118,17 +107,15 @@ final class ErxTaskFHIRClientTests: XCTestCase {
             """
 
         var counter = 0
-        stub(
-            condition: isPath("/Task/61704e3f-1e4f-11b2-80f4-b806a73c0cd0") && isMethodGET() &&
-                hasHeaderNamed("X-AccessCode", value: "access-now") &&
-                hasHeaderNamed("Accept", value: "application/fhir+json")
-        ) { _ in
-            counter += 1
-            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/fhir+json"])
+        stub(condition: isPath("/Task/61704e3f-1e4f-11b2-80f4-b806a73c0cd0") && isMethodGET() &&
+            hasHeaderNamed("X-AccessCode", value: "access-now") &&
+            hasHeaderNamed("Accept", value: "application/fhir+json")) { _ in
+                counter += 1
+                return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/fhir+json"])
         }
 
         sut.fetchTask(by: "61704e3f-1e4f-11b2-80f4-b806a73c0cd0", accessCode: "access-now")
-            .testWait(expectations: { erxTaskBundle in
+            .test(expectations: { erxTaskBundle in
                 expect(counter) == 1
 
                 expect(erxTaskBundle?.id) == "61704e3f-1e4f-11b2-80f4-b806a73c0cd0"
@@ -163,7 +150,7 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         }
 
         sut.fetchAllTasks(after: nil)
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { tasks in
                 expect(tasks.content.count) == 2
@@ -173,28 +160,25 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         expect(counter) == 1
     }
 
-    func testFetchingTasksWithLastModifiedDate() throws {
+    func testFetchingTasksWithLastModifiedDate() {
         let expectedResponse = load(
             resource: "getTaskIdsWithTwoTasksResponse",
             directory: .gem_wf_v1_1_with_kbv_v1_0_2
         )
 
         let lastModified = "2021-03-24T08:35:26.548+00:00"
-        let dateString = try XCTUnwrap(FHIRDateFormatter.shared.date(from: lastModified)?
-            .fhirFormattedString(with: .yearMonthDayTime))
+        let dateString = FHIRDateFormatter.shared.date(from: lastModified)!.fhirFormattedString(with: .yearMonthDayTime)
 
         var counter = 0
-        stub(
-            condition: isPath("/Task")
-                && containsQueryParams(["modified": "ge\(dateString)"])
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        stub(condition: isPath("/Task")
+            && containsQueryParams(["modified": "ge\(dateString)"])
+            && isMethodGET()) { _ in
+                counter += 1
+                return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
         }
 
         sut.fetchAllTasks(after: lastModified)
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { tasks in
                 expect(tasks.content.count) == 2
@@ -215,7 +199,7 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         }
 
         sut.fetchAllAuditEvents()
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { auditEvents in
                 expect(auditEvents.content.count) == 4
@@ -227,28 +211,26 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         expect(counter) == 1
     }
 
-    func testFetchingAuditEventsWithDate() throws {
+    func testFetchingAuditEventsWithDate() {
         let expectedResponse = load(
             resource: "getAuditEventResponse_4_entries",
             directory: .gem_wf_v1_1_with_kbv_v1_0_2
         )
 
         let timestamp = "2021-03-24T08:35:26.548+00:00"
-        let dateString = try XCTUnwrap(FHIRDateFormatter.shared.date(from: timestamp)?
-            .fhirFormattedString(with: .yearMonthDayTime))
+        let dateString = FHIRDateFormatter.shared.date(from: timestamp)!
+            .fhirFormattedString(with: .yearMonthDayTime)
 
         var counter = 0
-        stub(
-            condition: isPath("/AuditEvent")
-                && containsQueryParams(["date": "ge\(dateString)"])
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        stub(condition: isPath("/AuditEvent")
+            && containsQueryParams(["date": "ge\(dateString)"])
+            && isMethodGET()) { _ in
+                counter += 1
+                return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
         }
 
         sut.fetchAllAuditEvents(after: timestamp)
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { auditEvents in
                 expect(auditEvents.content.count) == 4
@@ -273,7 +255,7 @@ final class ErxTaskFHIRClientTests: XCTestCase {
 
         // when deleting a task
         sut.deleteTask(by: erxTask.id, accessCode: erxTask.accessCode)
-            .testWait(failure: { error in
+            .test(failure: { error in
                 fail("unexpected error \(error)")
             }, expectations: { success in
                 // then the operations should be successful even if the remote call returns a 404
@@ -298,7 +280,7 @@ final class ErxTaskFHIRClientTests: XCTestCase {
 
         // when deleting a task
         sut.deleteTask(by: erxTask.id, accessCode: erxTask.accessCode)
-            .testWait(failure: { error in
+            .test(failure: { error in
                 fail("unexpected error \(error)")
             }, expectations: { success in
                 // then the operations should be successful even if the remote call returns a 404
@@ -307,21 +289,21 @@ final class ErxTaskFHIRClientTests: XCTestCase {
     }
 
     func testRedeemOrderWithSuccess() {
-        let responseFilePath = load(resource: "redeemOrderResponse", directory: .gem_wf_v1_4)
+        let redeemOrderResponse = load(
+            resource: "redeemOrderResponse",
+            directory: .gem_wf_v1_1_with_kbv_v1_0_2
+        )
 
         var counter = 0
-        stub(
-            condition: isPath("/Communication")
-                && isMethodPOST()
-                && hasBody(expectedRequestBody)
-        ) { _ in
-            counter += 1
-            // Note: this response is not validated nor used
-            return fixture(filePath: responseFilePath, headers: ["Content-Type": "application/json"])
+        stub(condition: isPath("/Communication")
+            && isMethodPOST()
+            && hasBody(expectedRequestBody)) { _ in
+                counter += 1
+                return fixture(filePath: redeemOrderResponse, headers: ["Content-Type": "application/json"])
         }
 
         sut.redeem(order: inputOrder)
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { order in
                 expect(counter) == 1
@@ -333,17 +315,15 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         let expectedError = URLError(.notConnectedToInternet)
 
         var counter = 0
-        stub(
-            condition: isPath("/Communication")
-                && isMethodPOST()
-                && hasBody(expectedRequestBody)
-        ) { _ in
-            counter += 1
-            return HTTPStubsResponse(error: expectedError)
+        stub(condition: isPath("/Communication")
+            && isMethodPOST()
+            && hasBody(expectedRequestBody)) { _ in
+                counter += 1
+                return HTTPStubsResponse(error: expectedError)
         }
 
         sut.redeem(order: inputOrder)
-            .testWait { error in
+            .test { error in
                 expect(counter) == 1
                 expect(error) == .http(.init(httpClientError: .httpError(expectedError), operationOutcome: nil))
             } expectations: { _ in
@@ -358,16 +338,14 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         )
 
         var counter = 0
-        stub(
-            condition: isPath("/Communication")
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        stub(condition: isPath("/Communication")
+            && isMethodGET()) { _ in
+                counter += 1
+                return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
         }
 
         sut.communicationResources(after: nil)
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { communications in
                 expect(counter) == 1
@@ -376,28 +354,25 @@ final class ErxTaskFHIRClientTests: XCTestCase {
             }
     }
 
-    func testCommunicationResourceWithTimestamp() throws {
+    func testCommunicationResourceWithTimestamp() {
         let expectedResponse = load(
             resource: "erxCommunicationReplyResponse",
             directory: .gem_wf_v1_1_with_kbv_v1_0_2
         )
 
         let timestamp = "2021-03-24T08:35:26.54834+00:00"
-        let dateString = try XCTUnwrap(FHIRDateFormatter.shared.date(from: timestamp)?
-            .fhirFormattedString(with: .yearMonthDayTime))
+        let dateString = FHIRDateFormatter.shared.date(from: timestamp)!.fhirFormattedString(with: .yearMonthDayTime)
 
         var counter = 0
-        stub(
-            condition: isPath("/Communication")
-                && containsQueryParams(["sent": "ge\(dateString)"])
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        stub(condition: isPath("/Communication")
+            && containsQueryParams(["sent": "ge\(dateString)"])
+            && isMethodGET()) { _ in
+                counter += 1
+                return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
         }
 
         sut.communicationResources(after: timestamp)
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { communications in
                 expect(counter) == 1
@@ -409,16 +384,14 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         let expectedError = URLError(.notConnectedToInternet)
 
         var counter = 0
-        stub(
-            condition: isPath("/Communication")
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return HTTPStubsResponse(error: expectedError)
+        stub(condition: isPath("/Communication")
+            && isMethodGET()) { _ in
+                counter += 1
+                return HTTPStubsResponse(error: expectedError)
         }
 
         sut.communicationResources(after: nil)
-            .testWait { error in
+            .test { error in
                 expect(counter) == 1
                 expect(error) == .http(.init(httpClientError: .httpError(expectedError), operationOutcome: nil))
             } expectations: { _ in
@@ -434,17 +407,15 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         let taskId = "160.000.000.014.285.76"
 
         var counter = 0
-        stub(
-            condition: isPath("/MedicationDispense")
-                && containsQueryParams(["identifier": "\(Workflow.Key.prescriptionIdKeys[.v1_2_0] ?? "")|\(taskId)"])
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
+        stub(condition: isPath("/MedicationDispense")
+            && containsQueryParams(["identifier": "\(Workflow.Key.prescriptionIdKeys[.v1_2_0] ?? "")|\(taskId)"])
+            && isMethodGET()) { _ in
+                counter += 1
+                return fixture(filePath: expectedResponse, headers: ["Content-Type": "application/json"])
         }
 
         sut.fetchMedicationDispenses(for: taskId)
-            .testWait { error in
+            .test { error in
                 fail("unexpected fail with error: \(error)")
             } expectations: { medicationDispenses in
                 expect(counter) == 1
@@ -457,16 +428,14 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         let expectedError = URLError(.notConnectedToInternet)
 
         var counter = 0
-        stub(
-            condition: isPath("/MedicationDispense")
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return HTTPStubsResponse(error: expectedError)
+        stub(condition: isPath("/MedicationDispense")
+            && isMethodGET()) { _ in
+                counter += 1
+                return HTTPStubsResponse(error: expectedError)
         }
 
         sut.fetchMedicationDispenses(for: "160.000.000.014.285.76")
-            .testWait { error in
+            .test { error in
                 expect(counter) == 1
                 expect(error) == .http(.init(httpClientError: .httpError(expectedError), operationOutcome: nil))
             } expectations: { _ in
@@ -486,16 +455,16 @@ final class ErxTaskFHIRClientTests: XCTestCase {
         return ErxTaskOrder(identifier: "d58894dd-c93c-4841-b6f6-4ac4cda4922f",
                             erxTaskId: "39c67d5b-1df3-11b2-80b4-783a425d8e87",
                             accessCode: "777bea0e13cc9c42ceec14aec3ddee2263325dc2c6c699db115f58fe423607ea",
-                            telematikId: "606358757",
-                            flowType: "160",
+                            pharmacyTelematikId: "606358757",
                             payload: payload)
     }()
 
     // swiftlint:disable line_length
-    private var expectedRequestBody: Data = .init(
-        "{\"basedOn\":[{\"reference\":\"Task\\/39c67d5b-1df3-11b2-80b4-783a425d8e87\\/$accept?ac=777bea0e13cc9c42ceec14aec3ddee2263325dc2c6c699db115f58fe423607ea\"}],\"extension\":[{\"url\":\"https:\\/\\/gematik.de\\/fhir\\/erp\\/StructureDefinition\\/GEM_ERP_EX_PrescriptionType\",\"valueCoding\":{\"code\":\"160\",\"system\":\"https:\\/\\/gematik.de\\/fhir\\/erp\\/CodeSystem\\/GEM_ERP_CS_FlowType\"}}],\"identifier\":[{\"system\":\"https:\\/\\/gematik.de\\/fhir\\/NamingSystem\\/OrderID\",\"value\":\"d58894dd-c93c-4841-b6f6-4ac4cda4922f\"}],\"meta\":{\"profile\":[\"https:\\/\\/gematik.de\\/fhir\\/erp\\/StructureDefinition\\/GEM_ERP_PR_Communication_DispReq|1.5\"]},\"payload\":[{\"contentString\":\"{\\\"address\\\":[\\\"Schloss Bran\\\",\\\"Strada General Traian Moșoiu 24\\\",\\\"Bran 507025\\\",\\\"Rumänien\\\"],\\\"hint\\\":\\\"Nur bei Tageslicht liefern!\\\",\\\"name\\\":\\\"Graf Dracula\\\",\\\"phone\\\":\\\"666 999 666\\\",\\\"supplyOptionsType\\\":\\\"shipment\\\",\\\"version\\\":1}\"}],\"recipient\":[{\"identifier\":{\"system\":\"https:\\/\\/gematik.de\\/fhir\\/sid\\/telematik-id\",\"value\":\"606358757\"}}],\"resourceType\":\"Communication\",\"status\":\"unknown\"}"
-            .utf8
-    )
+    private var expectedRequestBody: Data = {
+        String(
+            "{\"basedOn\":[{\"reference\":\"Task\\/39c67d5b-1df3-11b2-80b4-783a425d8e87\\/$accept?ac=777bea0e13cc9c42ceec14aec3ddee2263325dc2c6c699db115f58fe423607ea\"}],\"identifier\":[{\"system\":\"https:\\/\\/gematik.de\\/fhir\\/NamingSystem\\/OrderID\",\"value\":\"d58894dd-c93c-4841-b6f6-4ac4cda4922f\"}],\"meta\":{\"profile\":[\"https:\\/\\/gematik.de\\/fhir\\/erp\\/StructureDefinition\\/GEM_ERP_PR_Communication_DispReq|1.2\"]},\"payload\":[{\"contentString\":\"{\\\"address\\\":[\\\"Schloss Bran\\\",\\\"Strada General Traian Moșoiu 24\\\",\\\"Bran 507025\\\",\\\"Rumänien\\\"],\\\"hint\\\":\\\"Nur bei Tageslicht liefern!\\\",\\\"name\\\":\\\"Graf Dracula\\\",\\\"phone\\\":\\\"666 999 666\\\",\\\"supplyOptionsType\\\":\\\"shipment\\\",\\\"version\\\":1}\"}],\"recipient\":[{\"identifier\":{\"system\":\"https:\\/\\/gematik.de\\/fhir\\/sid\\/telematik-id\",\"value\":\"606358757\"}}],\"resourceType\":\"Communication\",\"status\":\"unknown\"}"
+        ).data(using: .utf8)!
+    }()
 
     // swiftlint:enable line_length
 

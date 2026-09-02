@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
@@ -32,23 +28,21 @@ final class OnboardingSnapshotTests: ERPSnapshotTestCase {
     let next: (() -> Void) = {}
 
     func testOnboardingStartView() {
-        let sut = OnboardingStartView(action: next)
+        let sut = OnboardingStartView()
             .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
     func testOnboardingAnalyticsView() {
-        let state = OnboardingDomain.State()
-        let sut = OnboardingAnalyticsView(store: StoreOf<OnboardingDomain>(
-            initialState: state
-        ) {
-            EmptyReducer()
-        })
-        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        let sut = OnboardingAnalyticsView(action: next)
+            .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
     func testOnboardingRegisterAuthenticationView_NoBiometrics() {
+        // Pickers `selected` parameter is false positive triggering the perception tracking on iOS 18
+        Perception.isPerceptionCheckingEnabled = false
+
         let state = RegisterAuthenticationDomain.State(
             availableSecurityOptions: [.password],
             selectedSecurityOption: .password,
@@ -68,9 +62,10 @@ final class OnboardingSnapshotTests: ERPSnapshotTestCase {
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
-    func testOnboardingRegisterAuthenticationView() {
+    func testOnboardingRegisterAuthenticationView_WithSelectedFaceId() {
         let state = RegisterAuthenticationDomain.State(
-            availableSecurityOptions: [.password, .biometry(.faceID)]
+            availableSecurityOptions: [.password, .biometry(.faceID)],
+            selectedSecurityOption: AppSecurityOption.biometry(.faceID)
         )
         let sut = OnboardingRegisterAuthenticationView(
             store: StoreOf<RegisterAuthenticationDomain>(
@@ -84,10 +79,13 @@ final class OnboardingSnapshotTests: ERPSnapshotTestCase {
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
-    func testOnboardingRegisterPasswordView() {
-        let state = RegisterPasswordDomain.State()
-        let sut = OnboardingRegisterPasswordView(
-            store: StoreOf<RegisterPasswordDomain>(
+    func testOnboardingRegisterAuthenticationView_WithSelectedPasswordOption() {
+        let state = RegisterAuthenticationDomain.State(
+            availableSecurityOptions: [.password, .biometry(.touchID)],
+            selectedSecurityOption: AppSecurityOption.password
+        )
+        let sut = OnboardingRegisterAuthenticationView(
+            store: StoreOf<RegisterAuthenticationDomain>(
                 initialState: state
 
             ) {
@@ -98,9 +96,11 @@ final class OnboardingSnapshotTests: ERPSnapshotTestCase {
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
-    func testOnboardingRegisterPasswordView_WithNonEqualPasswords() {
-        let store = StoreOf<RegisterPasswordDomain>(
-            initialState: RegisterPasswordDomain.State(
+    func testOnboardingRegisterAuthenticationView_WithNonEqualPasswords() {
+        let store = StoreOf<RegisterAuthenticationDomain>(
+            initialState: RegisterAuthenticationDomain.State(
+                availableSecurityOptions: [.password, .biometry(.touchID)],
+                selectedSecurityOption: .password,
                 passwordA: "Abc",
                 passwordB: "A",
                 passwordStrength: .strong,
@@ -111,14 +111,16 @@ final class OnboardingSnapshotTests: ERPSnapshotTestCase {
             EmptyReducer()
         }
 
-        let sut = OnboardingRegisterPasswordView(store: store)
+        let sut = OnboardingRegisterAuthenticationView(store: store)
             .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
-    func testOnboardingRegisterPasswordView_WithInsufficientPasswordStrength() {
-        let store = StoreOf<RegisterPasswordDomain>(
-            initialState: RegisterPasswordDomain.State(
+    func testOnboardingRegisterAuthenticationView_WithInsufficientPasswordStrength() {
+        let store = StoreOf<RegisterAuthenticationDomain>(
+            initialState: RegisterAuthenticationDomain.State(
+                availableSecurityOptions: [.password, .biometry(.touchID)],
+                selectedSecurityOption: .password,
                 passwordA: "Abc",
                 passwordB: "Abc",
                 passwordStrength: .veryWeak,
@@ -129,18 +131,36 @@ final class OnboardingSnapshotTests: ERPSnapshotTestCase {
             EmptyReducer()
         }
 
-        let sut = OnboardingRegisterPasswordView(store: store)
+        let sut = OnboardingRegisterAuthenticationView(store: store)
             .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
+    func testOnboardingRegisterAuthenticationView_WithNoSelectionError() {
+        let state = RegisterAuthenticationDomain.State(
+            availableSecurityOptions: [.password, .biometry(.touchID)],
+            selectedSecurityOption: .biometry(.touchID),
+            showNoSelectionMessage: true
+        )
+        let sut = OnboardingRegisterAuthenticationView(
+            store: StoreOf<RegisterAuthenticationDomain>(
+                initialState: state
+
+            ) {
+                EmptyReducer()
+            }
+        )
+        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        assertSnapshots(of: sut, as: snapshotModi())
+    }
+
     func testOnboardingLegalInfoView() {
-        let state = OnboardingDomain.State()
-        let sut = OnboardingLegalInfoView(store: StoreOf<OnboardingDomain>(
-            initialState: state
-        ) {
-            EmptyReducer()
-        })
+        let sut = OnboardingLegalInfoView(
+            isAllAccepted: .constant(false),
+            showTermsOfUse: {},
+            showTermsOfPrivacy: {},
+            action: next
+        )
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         assertSnapshots(of: sut, as: snapshotModi())
     }

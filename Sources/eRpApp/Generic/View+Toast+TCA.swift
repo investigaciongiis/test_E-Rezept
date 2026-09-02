@@ -1,23 +1,19 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpStyleKit
@@ -34,9 +30,7 @@ struct ToastState<Action: Equatable>: Equatable, Identifiable {
 
     let uuid = UUID()
 
-    var id: UUID {
-        uuid
-    }
+    var id: UUID { uuid }
 
     let style: Style
 
@@ -57,7 +51,7 @@ extension View {
     ///   - toDestinationState: A transformation to extract alert state from the presentation state.
     ///   - fromDestinationAction: A transformation to embed alert actions into the presentation
     ///     action.
-    func toast<State, Action, ToastAction>(
+    @ViewBuilder func toast<State, Action, ToastAction>(
         _ store: Store<PresentationState<State>, PresentationAction<Action>>,
         state toDestinationState: @escaping (State) -> ToastState<ToastAction>?,
         action fromDestinationAction: @escaping (ToastAction) -> Action
@@ -128,7 +122,7 @@ struct TCAToast_PreviewProvider: PreviewProvider {
     // sourcery: SkipSourcery
     @Reducer
     struct Domain {
-        @Reducer
+        @Reducer(state: .equatable, action: .equatable)
         enum Destination {
             // sourcery: AnalyticsScreen = alert
             @ReducerCaseEphemeral
@@ -167,7 +161,7 @@ struct TCAToast_PreviewProvider: PreviewProvider {
                     state
                         .destination =
                         .toast(.init(style: .action("Action",
-                                                    .init(action: .send(.customAction)) { TextState("abc") })))
+                                                    .init(action: .send(.customAction), label: { TextState("abc") }))))
                     return .none
                 case .destination(.presented(.toast(.customAction))):
                     state.destination = nil
@@ -181,34 +175,36 @@ struct TCAToast_PreviewProvider: PreviewProvider {
     }
 
     struct TestView: View {
-        @Bindable var store: StoreOf<Domain>
+        @Perception.Bindable var store: StoreOf<Domain>
 
         var body: some View {
-            VStack {
-                Spacer()
-                Button {
-                    store.send(.simpleText, animation: .easeInOut)
-                } label: {
-                    Text("Simple Text")
-                }
-                Button {
-                    store.send(.twoLines, animation: .easeInOut)
-                } label: {
-                    Text("Two Lines")
-                }
-                Button {
-                    store.send(.action, animation: .easeInOut)
-                } label: {
-                    Text("Toast with action")
-                }
+            WithPerceptionTracking {
+                VStack {
+                    Spacer()
+                    Button {
+                        store.send(.simpleText, animation: .easeInOut)
+                    } label: {
+                        Text("Simple Text")
+                    }
+                    Button {
+                        store.send(.twoLines, animation: .easeInOut)
+                    } label: {
+                        Text("Two Lines")
+                    }
+                    Button {
+                        store.send(.action, animation: .easeInOut)
+                    } label: {
+                        Text("Toast with action")
+                    }
 
-                Spacer()
+                    Spacer()
+                }
+                .onAppear {
+                    store.send(.action, animation: .easeInOut)
+                }
+                .frame(maxWidth: .infinity)
+                .toast($store.scope(state: \.destination?.toast, action: \.destination.toast))
             }
-            .onAppear {
-                store.send(.action, animation: .easeInOut)
-            }
-            .frame(maxWidth: .infinity)
-            .toast($store.scope(state: \.destination?.toast, action: \.destination.toast))
         }
     }
 
@@ -219,6 +215,3 @@ struct TCAToast_PreviewProvider: PreviewProvider {
         })
     }
 }
-
-extension TCAToast_PreviewProvider.Domain.Destination.State: Equatable {}
-extension TCAToast_PreviewProvider.Domain.Destination.Action: Equatable {}

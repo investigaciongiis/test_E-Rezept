@@ -1,29 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import ComposableArchitecture
 import eRpKit
 import eRpStyleKit
-import FeatureHelpers
 import Foundation
 import Perception
 import SwiftUI
@@ -33,6 +28,7 @@ struct OrderMessageView: View {
     let store: StoreOf<OrderDetailDomain>
     let timelineEntry: TimelineEntry
     var style: Indicator.Style = .middle
+    @State var calculatedHeight = CGFloat(1)
     @Dependency(\.uiDateFormatter) var uiDateFormatter: UIDateFormatter
 
     var body: some View {
@@ -49,37 +45,34 @@ struct OrderMessageView: View {
                     .foregroundColor(Colors.systemLabel)
                     .padding(.horizontal)
 
-                if !timelineEntry.chipTexts.isEmpty {
-                    RowStack {
-                        ForEach(timelineEntry.chipTexts, id: \.self) { chipText in
-                            Text(chipText)
-                                .font(Font.caption)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(Colors.systemLabel)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Colors.primary100)
-                                .cornerRadius(16)
-                        }
-                    }.accessibility(identifier: A11y.orderDetail.message.msgTxtChips)
+                if let chipText = timelineEntry.chipText {
+                    Text(chipText)
+                        .font(Font.caption)
+                        .multilineTextAlignment(.leading)
+                        .foregroundColor(Colors.systemLabel)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Colors.primary100)
+                        .cornerRadius(16)
                         .padding(.horizontal)
                 }
 
-                UIKitTextView(attributedString: timelineEntry.formattedText) { url in
+                UIKitTextView(attributedString: timelineEntry.formattedText,
+                              calculatedHeight: $calculatedHeight) { url in
                     switch timelineEntry {
                     case .dispReq:
                         if let action = timelineEntry.actions.first?.action {
                             store.send(action)
                         }
-                    case .reply, .diga:
+                    case .reply:
                         store.send(.openPhoneAppWith(url: url))
                     case .chargeItem,
-                         .internalCommunication,
-                         .euEntry:
+                         .internalCommunication:
                         // cases have no custom URLs
                         store.send(.openUrl(url: url))
                     }
                 }
+                .frame(height: calculatedHeight)
                 .contextMenu(ContextMenu {
                     Button(L10n.orderTxtCopyToClipboard) {
                         UIPasteboard.general.string = timelineEntry.text
@@ -91,14 +84,6 @@ struct OrderMessageView: View {
 
                 if case .dispReq = timelineEntry {
                     // ignore action here since it's used as inline text link
-                } else if case let .euEntry(communication, _) = timelineEntry,
-                          case .deletedAccessCode = communication.eventType {
-                    Text(L10n.ordDetailBtnRevokedCode)
-                        .font(Font.subheadline)
-                        .padding(.top)
-                        .padding(.horizontal)
-                        .foregroundColor(Colors.red700)
-                        .accessibilityIdentifier(A11y.orderDetail.list.ordDetailBtnAccessCodeRevoked)
                 } else {
                     ForEach(timelineEntry.actions) { timelineEntry in
                         Button {
@@ -112,7 +97,7 @@ struct OrderMessageView: View {
                             }
                             .padding(.top)
                             .padding(.horizontal)
-                            .foregroundColor(Colors.primary700)
+                            .foregroundColor(Colors.primary600)
                         }
                         .accessibilityIdentifier(timelineEntry.accessibilityIdentifier)
                     }
@@ -205,72 +190,6 @@ struct OrderMessageView: View {
             }
         }
     }
-
-    /// A custom layout that arranges subview in a row-like pattern
-    /// wrapping to a new row when the elements exceed the available width.
-    struct RowStack: Layout {
-        let horizontalPadding: CGFloat = 4
-        let verticalPadding: CGFloat = 4
-
-        /// Calculate the total size needed
-        func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout Void) -> CGSize {
-            var currentRowWidth: CGFloat = 0
-            var currentRowHeight: CGFloat = 0
-            var totalHeight: CGFloat = 0
-            let maxWidth = proposal.width ?? .infinity
-
-            for subview in subviews {
-                // get the size of current subview
-                let size = subview.sizeThatFits(ProposedViewSize(width: maxWidth - currentRowWidth, height: nil))
-                let elementWidth = size.width + horizontalPadding
-                let elementHeight = size.height
-
-                // Check if new elements is exceeding maxWidth
-                if currentRowWidth + elementWidth > maxWidth {
-                    // "create" a new row
-                    currentRowWidth = 0
-                    totalHeight += currentRowHeight + verticalPadding
-                    currentRowHeight = 0
-                }
-
-                currentRowWidth += elementWidth
-                // store height of the tallest element
-                currentRowHeight = max(currentRowHeight, elementHeight)
-            }
-            totalHeight += currentRowHeight
-            return CGSize(width: currentRowWidth, height: totalHeight)
-        }
-
-        /// Places the subviews
-        func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout Void) {
-            // values based on the boundary
-            var currentRowWidth: CGFloat = bounds.minX
-            var currentRowHeight: CGFloat = bounds.minY
-            var totalHeight: CGFloat = 0
-            let maxWidth = bounds.maxX
-
-            for subview in subviews {
-                // get the size of current subview
-                let size = subview.sizeThatFits(ProposedViewSize(width: maxWidth - currentRowWidth, height: nil))
-                let elementWidth = size.width + horizontalPadding
-                let elementHeight = size.height
-
-                // Check if new elements is exceeding maxWidth
-                if currentRowWidth + elementWidth > maxWidth {
-                    // "create" a new row
-                    currentRowWidth = bounds.minX
-                    currentRowHeight += totalHeight + verticalPadding
-                    totalHeight = 0
-                }
-
-                subview.place(at: CGPoint(x: currentRowWidth, y: currentRowHeight), proposal: ProposedViewSize(size))
-                // modify x-value for new insert position
-                currentRowWidth += elementWidth
-                // store height of the tallest element
-                totalHeight = max(totalHeight, elementHeight)
-            }
-        }
-    }
 }
 
 struct OrderMessageView_Previews: PreviewProvider {
@@ -292,78 +211,76 @@ struct OrderMessageView_Previews: PreviewProvider {
             OrderMessageView(
                 store: OrderDetailDomain.Dummies.store,
                 timelineEntry: .reply(
-                    ErxTask.Communication.Unique(
+                    ErxTask.Communication(
                         identifier: "4",
                         profile: .reply,
-                        taskIds: ["taskID"],
-                        insuranceId: "userID",
+                        taskId: "taskID",
+                        userId: "userID",
                         telematikId: "telematikID",
                         timestamp: "2021-05-29T10:59:37.098245933+00:00",
                         payloadJSON: "{\"version\": \"1\",\"supplyOptionsType\": \"delivery\",\"info_text\": \"Your prescription is on the way. Make sure you are at home. We will not come back and bring you more drugs! Just kidding ;)\", \"url\":\"https://www.tree.fm/forest/33\"}" // swiftlint:disable:this line_length
-                    ),
-                    chipTexts: []
+                    )
                 )
             )
 
             OrderMessageView(
                 store: OrderDetailDomain.Dummies.store,
                 timelineEntry: .reply(
-                    ErxTask.Communication.Unique(
+                    ErxTask.Communication(
                         identifier: "3",
                         profile: .reply,
-                        taskIds: ["taskID"],
-                        insuranceId: "userID",
+                        taskId: "taskID",
+                        userId: "userID",
                         telematikId: "telematikID",
                         timestamp: "2021-05-29T10:59:37.098245933+00:00",
                         payloadJSON: "{\"version\":\"1\" , \"supplyOptionsType\":\"onPremise\" , \"info_text\":\"01 Info/Para + HRcode/Para + DMC/Para + URL/Para\" , \"pickUpCodeHR\":\"T01__R01\" , \"pickUpCodeDMC\":\"Test_01___Rezept_01___abcdefg12345\" }" // swiftlint:disable:this line_length
-                    ), chipTexts: []
+                    )
                 )
             )
 
             OrderMessageView(
                 store: OrderDetailDomain.Dummies.store,
                 timelineEntry: .reply(
-                    ErxTask.Communication.Unique(
+                    ErxTask.Communication(
                         identifier: "2",
                         profile: .reply,
-                        taskIds: ["taskID"],
-                        insuranceId: "userID",
+                        taskId: "taskID",
+                        userId: "userID",
                         telematikId: "telematikID",
                         timestamp: "2021-05-29T10:59:37.098245933+00:00",
                         payloadJSON: "{\"version\":\"1\" , \"supplyOptionsType\":\"shipment\" , \"info_text\":\"10 Info/Para + HRcode/Para + DMC/Para + URL/Para\" , \"pickUpCodeHR\":\"T10__R03\" , \"pickUpCodeDMC\":\"Test_10___Rezept_03___abcdefg12345\" , \"url\":\"https://www.tree.fm/forest/33\"}" // swiftlint:disable:this line_length
-                    ), chipTexts: []
+                    )
                 )
             )
 
             OrderMessageView(
                 store: OrderDetailDomain.Dummies.store,
                 timelineEntry: .reply(
-                    ErxTask.Communication.Unique(
+                    ErxTask.Communication(
                         identifier: "2",
                         profile: .reply,
-                        taskIds: ["taskID"],
-                        insuranceId: "userID",
+                        taskId: "taskID",
+                        userId: "userID",
                         telematikId: "telematikID",
                         timestamp: "2021-05-29T10:59:37.098245933+00:00",
                         payloadJSON: "not a json"
-                    ), chipTexts: []
+                    )
                 )
             )
 
             OrderMessageView(
                 store: OrderDetailDomain.Dummies.store,
                 timelineEntry: .dispReq(
-                    ErxTask.Communication.Unique(
+                    ErxTask.Communication(
                         identifier: "1",
                         profile: .dispReq,
-                        taskIds: ["taskID"],
-                        insuranceId: "userID",
+                        taskId: "taskID",
+                        userId: "userID",
                         telematikId: "telematikID",
                         timestamp: "2021-05-29T09:59:37.098245933+00:00",
                         payloadJSON: ""
                     ),
-                    pharmacy: nil,
-                    chipTexts: []
+                    pharmacy: nil
                 ),
                 style: .single
             )
@@ -374,5 +291,70 @@ struct OrderMessageView_Previews: PreviewProvider {
                                                          fhirData: Data()))
             )
         }
+    }
+}
+
+struct UIKitTextView: UIViewRepresentable {
+    private var attributedString: NSMutableAttributedString
+    @Binding private var calculatedHeight: CGFloat
+    var onLinkTap: (URL) -> Void
+
+    init(attributedString: AttributedString, calculatedHeight: Binding<CGFloat>, onLinkTap: @escaping (URL) -> Void) {
+        _calculatedHeight = calculatedHeight
+        let result = NSMutableAttributedString(attributedString)
+        result.addAttribute(.font,
+                            value: UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .regular),
+                            range: NSRange(location: 0, length: result.length))
+        result.addAttribute(.foregroundColor,
+                            value: UIColor.secondaryLabel,
+                            range: NSRange(location: 0, length: result.length))
+        self.attributedString = result
+        self.onLinkTap = onLinkTap
+    }
+
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textView.isScrollEnabled = false
+        textView.delegate = context.coordinator
+        textView.attributedText = attributedString
+        textView.isEditable = false
+        textView.textContainerInset = .zero
+        textView.textContainer.lineFragmentPadding = 0
+        textView.anchorPoint = .zero
+        return textView
+    }
+
+    func updateUIView(_ uiView: UITextView, context _: Context) {
+        let newSize = uiView.sizeThatFits(CGSize(width: uiView.frame.width,
+                                                 height: .greatestFiniteMagnitude))
+
+        guard calculatedHeight != newSize.height else { return }
+
+        DispatchQueue.main.async { $calculatedHeight.wrappedValue = newSize.height }
+    }
+
+    class Coordinator: NSObject, UITextViewDelegate {
+        var parent: UIKitTextView
+
+        init(parent: UIKitTextView) {
+            self.parent = parent
+        }
+
+        func textView(_: UITextView, shouldInteractWith URL: URL, in _: NSRange,
+                      interaction _: UITextItemInteraction) -> Bool {
+            if URL.absoluteString.hasPrefix("https://") {
+                // return true when normal https link
+                return true
+            } else {
+                // handle custom link
+                parent.onLinkTap(URL)
+                return false
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
     }
 }

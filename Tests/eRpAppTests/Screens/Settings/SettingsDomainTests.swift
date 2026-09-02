@@ -1,104 +1,89 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import Nimble
-import Synchronization
 import XCTest
 
 @MainActor
 final class SettingsDomainTests: XCTestCase {
-    var mockTracker = DummyTracker()
-    let mockUserSessionContainer = UsersSessionContainerMock()
+    var mockTracker = MockTracker()
+    let mockUserSessionContainer = MockUsersSessionContainer()
     let scheduler = DispatchQueue.immediate.eraseToAnyScheduler()
+    let mockResourceHandler = MockResourceHandler()
     typealias TestStore = TestStoreOf<SettingsDomain>
 
-    func testStore(
-        for state: SettingsDomain.State = SettingsDomain.Dummies.state,
-        withDependencies prepareDependencies: (inout DependencyValues) -> Void = { _ in }
-    ) -> TestStore {
+    func testStore() -> TestStore {
+        testStore(for: SettingsDomain.Dummies.state)
+    }
+
+    func testStore(for state: SettingsDomain.State) -> TestStore {
         TestStore(initialState: state) {
             SettingsDomain()
         } withDependencies: { dependencies in
             dependencies.changeableUserSessionContainer = mockUserSessionContainer
             dependencies.tracker = mockTracker
-            dependencies.router = RoutingMock()
-
-            prepareDependencies(&dependencies)
+            dependencies.router = MockRouting()
+            dependencies.resourceHandler = mockResourceHandler
         }
     }
 
     func testDemoModeToggleShouldSetDemoModeWhenDemoModeIsFalse() async {
         let store = testStore()
 
-        @Shared(.isDemoMode) var isDemoMode
-        $isDemoMode.withLock { $0 = false }
-
+        mockUserSessionContainer.underlyingIsDemoMode = Just(false).eraseToAnyPublisher()
+        await store.send(.response(.demoModeStatusReceived(false)))
         // when
         await store.send(.toggleDemoModeSwitch(true)) { sut in
             // then
             sut.destination = .alert(.info(SettingsDomain.demoModeOnAlertState))
-            sut.$isDemoMode.withLock { $0 = true }
         }
+        expect(self.mockUserSessionContainer.switchToDemoModeCalled).to(beTrue())
     }
 
     func testDemoModeToggleShouldSetStandardModeWhenDemoModeIsTrue() async {
-        @Shared(.isDemoMode) var isDemoMode
-        $isDemoMode.withLock { $0 = true }
-
         let store = testStore(
-            for: SettingsDomain.State()
+            for: SettingsDomain.State(
+                isDemoMode: true
+            )
         )
         // when
         await store.send(.toggleDemoModeSwitch(false)) { sut in
             // then
             sut.destination = .alert(.info(SettingsDomain.demoModeOffAlertState))
-            sut.$isDemoMode.withLock { $0 = false }
         }
+        expect(self.mockUserSessionContainer.switchToStandardModeCalled).to(beTrue())
     }
 
-    @available(iOS 18.0, *)
     func testLanguageSettings() async {
-        let openedURL = Mutex<URL?>(nil)
-
-        let store = testStore { dependencies in
-            dependencies.openURLHandler.canOpenURL = { _ in true }
-            dependencies.openURLHandler.open = { url in
-                openedURL.withLock { $0 = url }
-                return true
-            }
-        }
+        let store = testStore()
 
         await store.send(.languageSettingsTapped) { sut in
             sut.destination = .alert(.info(SettingsDomain.languageSettingsAlertState))
         }
 
-        expect(openedURL.withLock { $0 }).to(beNil())
+        expect(self.mockResourceHandler.openCalled).to(beFalse())
 
         await store.send(.destination(.presented(.alert(.openSettings))))
 
-        expect(openedURL.withLock { $0 }).toNot(beNil())
+        expect(self.mockResourceHandler.openCalled).to(beTrue())
     }
 
     func testToggleHealthCardView() async {
@@ -122,7 +107,9 @@ final class SettingsDomainTests: XCTestCase {
 
     func testAppTrackingOptInStartsComplyDialog() async {
         let store = testStore(
-            for: SettingsDomain.State()
+            for: SettingsDomain.State(
+                isDemoMode: false
+            )
         )
 
         // when
@@ -135,7 +122,9 @@ final class SettingsDomainTests: XCTestCase {
 
     func testAppTrackingOptInConfirmAlert() async {
         let store = testStore(
-            for: SettingsDomain.State()
+            for: SettingsDomain.State(
+                isDemoMode: false
+            )
         )
 
         mockTracker.optIn = false
@@ -156,7 +145,9 @@ final class SettingsDomainTests: XCTestCase {
 
     func testAppTrackingOptInDisableAfterConfirm() async {
         let store = testStore(
-            for: SettingsDomain.State()
+            for: SettingsDomain.State(
+                isDemoMode: false
+            )
         )
 
         mockTracker.optIn = true
@@ -168,7 +159,9 @@ final class SettingsDomainTests: XCTestCase {
 
     func testAppTrackingOptInCancelAlert() async {
         let store = testStore(
-            for: SettingsDomain.State()
+            for: SettingsDomain.State(
+                isDemoMode: false
+            )
         )
         mockTracker.optIn = false
 

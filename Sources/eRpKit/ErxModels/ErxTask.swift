@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Foundation
 
 /// Represents all information needed by the Erx App to handle profiled Erx Tasks (e.g. Prescriptions).
@@ -29,7 +24,7 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
     public init(
         identifier: String,
         status: Status,
-        flowType: FlowType,
+        flowType: FlowType? = nil,
         accessCode: String? = nil,
         fullUrl: String? = nil,
         authoredOn: String? = nil,
@@ -49,10 +44,7 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
         practitioner: ErxPractitioner? = nil,
         organization: ErxOrganization? = nil,
         communications: [Communication] = [],
-        medicationDispenses: [ErxMedicationDispense] = [],
-        deviceRequest: ErxDeviceRequest? = nil,
-        isEURedeemable: Bool = false,
-        isSetEURedeemableByPatient: Bool = false
+        medicationDispenses: [ErxMedicationDispense] = []
     ) {
         self.identifier = identifier
         self.status = status
@@ -77,9 +69,6 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
         self.communications = communications
         self.medicationDispenses = medicationDispenses
         self.avsTransactions = avsTransactions
-        self.deviceRequest = deviceRequest
-        self.isEURedeemable = isEURedeemable
-        self.isSetEURedeemableByPatient = isSetEURedeemableByPatient
     }
 
     // MARK: Variables that only exist locally
@@ -94,17 +83,14 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
     // MARK: gematik profiled FHIR resources
 
     /// Id of the task
-    public var id: String {
-        identifier
-    }
-
+    public var id: String { identifier }
     /// Identifier of the task
     public let identifier: String
     /// Status of the current task
     public var status: Status
     /// FlowType describes type of task (e.G. Direktzuweisung).
     /// Usually the flowtype is identical to the beginning of the task id
-    public var flowType: FlowType
+    public var flowType: FlowType?
     /// When the prescription will be expired
     public let expiresOn: String?
     /// When the prescription was authored
@@ -121,10 +107,6 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
     /// The full URL composed of id and access code
     /// e.g. "https://prescriptionserver.telematik/Task/588780"
     public let fullUrl: String?
-    /// This flag is set by the server if the prescription is redeemable in the EU
-    public let isEURedeemable: Bool
-    /// This flag is set by the user if the prescription is redeemable in the EU
-    public var isSetEURedeemableByPatient: Bool
 
     // MARK: KBV profiled FHIR resources
 
@@ -152,15 +134,13 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
     public let communications: [Communication]
     /// List of actual medication dispenses
     public let medicationDispenses: [ErxMedicationDispense]
-    /// DiGa of the task
-    public let deviceRequest: ErxDeviceRequest?
 
     /// Changes status of `ErxTask` and updates the manual changed `redeemedOn` property
     /// Use this method only for scanned `ErxTask`s that have been manually redeemed by the user
     /// - Parameter redeemedOn: Date string when the `ErxTask` has been redeemed.
     ///                         Pass `nil` to reset the redeem status
     public mutating func update(with redeemedOn: String?) {
-        if let redeemedOn {
+        if let redeemedOn = redeemedOn {
             self.redeemedOn = redeemedOn
             status = .completed
         } else {
@@ -178,9 +158,9 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
             fullUrl: fullUrl,
             authoredOn: authoredOn,
             lastModified: date,
-            expiresOn: expiresOn,
-            acceptedUntil: acceptedUntil,
-            redeemedOn: redeemedOn,
+            expiresOn: prescriptionId,
+            acceptedUntil: expiresOn,
+            redeemedOn: acceptedUntil,
             avsTransactions: avsTransactions,
             author: author,
             prescriptionId: prescriptionId,
@@ -192,10 +172,7 @@ public struct ErxTask: Identifiable, Equatable, Hashable, Codable, Sendable {
             practitioner: practitioner,
             organization: organization,
             communications: communications,
-            medicationDispenses: medicationDispenses,
-            deviceRequest: deviceRequest,
-            isEURedeemable: isEURedeemable,
-            isSetEURedeemableByPatient: isSetEURedeemableByPatient
+            medicationDispenses: medicationDispenses
         )
     }
 }
@@ -223,7 +200,7 @@ extension ErxTask {
             public static var kDirectAssignmentForPKV = "209"
         }
 
-        public typealias RawValue = String
+        public typealias RawValue = String?
         /// Muster 16 (Apothekenpflichtige Arzneimittel)
         case pharmacyOnly
         /// Muster 16 (Betäubungsmittel)
@@ -246,7 +223,8 @@ extension ErxTask {
         /// all other (unknown) cases
         case unknown(String)
 
-        public init(rawValue: RawValue) {
+        public init?(rawValue: RawValue) {
+            guard let rawValue = rawValue else { return nil }
             switch rawValue {
             case Code.kPharmacyOnly: self = .pharmacyOnly
             case Code.kNarcotic: self = .narcotic
@@ -260,12 +238,7 @@ extension ErxTask {
             }
         }
 
-        public init(taskId: String) {
-            let code = taskId.components(separatedBy: ".").first ?? ErxTask.FlowType.Code.kPharmacyOnly
-            self.init(rawValue: code)
-        }
-
-        public var rawValue: String {
+        public var rawValue: String? {
             switch self {
             case .pharmacyOnly: return Code.kPharmacyOnly
             case .narcotic: return Code.kNarcotic
@@ -283,15 +256,6 @@ extension ErxTask {
     public enum Source: String, Codable, Sendable {
         case scanner
         case server
-    }
-}
-
-extension ErxTask {
-    @CodedError("209")
-    public enum Error: Swift.Error {
-        /// Unable to construct task input patch request
-        @ErrorCode("01")
-        case unableToConstructInputPatch
     }
 }
 

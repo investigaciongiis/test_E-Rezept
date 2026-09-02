@@ -10,7 +10,7 @@
                 "unit": "{Package}"
             },
             "dosageInstructions": "",
-            "ser": true,
+            "bvg": true,
             "coPaymentStatus": "0",
             "authoredOn": "2024-01-16",
             "multiplePrescription":
@@ -31,7 +31,11 @@
         "lastModified": "{{DATETIME:-27m}}"
     },
     "taskDetail": {
-        "flowType": "160",
+        "flowType":
+        {
+            "pharmacyOnly":
+            {}
+        },
         "accessCode": "b0bb77ed3034cfbebfceaac88b3a187321d0e3b63de271127d1ff8f1bc300340",
         "medicationRequest":
         {
@@ -43,7 +47,7 @@
                 "unit": "{Package}"
             },
             "dosageInstructions": "",
-            "ser": true,
+            "bvg": true,
             "coPaymentStatus": "0",
             "authoredOn": "2024-01-16",
             "multiplePrescription":
@@ -72,7 +76,7 @@
             "normSizeCode": "N1",
             "pzn": "03678010",
             "dosageForm": "TRS",
-            "name": "{{MEDICATIONNAME}}",
+            "name": "Ibuprofen 08",
             "drugCategory": "00",
             "ingredients":
             []
@@ -108,8 +112,6 @@
             "insuranceId": "M070759114"
         },
         "prescriptionId": "{{TASKID}}",
-        "isEURedeemable" : false,
-        "isSetEURedeemableByPatient" : false,
         "source": "server",
         "communications":
         [],
@@ -118,7 +120,7 @@
         "lastModified": "{{DATETIME:-27m}}"
     },
     "dispReq": {
-        "orderId": "{{ORDERID}}",
+        "orderId": "{{UUID}}",
         "insuranceId": "M070759114",
         "payloadJSON": "{\"address\":[\"Straßburger Str. 2\",\"12345\",\"Nord Ricardobrunn\"],\"hint\":\"\",\"name\":\"Boaty Mc Boatface\",\"phone\":\"1234567890\",\"supplyOptionsType\":\"shipment\",\"version\":1}",
         "payload":
@@ -134,7 +136,6 @@
         "telematikId": "{{TELEMATIKID}}"
     },
     "reply": {
-        "orderId": "{{ORDERID}}",
         "telematikId": "{{TELEMATIKID}}",
         "isRead": false,
         "identifier": "{{UUID}}",

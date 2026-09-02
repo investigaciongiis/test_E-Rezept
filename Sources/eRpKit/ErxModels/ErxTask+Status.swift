@@ -1,26 +1,21 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import CodedError
 import Foundation
 
 extension ErxTask {
@@ -70,20 +65,20 @@ extension ErxTask {
             case "sent": self = .computed(status: .sent)
             case "waiting": self = .computed(status: .waiting)
             case "dispensed": self = .computed(status: .dispensed)
-            // The task is ready to be acted upon and action is sought.
+            /// The task is ready to be acted upon and action is sought.
             case "requested", "undefined: requested": self = .undefined(status: "requested")
-            // A potential performer has claimed ownership of the task and is evaluating whether to perform it.
+            /// A potential performer has claimed ownership of the task and is evaluating whether to perform it.
             case "received", "undefined: received": self = .undefined(status: "received")
-            // The potential performer has agreed to execute the task but has not yet started work.
+            /// The potential performer has agreed to execute the task but has not yet started work.
             case "accepted", "undefined: accepted": self = .undefined(status: "accepted")
-            // The potential performer who claimed ownership of the task has decided
-            // not to execute it prior to performing any action.
+            /// The potential performer who claimed ownership of the task has decided
+            /// not to execute it prior to performing any action.
             case "rejected", "undefined: rejected": self = .undefined(status: "rejected")
-            // The task has been started but work has been paused.
+            /// The task has been started but work has been paused.
             case "on-hold", "undefined: on-hold": self = .undefined(status: "on-hold")
-            // The task was attempted but could not be completed due to some error.
+            /// The task was attempted but could not be completed due to some error.
             case "failed", "undefined: failed": self = .undefined(status: "failed")
-            // The task should never have existed and is retained only because of the possibility it may have used.
+            /// The task should never have existed and is retained only because of the possibility it may have used.
             case "entered-in-error", "undefined: entered-in-error": self = .undefined(status: "entered-in-error")
             default:
                 if rawValue.hasPrefix(Self.errorPrefix) {
@@ -112,19 +107,19 @@ extension ErxTask {
 }
 
 extension ErxTask.Status {
-    @CodedError("201")
+    // sourcery: CodedError = "201"
     public enum Error: Swift.Error, RawRepresentable {
-        @ErrorCode("01")
+        // sourcery: errorCode = "01"
         case decoding(message: String)
-        @ErrorCode("02")
+        // sourcery: errorCode = "02"
         case unknown(message: String)
-        @ErrorCode("03")
+        // sourcery: errorCode = "03"
         case missingStatus
-        @ErrorCode("04")
+        // sourcery: errorCode = "04"
         case missingPatientReceiptReference
-        @ErrorCode("05")
+        // sourcery: errorCode = "05"
         case missingPatientReceiptIdentifier
-        @ErrorCode("06")
+        // sourcery: errorCode = "06"
         case missingPatientReceiptBundle
 
         public typealias RawValue = String

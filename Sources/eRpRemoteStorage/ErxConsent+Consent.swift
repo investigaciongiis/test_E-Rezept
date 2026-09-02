@@ -1,29 +1,24 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import eRpKit
 import Foundation
 import ModelsR4
-import Sharing
 
 extension ErxConsent {
     func asConsentResource(
@@ -37,17 +32,8 @@ extension ErxConsent {
         return try encoder.encode(consent)
     }
 
-    // swiftlint:disable:next function_body_length
     private func createFHIRConsent() throws -> Consent {
-        let chargeConsent: FHIRPrimitive<Canonical>?
-
-        switch category {
-        case .chargcons:
-            chargeConsent = ErpCharge.Key.Consent.consent[.v1_1_0]?.asFHIRCanonicalPrimitive(for: "1.1")
-        case .euDispense:
-            chargeConsent = EURedeem.Key.Consent.consent[.v1_1_1]?.asFHIRCanonicalPrimitive(for: "1.1")
-        }
-        guard let chargeConsent else {
+        guard let chargeConsent = ErpCharge.Key.Consent.consent[.v1_0_0]?.asFHIRCanonicalPrimitive(for: "1.0") else {
             throw ErxConsent.Error.unableToConstructConsentRequest
         }
         let meta = Meta(profile: [chargeConsent])
@@ -56,13 +42,7 @@ extension ErxConsent {
             throw ErxConsent.Error.unableToConstructConsentRequest
         }
 
-        let categoryUri: FHIRPrimitive<FHIRURI>?
-        switch category {
-        case .chargcons:
-            categoryUri = ErpCharge.Key.Consent.consentType[.v1_1_0]?.asFHIRURIPrimitive()
-        case .euDispense:
-            categoryUri = EURedeem.Key.Consent.consentType[.v1_1_1]?.asFHIRURIPrimitive()
-        }
+        let categoryUri = ErpCharge.Key.Consent.consentType[.v1_0_0]?.asFHIRURIPrimitive()
         let category = CodeableConcept(coding: [
             Coding(
                 code: category.rawValue.asFHIRStringPrimitive(),
@@ -70,13 +50,7 @@ extension ErxConsent {
             ),
         ])
 
-        let patientUri: FHIRPrimitive<FHIRURI>?
-        switch self.category {
-        case .chargcons:
-            patientUri = Workflow.Key.unifiedKvIDKeys[.v1_4_3]?.asFHIRURIPrimitive()
-        case .euDispense:
-            patientUri = Workflow.Key.unifiedKvIDKeys[.v1_6_1]?.asFHIRURIPrimitive()
-        }
+        let patientUri = Workflow.Key.pkvIDKeys[.v1_2_0]?.asFHIRURIPrimitive()
         let patient = Identifier(
             system: patientUri,
             value: insuranceId.asFHIRStringPrimitive()

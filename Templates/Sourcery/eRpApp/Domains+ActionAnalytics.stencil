@@ -1,10 +1,6 @@
 // sourcery:file:eRpApp/Generated/Domains+ActionAnalytics
 
 import Foundation
-import FeatureEURedeem
-import FeatureCardWall
-import FeatureCommunication
-import eRpResources
 
 {% macro FindSubdomainActions actionType %}
 {% typed actionType as Enum %}
@@ -61,7 +57,6 @@ import eRpResources
 {% typed actionType as Enum %}
     {% if not actionType.name|contains:"Debug" %} 
 extension {{ actionType.name }}{% if actionType.attributes.Reducer %}.Action{% endif %} {
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func analytics(tracker: Tracker) {
         switch self {
             {% call FindAnalyticsActions actionType %}
@@ -69,7 +64,7 @@ extension {{ actionType.name }}{% if actionType.attributes.Reducer %}.Action{% e
             {% if actionType.attributes.Reducer %}
                 {% call FindDestinationActions actionType %}
             {% endif %}
-            case _: break
+            default: break
         }
     }
 }

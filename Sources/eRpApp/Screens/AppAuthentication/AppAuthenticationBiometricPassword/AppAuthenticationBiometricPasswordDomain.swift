@@ -1,36 +1,30 @@
 //
-//  Copyright (Change Date see Readme), gematik GmbH
+//  Copyright (c) 2024 gematik GmbH
 //
-//  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
-//  European Commission – subsequent versions of the EUPL (the "Licence").
+//  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+//  the European Commission - subsequent versions of the EUPL (the Licence);
 //  You may not use this work except in compliance with the Licence.
+//  You may obtain a copy of the Licence at:
 //
-//  You find a copy of the Licence in the "Licence" file or at
-//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//      https://joinup.ec.europa.eu/software/page/eupl
 //
-//  Unless required by applicable law or agreed to in writing,
-//  software distributed under the Licence is distributed on an "AS IS" basis,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied.
-//  In case of changes by gematik find details in the "Readme" file.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the Licence is distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the Licence for the specific language governing permissions and
+//  limitations under the Licence.
 //
-//  See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-//  *******
-//
-// For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
 import Combine
 import ComposableArchitecture
 import eRpKit
-import eRpResources
-import FeatureHelpers
 import Foundation
 import LocalAuthentication
 
 @Reducer
 struct AppAuthenticationBiometricPasswordDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
@@ -48,73 +42,30 @@ struct AppAuthenticationBiometricPasswordDomain {
         var showPassword = false
         var password: String = ""
         var lastMatchResultSuccessful: Bool?
-        // Password delay logic
-        var passwordDelay: TimeInterval = 0
-        var passwordDelayInt: Int {
-            Int(ceil(passwordDelay))
-        }
-
-        var passwordDelayIsActive: Bool {
-            passwordDelayInt > 0
-        }
-
-        var showUnsuccessfulAttemptMessage: Bool {
-            !(lastMatchResultSuccessful ?? true) || passwordDelayIsActive
-        }
-
-        var unsuccessfulAttemptMessage: String {
-            switch (lastMatchResultSuccessful ?? true, passwordDelayIsActive) {
-            case (true, true):
-                return L10n.authTxtPleaseRetryWithDelay(passwordDelayInt).text
-            case (false, true):
-                return L10n.authTxtPasswordFailurePleaseRetryWithDelay(passwordDelayInt).text
-            case (false, false):
-                return L10n.authTxtPasswordFailure.text
-            case (true, false):
-                return ""
-            }
-        }
-
-        var isPasswordLoginButtonEnabled: Bool {
-            !password.isEmpty && !passwordDelayIsActive
-        }
     }
 
     enum Action: Equatable {
-        case task
         case destination(PresentationAction<Destination.Action>)
+
         case startAuthenticationChallenge
         case switchToPassword(Bool)
         case authenticationChallengeResponse(AuthenticationChallengeProviderResult)
         case loginButtonTapped
         case setPassword(String)
         case passwordVerificationReceived(Bool)
-        // Password delay actions
-        case currentPasswordDelayReceived(TimeInterval?)
-        case passwordDelayTimerTick
     }
-
-    enum CancelID { case passWordDelayTimer }
 
     @Dependency(\.schedulers) var schedulers: Schedulers
     @Dependency(\.authenticationChallengeProvider) var authenticationChallengeProvider: AuthenticationChallengeProvider
     @Dependency(\.appSecurityManager) var appSecurityManager: AppSecurityManager
-    @Dependency(\.continuousClock) var clock
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
     func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
-        case .task:
-            return .run { send in
-                // Password delay listener
-                let delay = try? appSecurityManager.currentPasswordDelay()
-                await send(.currentPasswordDelayReceived(delay))
-            }
         case .startAuthenticationChallenge:
             return .publisher(
                 authenticationChallengeProvider
@@ -141,41 +92,14 @@ struct AppAuthenticationBiometricPasswordDomain {
                 return Effect.send(.passwordVerificationReceived(false))
             }
             return Effect.send(.passwordVerificationReceived(success))
+
         case let .passwordVerificationReceived(isLoggedIn):
             state.lastMatchResultSuccessful = isLoggedIn
-            if isLoggedIn {
-                try? appSecurityManager.resetPasswordDelay()
-                return .none
-            } else {
-                try? appSecurityManager.registerFailedPasswordAttempt()
-                let delay = try? appSecurityManager.currentPasswordDelay()
-                return .run { send in
-                    await send(.currentPasswordDelayReceived(delay))
-                }
-            }
+            return .none
         case let .switchToPassword(bool):
             state.showPassword = bool
             return .none
         case .destination:
-            return .none
-        // Password delay logic
-        case let .currentPasswordDelayReceived(delay):
-            guard let delay else { return .none }
-            state.passwordDelay = delay
-            if delay > 0 {
-                return .run { send in
-                    for await _ in clock.timer(interval: .seconds(1)) {
-                        await send(.passwordDelayTimerTick)
-                    }
-                }
-                .cancellable(id: CancelID.passWordDelayTimer, cancelInFlight: true)
-            }
-            return .none
-        case .passwordDelayTimerTick:
-            state.passwordDelay -= 1
-            if state.passwordDelay <= 0 {
-                return .cancel(id: CancelID.passWordDelayTimer)
-            }
             return .none
         }
     }
@@ -190,6 +114,3 @@ extension AppAuthenticationBiometricPasswordDomain {
         }
     }
 }
-
-extension AppAuthenticationBiometricPasswordDomain.Destination.State: Equatable {}
-extension AppAuthenticationBiometricPasswordDomain.Destination.Action: Equatable {}

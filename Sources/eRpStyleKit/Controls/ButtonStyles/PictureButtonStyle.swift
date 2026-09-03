@@ -79,6 +79,7 @@ public struct PictureButtonStyle: ButtonStyle {
                         cornerRadius: 16
                     )
             )
+            .accessibilityAddTraits(isActive ? .isSelected : [])
             .cornerRadius(16)
             .shadow(color: Colors.systemColorBlack.opacity(0.25), radius: 0.0, x: 0.0, y: 0.5)
     }
@@ -137,7 +138,9 @@ extension ButtonStyle where Self == PictureButtonStyle {
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View.buttonStyle(.primary)`` modifier.
-    public static var picture: PictureButtonStyle { PictureButtonStyle() }
+    public static var picture: PictureButtonStyle {
+        PictureButtonStyle()
+    }
 
     /// A button style that applies fg and bg color, as well as border radius.
     ///

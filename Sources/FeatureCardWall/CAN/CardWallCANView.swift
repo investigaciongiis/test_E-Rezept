@@ -111,6 +111,7 @@ public struct CardWallCANView: View {
                             .bold()
                             .accessibility(identifier: A11y.cardWall.canInput.cdwTctCanHeader)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityAddTraits(.isHeader)
 
                         CANScanButton(store: store)
                     }
@@ -236,7 +237,7 @@ public struct CardWallCANView: View {
                             onSuccessfulScanAction: {
                                 store.send(.successfulScan)
                             },
-                            closeAction: { canScan in
+                            closeAction: { _ in
                                 if let canScan = scannedcan {
                                     store.send(.update(can: canScan.value))
                                 }

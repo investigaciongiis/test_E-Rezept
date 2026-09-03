@@ -32,7 +32,7 @@ import UserNotifications
 
 @Reducer
 struct MedicationReminderSetupDomain {
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         @ReducerCaseEphemeral
         // sourcery: AnalyticsScreen = alert
@@ -75,11 +75,10 @@ struct MedicationReminderSetupDomain {
             } else if medicationSchedule.weekdays.count == MedicationSchedule.Weekday.allCases.count {
                 return L10n.medReminderTxtWeekdayEveryDay.text
             } else {
-                let weekdays = medicationSchedule.weekdays
-                    .sorted(by: { $0.rawValue < $1.rawValue })
+                return medicationSchedule.weekdays
+                    .sorted { $0.rawValue < $1.rawValue }
                     .map(\.nameAbbreviated)
                     .joined(separator: ", ")
-                return weekdays
             }
         }
 
@@ -101,7 +100,7 @@ struct MedicationReminderSetupDomain {
 
         case showDosageInstructionsInfo
 
-        // testing example, should be moved to appDelegate didFinishLaunching
+        /// testing example, should be moved to appDelegate didFinishLaunching
         case authorizationErrorReceived(Error)
 
         case delegate(Delegate)
@@ -173,11 +172,14 @@ struct MedicationReminderSetupDomain {
             return .none
         case let .authorizationErrorReceived(error):
             // todomedicationReminder maybe a more specific error?
-            state.destination = .alert(ErpAlertState(for: error, actions: {
+            state.destination = .alert(ErpAlertState(
+                for: error,
+                title: nil
+            ) {
                 ButtonState(role: .cancel) {
                     .init(L10n.alertBtnOk)
                 }
-            }))
+            })
             return .none
         case .save:
             return .run { [medicationSchedule = state.medicationSchedule] send in
@@ -247,7 +249,7 @@ struct DosageInstructionsDomain {
         init(dosageInstructions: String?) {
             title = L10n.prscDtlTxtDosageInstructions.text
 
-            guard let dosageInstructions = dosageInstructions, !dosageInstructions.isEmpty else {
+            guard let dosageInstructions, !dosageInstructions.isEmpty else {
                 description = L10n.prscDtlTxtMissingDosageInstructions.text
                 return
             }
@@ -316,7 +318,7 @@ extension MedicationSchedule {
             title: "Medication Title",
             dosageInstructions: "Medication Instructions",
             taskId: "123.4567.890",
-            isActive: false,
+            isActive: true,
             weekdays: [.monday, .wednesday, .friday],
             entries: IdentifiedArray(
                 uniqueElements: [
@@ -438,3 +440,6 @@ extension MedicationSchedule.Weekday {
         }
     }
 }
+
+extension MedicationReminderSetupDomain.Destination.State: Equatable {}
+extension MedicationReminderSetupDomain.Destination.Action: Equatable {}

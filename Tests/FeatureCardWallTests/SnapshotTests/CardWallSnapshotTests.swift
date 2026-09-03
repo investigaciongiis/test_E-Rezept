@@ -50,14 +50,6 @@ final class CardWallSnapshotTests: ERPSnapshotTestCase {
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
     }
 
-    func testExtAuthFallbackView() {
-        let sut = CardWallExtAuthFallbackView(closeAction: {})
-
-        assertSnapshots(of: sut, as: snapshotModiOnDevices())
-        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
-        assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
-    }
-
     func testIntroductionView() {
         let sut = CardWallIntroductionView(
             store: StoreOf<CardWallIntroductionDomain>(
@@ -236,7 +228,7 @@ final class CardWallSnapshotTests: ERPSnapshotTestCase {
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithTheming())
     }
 
-    lazy var testProfile = { Profile(name: "testProfile") }()
+    lazy var testProfile = Profile(name: "testProfile")
 
     private func readCardStore(for state: CardWallReadCardDomain.State) -> StoreOf<CardWallReadCardDomain> {
         Store(

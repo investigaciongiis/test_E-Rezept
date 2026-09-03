@@ -33,6 +33,7 @@ let package = Package(
         .library(name: "eRpFeatures", targets: ["eRpFeatures"]),
         .library(name: "AsyncHelpers", targets: ["AsyncHelpers"]),
         .library(name: "FeatureCardWall", targets: ["FeatureCardWall"]),
+        .library(name: "FeatureCommunication", targets: ["FeatureCommunication"]),
         .library(name: "FeatureEURedeem", targets: ["FeatureEURedeem"]),
         .library(name: "FeatureHelpers", targets: ["FeatureHelpers"]),
         .library(name: "eRpStyleKit", targets: ["eRpStyleKit"]),
@@ -46,7 +47,6 @@ let package = Package(
         .library(name: "FHIRVZDLive", targets: ["FHIRVZDLive"]),
         .library(name: "BfArM", targets: ["BfArM"]),
         .library(name: "BfArMLive", targets: ["BfArMLive"]),
-        .library(name: "AVS", targets: ["AVS"]),
         .library(name: "IDP", targets: ["IDP"]),
         .library(name: "IDPLive", targets: ["IDPLive"]),
         .library(name: "FHIRClient", targets: ["FHIRClient"]),
@@ -58,31 +58,34 @@ let package = Package(
         .library(name: "Profiles", targets: ["Profiles"]),
         .library(name: "Settings", targets: ["Settings"]),
         .library(name: "ConsentService", targets: ["ConsentService"]),
+        .library(name: "PushNotificationCrypto", targets: ["PushNotificationCrypto"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ContentSquare/CS_iOS_SDK.git", from: "4.37.1"),
         .package(url: "https://github.com/AliSoftware/OHHTTPStubs", from: "9.1.0"),
         .package(url: "https://github.com/andyjohns/zxcvbn-ios", revision: "bf6083dc17df950c8bdfcf2063859ee1270015fd"),
-        .package(url: "https://github.com/apple/FHIRModels", from: "0.5.0"),
-        .package(url: "https://github.com/pointfreeco/combine-schedulers", from: "1.0.2"),
+        .package(url: "https://github.com/apple/FHIRModels", from: "0.9.3"),
+        .package(url: "https://github.com/pointfreeco/combine-schedulers", from: "1.2.0"),
         .package(url: "https://github.com/rcasula/composable-core-location", revision: "0f3651bdaf95fcc44acef7de7d9aab0395cc2678"),
-        .package(url: "https://github.com/pointfreeco/swift-case-paths", from: "1.5.6"),
-        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.19.0"),
-        .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.3.2"),
-        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.4.1"),
-        .package(url: "https://github.com/pointfreeco/swift-identified-collections", from: "1.1.0"),
-        .package(url: "https://github.com/pointfreeco/swift-sharing", from: "2.5.2"),
-        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.3"),
-        .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.1.2"),
-        .package(url: "https://github.com/Quick/Nimble", from: "13.0.0"),
-        .package(url: "https://github.com/siteline/swiftui-introspect", from: "26.0.0"),
-        .package(url: "https://github.com/zxing-cpp/zxing-cpp", from: "2.2.1"),
-        .package(url: "https://github.com/gematik/ASN1Kit", from: "1.2.1"),
-        .package(url: "https://github.com/gematik/OpenSSL-Swift", from: "4.2.0"),
+        .package(url: "https://github.com/pointfreeco/swift-case-paths", from: "1.8.0"),
+        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", from: "1.26.0"),
+        .package(url: "https://github.com/pointfreeco/swift-clocks", from: "1.1.0"),
+        .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", from: "1.4.0"),
+        .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.6.1"),
+        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.14.1"),
+        .package(url: "https://github.com/pointfreeco/swift-identified-collections", from: "1.1.1"),
+        .package(url: "https://github.com/pointfreeco/swift-sharing", from: "2.9.1"),
+        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.19.2"),
+        .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.10.1"),
+        .package(url: "https://github.com/Quick/Nimble", from: "14.0.0"),
+        .package(url: "https://github.com/siteline/swiftui-introspect", from: "26.0.1"),
+        .package(url: "https://github.com/zxing-cpp/zxing-cpp", from: "3.1.0"),
+        .package(url: "https://github.com/gematik/ASN1Kit", from: "1.3.1"),
+        .package(url: "https://github.com/gematik/OpenSSL-Swift", from: "4.6.1"),
         .package(url: "https://github.com/gematik/swift-gemPDFKit", from: "0.2.2"),
-        .package(url: "https://github.com/gematik/ref-OpenHealthCardKit", from: "5.11.1"),
-        .package(url: "https://github.com/apple/swift-asn1.git", .upToNextMajor(from: "1.0.0")),
-        .package(url: "https://github.com/SwiftGen/SwiftGenPlugin", from: "6.6.0"),
+        .package(url: "https://github.com/gematik/ref-OpenHealthCardKit", from: "5.11.2"),
+        .package(url: "https://github.com/apple/swift-asn1.git", .upToNextMajor(from: "1.7.1")),
+        .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.1.5"),
+        .package(url: "https://github.com/SwiftGen/SwiftGenPlugin", from: "6.6.2"),
         .package(path: "CodedError"), // local package, will be moved to separate repo
     ],
     targets: [
@@ -106,18 +109,18 @@ let package = Package(
                 "FHIRClient",
                 "TrustStore",
                 "VAUClient",
-                "AVS",
                 "FeatureCardWall",
+                "FeatureCommunication",
                 "FeatureEURedeem",
                 "FeatureHelpers",
                 "AsyncHelpers",
                 "Settings",
                 "Profiles",
                 "ConsentService",
+                "PushNotificationCrypto",
                 .product(name: "CodedError", package: "CodedError"),
                 .product(name: "ASN1Kit", package: "ASN1Kit"),
                 .product(name: "ModelsR4", package: "FHIRModels"),
-                .product(name: "ContentsquareModule", package: "CS_iOS_SDK"),
                 .product(name: "Zxcvbn", package: "zxcvbn-ios"),
                 .product(name: "CombineSchedulers", package: "combine-schedulers"),
                 .product(name: "ComposableCoreLocation", package: "composable-core-location"),
@@ -130,6 +133,7 @@ let package = Package(
                 .product(name: "OpenSSL-Swift", package: "OpenSSL-Swift"),
                 .product(name: "GemPDFKit", package: "swift-gemPDFKit"),
                 .product(name: "ZXingCpp", package: "zxing-cpp"),
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                 .product(name: "Sharing", package: "swift-sharing"),
             ],
             path: "Sources/eRpApp",
@@ -139,7 +143,8 @@ let package = Package(
             swiftSettings: [
                 .unsafeFlags(["-enable-bare-slash-regex"]),
                 .define("ENABLE_DEBUG_VIEW", .when(configuration: .debug)),
-                .define("TEST_ENVIRONMENT", .when(configuration: .debug))
+                .define("TEST_ENVIRONMENT", .when(configuration: .debug)),
+                .enableUpcomingFeature("InferSendableFromCaptures"),
             ]
         ),
         .target(
@@ -165,41 +170,80 @@ let package = Package(
             path: "Sources/FeatureCardWall",
             resources: [
                 .process("Resources")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("InferSendableFromCaptures"),
+            ]
+        ),
+        .target(
+            name: "FeatureCommunication",
+            dependencies: [
+                "eRpStyleKit",
+                "eRpKit",
+                "Profiles",
+                "Settings",
+                "FeatureHelpers",
+                "ErxTaskRepository",
+                .product(name: "CodedError", package: "CodedError"),
+                .product(name: "CasePaths", package: "swift-case-paths"),
+                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
+                .product(name: "DependenciesMacros", package: "swift-dependencies"),
+            ],
+            path: "Sources/FeatureCommunication",
+            resources: [
+                .process("Resources")
             ]
         ),
         .target(
             name: "FeatureEURedeem",
             dependencies: [
+                "ConsentService",
                 "eRpStyleKit",
                 "eRpKit",
+                "ErxTaskRepository",
+                "FeatureCardWall",
                 "Pharmacy",
+                "FeatureHelpers",
+                "Profiles",
                 .product(name: "CodedError", package: "CodedError"),
                 .product(name: "CasePaths", package: "swift-case-paths"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "ComposableCoreLocation", package: "composable-core-location"),
                 .product(name: "IdentifiedCollections", package: "swift-identified-collections"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
+                .product(name: "ZXingCpp", package: "zxing-cpp"),
             ],
             path: "Sources/FeatureEURedeem",
-            resources: [
-                .process("Resources")
+            swiftSettings: [
+                .enableUpcomingFeature("InferSendableFromCaptures"),
             ]
         ),
         .target(
             name: "FeatureHelpers",
             dependencies: [
                 "eRpStyleKit",
+                "AsyncHelpers",
+                "eRpKit",
                 .product(name: "CodedError", package: "CodedError"),
                 .product(name: "CasePaths", package: "swift-case-paths"),
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
             ],
-            path: "Sources/FeatureHelpers"
+            path: "Sources/FeatureHelpers",
+            swiftSettings: [
+                .enableUpcomingFeature("InferSendableFromCaptures"),
+            ]
         ),
         .target(
             name: "AsyncHelpers",
             dependencies: [
                 .product(name: "CasePaths", package: "swift-case-paths"),
+                .product(name: "Clocks", package: "swift-clocks"),
+                .product(name: "CombineSchedulers", package: "combine-schedulers"),
+                .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
             ],
             path: "Sources/AsyncHelpers"
         ),
@@ -330,23 +374,16 @@ let package = Package(
             ]
         ),
         .target(
-            name: "AVS",
-            dependencies: [
-                "HTTPClientLive",
-                .product(name: "CodedError", package: "CodedError"),
-                .product(name: "OpenSSL-Swift", package: "OpenSSL-Swift"),
-                .product(name: "ASN1Kit", package: "ASN1Kit"),
-            ]
-        ),
-        .target(
             name: "IDP",
             dependencies: [
                 "eRpResources",
                 "AsyncHelpers",
-                .product(name: "CodedError", package: "CodedError"),
-                .product(name: "OpenSSL-Swift", package: "OpenSSL-Swift"),
-                .product(name: "CombineSchedulers", package: "combine-schedulers"),
                 .product(name: "CasePaths", package: "swift-case-paths"),
+                .product(name: "Clocks", package: "swift-clocks"),
+                .product(name: "CodedError", package: "CodedError"),
+                .product(name: "CombineSchedulers", package: "combine-schedulers"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
+                .product(name: "OpenSSL-Swift", package: "OpenSSL-Swift"),
             ]
         ),
         .target(
@@ -356,6 +393,8 @@ let package = Package(
                 "IDP",
                 "TrustStore",
                 "AsyncHelpers",
+                .product(name: "Clocks", package: "swift-clocks"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "CodedError", package: "CodedError"),
                 .product(name: "ASN1Kit", package: "ASN1Kit"),
             ]
@@ -399,7 +438,11 @@ let package = Package(
                 "HTTPClient",
                 "TrustStore",
                 "AsyncHelpers",
+                .product(name: "Clocks", package: "swift-clocks"),
                 .product(name: "CodedError", package: "CodedError"),
+                .product(name: "CombineSchedulers", package: "combine-schedulers"),
+                .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "OpenSSL-Swift", package: "OpenSSL-Swift"),
             ]
         ),
@@ -416,6 +459,7 @@ let package = Package(
                 .product(name: "CombineSchedulers", package: "combine-schedulers"),
                 .product(name: "CustomDump", package: "swift-custom-dump"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ]
         ),
         .target(
@@ -461,6 +505,21 @@ let package = Package(
                 .product(name: "CodedError", package: "CodedError"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
                 .product(name: "Sharing", package: "swift-sharing"),
+            ]
+        ),
+        .target(
+            name: "PushNotificationCrypto",
+            dependencies: [
+                .product(name: "Dependencies", package: "swift-dependencies"),
+                .product(name: "DependenciesMacros", package: "swift-dependencies"),
+                .product(name: "CodedError", package: "CodedError"),
+            ]
+        ),
+        .testTarget(
+            name: "PushNotificationCryptoTests",
+            dependencies: [
+                "PushNotificationCrypto",
+                .product(name: "Dependencies", package: "swift-dependencies"),
             ]
         ),
         .testTarget(
@@ -555,16 +614,6 @@ let package = Package(
             ],
             resources: [
                 .copy("Resources")
-            ]
-        ),
-        .testTarget(
-            name: "AVSTests",
-            dependencies: [
-                "AVS",
-                "HTTPClientLive",
-                "TestUtils",
-                .product(name: "OHHTTPStubsSwift", package: "OHHTTPStubs"),
-                .product(name: "Nimble", package: "Nimble"),
             ]
         ),
         .testTarget(
@@ -670,6 +719,28 @@ let package = Package(
             ],
             resources: [
                 .copy("Resources/JWT.bundle")
+            ]
+        ),
+        .testTarget(
+            name: "FeatureCommunicationTests",
+            dependencies: [
+                "FeatureCommunication",
+                "TestUtils",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            resources: [
+            ]
+        ),
+        .testTarget(
+            name: "FeatureEURedeemTests",
+            dependencies: [
+                "FeatureEURedeem",
+                "TestUtils",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+                .product(name: "Nimble", package: "Nimble"),
+            ],
+            resources: [
             ]
         )
     ]

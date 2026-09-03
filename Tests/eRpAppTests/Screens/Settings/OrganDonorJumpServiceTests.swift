@@ -36,7 +36,7 @@ final class OrganDonorJumpServiceTests: XCTestCase {
         let openedURL = Mutex<URL?>(nil)
         let sut = OrganDonorJumpService.liveValue
 
-        let userDataStore = MockUserDataStore()
+        let userDataStore = UserDataStoreMock()
         userDataStore.serverEnvironmentName = "RU"
         let userSession = MockUserSession()
         let profile = Profile(name: "Bob", gIdEntry: .init(name: "Alice", identifier: "ABC123"))
@@ -50,6 +50,7 @@ final class OrganDonorJumpServiceTests: XCTestCase {
             dependencies.openURLHandler.canOpenURL = { _ in true }
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
+                return true
             }
         } operation: {
             try await sut.jump()
@@ -64,13 +65,13 @@ final class OrganDonorJumpServiceTests: XCTestCase {
         let openedURL = Mutex<URL?>(nil)
         let sut = OrganDonorJumpService.liveValue
 
-        let userDataStore = MockUserDataStore()
+        let userDataStore = UserDataStoreMock()
         userDataStore.serverEnvironmentName = "RU"
         let userSession = MockUserSession()
         let profile = Profile(name: "Bob", gIdEntry: nil)
         userSession.profileReturnValue = Just(profile).setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
-        let expected = URL(string: "https://www.organspende-info.de/")!
+        let expected = try XCTUnwrap(URL(string: "https://www.organspende-info.de/"))
 
         try await withDependencies { dependencies in
             dependencies.userDataStore = userDataStore
@@ -78,6 +79,7 @@ final class OrganDonorJumpServiceTests: XCTestCase {
             dependencies.openURLHandler.canOpenURL = { _ in true }
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
+                return true
             }
         } operation: {
             try await sut.jump()

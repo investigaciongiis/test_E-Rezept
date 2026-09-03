@@ -21,6 +21,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 /// Domain handling the EU prescription redemption flow
 @Reducer
@@ -38,7 +39,7 @@ public struct EURedeemDomain {
         public init(path: StackState<Path.State> = StackState(),
                     selection: EURedeemSelectionDomain.State? = nil) {
             self.path = path
-            self.selection = selection ?? .init(prescriptions: EURedeemSelectionDomain.Dummies.prescriptions)
+            self.selection = selection ?? EURedeemSelectionDomain.State()
         }
     }
 
@@ -52,7 +53,7 @@ public struct EURedeemDomain {
     }
 
     /// Navigation path cases for the redemption flow
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     public enum Path {
         /// Country selection screen
         case countrySelection(CountrySelectionDomain)
@@ -72,7 +73,7 @@ public struct EURedeemDomain {
         Scope(state: \.selection, action: \.selection) {
             EURedeemSelectionDomain()
         }
-        Reduce(self.core)
+        Reduce(core)
             .forEach(\.path, action: \.path)
     }
 
@@ -83,7 +84,7 @@ public struct EURedeemDomain {
             case .selectInstructionButtonTapped:
                 state.path.append(.instructions(.init()))
                 return .none
-            case .redeemButtonTapped:
+            case .redeemPrescriptions:
                 state.path.append(.instructions(.init()))
                 return .none
             case .selectCountryButtonTapped:
@@ -92,27 +93,27 @@ public struct EURedeemDomain {
             case .selectPrescriptionsButtonTapped:
                 state.path.append(.prescriptionSelection(
                     SelectEUPrescriptionsDomain.State(
-                        prescriptions: state.selection.prescriptions,
-                        patientName: "Ada Muster"
+                        prescriptions: state.selection.$prescriptions
                     )
                 ))
                 return .none
-            case .close:
+            case .close, .back:
+                return .none
+            case .unlockCardClose:
                 return .none
             }
         case let .path(.element(id: _, action: .countrySelection(.selectCountry(country)))):
             state.selection.selectedCountry = country
             state.path.removeLast()
             return .none
-        case let .path(.element(id: _,
-                                action: .prescriptionSelection(.delegate(.didSelectPrescriptions(prescriptions))))):
-            state.selection.prescriptions = prescriptions
-            return .none
         case .path(.element(id: _, action: .instructions(.delegate(.continueButtonTapped)))):
-            state.path.append(.code(.init()))
+            state.path.append(.code(.init(countryCode: "De")))
             return .none
         case .path, .selection:
             return .none
         }
     }
 }
+
+extension EURedeemDomain.Path.State: Equatable {}
+extension EURedeemDomain.Path.Action: Equatable {}

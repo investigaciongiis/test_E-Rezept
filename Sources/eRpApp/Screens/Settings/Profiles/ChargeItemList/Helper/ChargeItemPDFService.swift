@@ -24,6 +24,7 @@ import CodedError
 import Dependencies
 import eRpKit
 import eRpResources
+import FeatureHelpers
 import Foundation
 import GemPDFKit
 import Settings
@@ -72,7 +73,7 @@ extension DependencyValues {
 
 // swiftlint:disable:next type_body_length
 struct DefaultChargeItemPDFService: ChargeItemPDFService {
-    let uiDateFormatter = UIDateFormatter(fhirDateFormatter: .shared)
+    @Dependency(\.uiDateFormatter) var uiDateFormatter: UIDateFormatter
 
     func loadPDFOrGenerate(for chargeItem: ErxChargeItem) throws -> URL {
         guard let outputURL = try? FileManager.default.url(
@@ -307,17 +308,17 @@ struct DefaultChargeItemPDFService: ChargeItemPDFService {
     }
 
     func medicationText(for medication: ErxMedication?, request: ErxMedicationRequest) -> String {
-        guard let medication = medication,
+        guard let medication,
               let profile = medication.profile else {
             return ""
         }
         switch profile {
         case .freeText:
             return
-                "Freitextverordnung: \(request.quantity.map { "\($0.value)x" } ?? "") \(medication.displayName)"
+                "Freitextverordnung: \(request.quantity.map { "\($0.value)x" } ?? "") \(medication.displayName ?? "")"
         case .pzn:
             let v26 = request.quantity.map { "\($0.value)x " } ?? ""
-            let v25 = "\(medication.displayName)/ "
+            let v25 = "\(medication.displayName ?? "")/ "
             let v27 = medication.amount?.numerator.value.appending(" ") ?? ""
             let v28 = medication.amount?.numerator.unit?.appending(" ") ?? ""
             let v29 = medication.normSizeCode?.appending(" ") ?? ""
@@ -388,8 +389,9 @@ struct DefaultChargeItemPDFService: ChargeItemPDFService {
     static let unsafeFileCharacterSet = CharacterSet(charactersIn: "\"\\/?<>:*| ")
 
     func generateChargeItemPDFName(for chargeItem: ErxChargeItem) -> String {
-        let date = uiDateFormatter.fhirDateFormatter.date(from: chargeItem.enteredDate ?? "") ?? Date()
-        let dateFormatted = uiDateFormatter.fhirDateFormatter.string(from: date, format: .yearMonthDay)
+        @Dependency(\.fhirDateFormatter) var fhirDateFormatter: FHIRDateFormatter
+        let date = fhirDateFormatter.date(from: chargeItem.enteredDate ?? "") ?? Date()
+        let dateFormatted = fhirDateFormatter.string(from: date, format: .yearMonthDay)
         let medicationNameFormatted = (chargeItem.medication?.name ?? L10n.serviceTxtMissingChargeItemPdfName.text)
             .trimmed()
             .components(separatedBy: Self.unsafeFileCharacterSet)
@@ -434,7 +436,7 @@ extension DavInvoice.ChargeableItem {
         let text: String
         let col2 = pzn ?? hmrn ?? ta1 ?? ""
 
-        if let pzn = self.pzn,
+        if let pzn,
            pzn == medication?.pzn {
             text = "wie verordnet"
         } else {

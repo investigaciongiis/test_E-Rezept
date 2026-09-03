@@ -156,7 +156,7 @@ struct URLTester: View {
             request.httpMethod = method.rawValue
             let task = URLSession.shared.dataTask(with: request) { [weak self] _, urlresponse, error in
                 DispatchQueue.main.async {
-                    guard let self = self else { return }
+                    guard let self else { return }
 
                     if let urlresponse = urlresponse as? HTTPURLResponse {
                         self.httpStatusCode = urlresponse.statusCode
@@ -211,7 +211,7 @@ struct URLTester: View {
             } else {
                 Text("Ungültige URL, bitte URLEncoden sie alle Sonderzeichen abseits der vorgegebenen Platzhalter.")
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundColor(Colors.red600)
+                    .foregroundColor(Colors.red700)
                     .font(.footnote)
             }
 

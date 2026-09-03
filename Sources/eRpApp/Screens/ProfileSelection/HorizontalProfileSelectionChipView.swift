@@ -41,8 +41,9 @@ struct HorizontalProfileSelectionChipView: View {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle())
                     .padding(.horizontal, 2)
+                    .accessibilityIdentifier(A11y.profileSelection.proBtnSelectionProfileLoadingSpinner)
                     .onAppear {
-                        withAnimation { self.showConnectionStatus = true }
+                        withAnimation { showConnectionStatus = true }
                     }
             } else {
                 if showConnectionStatus {
@@ -51,7 +52,7 @@ struct HorizontalProfileSelectionChipView: View {
                             DispatchQueue.main.asyncAfter(
                                 deadline: .now() + DispatchTimeInterval.seconds(showConnectionStatusTimeInterval)
                             ) {
-                                withAnimation { self.showConnectionStatus = false }
+                                withAnimation { showConnectionStatus = false }
                             }
                         }
                 }
@@ -64,7 +65,8 @@ struct HorizontalProfileSelectionChipView: View {
         .accessibilityRemoveTraits(.isStaticText)
         .accessibilityAddTraits(.isButton)
         .accessibilityAddTraits(isSelected ? .isSelected : .isButton)
-        .accessibility(identifier: A11y.profileSelection.proBtnSelectionProfileEntry)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(A11y.profileSelection.proBtnSelectionProfileEntry)
     }
 
     static func imageAsset(for profileConnectionStatus: ProfileConnectionStatus) -> ImageAsset {

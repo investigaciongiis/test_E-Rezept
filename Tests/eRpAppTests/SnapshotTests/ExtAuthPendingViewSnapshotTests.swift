@@ -35,14 +35,12 @@ final class ExtAuthPendingViewSnapshotTests: ERPSnapshotTestCase {
     let networkScheduler = DispatchQueue.immediate
     let uiScheduler = DispatchQueue.immediate
 
-    lazy var schedulers: Schedulers = {
-        Schedulers(
-            uiScheduler: uiScheduler.eraseToAnyScheduler(),
-            networkScheduler: networkScheduler.eraseToAnyScheduler(),
-            ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
-            computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
-        )
-    }()
+    lazy var schedulers: Schedulers = .init(
+        uiScheduler: uiScheduler.eraseToAnyScheduler(),
+        networkScheduler: networkScheduler.eraseToAnyScheduler(),
+        ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
+        computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
+    )
 
     func testExtAuthPendingView_WithSuccess() {
         let mockUserSession = MockUserSession()
@@ -50,7 +48,7 @@ final class ExtAuthPendingViewSnapshotTests: ERPSnapshotTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         mockUserSession.mockUserDataStore.underlyingSelectedProfileId = Just(UUID()).eraseToAnyPublisher()
-        mockUserSession.mockProfileDataStore.listAllProfilesReturnValue =
+        mockUserSession.mockProfileDataStore.listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue =
             Just([])
                 .setFailureType(to: LocalStoreError.self)
                 .eraseToAnyPublisher()
@@ -77,7 +75,7 @@ final class ExtAuthPendingViewSnapshotTests: ERPSnapshotTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         mockUserSession.mockUserDataStore.underlyingSelectedProfileId = Just(UUID()).eraseToAnyPublisher()
-        mockUserSession.mockProfileDataStore.listAllProfilesReturnValue =
+        mockUserSession.mockProfileDataStore.listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue =
             Just([])
                 .setFailureType(to: LocalStoreError.self)
                 .eraseToAnyPublisher()

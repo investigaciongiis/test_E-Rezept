@@ -49,13 +49,13 @@ struct DiGaDetailDomain {
         var diGaInfo: DiGaInfo
         var bfarmDiGaDetails: BfArMDiGaDetails?
 
-        // stores the bfarmDiGaDetails in a displayable format
+        /// stores the bfarmDiGaDetails in a displayable format
         var bfArMDisplayInfo: BfArMDisplayInfo? {
             BfArMDisplayInfo(bfarmDiGaDetail: bfarmDiGaDetails)
         }
 
         var isAvailabeOniOS: Bool? {
-            guard let bfarmDiGaDetails = bfarmDiGaDetails else { return nil }
+            guard let bfarmDiGaDetails else { return nil }
             return bfarmDiGaDetails.supportedPlatforms.contains { $0.lowercased().contains("ios") }
         }
 
@@ -114,7 +114,7 @@ struct DiGaDetailDomain {
         }
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         // sourcery: AnalyticsScreen = digasMain:descriptionScreen
         case descriptionDiGA(EmptyDomain)
@@ -209,7 +209,7 @@ struct DiGaDetailDomain {
     @Dependency(\.bfArMSession) var bfArMSession: BfArMSession
 
     var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -391,13 +391,12 @@ struct DiGaDetailDomain {
                 return .none
             }
         case let .openLink(urlString):
-            guard let urlString = urlString,
+            guard let urlString,
                   let url = URL(string: urlString) else {
                 return .none
             }
             return .run { _ in
-                guard await openURLHandler.canOpenURL(url) else { return }
-                await openURLHandler.open(url)
+                _ = await openURLHandler.open(url)
             }
         case let .copyCode(text):
             pasteboardService.copy(text)
@@ -541,7 +540,7 @@ struct DiGaDetailDomain {
             guard let email = createReportEmail(body: body) else { return .none }
             return .run { _ in
                 guard await openURLHandler.canOpenURL(email) else { return }
-                await openURLHandler.open(email)
+                _ = await openURLHandler.open(email)
             }
         case .archive:
             return update(diGaInfo: state.diGaInfo
@@ -743,10 +742,11 @@ extension DiGaDetailDomain {
                 case (nil, nil): return nil
                 }
 
-                return Text(supportString)
+                return Text(supportString + " ")
                     .foregroundColor(Colors.systemLabelSecondary) +
-                    Text(" " + supportUrl)
+                    Text(supportUrl)
                     .foregroundColor(Colors.primary700)
+                    .underline()
             }()
 
             manufacturerCost = bfarmDiGaDetail?.manufacturerCost.map { "\($0)€" }
@@ -917,5 +917,8 @@ extension DiGaDetailDomain {
         }
     }
 }
+
+extension DiGaDetailDomain.Destination.State: Equatable {}
+extension DiGaDetailDomain.Destination.Action: Equatable {}
 
 // swiftlint:enable file_length type_body_length

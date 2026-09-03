@@ -30,6 +30,7 @@ struct SettingsLegalInfoView: View {
     var body: some View {
         SectionContainer(header: {
             Label(title: { Text(L10n.stgTxtHeaderLegalInfo) }, icon: {})
+                .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(A18n.settings.legalNotice.stgLnoTxtHeaderLegalInfo)
         }, content: {
             Button {
@@ -89,7 +90,7 @@ struct SettingsLegalInfoView: View {
                 guard let url =
                     URL(
                         // swiftlint:disable:next line_length
-                        string: "https://www.das-e-rezept-fuer-deutschland.de/erklaerung-zur-barrierefreiheit-e-rezept-app"
+                        string: "https://www.das-e-rezept-fuer-deutschland.de/barrierefreiheitserklaerung-e-rezept-app-ios"
                     ),
                     UIApplication.shared.canOpenURL(url) else { return }
 
@@ -97,9 +98,9 @@ struct SettingsLegalInfoView: View {
             }, label: {
                 Label(L10n.stgDpoTxtAccessibilityStatement, systemImage: SFSymbolName.accessibility)
             })
-                .accessibilityLabel(L10n.stgDpoLblAccessibilityStatement)
-                .accessibility(identifier: A18n.settings.accessibilityStatement.stgBtnAccessibilityStatement)
-                .buttonStyle(.navigation)
+            .accessibilityLabel(L10n.stgDpoLblAccessibilityStatement)
+            .accessibility(identifier: A18n.settings.accessibilityStatement.stgBtnAccessibilityStatement)
+            .buttonStyle(.navigation)
         })
     }
 }

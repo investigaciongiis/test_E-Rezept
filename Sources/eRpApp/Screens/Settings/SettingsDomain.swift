@@ -52,7 +52,7 @@ struct SettingsDomain {
         @Presents var destination: Destination.State?
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         case debug(DebugDomain)
         // sourcery: AnalyticsScreen = alert
@@ -64,7 +64,7 @@ struct SettingsDomain {
         case healthCardPasswordSetCustomPin(HealthCardPasswordIntroductionDomain)
         // sourcery: AnalyticsScreen = healthCardPassword_unlockCard
         case healthCardPasswordUnlockCard(HealthCardPasswordIntroductionDomain)
-        //
+        ///
         case appSecurity(AppSecurityDomain)
         // sourcery: AnalyticsScreen = settings_productImprovements_complyTracking
         case complyTracking(EmptyDomain)
@@ -81,7 +81,7 @@ struct SettingsDomain {
         // sourcery: AnalyticsScreen = profile
         case editProfile(EditProfileDomain)
         // sourcery: AnalyticsScreen = settings_newProfile
-        case newProfile(NewProfileDomain)
+        case newProfile(CreateProfileDomain)
         // sourcery: AnalyticsScreen = settings_medicationReminderList
         case medicationReminderList(MedicationReminderListDomain)
 
@@ -169,7 +169,6 @@ struct SettingsDomain {
                 changeableUserSessionContainer.switchToStandardMode()
             }
             return .none
-
         // Tracking
         // [REQ:gemSpec_eRp_FdV:A_19088, A_19089-01#5, A_19092-01#4, A_19097-01#1] React to later opt-in or deactivation
         // of usage analytics
@@ -197,7 +196,7 @@ struct SettingsDomain {
                 return .none
             }
             return .run { _ in
-                await openURLHandler.open(url)
+                _ = await openURLHandler.open(url)
             }
         case .destination(.presented(.healthCardPasswordUnlockCard(.delegate(.navigateToSettings)))),
              .destination(.presented(.healthCardPasswordForgotPin(.delegate(.navigateToSettings)))),
@@ -280,7 +279,7 @@ struct SettingsDomain {
             case let .showEditProfile(editProfileState):
                 state.destination = .editProfile(editProfileState)
             case .showNewProfile:
-                state.destination = .newProfile(.init(name: "", color: .blue))
+                state.destination = .newProfile(.init())
             case let .alert(alert):
                 state.destination = .alert(
                     alert.pullback { action in
@@ -319,6 +318,9 @@ struct SettingsDomain {
             case .close:
                 state.destination = nil
                 return .none
+            case let .failure(error):
+                state.destination = .alert(.init(for: error))
+                return .none
             }
         case .popToRootView:
             state.destination = nil
@@ -345,29 +347,25 @@ extension SettingsDomain {
             message: { TextState(L10n.stgTxtLanguageSettingsAlertDescription) }
         )
 
-    static var demoModeOnAlertState: AlertState<Destination.Alert> = {
-        AlertState(
-            title: { TextState(L10n.stgTxtAlertTitleDemoMode) },
-            actions: {
-                ButtonState(role: .cancel, action: .send(.dismiss)) {
-                    TextState(L10n.alertBtnOk)
-                }
-            },
-            message: { TextState(L10n.stgTxtAlertMessageDemoModeOn) }
-        )
-    }()
+    static var demoModeOnAlertState: AlertState<Destination.Alert> = AlertState(
+        title: { TextState(L10n.stgTxtAlertTitleDemoMode) },
+        actions: {
+            ButtonState(role: .cancel, action: .send(.dismiss)) {
+                TextState(L10n.alertBtnOk)
+            }
+        },
+        message: { TextState(L10n.stgTxtAlertMessageDemoModeOn) }
+    )
 
-    static var demoModeOffAlertState: AlertState<Destination.Alert> = {
-        AlertState(
-            title: { TextState(L10n.stgTxtAlertTitleDemoModeOff) },
-            actions: {
-                ButtonState(role: .cancel, action: .send(.dismiss)) {
-                    TextState(L10n.alertBtnOk)
-                }
-            },
-            message: { TextState(L10n.stgTxtAlertMessageDemoModeOff) }
-        )
-    }()
+    static var demoModeOffAlertState: AlertState<Destination.Alert> = AlertState(
+        title: { TextState(L10n.stgTxtAlertTitleDemoModeOff) },
+        actions: {
+            ButtonState(role: .cancel, action: .send(.dismiss)) {
+                TextState(L10n.alertBtnOk)
+            }
+        },
+        message: { TextState(L10n.stgTxtAlertMessageDemoModeOff) }
+    )
 
     static var donorRegisterAlertState: AlertState<Destination.Alert> =
         AlertState(
@@ -404,3 +402,6 @@ extension SettingsDomain {
         }
     }
 }
+
+extension SettingsDomain.Destination.State: Equatable {}
+extension SettingsDomain.Destination.Action: Equatable {}

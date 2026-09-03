@@ -27,10 +27,11 @@ import eRpStyleKit
 import Foundation
 import OpenSSL
 import SwiftUI
+
 // swiftlint:disable type_body_length
 /// Adds additional properties to the PharmacyLocation entity that are used in the view.
 @dynamicMemberLookup
-struct PharmacyLocationViewModel: Equatable, Identifiable {
+struct PharmacyLocationViewModel: Hashable, Equatable, Identifiable {
     init(
         pharmacy: PharmacyLocation,
         referenceLocation: Location? = nil,
@@ -79,7 +80,7 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
             distanceFormatter.numberFormatter.maximumFractionDigits = 1
             distanceFormatter.numberFormatter.minimumFractionDigits = 0
 
-            if let distanceInM = distanceInM {
+            if let distanceInM {
                 if distanceInM > 100 {
                     let distanceInKM = distanceInM / 1000.0
                     if distanceInKM > 20 {
@@ -119,7 +120,7 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
         let isActive: Bool
         let accessiblilityLabel: String
 
-        internal init?(
+        init?(
             today: Date,
             specialPeriods: PharmacyLocation.SpecialOperationHours,
             calendar: Calendar = Calendar.current
@@ -153,9 +154,7 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
 
             reason = specialPeriods.reason ?? ""
 
-            isActive = {
-                today >= startDate && today <= endDate
-            }()
+            isActive = today >= startDate && today <= endDate
 
             let sameDay = calendar.isDate(startDate, inSameDayAs: endDate)
 
@@ -205,12 +204,13 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
             return formatted
         }
 
-        internal init(dayOfWeek: String, entries: [PharmacyLocationViewModel.OpeningHoursDay.Timespan]) {
+        init(dayOfWeek: String, entries: [PharmacyLocationViewModel.OpeningHoursDay.Timespan]) {
             self.dayOfWeek = dayOfWeek
             self.entries = entries
 
             if let date = Self.date(from: dayOfWeek) {
-                dayOfWeekLocalizedDisplayName = Self.localizesDisplayNameFormatter(from: date)
+                dayOfWeekLocalizedDisplayName = Self
+                    .localizesDisplayNameFormatter(from: date)
                 // .weekday starts with 1 being sunday, +5 % 7 to let monday be 0 and the first day
                 dayOfWeekNumber = (Calendar.current.component(.weekday, from: date) + 5) % 7
             } else {
@@ -223,7 +223,7 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
         let dayOfWeek: String
         let entries: [Timespan]
         var openingState: PharmacyOpenHoursCalculator.TodaysOpeningState {
-            entries.compactMap { entry in
+            entries.compactMap { (entry: Timespan) -> PharmacyOpenHoursCalculator.TodaysOpeningState? in
                 switch entry.openingState {
                 case .unknown, .closed:
                     return nil
@@ -262,7 +262,7 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
                                                   closingTime: timeSet.closingTime)
             }
         }
-        let days = Dictionary(grouping: expandedDays) {
+        return Dictionary(grouping: expandedDays) {
             // as expandedDays is used, `daysOfWeek` is always a single element Array
             $0.daysOfWeek.first
         }
@@ -282,7 +282,6 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
             return OpeningHoursDay(dayOfWeek: day ?? "", entries: timespans)
         }
         .sorted { $0.dayOfWeekNumber < $1.dayOfWeekNumber }
-        return days
     }
 
     func initDistance(pharmacyPosition: PharmacyLocation.Position, referenceLocation: Location? = nil) -> Double? {
@@ -343,6 +342,16 @@ struct PharmacyLocationViewModel: Equatable, Identifiable {
             }
 
         return copy
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(pharmacyLocation.id)
+        hasher.combine(openingHours)
+        hasher.combine(specialClosingHours)
+        hasher.combine(emergencyServiceHours)
+        hasher.combine(distanceInM)
+        hasher.combine(formattedDistance)
+        hasher.combine(todayOpeningState)
     }
 }
 
@@ -408,15 +417,31 @@ extension PharmacyLocation.HoursOfOperation {
     }
 }
 
-extension Array where Element == PharmacyLocationViewModel {
-    func filter(by filterOptions: [PharmacySearchFilterDomain.PharmacyFilterOption]) -> [PharmacyLocationViewModel] {
-        // Filter Pharmacies that are closed
-        if filterOptions.contains(.open) {
-            return filter { location in
-                location.todayOpeningState.isOpen
-            }
+extension PharmacyLocation.PhysicalFeature {
+    var localizedDisplayName: StringAsset {
+        switch self {
+        case .parking: return L10n.phaDetailPhysicalFeatureParking
+        case .publicTransport: return L10n.phaDetailPhysicalFeaturePublicTransport
+        case .barrierFree: return L10n.phaDetailPhysicalFeatureBarrierFree
+        case .pickupAutomat: return L10n.phaDetailPhysicalFeaturePickupAutomat
         }
-        return self
+    }
+}
+
+extension PharmacyLocation.Speciality {
+    var localizedDisplayName: StringAsset {
+        switch self {
+        case .sterileCompounding: return L10n.phaDetailSpecialitySterileCompounding
+        case .hypertension: return L10n.phaDetailSpecialityHypertension
+        case .inhalationTechnique: return L10n.phaDetailSpecialityInhalation
+        case .polymedication: return L10n.phaDetailSpecialityPolymedication
+        case .oralCancerTherapy: return L10n.phaDetailSpecialityOralCancerTherapy
+        case .organTransplantation: return L10n.phaDetailSpecialityOrganTransplantation
+        case .vaccination: return L10n.phaDetailSpecialityVaccination
+        case .bodyMeasurements: return L10n.phaDetailSpecialityBodyMeasurements
+        case .allergyTest: return L10n.phaDetailSpecialityAllergyTest
+        case .travelMedicineConsultation: return L10n.phaDetailSpecialityTravelMedicine
+        }
     }
 }
 
@@ -432,22 +457,20 @@ extension PharmacyLocationViewModel {
             referenceDate: PharmacyLocation.Dummies.referenceDate
         )
 
-        static let pharmacies = {
-            PharmacyLocation.Dummies.pharmacies.map { pharmacy in
-                PharmacyLocationViewModel(
-                    pharmacy: pharmacy,
-                    referenceLocation: .init(
-                        altitude: 5,
-                        coordinate: .init(latitude: 49.247034, longitude: 8.8668786),
-                        course: 0,
-                        horizontalAccuracy: 0.0,
-                        speed: 0.0,
-                        timestamp: Date(),
-                        verticalAccuracy: 0
-                    ),
-                    referenceDate: PharmacyLocation.Dummies.referenceDate
-                )
-            }
-        }()
+        static let pharmacies = PharmacyLocation.Dummies.pharmacies.map { pharmacy in
+            PharmacyLocationViewModel(
+                pharmacy: pharmacy,
+                referenceLocation: .init(
+                    altitude: 5,
+                    coordinate: .init(latitude: 49.247034, longitude: 8.8668786),
+                    course: 0,
+                    horizontalAccuracy: 0.0,
+                    speed: 0.0,
+                    timestamp: Date(),
+                    verticalAccuracy: 0
+                ),
+                referenceDate: PharmacyLocation.Dummies.referenceDate
+            )
+        }
     }
 }

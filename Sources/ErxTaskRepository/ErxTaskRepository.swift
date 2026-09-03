@@ -87,12 +87,14 @@ public struct ErxTaskRepository: Sendable {
     /// Marks the `ErxTask` by its id as EU redeemable by a patient
     /// - Parameters:
     ///   - id: the `ErxTask` ID
+    ///   - profileId: The profile identifier to which the item belongs to
     ///   - byPatientAuthorization: marks the task as EU redeemable
-    /// - Returns: A `ErxTask` or throws a `ErxRepositoryError`
+    /// - Returns: `Void` if successful or throws a `ErxRepositoryError`
     public var markTaskEURedeemable: @Sendable (
         _ taskId: ErxTask.ID,
+        _ profileId: UUID,
         _ byPatientAuthorization: Bool
-    ) async throws -> ErxTask?
+    ) async throws -> Void
 
     /// Set a redeem request of  an `ErxTask` in the selected pharmacy
     /// Note: The response does not verify that the pharmacy has accepted the order
@@ -125,11 +127,13 @@ public struct ErxTaskRepository: Sendable {
     /// - Parameters:
     ///   - profileId: The profile identifier to which the item belongs to
     ///   - fhirProfile: profile for which you want to have the count
-    /// - Returns: The count if successful or throws a `ErxRepositoryError`
+    /// - Returns: A stream of the count if successful or throws a `ErxRepositoryError`
     public var countAllUnreadCommunicationsAndChargeItems: @Sendable ( // swiftlint:disable:this identifier_name
         _ profileId: UUID,
         _ fhirProfile: ErxTask.Communication.Profile
-    ) async throws -> Int
+    ) -> AsyncThrowingStream<Int, Swift.Error> = { _, _ in
+        AsyncThrowingStream { $0.finish() }
+    }
 
     /// Load all AuditEvent's from a remote (server)
     /// - Parameter locale: Language locale  in which the result should be returned
@@ -153,8 +157,9 @@ public struct ErxTaskRepository: Sendable {
     /// Loads All consents of a given profile
     /// Uses the request headers  ACCESS_TOKEN with the containing insurance id
     ///
+    /// - Parameter profileId: The profile whose FHIR session should be used for the request
     /// - Returns: A list of all loaded `ErxConsent` or throws a `ErxRepositoryError`
-    public var fetchConsents: @Sendable () async throws -> [ErxConsent]
+    public var fetchConsents: @Sendable (_ profileId: UUID) async throws -> [ErxConsent]
 
     /// Loads the `ErxChargeItem` by its id from disk
     /// - Parameters:
@@ -197,16 +202,36 @@ public struct ErxTaskRepository: Sendable {
 
     /// Send a grant consent request of  an `ErxConsent`
     ///
-    /// - Parameter consent: Consent that contains information about the type of consent
+    /// - Parameters:
+    ///   - consent: Consent that contains information about the type of consent
     ///                         and insurance id which the consent will be granted for
+    ///   - profileId: The profile whose FHIR session should be used for the request
     /// - Returns: The `ErxConsent` that was granted  or throws a `ErxRepositoryError`
-    public var grantConsent: @Sendable (_ consent: ErxConsent) async throws -> ErxConsent?
+    public var grantConsent: @Sendable (_ consent: ErxConsent, _ profileId: UUID) async throws -> ErxConsent?
 
     /// Delete an consent of `ErxConsent` to revoke it
     /// - Parameters:
     ///   - category: the `ErxConsent.Category`of the consent to be revoked
+    ///   - profileId: The profile whose FHIR session should be used for the request
     /// - Returns: `Void` if successful or throws a `ErxRepositoryError`
-    public var revokeConsent: @Sendable (_ category: ErxConsent.Category) async throws -> Void
+    public var revokeConsent: @Sendable (_ category: ErxConsent.Category, _ profileId: UUID) async throws -> Void
+
+    public var loadRemoteEuAccessCode: @Sendable () async throws -> EuAccessCode?
+
+    public var grantEuAccessPermission: @Sendable (_ accessCode: EuAccessCode) async throws -> EuAccessCode?
+
+    public var deleteEuAccessCode: @Sendable (_ profileId: UUID?) async throws -> Void
+
+    public var saveEuCommunication: @Sendable (_ euCommunications: [EuCommunication], _ profileId: UUID?) async throws
+        -> Void
+
+    public var deleteEuCommunications: @Sendable (_ euCommunications: [EuCommunication],
+                                                  _ profileId: UUID?) async throws -> Void
+
+    public var loadEuCommunications: @Sendable (_ countryCode: String?, _ profileId: UUID?) async throws
+        -> [EuCommunication]
+
+    public var loadLatestActiveEuCommunication: @Sendable (_ profileId: UUID?) async throws -> EuCommunication?
 }
 
 extension DependencyValues {

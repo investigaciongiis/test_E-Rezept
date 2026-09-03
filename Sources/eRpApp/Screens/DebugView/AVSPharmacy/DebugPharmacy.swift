@@ -61,7 +61,7 @@ struct DebugPharmacy: Identifiable, Codable, CustomStringConvertible, Equatable,
     struct Certificate: Identifiable, Codable, CustomStringConvertible, Equatable, Hashable {
         private(set) var id = UUID()
         var name: String
-        // Base64 DER representation of a HCI encryption certificate (C.HCI.ENC)
+        /// Base64 DER representation of a HCI encryption certificate (C.HCI.ENC)
         var derBase64: String
 
         init(id: UUID = UUID(), name: String, derBase64: String) {
@@ -120,7 +120,7 @@ struct DebugPharmacy: Identifiable, Codable, CustomStringConvertible, Equatable,
             var value: String = ""
             private(set) var id = UUID()
 
-            internal init(key: String = "", value: String = "", id: UUID = UUID()) {
+            init(key: String = "", value: String = "", id: UUID = UUID()) {
                 self.key = key
                 self.value = value
                 self.id = id
@@ -146,16 +146,7 @@ extension DebugPharmacy {
                 telematikID: "telematik-id",
                 name: name,
                 types: [],
-                hoursOfOperation: [],
-                avsEndpoints: PharmacyLocation.AVSEndpoints(
-                    onPremiseUrl: onPremiseUrl.url,
-                    onPremiseUrlAdditionalHeaders: onPremiseUrl.additionalHeadersDict,
-                    shipmentUrl: shipmentUrl.url,
-                    shipmentUrlAdditionalHeaders: shipmentUrl.additionalHeadersDict,
-                    deliveryUrl: deliveryUrl.url,
-                    deliveryUrlAdditionalHeaders: deliveryUrl.additionalHeadersDict
-                ),
-                avsCertificates: certificates.compactMap(\.x509)
+                hoursOfOperation: []
             )
         )
     }

@@ -42,7 +42,7 @@ struct DiGaInsuranceListDomain {
         @Presents var destination: Destination.State?
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         @ReducerCaseEphemeral
         // sourcery: AnalyticsScreen = alert
@@ -72,7 +72,7 @@ struct DiGaInsuranceListDomain {
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -122,7 +122,7 @@ struct DiGaInsuranceListDomain {
     }
 }
 
-extension Array where Element == Insurance {
+extension [Insurance] {
     func sortedInsruance() -> [Insurance] {
         sorted { first, second in
             guard let firstName = first.name?.lowercased(),
@@ -135,7 +135,7 @@ extension Array where Element == Insurance {
 
 extension Asset.InsuranceLogo {
     static func imageAsset(for name: String?) -> ImageAsset {
-        guard let name = name else {
+        guard let name else {
             return Asset.InsuranceLogo.fallback
         }
         return allImagesHelper.first { $0.name == name } ?? Asset.InsuranceLogo.fallback
@@ -256,3 +256,6 @@ extension DiGaInsuranceListDomain {
         }
     }
 }
+
+extension DiGaInsuranceListDomain.Destination.State: Equatable {}
+extension DiGaInsuranceListDomain.Destination.Action: Equatable {}

@@ -31,16 +31,19 @@ struct ServiceOptionDomain {
         var selectedOption: RedeemOption?
         var availableOptions: Set<RedeemOption>
         var redeemOptionProvider: RedeemOptionProvider?
+        var validOptions: Set<RedeemOption>
 
         init(
             prescriptions: Shared<[Prescription]>,
             selectedOption: RedeemOption? = nil,
             availableOptions: Set<RedeemOption> = [],
+            validOptions: Set<RedeemOption>? = nil, // swiftlint:disable:this discouraged_optional_collection
             redeemOptionProvider: RedeemOptionProvider? = nil
         ) {
             _prescriptions = prescriptions
             self.selectedOption = selectedOption
             self.availableOptions = availableOptions
+            self.validOptions = validOptions ?? availableOptions
             self.redeemOptionProvider = redeemOptionProvider
         }
     }
@@ -50,7 +53,7 @@ struct ServiceOptionDomain {
     }
 
     var body: some ReducerOf<Self> {
-        Reduce(self.core)
+        Reduce(core)
     }
 
     func core(into state: inout State, action: Action) -> Effect<Action> {

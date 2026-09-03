@@ -33,12 +33,16 @@ import IdentifiedCollections
 import Pharmacy
 
 protocol OrdersRepository {
-    func loadAllOrders() -> AsyncThrowingStream<IdentifiedArray<String, Order>, Swift.Error>
+    func
+        loadAllOrders() -> AsyncThrowingStream<IdentifiedArray<String, Order>, Swift.Error>
+    /// we load all local EuOrders but when fetching from remote we only fetch for current selected profile
+    func loadEuOrders(profileId: UUID) -> AsyncThrowingStream<IdentifiedArray<String, EuOrder>, Swift.Error>
 }
 
 final class DefaultOrdersRepository: OrdersRepository {
     @Dependency(\.erxTaskRepository) var erxTaskRepository
     @Dependency(\.pharmacyRepository) var pharmacyRepository
+    @Dependency(\.userDataStore) var userDataStore
 
     func loadAllOrders() -> AsyncThrowingStream<IdentifiedCollections.IdentifiedArray<String, Order>, Swift.Error> {
         AsyncThrowingStream { continuation in
@@ -96,15 +100,61 @@ final class DefaultOrdersRepository: OrdersRepository {
     func loadChargeItems(for taskIds: Set<ErxTask.ID>) async throws -> IdentifiedArray<String, ErxChargeItem> {
         var foundChargeItems: IdentifiedArray<String, ErxChargeItem> = IdentifiedArray()
         for taskId in taskIds {
-            if let chargeItem = try await erxTaskRepository.loadLocalChargeItem(nil, taskId)?.chargeItem {
-                // Known issue: A Task can be assigned to multiple orders and different pharmacies.
-                // With adding the ChargeItem to each order with this taskId we potentially add it to wrong orders
-                // Also we cannot relate it to a pharmacy, since the telematikId is not part of the ChargeItem
-                foundChargeItems.append(chargeItem)
+            if let sparse = try await erxTaskRepository.loadLocalChargeItem(nil, taskId) {
+                // Parse FHIR data on the main thread to avoid stack overflow from large
+                // FHIR value types (ResourceProxy) on the cooperative thread pool's limited stack
+                if let chargeItem = await MainActor.run(body: { sparse.chargeItem }) {
+                    // Known issue: A Task can be assigned to multiple orders and different pharmacies.
+                    // With adding the ChargeItem to each order with this taskId we potentially add it to wrong orders
+                    // Also we cannot relate it to a pharmacy, since the telematikId is not part of the ChargeItem
+                    foundChargeItems.append(chargeItem)
+                }
             }
         }
 
         return foundChargeItems
+    }
+
+    func loadEuOrders(profileId: UUID) -> AsyncThrowingStream<IdentifiedArray<String, EuOrder>, Swift.Error> {
+        AsyncThrowingStream { continuation in
+            Task { [erxTaskRepository] in
+                do {
+                    var orders: IdentifiedArray<String, EuOrder> = IdentifiedArray()
+
+                    let communications = try await erxTaskRepository.loadEuCommunications(nil, nil)
+                    let groupedCommunications = Dictionary(grouping: communications) { $0.orderId }
+                    let euErxTasks = try await loadAllEuTasks(profileId: profileId)
+
+                    for (orderId, communications) in groupedCommunications {
+                        orders.append(
+                            EuOrder(
+                                orderId: orderId ?? EuOrder.unknownOrderId,
+                                communications: IdentifiedArray(uniqueElements: communications),
+                                countryCode: communications.first?.countryCode ?? EuOrder.unknownCountryCode,
+                                erxTasks: euErxTasks
+                            )
+                        )
+                    }
+
+                    continuation
+                        .yield(IdentifiedArray(
+                            uniqueElements: orders.sorted {
+                                $0.lastUpdated > $1.lastUpdated
+                            }
+                        ))
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    private func loadAllEuTasks(profileId: UUID?) async throws -> [ErxTask] {
+        let tasks = try await erxTaskRepository.loadLocalAllTasks(profileId).async()
+        return tasks.filter { task in
+            task.isSetEURedeemableByPatient == true
+        }
     }
 
     @CodedError("037")

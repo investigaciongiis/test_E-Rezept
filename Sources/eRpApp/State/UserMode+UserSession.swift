@@ -20,7 +20,6 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AVS
 import BfArM
 import Combine
 import eRpKit
@@ -39,20 +38,12 @@ extension UserMode: UserSession {
         }
     }
 
-    var isAuthenticated: AnyPublisher<Bool, UserSessionError> {
-        sessionContainer.isAuthenticated
-    }
-
     var ordersRepository: OrdersRepository {
         sessionContainer.ordersRepository
     }
 
     var profileDataStore: ProfileDataStore {
         sessionContainer.profileDataStore
-    }
-
-    var updateChecker: UpdateChecker {
-        sessionContainer.updateChecker
     }
 
     var localUserStore: UserDataStore {
@@ -91,24 +82,12 @@ extension UserMode: UserSession {
         sessionContainer.trustStoreSession
     }
 
-    var appSecurityManager: AppSecurityManager {
-        sessionContainer.appSecurityManager
-    }
-
-    var deviceSecurityManager: DeviceSecurityManager {
-        sessionContainer.deviceSecurityManager
-    }
-
     var profileId: UUID {
         sessionContainer.profileId
     }
 
     func profile() -> AnyPublisher<Profile, LocalStoreError> {
         sessionContainer.profile()
-    }
-
-    var avsSession: AVSSession {
-        sessionContainer.avsSession
     }
 
     var avsTransactionDataStore: AVSTransactionDataStore {
@@ -129,9 +108,5 @@ extension UserMode: UserSession {
 
     var pairingIdpSessionLoginHandler: LoginHandler {
         sessionContainer.pairingIdpSessionLoginHandler
-    }
-
-    var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider {
-        sessionContainer.secureEnclaveSignatureProvider
     }
 }

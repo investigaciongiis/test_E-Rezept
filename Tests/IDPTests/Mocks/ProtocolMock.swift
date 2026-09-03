@@ -23,11 +23,8 @@
 
 import IDP
 
-// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
-
+// swiftformat:disable emptyExtensions
 // sourcery:begin: AutoMockable
-// sourcery:end
-
-// sourcery:begin: ProtocolMock
 extension ExtAuthRequestStorage {}
 // sourcery:end
+// swiftformat:enable emptyExtensions

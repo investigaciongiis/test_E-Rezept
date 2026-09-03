@@ -84,8 +84,6 @@ public class DefaultTrustStoreSession {
 // [REQ:gemSpec_Krypt:A_21218,A_21222#2] `DefaultTrustStoreSession` coordinates loading and validity checking
 extension DefaultTrustStoreSession: TrustStoreSession {
     public func reset() {
-        trustStoreStorage.set(certList: nil)
-        trustStoreStorage.set(ocspList: nil)
         trustStoreStorage.set(pkiCertificates: nil)
         trustStoreStorage.set(vauCertificate: nil)
         trustStoreStorage.resetOcspResponses()
@@ -166,7 +164,8 @@ extension DefaultTrustStoreSession {
             let ocspUncheckedTrustStore = try? X509TrustStore(
                 trustAnchor: trustAnchor,
                 pkiCertificates: localPkiCertificates,
-                vauCertData: localVauCertData
+                vauCertData: localVauCertData,
+                validationTime: time()
             ) {
             let vauCertOCSPResponse = try await loadCurrentVauCertificateOcspResponse(
                 issuerCn: vauCertIssuerCN,
@@ -205,7 +204,8 @@ extension DefaultTrustStoreSession {
         guard let ocspUncheckedTrustStore = try? X509TrustStore(
             trustAnchor: trustAnchor,
             pkiCertificates: remotePkiCertificates,
-            vauCertData: remoteVauCertData
+            vauCertData: remoteVauCertData,
+            validationTime: time()
         )
         else {
             throw TrustStoreError.internal(error: .trustAnchorUnexpectedFormat)
@@ -286,7 +286,7 @@ extension DefaultTrustStoreSession {
     }
 }
 
-extension Collection where Element == OCSPResponse {
+extension Collection<OCSPResponse> {
     // [REQ:gemSpec_Krypt:A_21218] If only OCSP responses >12h available, we must request new ones
     func allSatisfyNotProducedBefore(date: Date) -> Bool {
         allSatisfy { ocspResponse in
@@ -297,7 +297,7 @@ extension Collection where Element == OCSPResponse {
 
 extension OCSPResponse {
     func notProducedBefore(date: Date) -> Bool {
-        guard let producedAt = try? self.producedAt() else {
+        guard let producedAt = try? producedAt() else {
             return false
         }
         return producedAt.timeIntervalSince(date) > 0
@@ -309,5 +309,7 @@ extension X509TrustStore {
         vauCert == certificate || idpCerts.contains { $0 == certificate }
     }
 
-    var eeCerts: [X509] { [vauCert] + idpCerts }
+    var eeCerts: [X509] {
+        [vauCert] + idpCerts
+    }
 }

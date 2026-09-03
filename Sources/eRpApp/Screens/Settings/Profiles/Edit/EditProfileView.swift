@@ -21,11 +21,13 @@
 //
 
 import ComposableArchitecture
+import ConsentService
 import eRpStyleKit
+import FeatureCardWall
+import FeatureEURedeem
 import IDP
 import SwiftUI
 
-// swiftlint:disable file_length
 struct EditProfileView: View {
     @Bindable var store: StoreOf<EditProfileDomain>
 
@@ -59,6 +61,10 @@ struct EditProfileView: View {
                 .accessibilityElement(children: .combine)
 
                 SingleElementSectionContainer(
+                    header: {
+                        Text(L10n.stgTxtEditProfileNameSectionTitle)
+                            .accessibilityAddTraits(.isHeader)
+                    },
                     footer: {
                         if store.name.lengthOfBytes(using: .utf8) == 0 {
                             EmptyProfileError()
@@ -66,27 +72,33 @@ struct EditProfileView: View {
 
                     },
                     content: {
-                        TextField(text: $store.name) {
-                            Text(L10n.stgTxtEditProfileNamePlaceholder.key, bundle: .module)
+                        ZStack {
+                            TextField(text: $store.name) {
+                                Text(L10n.stgTxtEditProfileNamePlaceholder.key, bundle: .module)
+                            }
+                            .padding()
+                            .font(Font.body)
+                            .foregroundColor(Colors.systemLabel)
+                            .accessibility(label: Text(L10n.stgTxtEditProfileNamePlaceholder.key, bundle: .module))
+                            .animation(.easeInOut, value: store.name)
+                            .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileNameInput)
+
+                            HStack {
+                                Spacer()
+
+                                Image(systemName: SFSymbolName.pencil)
+                                    .foregroundColor(Colors.primary)
+                                    .padding(.trailing)
+                            }
+                            .accessibilityHidden(true)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
-                        .padding()
-                        .font(Font.body)
-                        .foregroundColor(Colors.systemLabel)
-                        .accessibility(label: Text(L10n.stgTxtEditProfileNamePlaceholder.key, bundle: .module))
-                        .animation(.easeInOut, value: store.name)
-                        .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileNameInput)
                     }
                 )
 
                 ConnectedProfile(store: store)
 
-                if store.insuranceType.canReceiveChargeItems {
-                    ChargeItemsSectionView(store: store)
-                }
-
-                LoginSectionView(store: store)
-
-                TokenSectionView(store: store)
+                MyAreaSectionView(store: store)
 
                 Button {
                     store.send(.showDeleteProfileAlert)
@@ -133,6 +145,14 @@ struct EditProfileView: View {
                 .navigationBarTitleDisplayMode(.inline)
         }
         .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
+        .fullScreenCover(
+            item: $store.scope(
+                state: \.destination?.cardWall,
+                action: \.destination.cardWall
+            )
+        ) { store in
+            CardWallIntroductionView(store: store)
+        }
         .task {
             await store.send(.task).finish()
         }
@@ -146,7 +166,7 @@ extension EditProfileView {
     private struct EmptyProfileError: View {
         var body: some View {
             Text(L10n.stgTxtEditProfileEmptyNameErrorMessage)
-                .foregroundColor(Colors.red600)
+                .foregroundColor(Colors.red700)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -174,32 +194,41 @@ extension EditProfileView {
                         .accessibilityAddTraits(.isHeader)
                 }, content: {
                     if let fullName = store.fullName, !fullName.isEmpty {
-                        SubTitle(title: fullName, description: L10n.stgTxtEditProfileLabelName)
-                            .accessibilityElement(children: .combine)
-                            .accessibility(label: Text(L10n.stgTxtEditProfileLabelName))
-                            .accessibility(value: Text(fullName))
-                            .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileName)
+                        LabeledContent {
+                            Text(fullName)
+                        } label: {
+                            Text(L10n.stgTxtEditProfileLabelName)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibility(label: Text(L10n.stgTxtEditProfileLabelName))
+                        .accessibility(value: Text(fullName))
+                        .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileName)
                     }
 
                     EditInsuranceView(store: store)
 
                     if let can = store.can {
-                        SubTitle(title: can, description: L10n.stgTxtEditProfileLabelCan)
-                            .accessibilityElement(children: .combine)
-                            .accessibility(label: Text(L10n.stgTxtEditProfileLabelCan))
-                            .accessibility(value: Text(can))
-                            .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileCan)
+                        LabeledContent {
+                            Text(can)
+                        } label: {
+                            Text(L10n.stgTxtEditProfileLabelCan)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibility(label: Text(L10n.stgTxtEditProfileLabelCan))
+                        .accessibility(value: Text(can))
+                        .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileCan)
                     }
                     if let insuranceId = store.insuranceId {
                         Button(action: {
                             store.send(.copyKVNR(insuranceId))
                         }, label: {
-                            VStack(alignment: .leading, spacing: 0) {
+                            Label {
                                 HStack(alignment: .center, spacing: 16) {
-                                    SubTitle(
-                                        title: insuranceId,
-                                        description: L10n.stgTxtEditProfileLabelKvnr
-                                    )
+                                    LabeledContent {
+                                        Text(insuranceId)
+                                    } label: {
+                                        Text(L10n.stgTxtEditProfileLabelKvnr)
+                                    }
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                     HStack {
@@ -210,15 +239,11 @@ extension EditProfileView {
                                     }
                                     .frame(maxWidth: .infinity, alignment: .trailing)
                                 }
-                                .padding([.bottom, .trailing, .top])
-                            }
-                            .subTitleStyle(PlainSectionContainerSubTitleStyle())
-                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                            .padding([.leading])
+                            } icon: { EmptyView() }
                         })
-                            .accessibility(label: Text(L10n.stgTxtEditProfileLabelKvnr))
-                            .accessibility(value: Text(insuranceId))
-                            .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileInsuranceId)
+                        .accessibility(label: Text(L10n.stgTxtEditProfileLabelKvnr))
+                        .accessibility(value: Text(insuranceId))
+                        .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileInsuranceId)
                     }
                 })
             } else {
@@ -255,9 +280,9 @@ extension EditProfileView {
                 }, label: {
                     Text(L10n.stgBtnEditProfileLogin)
                 })
-                    .buttonStyle(.primary)
-                    .padding(.bottom)
-                    .accessibility(identifier: A11y.settings.editProfile.stgBtnEditProfileLogin)
+                .buttonStyle(.primary)
+                .padding(.bottom)
+                .accessibility(identifier: A11y.settings.editProfile.stgBtnEditProfileLogin)
             }
         }
     }
@@ -265,18 +290,17 @@ extension EditProfileView {
     private struct EditInsuranceView: View {
         @Bindable var store: StoreOf<EditProfileDomain>
 
-        @Environment(\.sectionContainerIsLastElement) var isLastElement: Bool
-
         var body: some View {
             Button(action: {
                 store.send(.changeInsurance)
             }, label: {
-                VStack(alignment: .leading, spacing: 0) {
+                Label {
                     HStack(alignment: .center, spacing: 16) {
-                        SubTitle(
-                            title: store.insuranceName,
-                            description: L10n.stgTxtEditProfileLabelInsuranceCompany
-                        )
+                        LabeledContent {
+                            Text(store.insuranceName)
+                        } label: {
+                            Text(L10n.stgTxtEditProfileLabelInsuranceCompany)
+                        }
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                         HStack {
@@ -286,51 +310,113 @@ extension EditProfileView {
                         }
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     }
-                    .padding([.bottom, .trailing, .top])
-
-                    if !isLastElement {
-                        Divider()
-                    }
+                } icon: {
+                    EmptyView()
                 }
-                .subTitleStyle(PlainSectionContainerSubTitleStyle())
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .padding([.leading])
-
             })
-                .accessibilityElement(children: .combine)
-                .accessibility(label: Text(L10n.stgTxtEditProfileLabelInsuranceCompany))
-                .accessibility(value: Text(store.insuranceName))
-                .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileInsuranceCompany)
+            .accessibilityElement(children: .combine)
+            .accessibility(label: Text(L10n.stgTxtEditProfileLabelInsuranceCompany))
+            .accessibility(value: Text(store.insuranceName))
+            .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileInsuranceCompany)
         }
     }
 
-    private struct ChargeItemsSectionView: View {
+    private struct MyAreaSectionView: View {
         @Bindable var store: StoreOf<EditProfileDomain>
+
+        @Shared(.enablePushNotifications) var enablePushNotifications: Bool
 
         var body: some View {
             SectionContainer(
                 header: {
-                    Text(L10n.stgTxtEditProfileChargeItemListSectionTitle)
+                    Text(L10n.stgTxtEditProfileMyAreaTitle)
                         .accessibility(identifier: A11y.settings.editProfile
-                            .stgTxtEditProfileChargeItemListSectionTitle)
+                            .stgTxtEditProfileMyAreaTitle)
                         .accessibilityAddTraits(.isHeader)
                 },
                 content: {
-                    EmptyView()
+                    if store.insuranceType.canReceiveChargeItems {
+                        Button {
+                            store.send(.chargeItemListTapped)
+                        } label: {
+                            Label {
+                                Text(L10n.stgBtnEditProfileChargeItemList)
+                            } icon: {
+                                Image(systemName: SFSymbolName.euroSign)
+                            }
+                        }
+                        .buttonStyle(.navigation)
+                        .accessibilityElement(children: .combine)
+                        .accessibility(identifier: A11y.settings.editProfile
+                            .stgTxtEditProfileChargeItemListSectionShowChargeItemList)
+                    }
 
+                    if store.isEURedeemable {
+                        Button {
+                            store.send(.showEURedeemConsent)
+                        } label: {
+                            Label(title: {
+                                KeyValuePair(
+                                    key: L10n.stgBtnEditProfileEuRedeemConsentTitle.text,
+                                    value: store.euRedeemConsentCheck == .granted ?
+                                        L10n.stgBtnEditProfileEuRedeemGrantConsent.text : L10n
+                                        .stgBtnEditProfileEuRedeemRejectConsent.text
+                                )
+                            }, icon: {
+                                Image(systemName: SFSymbolName.globeEU)
+                            })
+                        }
+                        .buttonStyle(.navigation)
+                        .accessibilityElement(children: .combine)
+                        .accessibility(identifier: A11y.settings.editProfile
+                            .stgBtnEditProfileEuRedeemChangeConsent)
+                    }
+
+                    if enablePushNotifications {
+                        Button {
+                            store.send(.pushNotificationsTapped)
+                        } label: {
+                            Label {
+                                Text(L10n.stgBtnEditProfileNotifications)
+                            } icon: {
+                                Image(systemName: SFSymbolName.bell)
+                            }
+                        }
+                        .buttonStyle(.navigation)
+                        .accessibilityElement(children: .combine)
+                        .accessibility(identifier: A11y.settings.editProfile
+                            .stgBtnEditProfileSecuritySectionShowAuditEvents)
+                    }
+
+                    // [REQ:gemSpec_eRp_FdV:A_19177#2,A_19185#3] Actual Button to open the audit events
+                    // [REQ:BSI-eRp-ePA:O.Auth_6#2] Actual Button to open the audit events
                     Button {
-                        store.send(.chargeItemListTapped)
+                        store.send(.auditEventsTapped)
                     } label: {
                         Label {
-                            Text(L10n.stgBtnEditProfileChargeItemList)
+                            Text(L10n.stgTxtEditProfileSecurityShowAuditEventsLabel2)
                         } icon: {
-                            Image(systemName: SFSymbolName.euroSign)
+                            Image(systemName: SFSymbolName.arrowUpArrowDown)
                         }
                     }
                     .buttonStyle(.navigation)
                     .accessibilityElement(children: .combine)
                     .accessibility(identifier: A11y.settings.editProfile
-                        .stgTxtEditProfileChargeItemListSectionShowChargeItemList)
+                        .stgBtnEditProfileSecuritySectionShowAuditEvents)
+
+                    Button {
+                        store.send(.registeredDevicesTapped)
+                    } label: {
+                        Label {
+                            Text(L10n.stgBtnEditProfileRegisteredDevices)
+                        } icon: {
+                            Image(systemName: SFSymbolName.ipadLandscapeAndIphone)
+                        }
+                    }
+                    .buttonStyle(.navigation)
+                    .accessibilityElement(children: .combine)
+                    .accessibility(identifier: A11y.settings.editProfile
+                        .stgTxtEditProfileLoginSectionConnectedDevices)
                 }
             )
             .navigationDestination(
@@ -339,184 +425,30 @@ extension EditProfileView {
             ) { store in
                 ChargeItemListView(store: store)
             }
-        }
-    }
-
-    private struct LoginSectionView: View {
-        @Bindable var store: StoreOf<EditProfileDomain>
-
-        enum AuthenticationType: Equatable {
-            case biometric
-            case card
-            case biometryNotEnrolled(String)
-            case none
-        }
-
-        var authType: AuthenticationType {
-            if let error = store.securityOptionsError {
-                return .biometryNotEnrolled(error.localizedDescriptionWithErrorList)
+            .navigationDestination(item: $store.scope(
+                state: \.destination?.euRedeemConsent,
+                action: \.destination.euRedeemConsent
+            )) { store in
+                FeatureEURedeem.ConsentView(store: store)
             }
-            if store.hasBiometricKeyID == true {
-                return .biometric
-            }
-            if store.token != nil {
-                return .card
-            }
-            return .none
-        }
-
-        var body: some View {
-            SectionContainer(header: {
-                Text(L10n.stgTxtEditProfileLoginSectionTitle)
-                    .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileLoginSectionTitle)
-                    .accessibilityAddTraits(.isHeader)
-            }, footer: {
-                FooterView(authType: authType)
-                    .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileLoginSectionShowHint)
-
-            }, content: {
-                Group {
-                    switch authType {
-                    case .biometric:
-                        Button(action: {
-                            store.send(.showDeleteBiometricPairingAlert)
-                        }, label: {
-                            Label(title: {
-                                KeyValuePair(
-                                    key: L10n.stgTxtEditProfileLoginActivateDescription,
-                                    value: L10n.stgTxtEditProfileLoginActivateTitle
-                                )
-                            }, icon: {})
-                        })
-                    case .card:
-                        Button(action: {
-                            store.send(.relogin)
-                        }, label: {
-                            Label(title: {
-                                KeyValuePair(
-                                    key: L10n.stgTxtEditProfileLoginActivateDescription,
-                                    value: L10n.stgTxtEditProfileLoginDeactivateTitle
-                                )
-                            }, icon: {})
-                        })
-                    case .none:
-                        Button(action: {
-                            store.send(.login)
-                        }, label: {
-                            Label(title: {
-                                Text(L10n.stgTxtEditProfileLoginActivateDescription)
-                            }, icon: {})
-                        })
-                            .disabled(true)
-                    case .biometryNotEnrolled:
-                        Label(title: {
-                            Text(L10n.stgTxtEditProfileLoginActivateDescription)
-                                .foregroundColor(Colors.systemGray)
-                        }, icon: {})
-                    }
-                }
-                .accessibilityElement(children: .combine)
-                .accessibility(
-                    identifier: A11y.settings.editProfile.stgTxtEditProfileLoginSectionActivate
-                )
-
-                Button {
-                    store.send(.registeredDevicesTapped)
-                } label: {
-                    Label {
-                        Text(L10n.stgBtnEditProfileRegisteredDevices)
-                    } icon: {
-                        EmptyView()
-                    }
-                }
-                .buttonStyle(.navigation)
-                .accessibilityElement(children: .combine)
-                .accessibility(identifier: A11y.settings.editProfile.stgTxtEditProfileLoginSectionConnectedDevices)
-            })
-                .navigationDestination(
-                    item: $store.scope(state: \.destination?.registeredDevices,
-                                       action: \.destination.registeredDevices)
-                ) { store in
-                    RegisteredDevicesView(store: store)
-                }
-        }
-
-        private struct FooterView: View {
-            var authType: AuthenticationType
-
-            var body: some View {
-                switch authType {
-                case .biometryNotEnrolled:
-                    Text(L10n.stgTxtEditProfileLoginFootnoteBiometry)
-                    Button(action: {
-                        guard let url = URL(string: "https://www.gematik.de/anwendungen/e-rezept/faq/"),
-                              UIApplication.shared.canOpenURL(url) else { return }
-                        UIApplication.shared.open(url)
-                    }, label: { Text(L10n.stgTxtEditProfileLoginFootnoteMore) })
-                case .card, .none:
-                    Text(L10n.stgTxtEditProfileLoginFootnoteRetry)
-                case .biometric:
-                    EmptyView()
-                }
-            }
-        }
-    }
-
-    private struct TokenSectionView: View {
-        @Bindable var store: StoreOf<EditProfileDomain>
-
-        var body: some View {
-            SingleElementSectionContainer(
-                header: {
-                    Text(L10n.stgTxtEditProfileSecuritySectionTitle)
-                        .accessibilityIdentifier(A11y.settings.editProfile
-                            .stgTxtEditProfileSecuritySectionTitle)
-                        .accessibilityAddTraits(.isHeader)
-                },
-                footer: {
-                    if store.token == nil {
-                        FootnoteView(
-                            text: L10n.stgTxtEditProfileSecurityShowTokensHint,
-                            a11y: A11y.settings.editProfile
-                                .stgTxtEditProfileSecurityShowTokensHint
-                        )
-                    } else {
-                        EmptyView()
-                    }
-                },
-                content: {
-                    TokenSectionViewNavigation(store: store)
-                }
-            )
-        }
-    }
-
-    private struct TokenSectionViewNavigation: View {
-        @Bindable var store: StoreOf<EditProfileDomain>
-
-        var body: some View {
-            // [REQ:gemSpec_eRp_FdV:A_19177#2,A_19185#3] Actual Button to open the audit events
-            // [REQ:BSI-eRp-ePA:O.Auth_6#2] Actual Button to open the audit events
-            Button {
-                store.send(.auditEventsTapped)
-            } label: {
-                Label {
-                    SubTitle(
-                        title: L10n.stgTxtEditProfileSecurityShowAuditEventsLabel,
-                        description: L10n.stgTxtEditProfileSecurityShowAuditEventsDescription
-                    )
-                } icon: {
-                    Image(systemName: SFSymbolName.arrowUpArrowDown)
-                }
-            }
-            .buttonStyle(.navigation)
-            .accessibilityElement(children: .combine)
-            .accessibility(identifier: A11y.settings.editProfile.stgBtnEditProfileSecuritySectionShowAuditEvents)
-
             .navigationDestination(
                 item: $store.scope(state: \.destination?.auditEvents, action: \.destination.auditEvents)
             ) { store in
                 AuditEventsView(store: store)
+            }
+            .navigationDestination(
+                item: $store.scope(
+                    state: \.destination?.notificationChannels,
+                    action: \.destination.notificationChannels
+                )
+            ) { store in
+                NotificationChannelsView(store: store)
+            }
+            .navigationDestination(
+                item: $store.scope(state: \.destination?.registeredDevices,
+                                   action: \.destination.registeredDevices)
+            ) { store in
+                RegisteredDevicesView(store: store)
             }
         }
     }
@@ -531,10 +463,12 @@ struct ProfileView_Preview: PreviewProvider {
                         initialState: {
                             var state: EditProfileDomain.State = .init(profile: UserProfile.Dummies.profileE)
                             state.token = IDPToken(accessToken: "", expires: Date(), idToken: "", redirect: "")
+                            state.can = "123123"
+                            state.fullName = "Test User"
                             return state
                         }()
                     ) {
-                        EditProfileDomain()
+                        EmptyReducer() // EditProfileDomain()
                     }
                 )
             }

@@ -27,8 +27,6 @@ import SwiftUI
 struct OnboardingAnalyticsDetailView: View {
     @Bindable var store: StoreOf<OnboardingDomain>
 
-    @State var calculatedHeight = CGFloat(1)
-
     var body: some View {
         VStack {
             ScrollView {
@@ -51,11 +49,9 @@ struct OnboardingAnalyticsDetailView: View {
                             .font(.body)
                         UIKitTextView(
                             attributedString: list(input: L10n.onbAnaDtlTxtBodyHowPart2.text),
-                            calculatedHeight: $calculatedHeight,
                             font: .preferredFont(forTextStyle: .body),
                             foregroundColor: .label
                         ) { _ in }
-                            .frame(height: calculatedHeight)
                     }
 
                     Text(L10n.onbAnaDtlTxtBodyHowPart3)
@@ -79,11 +75,11 @@ struct OnboardingAnalyticsDetailView: View {
                     .padding(.horizontal, 64)
                     .padding(.vertical)
             })
-                .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnAllow)
-                .font(Font.body.weight(.semibold))
-                .foregroundColor(Colors.systemColorWhite)
-                .background(Colors.primary700)
-                .cornerRadius(16)
+            .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnAllow)
+            .font(Font.body.weight(.semibold))
+            .foregroundColor(Colors.systemColorWhite)
+            .background(Colors.primary700)
+            .cornerRadius(16)
 
             // [REQ:BSI-eRp-ePA:O.Purp_3#4] Button denies tracking
             Button(action: {
@@ -93,11 +89,11 @@ struct OnboardingAnalyticsDetailView: View {
                     .padding(.horizontal, 71)
                     .padding(.vertical)
             })
-                .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnDeny)
-                .font(Font.body.weight(.semibold))
-                .foregroundColor(Colors.systemColorWhite)
-                .background(Colors.primary700)
-                .cornerRadius(16)
+            .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnDeny)
+            .font(Font.body.weight(.semibold))
+            .foregroundColor(Colors.systemColorWhite)
+            .background(Colors.primary700)
+            .cornerRadius(16)
         }
         .padding()
     }

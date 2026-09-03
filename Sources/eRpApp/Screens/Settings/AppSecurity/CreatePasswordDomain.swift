@@ -96,7 +96,7 @@ struct CreatePasswordDomain: Reducer {
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce(self.core)
+        Reduce(core)
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
@@ -105,22 +105,21 @@ struct CreatePasswordDomain: Reducer {
         case .binding(\.password):
             state.showOriginalPasswordWrong = false
             return .none
+
         case .binding(\.passwordA):
             // [REQ:BSI-eRp-ePA:O.Pass_2#5] Testing the actual password strength while updating within settings
             state.passwordStrength = passwordStrengthTester.passwordStrength(for: state.passwordA)
             return .run { send in
                 try await schedulers.main.sleep(for: Self.timeout)
-                await send(.comparePasswords)
+                await send(.comparePasswords, animation: .default)
             }
-            .animation(.default)
             .cancellable(id: CancelID.comparePasswords, cancelInFlight: true)
 
         case .binding(\.passwordB):
             return .run { send in
                 try await schedulers.main.sleep(for: Self.timeout)
-                await send(.comparePasswords)
+                await send(.comparePasswords, animation: .default)
             }
-            .animation(.default)
             .cancellable(id: CancelID.comparePasswords, cancelInFlight: true)
 
         case .comparePasswords:
@@ -134,9 +133,8 @@ struct CreatePasswordDomain: Reducer {
         case .enterButtonTapped:
             return .run { send in
                 try await schedulers.main.animation().sleep(for: Self.timeout)
-                await send(.comparePasswords)
+                await send(.comparePasswords, animation: .default)
             }
-            .animation(.default)
             .cancellable(id: CancelID.comparePasswords, cancelInFlight: true)
 
         case .saveButtonTapped:

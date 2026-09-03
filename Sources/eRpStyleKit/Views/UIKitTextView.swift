@@ -24,32 +24,40 @@ import SwiftUI
 import UIKit
 
 public struct UIKitTextView: UIViewRepresentable {
-    private var attributedString: NSMutableAttributedString
-    @Binding private var calculatedHeight: CGFloat
+    private var attributedString: NSAttributedString
     var onLinkTap: (URL) -> Void
 
     public init(
         attributedString: AttributedString,
-        calculatedHeight: Binding<CGFloat>,
         font: UIFont = UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .regular),
         foregroundColor: UIColor = UIColor.label,
         onLinkTap: @escaping (URL) -> Void
     ) {
-        _calculatedHeight = calculatedHeight
-        let result = NSMutableAttributedString(attributedString)
-        result.addAttribute(.font,
-                            value: font,
-                            range: NSRange(location: 0, length: result.length))
-        result.addAttribute(.foregroundColor,
-                            value: foregroundColor,
-                            range: NSRange(location: 0, length: result.length))
-        self.attributedString = result
+        UITextView.appearance().linkTextAttributes = [.foregroundColor: UIColor.primary700]
+
+        var result = attributedString
+        let range = result.startIndex ..< result.endIndex
+        result[range].font = font
+        result[range].foregroundColor = foregroundColor
+
+        // Enable underlines for links
+        for run in result.runs {
+            guard run.attributes.link != nil else { continue }
+
+            result[run.range].underlineStyle = .single
+            result[run.range].mergeAttributes(AttributeContainer([.underlineStyle: 1]))
+            result[run.range].underlineColor = UIColor.primary700
+        }
+
+        self.attributedString = NSAttributedString(result)
         self.onLinkTap = onLinkTap
     }
 
     public func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textView.setContentCompressionResistancePriority(.required, for: .vertical)
+        textView.setContentHuggingPriority(.required, for: .vertical)
         textView.isScrollEnabled = false
         textView.delegate = context.coordinator
         textView.attributedText = attributedString
@@ -61,14 +69,14 @@ public struct UIKitTextView: UIViewRepresentable {
     }
 
     public func updateUIView(_ uiView: UITextView, context _: Context) {
-        let newSize = uiView.sizeThatFits(CGSize(width: uiView.frame.width,
-                                                 height: .greatestFiniteMagnitude))
+        uiView.attributedText = attributedString
+    }
 
-        guard calculatedHeight != newSize.height else { return }
-
-        DispatchQueue.main.async {
-            $calculatedHeight.wrappedValue = newSize.height
-        }
+    public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context _: Context) -> CGSize? {
+        let width = proposal.width ?? uiView.bounds.width
+        let targetWidth = (width.isFinite && width > 0) ? width : UIView.layoutFittingExpandedSize.width
+        let fittingSize = uiView.sizeThatFits(CGSize(width: targetWidth, height: .greatestFiniteMagnitude))
+        return CGSize(width: targetWidth, height: ceil(fittingSize.height))
     }
 
     public class Coordinator: NSObject, UITextViewDelegate {

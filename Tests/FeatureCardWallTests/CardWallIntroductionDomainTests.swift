@@ -39,14 +39,12 @@ final class CardWallIntroductionDomainTests: XCTestCase {
     var idpSessionMock: IDPSessionMock!
     let uiScheduler = DispatchQueue.test
 
-    lazy var schedulers: Schedulers = {
-        Schedulers(
-            uiScheduler: uiScheduler.eraseToAnyScheduler(),
-            networkScheduler: DispatchQueue.test.eraseToAnyScheduler(),
-            ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
-            computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
-        )
-    }()
+    lazy var schedulers: Schedulers = .init(
+        uiScheduler: uiScheduler.eraseToAnyScheduler(),
+        networkScheduler: DispatchQueue.test.eraseToAnyScheduler(),
+        ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
+        computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
+    )
 
     override func setUp() {
         super.setUp()
@@ -115,6 +113,7 @@ final class CardWallIntroductionDomainTests: XCTestCase {
             dependencies.openURLHandler.canOpenURL = { _ in true }
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
+                return true
             }
             dependencies.profileBasedSessionProvider.idpSession = { _ in self.idpSessionMock }
             dependencies.profilesStore.fetchProfile = { _ in
@@ -184,7 +183,7 @@ final class CardWallIntroductionDomainTests: XCTestCase {
         }
     }
 
-    func testGIDRememberKKLoadingFailsWithIDPError() async {
+    func testGIDRememberKKLoadingFailsWithIDPError() {
         func testLoadingTriggerFails() async {
             let profile = Profile(name: "Test",
                                   identifier: UUID(),
@@ -259,7 +258,7 @@ final class CardWallIntroductionDomainTests: XCTestCase {
                               gIdEntry: TestData.testEntryG)
 
         let sut = testStore { dependencies in
-            dependencies.openURLHandler.canOpenURL = { _ in false }
+            dependencies.openURLHandler.open = { _ in false }
             dependencies.profileBasedSessionProvider.idpSession = { _ in self.idpSessionMock }
             dependencies.profilesStore.fetchProfile = { _ in
                 Just(profile).setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()

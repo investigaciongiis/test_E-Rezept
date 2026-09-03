@@ -61,7 +61,7 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
         telematikId: "telematik_id_3"
     )
 
-    func testRedeemResponses_Success() throws {
+    func testRedeemResponses_Success() {
         let sut = ErxTaskRepositoryRedeemService(
             loginHandler: loginHandlerMock(authenticated: true)
         )
@@ -100,7 +100,7 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
         }
     }
 
-    func testRedeemResponses_PartialSuccess() async throws {
+    func testRedeemResponses_PartialSuccess() {
         let callsCount = LockIsolated(0)
 
         let sut = ErxTaskRepositoryRedeemService(
@@ -152,7 +152,7 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
 
     let now = Date()
 
-    func testRedeemFailsDueToOutdatedPrescriptions() throws {
+    func testRedeemFailsDueToOutdatedPrescriptions() {
         let task1 = ErxTask(identifier: "task_id_1", status: .inProgress, flowType: .pharmacyOnly)
         let task2 = ErxTask(identifier: "task_id_2", status: .ready, flowType: .pharmacyOnly)
 
@@ -185,7 +185,7 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
         expect(callsCount.withValue { $0 }).to(equal(0))
     }
 
-    func testRedeemResponses_All_Fail() throws {
+    func testRedeemResponses_All_Fail() {
         let sut = ErxTaskRepositoryRedeemService(
             loginHandler: loginHandlerMock(authenticated: true)
         )
@@ -223,7 +223,7 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
         expect(receivedResponse[id: self.order3.taskID]?.requested).to(equal(order3))
     }
 
-    func testRedeemResponses_InputFailure() throws {
+    func testRedeemResponses_InputFailure() {
         let sut = ErxTaskRepositoryRedeemService(
             loginHandler: loginHandlerMock(authenticated: true)
         )
@@ -252,7 +252,7 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
         }
     }
 
-    func testRedeemResponses_When_Not_Authenticated() throws {
+    func testRedeemResponses_When_Not_Authenticated() {
         let sut = ErxTaskRepositoryRedeemService(
             loginHandler: loginHandlerMock(authenticated: false)
         )
@@ -271,10 +271,12 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
         }
     }
 
-    func testRedeemResponses_With_Error_From_LoginHandler() throws {
-        let loginHandlerMock = MockLoginHandler()
+    func testRedeemResponses_With_Error_From_LoginHandler() {
+        let loginHandlerMock = LoginHandlerMock()
         let expectedError = LoginHandlerError.idpError(.biometrics(.packagingAuthCertificate))
-        loginHandlerMock.isAuthenticatedOrAuthenticateReturnValue = Just(LoginResult.failure(expectedError))
+        loginHandlerMock
+            .isAuthenticatedOrAuthenticateAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(LoginResult
+                .failure(expectedError))
             .eraseToAnyPublisher()
         let sut = ErxTaskRepositoryRedeemService(
             loginHandler: loginHandlerMock
@@ -294,11 +296,15 @@ final class ErxTaskRepositoryRedeemServiceTests: XCTestCase {
         }
     }
 
-    private func loginHandlerMock(authenticated: Bool) -> MockLoginHandler {
-        let loginHandlerMock = MockLoginHandler()
-        loginHandlerMock.isAuthenticatedReturnValue = Just(LoginResult.success(authenticated)).eraseToAnyPublisher()
-        loginHandlerMock.isAuthenticatedOrAuthenticateReturnValue = Just(LoginResult.success(authenticated))
-            .eraseToAnyPublisher()
+    private func loginHandlerMock(authenticated: Bool) -> LoginHandlerMock {
+        let loginHandlerMock = LoginHandlerMock()
+        loginHandlerMock
+            .isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(LoginResult
+                .success(authenticated)).eraseToAnyPublisher()
+        loginHandlerMock
+            .isAuthenticatedOrAuthenticateAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue =
+            Just(LoginResult.success(authenticated))
+                .eraseToAnyPublisher()
         return loginHandlerMock
     }
 }

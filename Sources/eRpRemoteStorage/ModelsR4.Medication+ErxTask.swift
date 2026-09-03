@@ -24,10 +24,10 @@ import eRpKit
 import Foundation
 import ModelsR4
 
-// Note: All values should be implemented in a loosely manner so that
-// medications from any profile type can be parsed. This is relevant because medications
-// are created during MedicationDispense by the DAV and they are not restricted
-// to use the KBV profiles
+/// Note: All values should be implemented in a loosely manner so that
+/// medications from any profile type can be parsed. This is relevant because medications
+/// are created during MedicationDispense by the DAV and they are not restricted
+/// to use the KBV profiles
 extension ModelsR4.Medication {
     var profileType: ErxMedication.ProfileType? {
         guard let profileType = meta?.profile?.first?.value?.url.absoluteString else {
@@ -38,11 +38,11 @@ extension ModelsR4.Medication {
     }
 
     var version: ErpPrescription.Version? {
-        guard let kbvVersion = meta?.profile?.first?.value?.version else {
+        guard let medicationCanonical = meta?.profile?.first?.value?.version else {
             return nil
         }
 
-        return ErpPrescription.Version(rawValue: kbvVersion)
+        return ErpPrescription.Version(medicationCanonical: medicationCanonical)
     }
 
     // TODO: Consider grouping medicationText and pzn in `Code` and also fill code //swiftlint:disable:this todo
@@ -290,7 +290,7 @@ private func createRatio(for amount: Ratio?, for version: ErpPrescription.Versio
             numerator: ErxMedication.Quantity(value: value, unit: numeratorUnit),
             denominator: denominator
         )
-    case .v1_1_0, .v1_2_0, .v1_3_2:
+    case .v1_1_0, .v1_2_0, .v1_3_2, .v1_4_1:
         if let value = numeratorValue {
             return ErxMedication.Ratio(
                 numerator: ErxMedication.Quantity(value: value, unit: numeratorUnit),

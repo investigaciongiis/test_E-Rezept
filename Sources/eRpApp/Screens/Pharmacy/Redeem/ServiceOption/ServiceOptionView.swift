@@ -46,11 +46,12 @@ struct ServiceOptionView: View {
                     style: .supplyLarge,
                     isActive: store.selectedOption == .onPremise
                 ))
-                    .opacity(store.prescriptions.isEmpty ? 0.25 : 1)
-                    .accessibility(identifier: store.redeemOptionProvider?.reservationService
-                        .hasServiceAfterLogin == true
-                        ? A11y.pharmacyDetail.phaDetailBtnPickupViaLogin
-                        : A11y.pharmacyDetail.phaDetailBtnPickup)
+                .disabled(!store.validOptions.contains(.onPremise))
+                .opacity(store.prescriptions.isEmpty || !store.validOptions.contains(.onPremise) ? 0.25 : 1)
+                .accessibility(identifier: store.redeemOptionProvider?.reservationService
+                    .hasServiceAfterLogin == true
+                    ? A11y.pharmacyDetail.phaDetailBtnPickupViaLogin
+                    : A11y.pharmacyDetail.phaDetailBtnPickup)
             }
 
             if store.availableOptions.contains(.delivery) {
@@ -69,11 +70,12 @@ struct ServiceOptionView: View {
                     style: .supplyLarge,
                     isActive: store.selectedOption == .delivery
                 ))
-                    .opacity(store.prescriptions.isEmpty ? 0.25 : 1)
-                    .accessibility(identifier: store.redeemOptionProvider?.deliveryService
-                        .hasServiceAfterLogin == true
-                        ? A11y.pharmacyDetail.phaDetailBtnDeliveryViaLogin
-                        : A11y.pharmacyDetail.phaDetailBtnDelivery)
+                .disabled(!store.validOptions.contains(.delivery))
+                .opacity(store.prescriptions.isEmpty || !store.validOptions.contains(.delivery) ? 0.25 : 1)
+                .accessibility(identifier: store.redeemOptionProvider?.deliveryService
+                    .hasServiceAfterLogin == true
+                    ? A11y.pharmacyDetail.phaDetailBtnDeliveryViaLogin
+                    : A11y.pharmacyDetail.phaDetailBtnDelivery)
             }
 
             if store.availableOptions.contains(.shipment) {
@@ -92,11 +94,12 @@ struct ServiceOptionView: View {
                     style: .supplyLarge,
                     isActive: store.selectedOption == .shipment
                 ))
-                    .opacity(store.prescriptions.isEmpty ? 0.25 : 1)
-                    .accessibility(identifier: store.redeemOptionProvider?.shipmentService
-                        .hasServiceAfterLogin == true
-                        ? A11y.pharmacyDetail.phaDetailBtnShipmentViaLogin
-                        : A11y.pharmacyDetail.phaDetailBtnShipment)
+                .disabled(!store.validOptions.contains(.shipment))
+                .opacity(store.prescriptions.isEmpty || !store.validOptions.contains(.shipment) ? 0.25 : 1)
+                .accessibility(identifier: store.redeemOptionProvider?.shipmentService
+                    .hasServiceAfterLogin == true
+                    ? A11y.pharmacyDetail.phaDetailBtnShipmentViaLogin
+                    : A11y.pharmacyDetail.phaDetailBtnShipment)
             }
 
             ForEach(store.availableOptions.count ..< 3, id: \.self) { _ in

@@ -63,7 +63,7 @@ final class ListsSnapshotTests: ERPSnapshotTestCase {
                                 Image(systemName: SFSymbolName.info)
                             }
                         }
-                        .buttonStyle(.navigation(showSeparator: false))
+                        .buttonStyle(.navigation)
                     }
 
                     SectionContainer {
@@ -105,13 +105,13 @@ final class ListsSnapshotTests: ERPSnapshotTestCase {
                         Button(action: {}, label: {
                             SubTitle(title: "Impressum", description: "Noch 12 Tage gültig", details: "PZN Rezept")
                         })
-                            .buttonStyle(.navigation)
+                        .buttonStyle(.navigation)
 
                         Button(action: {}, label: {
                             SubTitle(title: "Impressum", description: "Noch 12 Tage gültig", details: "PZN Rezept")
                                 .subTitleStyle(.info)
                         })
-                            .buttonStyle(.navigation)
+                        .buttonStyle(.navigation)
 
                         Toggle(isOn: .constant(false)) {
                             Label(title: { Text("Impressum") }, icon: {})

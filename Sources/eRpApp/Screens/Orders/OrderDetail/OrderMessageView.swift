@@ -23,6 +23,7 @@
 import ComposableArchitecture
 import eRpKit
 import eRpStyleKit
+import FeatureHelpers
 import Foundation
 import Perception
 import SwiftUI
@@ -32,7 +33,6 @@ struct OrderMessageView: View {
     let store: StoreOf<OrderDetailDomain>
     let timelineEntry: TimelineEntry
     var style: Indicator.Style = .middle
-    @State var calculatedHeight = CGFloat(1)
     @Dependency(\.uiDateFormatter) var uiDateFormatter: UIDateFormatter
 
     var body: some View {
@@ -65,8 +65,7 @@ struct OrderMessageView: View {
                         .padding(.horizontal)
                 }
 
-                UIKitTextView(attributedString: timelineEntry.formattedText,
-                              calculatedHeight: $calculatedHeight) { url in
+                UIKitTextView(attributedString: timelineEntry.formattedText) { url in
                     switch timelineEntry {
                     case .dispReq:
                         if let action = timelineEntry.actions.first?.action {
@@ -75,12 +74,12 @@ struct OrderMessageView: View {
                     case .reply, .diga:
                         store.send(.openPhoneAppWith(url: url))
                     case .chargeItem,
-                         .internalCommunication:
+                         .internalCommunication,
+                         .euEntry:
                         // cases have no custom URLs
                         store.send(.openUrl(url: url))
                     }
                 }
-                .frame(height: calculatedHeight)
                 .contextMenu(ContextMenu {
                     Button(L10n.orderTxtCopyToClipboard) {
                         UIPasteboard.general.string = timelineEntry.text
@@ -92,6 +91,14 @@ struct OrderMessageView: View {
 
                 if case .dispReq = timelineEntry {
                     // ignore action here since it's used as inline text link
+                } else if case let .euEntry(communication, _) = timelineEntry,
+                          case .deletedAccessCode = communication.eventType {
+                    Text(L10n.ordDetailBtnRevokedCode)
+                        .font(Font.subheadline)
+                        .padding(.top)
+                        .padding(.horizontal)
+                        .foregroundColor(Colors.red700)
+                        .accessibilityIdentifier(A11y.orderDetail.list.ordDetailBtnAccessCodeRevoked)
                 } else {
                     ForEach(timelineEntry.actions) { timelineEntry in
                         Button {
@@ -205,7 +212,7 @@ struct OrderMessageView: View {
         let horizontalPadding: CGFloat = 4
         let verticalPadding: CGFloat = 4
 
-        // Calculate the total size needed
+        /// Calculate the total size needed
         func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout Void) -> CGSize {
             var currentRowWidth: CGFloat = 0
             var currentRowHeight: CGFloat = 0
@@ -234,7 +241,7 @@ struct OrderMessageView: View {
             return CGSize(width: currentRowWidth, height: totalHeight)
         }
 
-        // Places the subviews
+        /// Places the subviews
         func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout Void) {
             // values based on the boundary
             var currentRowWidth: CGFloat = bounds.minX

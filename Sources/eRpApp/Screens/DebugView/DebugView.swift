@@ -38,6 +38,7 @@ struct DebugView: View {
             EnvironmentSection(store: store)
             LogSection(store: store)
             FeatureFlagsSection(store: store)
+            PushNotificationSection(store: store)
             VirtualEGKLogin(store: store)
             LocalTaskStatusView(store: store)
             CardWallSection(store: store)
@@ -107,8 +108,8 @@ extension DebugView {
                 Button("Reset Biometrie (Key and Cert)") {
                     store.send(.deleteKeyAndEGKAuthCertForBiometric)
                 }
-                Button("Reset CERT- and OCSP-Lists") {
-                    store.send(.resetOcspAndCertListButtonTapped)
+                Button("Reset TrustStore") {
+                    store.send(.resetTrustStoreButtonTapped)
                 }
             }
         }
@@ -177,7 +178,7 @@ extension DebugView {
                     }
 
                     VStack {
-                        TextEditor(text: $store.virtualEGKPrkCHAut)
+                        TextEditor(text: Binding(store.$virtualEGKPrkCHAut))
                             .accessibility(identifier: "debug_prk_ch_aut")
                             .frame(minHeight: 100, maxHeight: 100)
                             .foregroundColor(Colors.systemLabel)
@@ -189,7 +190,7 @@ extension DebugView {
                     }
 
                     VStack {
-                        TextEditor(text: $store.virtualEGKCCHAut)
+                        TextEditor(text: Binding(store.$virtualEGKCCHAut))
                             .accessibility(identifier: "debug_c_ch_aut")
                             .frame(minHeight: 100, maxHeight: 100)
                             .foregroundColor(Colors.systemLabel)
@@ -208,13 +209,15 @@ extension DebugView {
         @Dependency(\.fhirDateFormatter) var dateFormatter: FHIRDateFormatter
         @Bindable var store: StoreOf<DebugDomain>
 
-        var hidePkvConsentDrawerOnMainView: Binding<Bool> { Binding(
-            get: {
-                store.hidePkvConsentDrawerOnMainView
-            }, set: { _ in
-                store.send(.hidePkvConsentDrawerMainViewToggleTapped)
-            }
-        ) }
+        var hidePkvConsentDrawerOnMainView: Binding<Bool> {
+            Binding(
+                get: {
+                    store.hidePkvConsentDrawerOnMainView
+                }, set: { _ in
+                    store.send(.hidePkvConsentDrawerMainViewToggleTapped)
+                }
+            )
+        }
 
         var body: some View {
             Section(content: {
@@ -301,7 +304,14 @@ extension DebugView {
                     a11y: ""
                 )
 
-                SectionHeaderView(text: "Current access-token", a11y: "dummy_a11y_i")
+                HStack {
+                    Text("Current access-token")
+                        .font(.headline)
+                        .foregroundColor(Colors.systemLabel)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding([.top])
+                    Spacer()
+                }
                 Text(store.token?.accessToken ?? "*** No valid token available ***")
                     .contextMenu(ContextMenu {
                         Button("Copy") {
@@ -439,14 +449,32 @@ extension DebugView {
             var body: some View {
                 List {
                     Section {
-                        Toggle("Enable EU Redeem feature", isOn: $store.euRedeemPrescriptionsFeature)
+                        Toggle("Enable EU Redeem feature", isOn: Binding(store.$euRedeemPrescriptionsFeature))
                     } header: {
                         Text("EU Redeem prescriptions")
                     }
                     Section {
+                        Toggle("Enable Push Notifications", isOn: Binding(store.$enablePushNotifications))
+                    } header: {
+                        Text("Push Notifications")
+                    }
+                    Section {
+                        Toggle("Communications V3 Feature", isOn: Binding(store.$communicationsV3Feature))
+                    } header: {
+                        Text("Communications V3")
+                    }
+                    Section {
+                        Toggle(
+                            "Use Workflow 1.6 instead of 1.5 for sending communications and consents",
+                            isOn: Binding(store.$useWorkflow16)
+                        )
+                    } header: {
+                        Text("FHIR Workflow 1.6")
+                    }
+                    Section {
                         TextField(
                             "Overwrite DIGA IK (e.g. 101570104)",
-                            text: $store.overwriteDIGAIK
+                            text: Binding(store.$overwriteDIGAIK)
                         )
                     } header: {
                         Text("DIGA")
@@ -465,7 +493,7 @@ extension DebugView {
                         }
                     }
                     Section {
-                        Toggle("Show Debug Pharmacies", isOn: $store.showDebugPharmacies)
+                        Toggle("Show Debug Pharmacies", isOn: Binding(store.$showDebugPharmacies))
                         Text(
                             "Displays under 'Debug Pharmacies' stored pharmacies in the pharmacy search"
                         )
@@ -500,6 +528,23 @@ struct DebugView_Previews: PreviewProvider {
             DebugView(store: DebugDomain.Dummies.store)
         }
         .previewDevice("iPhone SE (2nd generation)")
+    }
+}
+
+extension DebugView {
+    struct PushNotificationSection: View {
+        let store: StoreOf<DebugDomain>
+
+        var body: some View {
+            Section(header: Text("Push Notifications")) {
+                NavigationLink(destination: DebugPushNotificationView(store: store)) {
+                    Text("Debug Push Notifications")
+                }
+                Button("Reset Key Generations") {
+                    store.send(.resetPnKeyGenerationsButtonTapped)
+                }
+            }
+        }
     }
 }
 

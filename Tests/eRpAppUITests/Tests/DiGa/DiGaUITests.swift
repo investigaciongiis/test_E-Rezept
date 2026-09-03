@@ -26,7 +26,7 @@ import Foundation
 import XCTest
 
 @MainActor
-final class DiGaUITests: XCTestCase, Sendable {
+final class DiGaUITests: XCTestCase {
     var app: XCUIApplication!
 
     override func setUp() async throws {
@@ -49,7 +49,8 @@ final class DiGaUITests: XCTestCase, Sendable {
         _ = app.wait(for: .runningForeground, timeout: 10.0)
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
+        // swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 
@@ -118,7 +119,7 @@ final class DiGaUITests: XCTestCase, Sendable {
         // Umfrage Bubble ist aktiv
         await tabBar.tapSettingsTab { settings in
             expect(settings.app.buttons[A11y.settings.contact.stgConTxtDigaSurvey].label)
-                .to(equal("Umfrage zur DiGA Verordnung, Neu"))
+                .to(equal("Umfrage zur DiGA auf externer Webseite"))
         }
     }
 
@@ -181,7 +182,7 @@ final class DiGaUITests: XCTestCase, Sendable {
             let redeemScreen = prescriptionsTab.tapRedeem().tapRedeemRemote()
 
             let editPrescriptionsButton = redeemScreen.editPrescriptionButton()
-            expect(editPrescriptionsButton.label).to(equal("1 Rezepte, Regular 160 Prescriptions, Ändern"))
+            expect(editPrescriptionsButton.label).to(equal("Rezepte, Regular 160 Prescriptions"))
             // redeem -> only normal prescription on redeem screen
         }
     }
@@ -206,7 +207,7 @@ final class DiGaUITests: XCTestCase, Sendable {
             expect(self.app.alerts["Rezept löschen?"].waitForExistence(timeout: 5.0)).to(beTrue())
             self.app.alerts["Rezept löschen?"].buttons["Abbrechen"].tap()
 
-            // Status Acceptet -> nicht löschbar
+            // Status Accepted -> nicht löschbar
             await bridge.sendMessage(.scenarioStep(1))
 
             diGaDetails.tapRefreshButton()
@@ -220,8 +221,14 @@ final class DiGaUITests: XCTestCase, Sendable {
                 .waitForExistence(timeout: 5.0)).to(beTrue())
             self.app.alerts.buttons["Okay"].tap()
 
+            // Wait for the 10-second background refresh (triggered after initial redeem) to complete
+            // before changing the scenario state
+            _ = self.app.buttons["Aktualisieren"].waitForExistence(timeout: 10.0 + 2.0)
+
             // Eingelöst -> Löschbar
             await bridge.sendMessage(.scenarioStep(2))
+            // wait for refresh button
+            expect(self.app.buttons["Aktualisieren"].waitForExistence(timeout: 5.0)).to(beTrue())
             diGaDetails.tapRefreshButton()
 
             _ = diGaDetails.tapMenu()
@@ -263,7 +270,6 @@ final class DiGaUITests: XCTestCase, Sendable {
             await bridge.sendMessage(.scenarioStep(6))
 
             await prescriptionsTab.tapDetailsForDiGaNamed("Vantis KHK und Herzinfarkt 001") { diGaDetails in
-
                 diGaDetails.tapInsuranceNotFoundAlert()
 
                 // Select Insurance
@@ -288,13 +294,11 @@ final class DiGaUITests: XCTestCase, Sendable {
         let tabBar = TabBarScreen(app: app)
 
         await tabBar.tapPrescriptionsTab { prescriptionsTab in
-
             await bridge.sendMessage(.scenarioStep(2))
 
             prescriptionsTab.swipeToRefresh()
 
             await prescriptionsTab.tapDetailsForDiGaNamed("Vantis KHK und Herzinfarkt 001") { diGaDetails in
-
                 await diGaDetails.tapDescriptionButton { descriptionView in
                     expect(descriptionView.app.staticTexts[A11y.diga.description.digaDtlDescriptionTxtDesc])
                         .to(exist(A11y.diga.description.digaDtlDescriptionTxtDesc))
@@ -316,15 +320,15 @@ final class DiGaUITests: XCTestCase, Sendable {
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtLanguages, label: "Deutsch"))
-                                    .to(beTrue())
+                    .to(beTrue())
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtPlatform, label: "iOS, Android"))
-                                    .to(beTrue())
+                    .to(beTrue())
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtMedicalService, label: "Nein"))
-                                    .to(beTrue())
+                    .to(beTrue())
 
                 expect(diGaDetails.digaDetailStaticText(
                     identifier: A11y.diga.detail.digaDtlTxtAdditionalDevices,
@@ -332,11 +336,11 @@ final class DiGaUITests: XCTestCase, Sendable {
                 )).to(beTrue())
 
                 expect(diGaDetails.app.buttons[A11y.diga.detail.digaDtlTxtPatientCost].label)
-                    .to(equal("0€, Ihr Beitrag"))
+                    .to(equal("Ihr Beitrag, 0€"))
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtProductionCost, label: "250€"))
-                                    .to(beTrue())
+                    .to(beTrue())
             }
             // only for Android available
             await bridge.sendMessage(.scenarioStep(3))
@@ -348,7 +352,7 @@ final class DiGaUITests: XCTestCase, Sendable {
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtPlatform, label: "Android"))
-                                    .to(beTrue())
+                    .to(beTrue())
             }
 
             // no connection (to bfarm)
@@ -366,15 +370,15 @@ final class DiGaUITests: XCTestCase, Sendable {
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtMedicalService, label: "-"))
-                                    .to(beTrue())
+                    .to(beTrue())
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtAdditionalDevices, label: "-"))
-                                    .to(beTrue())
+                    .to(beTrue())
 
                 expect(diGaDetails
                     .digaDetailStaticText(identifier: A11y.diga.detail.digaDtlTxtProductionCost, label: "-"))
-                                    .to(beTrue())
+                    .to(beTrue())
             }
         }
     }

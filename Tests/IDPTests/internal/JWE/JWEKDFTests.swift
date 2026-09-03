@@ -30,14 +30,15 @@ import XCTest
 
 class JWEKDFTests: XCTestCase {
     func testPremadeJWE() throws {
-        let publicKey = try! BrainpoolP256r1.KeyExchange.PublicKey(x962: Data(
+        let publicKey = try BrainpoolP256r1.KeyExchange.PublicKey(x962: Data(
             hex: "0440ba49fcba45c7eeb2261b1be0ebc7c14d6484b9ef8a23b060ebe67f97252bbc987ba49df364a0c9926f2b6de1baf46068a13a2c5c9812b2f3451f48b75719ee" // swiftlint:disable:this line_length
         ))
 
         let ephemeralPrivate = try BrainpoolP256r1.KeyExchange
             .PrivateKey(raw: Data(hex: "a1746e2e69305e90bce385965f82069be49ac9afe190e69f951cb214a8cb9475"))
 
-        let algorithm = JWE.Algorithm.ecdh_es(.bpp256r1(publicKey, keyPairGenerator: { ephemeralPrivate }))
+        let algorithm = JWE.EncryptionContext.Algorithm
+            .ecdh_es(.bpp256r1(publicKey, keyPairGenerator: { ephemeralPrivate }))
         let context = try algorithm.encryptionContext()
 
         let aesKey = try Data(hex: "D624C6F81B44CE7D26E98841BEB79652E9DEC79DFD8E2E6F6E706A105D37EC87")

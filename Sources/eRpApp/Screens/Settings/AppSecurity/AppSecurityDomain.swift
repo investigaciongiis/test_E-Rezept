@@ -46,7 +46,7 @@ struct AppSecurityDomain {
         }
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         case appPassword(CreatePasswordDomain)
     }
@@ -73,7 +73,7 @@ struct AppSecurityDomain {
     @Dependency(\.schedulers) var schedulers: Schedulers
 
     var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -182,3 +182,6 @@ extension AppSecurityDomain {
         }
     }
 }
+
+extension AppSecurityDomain.Destination.State: Equatable {}
+extension AppSecurityDomain.Destination.Action: Equatable {}

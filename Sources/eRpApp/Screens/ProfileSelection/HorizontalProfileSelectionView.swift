@@ -36,6 +36,7 @@ struct HorizontalProfileSelectionView: View {
                         userProfile: userProfile,
                         isSelected: store.selectedProfileId == userProfile.id
                     )
+                    .focusable()
                     .onTapGesture {
                         store.send(.selectProfile(userProfile), animation: .default)
                     }
@@ -43,31 +44,26 @@ struct HorizontalProfileSelectionView: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         store.send(.profileButtonLongPressed(userProfile))
                     }
-                    .if(userProfile == store.profiles.first) {
-                        $0.tooltip(tooltip: MainViewTooltip.rename)
-                    }
                     .frame(maxWidth: width * 0.4, alignment: .leading)
                 }
-                .accessibility(identifier: A11y.profileSelection.proBtnSelectionProfileRow)
 
                 Button(action: {
                     store.send(.showAddProfileView)
                 }, label: {
                     Image(systemName: SFSymbolName.personCirclePlus)
                 })
-                    .padding(.horizontal)
-                    .padding(.vertical, 5)
-                    .background(Colors.backgroundNeutral)
-                    .border(Colors.systemGray6, cornerRadius: 8)
-                    .accessibility(identifier: A11y.profileSelection.proBtnSelectionAddProfile)
-                    .accessibilityLabel(L10n.mainBtnAddProfile)
-                    .tooltip(tooltip: MainViewTooltip.addProfile)
+                .padding(.horizontal)
+                .padding(.vertical, 5)
+                .background(Colors.backgroundNeutral)
+                .border(Colors.systemGray6, cornerRadius: 8)
+                .accessibilityIdentifier(A11y.profileSelection.proBtnSelectionAddProfile)
+                .accessibilityLabel(L10n.mainBtnAddProfile)
 
                 Spacer()
             }
-
-            .padding(.vertical)
-            .padding(.horizontal)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(A11y.profileSelection.proBtnSelectionProfileRow)
+            .padding()
             .task {
                 await store.send(.registerListener).finish()
             }

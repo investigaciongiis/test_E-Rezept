@@ -26,21 +26,47 @@ import IDP
 import Settings
 
 struct UserProfile: ProfileCellModel, Equatable, Identifiable {
-    var id: UUID { profile.id }
+    var id: UUID {
+        profile.id
+    }
 
-    var name: String { profile.name }
+    var name: String {
+        profile.name
+    }
+
     let acronym: String
 
-    var fullName: String? { profile.fullName }
-    var insurance: String? { profile.insurance }
-    var insuranceId: String? { profile.insuranceId }
-    var insuranceIK: String? { profile.insuranceIK }
+    var fullName: String? {
+        profile.fullName
+    }
 
-    var image: ProfilePicture { profile.image.viewModelPicture }
-    var userImageData: Data? { profile.userImageData }
-    var color: ProfileColor { profile.color.viewModelColor }
+    var insurance: String? {
+        profile.insurance
+    }
 
-    var lastSuccessfulSync: Date? { profile.lastAuthenticated }
+    var insuranceId: String? {
+        profile.insuranceId
+    }
+
+    var insuranceIK: String? {
+        profile.insuranceIK
+    }
+
+    var image: ProfilePicture {
+        profile.image.viewModelPicture
+    }
+
+    var userImageData: Data? {
+        profile.userImageData
+    }
+
+    var color: ProfileColor {
+        profile.color.viewModelColor
+    }
+
+    var lastSuccessfulSync: Date? {
+        profile.lastAuthenticated
+    }
 
     let profile: Profile
     let connectionStatus: ProfileConnectionStatus
@@ -124,7 +150,7 @@ extension UserProfile {
                 insuranceId: "X112233445",
                 insuranceIK: "AB123CD",
                 color: .blue,
-                lastAuthenticated: Date().addingTimeInterval(-60 * 8),
+                lastAuthenticated: Date().addingTimeInterval(-60 * 8.2),
                 erxTasks: []
             ),
             isAuthenticated: true
@@ -172,7 +198,7 @@ extension UserProfile {
                 name: "Private Paul",
                 identifier: UUID(),
                 created: Date(),
-                insuranceId: nil,
+                insuranceId: "A123456789",
                 insuranceType: .pKV,
                 color: .red,
                 lastAuthenticated: Date().addingTimeInterval(-60 * 60 * 1.5),

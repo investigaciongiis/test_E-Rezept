@@ -41,8 +41,8 @@ import XCTest
 final class DiGaDetailDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.immediate
     let uiDateFormatter = UIDateFormatter(fhirDateFormatter: FHIRDateFormatter.shared)
-    let mockRedeemService = MockRedeemService()
-    var mockPrescriptionRepository = MockPrescriptionRepository()
+    let mockRedeemService = RedeemServiceMock()
+    var mockPrescriptionRepository = PrescriptionRepositoryMock()
     let mockNow = Date()
 
     typealias TestStore = TestStoreOf<DiGaDetailDomain>
@@ -52,7 +52,7 @@ final class DiGaDetailDomainTests: XCTestCase {
         withDependencies prepareDependencies: (inout DependencyValues) -> Void = { _ in }
     ) -> TestStore {
         let schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
-        let userSessionContainer = MockUsersSessionContainer()
+        let userSessionContainer = UsersSessionContainerMock()
         userSessionContainer.userSession = MockUserSession()
 
         return TestStore(initialState: state ?? Self.Fixuture.defaultState) {
@@ -238,18 +238,22 @@ final class DiGaDetailDomainTests: XCTestCase {
             let returnValue = Just(PrescriptionRepositoryLoadRemoteResult.prescriptions([prescription]))
                 .setFailureType(to: PrescriptionRepositoryError.self)
                 .eraseToAnyPublisher()
-            mockPrescriptionRepository.silentLoadRemoteForForReturnValue = returnValue
+            mockPrescriptionRepository
+                .silentLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
+                returnValue
 
             var expectedOrderResponses = IdentifiedArrayOf<OrderDiGaResponse>()
-            mockRedeemService.redeemDiGaProfileIdClosure = { orders, _ in
-                let orderResponses = orders.map { order in
-                    OrderDiGaResponse(requested: order, result: .success(true))
+            mockRedeemService
+                .redeemDiGaOrdersOrderDiGaRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderDiGaResponseRedeemServiceErrorClosure =
+                { orders, _ in
+                    let orderResponses = orders.map { order in
+                        OrderDiGaResponse(requested: order, result: .success(true))
+                    }
+                    expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
+                    return Just(expectedOrderResponses)
+                        .setFailureType(to: RedeemServiceError.self)
+                        .eraseToAnyPublisher()
                 }
-                expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
-                return Just(expectedOrderResponses)
-                    .setFailureType(to: RedeemServiceError.self)
-                    .eraseToAnyPublisher()
-            }
 
             let task = await store.send(.task) { state in
                 state.isLoading = true
@@ -318,18 +322,22 @@ final class DiGaDetailDomainTests: XCTestCase {
             let returnValue = Just(PrescriptionRepositoryLoadRemoteResult.prescriptions([prescription]))
                 .setFailureType(to: PrescriptionRepositoryError.self)
                 .eraseToAnyPublisher()
-            mockPrescriptionRepository.silentLoadRemoteForForReturnValue = returnValue
+            mockPrescriptionRepository
+                .silentLoadRemoteForLocaleStringForProfileIdUUIDAnyPublisherPrescriptionRepositoryLoadRemoteResultPrescriptionRepositoryErrorReturnValue =
+                returnValue
 
             var expectedOrderResponses = IdentifiedArrayOf<OrderDiGaResponse>()
-            mockRedeemService.redeemDiGaProfileIdClosure = { orders, _ in
-                let orderResponses = orders.map { order in
-                    OrderDiGaResponse(requested: order, result: .success(true))
+            mockRedeemService
+                .redeemDiGaOrdersOrderDiGaRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderDiGaResponseRedeemServiceErrorClosure =
+                { orders, _ in
+                    let orderResponses = orders.map { order in
+                        OrderDiGaResponse(requested: order, result: .success(true))
+                    }
+                    expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
+                    return Just(expectedOrderResponses)
+                        .setFailureType(to: RedeemServiceError.self)
+                        .eraseToAnyPublisher()
                 }
-                expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
-                return Just(expectedOrderResponses)
-                    .setFailureType(to: RedeemServiceError.self)
-                    .eraseToAnyPublisher()
-            }
 
             let task = await store.send(.task) { state in
                 state.isLoading = true
@@ -410,18 +418,20 @@ final class DiGaDetailDomainTests: XCTestCase {
             let prescription = Prescription(erxTask: erxTask)
 
             var expectedOrderResponses = IdentifiedArrayOf<OrderDiGaResponse>()
-            mockRedeemService.redeemDiGaProfileIdClosure = { orders, _ in
-                var orderResponses = orders.map { order in
-                    OrderDiGaResponse(requested: order, result: .success(true))
+            mockRedeemService
+                .redeemDiGaOrdersOrderDiGaRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderDiGaResponseRedeemServiceErrorClosure =
+                { orders, _ in
+                    var orderResponses = orders.map { order in
+                        OrderDiGaResponse(requested: order, result: .success(true))
+                    }
+                    // let one of the response be failing
+                    orderResponses[0] = OrderDiGaResponse(requested: orderResponses[0].requested,
+                                                          result: .failure(error))
+                    expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
+                    return Just(expectedOrderResponses)
+                        .setFailureType(to: RedeemServiceError.self)
+                        .eraseToAnyPublisher()
                 }
-                // let one of the response be failing
-                orderResponses[0] = OrderDiGaResponse(requested: orderResponses[0].requested,
-                                                      result: .failure(error))
-                expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
-                return Just(expectedOrderResponses)
-                    .setFailureType(to: RedeemServiceError.self)
-                    .eraseToAnyPublisher()
-            }
 
             let task = await store.send(.task) { state in
                 state.isLoading = true
@@ -475,7 +485,9 @@ final class DiGaDetailDomainTests: XCTestCase {
             let error = RedeemServiceError.eRxRepository(.remote(.notImplemented))
 
             let prescription = Prescription(erxTask: erxTask)
-            mockRedeemService.redeemDiGaProfileIdReturnValue = Fail(error: error).eraseToAnyPublisher()
+            mockRedeemService
+                .redeemDiGaOrdersOrderDiGaRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderDiGaResponseRedeemServiceErrorReturnValue =
+                Fail(error: error).eraseToAnyPublisher()
             let task = await store.send(.task) { state in
                 state.isLoading = true
             }
@@ -604,7 +616,7 @@ final class DiGaDetailDomainTests: XCTestCase {
     }
 
     @available(iOS 18.0, *)
-    func testOpenUrlBfarm() async {
+    func testOpenUrlBfarm() async throws {
         let openedURL = Mutex<URL?>(nil)
         let prescription = Prescription(erxTask: ErxTask.Fixtures.erxTaskDeviceRequest)
         let url = "https://www.das-e-rezept-fuer-deutschland.de"
@@ -613,13 +625,14 @@ final class DiGaDetailDomainTests: XCTestCase {
             dependencies.openURLHandler.canOpenURL = { _ in true }
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
+                return true
             }
         }
         expect(openedURL.withLock { $0 }).to(beNil())
 
         await sut.send(.openLink(urlString: url))
 
-        expect(openedURL.withLock { $0 }).to(equal(URL(string: url)!))
+        expect(openedURL.withLock { $0 }).to(try equal(XCTUnwrap(URL(string: url))))
     }
 
     func testCopyRedeemCode() async {

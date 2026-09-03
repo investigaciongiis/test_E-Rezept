@@ -32,9 +32,9 @@ import SwiftUI
 struct DebugEGKScannerView: View {
     @Binding var show: Bool
 
-    // virtual eGK private key
+    /// virtual eGK private key
     @Shared(.virtualEGKPrkCHAut) var virtualEGKPrkCHAut
-    // virtual eGK certificate
+    /// virtual eGK certificate
     @Shared(.virtualEGKCCHAut) var virtualEGKCCHAut
 
     @State var validPrkFound = false
@@ -63,7 +63,7 @@ struct DebugEGKScannerView: View {
             }
 
             VStack(alignment: .leading) {
-                if let error = error {
+                if let error {
                     Text(error)
                         .padding()
                         .background(Color(.systemBackground))
@@ -74,12 +74,12 @@ struct DebugEGKScannerView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Image(systemName: validPrkFound ? SFSymbolName.checkmark : SFSymbolName.crossIcon)
-                            .foregroundColor(validPrkFound ? Colors.secondary600 : Colors.red600)
+                            .foregroundColor(validPrkFound ? Colors.secondary600 : Colors.red700)
                         Text("PrkCHAut")
                     }
                     HStack {
                         Image(systemName: validPukFound ? SFSymbolName.checkmark : SFSymbolName.crossIcon)
-                            .foregroundColor(validPukFound ? Colors.secondary600 : Colors.red600)
+                            .foregroundColor(validPukFound ? Colors.secondary600 : Colors.red700)
                         Text("CCHAut")
                     }
                 }

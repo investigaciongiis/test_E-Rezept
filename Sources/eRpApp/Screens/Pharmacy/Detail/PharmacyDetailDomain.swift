@@ -20,7 +20,6 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AVS
 import Combine
 import ComposableArchitecture
 import Contacts
@@ -36,7 +35,7 @@ import SwiftUI
 
 @Reducer
 struct PharmacyDetailDomain {
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         @ReducerCaseEphemeral
         // sourcery: AnalyticsScreen = alert
@@ -71,7 +70,7 @@ struct PharmacyDetailDomain {
         /// Boolean for handling the different navigation paths
         var onMapView = false
 
-        // Child domain states
+        /// Child domain states
         var serviceOptionState: ServiceOptionDomain.State
 
         @Presents var destination: Destination.State?
@@ -127,7 +126,7 @@ struct PharmacyDetailDomain {
         /// delegate actions
         case delegate(Delegate)
 
-        // Child Domain Actions
+        /// Child Domain Actions
         case serviceOption(ServiceOptionDomain.Action)
 
         enum Response: Equatable {
@@ -167,7 +166,7 @@ struct PharmacyDetailDomain {
         Scope(state: \State.serviceOptionState, action: \.serviceOption) {
             ServiceOptionDomain()
         }
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -199,10 +198,15 @@ struct PharmacyDetailDomain {
             if provider.deliveryService.hasService {
                 options.insert(.delivery)
             }
+            var validOptions = options
             if provider.shipmentService.hasService {
                 options.insert(.shipment)
+                if state.prescriptions.allSatisfy(\.isShipmentAvailable) {
+                    validOptions.insert(.shipment)
+                }
             }
             state.serviceOptionState.availableOptions = options
+            state.serviceOptionState.validOptions = validOptions
             state.serviceOptionState.redeemOptionProvider = provider
             return .none
         case .openMapApp:
@@ -237,8 +241,11 @@ struct PharmacyDetailDomain {
             }
             return .none
         case .openBrowserApp:
-            if let web = state.pharmacy.telecom?.web,
-               let url = URL(string: web) {
+            guard var web = state.pharmacy.telecom?.web else { return .none }
+            if !web.lowercased().hasPrefix("http://"), !web.lowercased().hasPrefix("https://") {
+                web = "https://\(web)"
+            }
+            if let url = URL(string: web) {
                 UIApplication.shared.open(url)
             }
             return .none
@@ -262,22 +269,22 @@ struct PharmacyDetailDomain {
                 prescriptions = state.prescriptions,
                 selectedPrescriptions = state.selectedPrescriptions
             ] send in
-            // swiftlint:enable closure_parameter_position
+                // swiftlint:enable closure_parameter_position
 
-            // disable navigation stack pop transition
-            await UINavigationBar.setAnimationsEnabled(false)
-            await send(.delegate(.redeem(
-                prescriptions: prescriptions,
-                selectedPrescriptions: selectedPrescriptions,
-                pharmacy: pharmacy,
-                option: option
-            )))
+                // disable navigation stack pop transition
+                await UINavigationBar.setAnimationsEnabled(false)
+                await send(.delegate(.redeem(
+                    prescriptions: prescriptions,
+                    selectedPrescriptions: selectedPrescriptions,
+                    pharmacy: pharmacy,
+                    option: option
+                )))
 
-            Task {
-                try await schedulers.main.sleep(for: 0.01)
-                // reenable navigation stack transition
-                await UINavigationBar.setAnimationsEnabled(true)
-            }
+                Task {
+                    try await schedulers.main.sleep(for: 0.01)
+                    // reenable navigation stack transition
+                    await UINavigationBar.setAnimationsEnabled(true)
+                }
             }
         case .toggleIsFavorite:
             var pharmacyViewModel = state.pharmacyViewModel
@@ -330,7 +337,7 @@ extension PharmacyDetailDomain {
         var yahooUrlString = "ymail://mail/compose?to=\(email)"
         var defaultUrlString = "mailto:\(email)"
 
-        if let subject = subject,
+        if let subject,
            let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
             gmailUrlString += "&subject=\(subjectEncoded)"
             outlookIUrlString += "&subject=\(subjectEncoded)"
@@ -338,7 +345,7 @@ extension PharmacyDetailDomain {
             defaultUrlString += "&subject=\(subjectEncoded)"
         }
 
-        if let body = body,
+        if let body,
            let bodyEncoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
             gmailUrlString += "&body=\(bodyEncoded)"
             outlookIUrlString += "&body=\(bodyEncoded)"
@@ -418,3 +425,6 @@ extension PharmacyDetailDomain {
         }
     }
 }
+
+extension PharmacyDetailDomain.Destination.State: Equatable {}
+extension PharmacyDetailDomain.Destination.Action: Equatable {}

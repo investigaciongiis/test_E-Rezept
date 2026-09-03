@@ -23,20 +23,19 @@
 import ComposableArchitecture
 import eRpKit
 import eRpStyleKit
+import FeatureEURedeem
 import Perception
 import SwiftUI
 
 struct OrderDetailView: View {
     @Bindable var store: StoreOf<OrderDetailDomain>
 
-    init(store: StoreOf<OrderDetailDomain>) {
-        self.store = store
+    var openUrlSheet: Binding<Bool> {
+        Binding(
+            get: { store.openUrlSheetUrl != nil },
+            set: { _ in store.send(.showOpenUrlSheet(url: nil)) }
+        )
     }
-
-    var openUrlSheet: Binding<Bool> { Binding(
-        get: { store.openUrlSheetUrl != nil },
-        set: { _ in store.send(.showOpenUrlSheet(url: nil)) }
-    ) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -134,6 +133,15 @@ struct OrderDetailView: View {
                 .hidden()
                 .accessibility(hidden: true)
 
+            // Eu revoke sheet
+            Rectangle()
+                .frame(width: 0, height: 0, alignment: .center)
+                .smallSheet($store.scope(state: \.destination?.euRevoke,
+                                         action: \.destination.euRevoke)) { _ in
+                    EuRevokeView(store: store)
+                }
+                .accessibility(hidden: true)
+
             // open url
             Rectangle()
                 .frame(width: 0, height: 0, alignment: .center)
@@ -141,6 +149,20 @@ struct OrderDetailView: View {
                     OpenUrlView(store: store)
                 }
                 .hidden()
+                .accessibility(hidden: true)
+
+            // codeView (EuRedeem)
+
+            Rectangle()
+                .frame(width: 0, height: 0, alignment: .center)
+                .navigationDestination(
+                    item: $store.scope(
+                        state: \.destination?.euAccessCode,
+                        action: \.destination.euAccessCode
+                    )
+                ) { store in
+                    CodeView(store: store)
+                }
                 .accessibility(hidden: true)
         }
         .navigationBarTitle(store.communicationMessage.title, displayMode: .inline)
@@ -153,9 +175,9 @@ struct OrderDetailView: View {
             await store.send(.task).finish()
         }
         .toolbar {
-            let hasLocation = store.order?.pharmacy?.position != nil
-            let hasPhoneContact = store.order?.pharmacy?.telecom?.phone != nil
-            let hasEmailContact = store.order?.pharmacy?.telecom?.email != nil
+            let hasLocation = store.communicationMessage.order?.pharmacy?.position != nil
+            let hasPhoneContact = store.communicationMessage.order?.pharmacy?.telecom?.phone != nil
+            let hasEmailContact = store.communicationMessage.order?.pharmacy?.telecom?.email != nil
 
             // Only show the contact option menu if at least one option is available
             // (e.g. not the case for the internal (change log) communications)
@@ -167,24 +189,24 @@ struct OrderDetailView: View {
                         }, label: {
                             Text(L10n.ordDetailTxtContactMap)
                         })
-                            .disabled(!hasLocation)
-                            .accessibility(identifier: A11y.orderDetail.list.ordDetailBtnContactMap)
+                        .disabled(!hasLocation)
+                        .accessibility(identifier: A11y.orderDetail.list.ordDetailBtnContactMap)
 
                         Button(action: {
                             store.send(.openPhoneApp)
                         }, label: {
                             Text(L10n.ordDetailTxtContactPhone)
                         })
-                            .disabled(!hasPhoneContact)
-                            .accessibility(identifier: A11y.orderDetail.list.ordDetailBtnContactPhone)
+                        .disabled(!hasPhoneContact)
+                        .accessibility(identifier: A11y.orderDetail.list.ordDetailBtnContactPhone)
 
                         Button(action: {
                             store.send(.openMailApp)
                         }, label: {
                             Text(L10n.ordDetailTxtContactEmail)
                         })
-                            .disabled(!hasEmailContact)
-                            .accessibility(identifier: A11y.orderDetail.list.ordDetailBtnContactEmail)
+                        .disabled(!hasEmailContact)
+                        .accessibility(identifier: A11y.orderDetail.list.ordDetailBtnContactEmail)
                     } label: {
                         Label(L10n.ordDetailTxtContact, systemImage: SFSymbolName.ellipsis)
                             .foregroundColor(Colors.primary700)

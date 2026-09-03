@@ -30,7 +30,7 @@ import LocalAuthentication
 
 @Reducer
 struct AppAuthenticationBiometricPasswordDomain {
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
@@ -74,6 +74,10 @@ struct AppAuthenticationBiometricPasswordDomain {
                 return ""
             }
         }
+
+        var isPasswordLoginButtonEnabled: Bool {
+            !password.isEmpty && !passwordDelayIsActive
+        }
     }
 
     enum Action: Equatable {
@@ -98,7 +102,7 @@ struct AppAuthenticationBiometricPasswordDomain {
     @Dependency(\.continuousClock) var clock
 
     var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -160,7 +164,7 @@ struct AppAuthenticationBiometricPasswordDomain {
             state.passwordDelay = delay
             if delay > 0 {
                 return .run { send in
-                    for await _ in self.clock.timer(interval: .seconds(1)) {
+                    for await _ in clock.timer(interval: .seconds(1)) {
                         await send(.passwordDelayTimerTick)
                     }
                 }
@@ -186,3 +190,6 @@ extension AppAuthenticationBiometricPasswordDomain {
         }
     }
 }
+
+extension AppAuthenticationBiometricPasswordDomain.Destination.State: Equatable {}
+extension AppAuthenticationBiometricPasswordDomain.Destination.Action: Equatable {}

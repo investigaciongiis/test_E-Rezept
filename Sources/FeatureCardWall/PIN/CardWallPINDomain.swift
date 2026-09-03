@@ -103,7 +103,7 @@ public struct CardWallPINDomain {
     }
 
     /// Destination states for navigation from PIN screen
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     public enum Destination {
         // sourcery: AnalyticsScreen = cardWall_saveLogin
         /// Navigate to login options
@@ -145,7 +145,7 @@ public struct CardWallPINDomain {
 
     /// The reducer body that handles state transitions and effects
     public var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -220,3 +220,6 @@ extension CardWallPINDomain {
         }
     }
 }
+
+extension CardWallPINDomain.Destination.State: Equatable {}
+extension CardWallPINDomain.Destination.Action: Equatable {}

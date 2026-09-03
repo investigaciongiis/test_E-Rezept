@@ -25,6 +25,7 @@ import CombineSchedulers
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
+import FeatureHelpers
 import IDP
 import Nimble
 import XCTest
@@ -53,8 +54,8 @@ final class MedicationOverviewDomainTests: XCTestCase {
         }
     }
 
-    func testShowDispensedMedication() async {
-        let selectedDispense = stateWithIngredientMedication.dispensed.first!
+    func testShowDispensedMedication() async throws {
+        let selectedDispense = try XCTUnwrap(stateWithIngredientMedication.dispensed.first)
         let expectedState = MedicationDomain.State(
             dispensed: selectedDispense,
             dateFormatter: UIDateFormatter.testValue

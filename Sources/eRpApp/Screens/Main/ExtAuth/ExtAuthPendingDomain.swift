@@ -78,12 +78,12 @@ struct ExtAuthPendingDomain {
     /// `ExtAuthPendingDomain` error types
     @CodedError("014")
     enum Error: Swift.Error, Equatable, LocalizedError {
-        @ErrorCode("01")
         /// Underlying `IDPError` for the external authentication agains `URL`
+        @ErrorCode("01")
         case idpError(IDPError, URL)
-        @ErrorCode("02")
         /// Error when `Profile` validation with the given authentication fails.
         /// Error is produces within the `IDPError.unspecified` error before saving the IDPToken
+        @ErrorCode("02")
         case profileValidation(error: IDTokenValidatorError)
 
         var errorDescription: String? {
@@ -114,7 +114,7 @@ struct ExtAuthPendingDomain {
         }
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         @ReducerCaseEphemeral
         case extAuthAlert(ErpAlertState<Alert>)
@@ -132,7 +132,7 @@ struct ExtAuthPendingDomain {
     @Dependency(\.extAuthRequestStorage) var extAuthRequestStorage: ExtAuthRequestStorage
 
     var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -165,7 +165,6 @@ struct ExtAuthPendingDomain {
         // [REQ:gemSpec_IDP_Frontend:A_22301-01#7] Actual handling of the universal link, user feedback via dialogs e.g.
         case let .externalLogin(url),
              let .destination(.presented(.extAuthAlert(.externalLogin(url)))):
-
             if let entry = state.extAuthState.entry {
                 state.extAuthState = .extAuthReceived(entry)
             }
@@ -314,3 +313,6 @@ extension URLComponents {
         queryItems?.first { $0.name == name }
     }
 }
+
+extension ExtAuthPendingDomain.Destination.State: Equatable {}
+extension ExtAuthPendingDomain.Destination.Action: Equatable {}

@@ -1,4 +1,5 @@
 // swiftlint:disable:this file_name
+// swiftlint:disable:this file_name
 //
 //  Copyright (Change Date see Readme), gematik GmbH
 //
@@ -22,9 +23,10 @@
 //
 
 import TrustStore
-// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
 
+// swiftformat:disable emptyExtensions
 // sourcery:begin: AutoMockable
 extension TrustStoreClient {}
 extension TrustStoreStorage {}
 // sourcery:end
+// swiftformat:enable emptyExtensions

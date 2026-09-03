@@ -35,8 +35,8 @@ import XCTest
 class PharmacyDetailDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.immediate
     var mockUserSession: MockUserSession!
-    var mockRedeemService: MockRedeemService!
-    var mockPrescriptionRepository: MockPrescriptionRepository!
+    var mockRedeemService: RedeemServiceMock!
+    var mockPrescriptionRepository: PrescriptionRepositoryMock!
 
     typealias TestStore = TestStoreOf<PharmacyDetailDomain>
 
@@ -51,8 +51,8 @@ class PharmacyDetailDomainTests: XCTestCase {
     override func setUp() {
         super.setUp()
         mockUserSession = MockUserSession()
-        mockRedeemService = MockRedeemService()
-        mockPrescriptionRepository = MockPrescriptionRepository()
+        mockRedeemService = RedeemServiceMock()
+        mockPrescriptionRepository = PrescriptionRepositoryMock()
     }
 
     func testStore(
@@ -66,9 +66,6 @@ class PharmacyDetailDomainTests: XCTestCase {
             dependencies.userSession = mockUserSession
             dependencies.hapticFeedbackGenerator.success = {}
             dependencies.prescriptionRepository = mockPrescriptionRepository
-            dependencies.redeemOrderService.redeemViaAVS = { @Sendable [mockRedeemService] orders, _ in
-                try await mockRedeemService?.redeem(orders, profileId: UUID()).async() ?? []
-            }
             dependencies.redeemOrderService.redeemViaErxTaskRepository = { @Sendable [mockRedeemService] orders, _ in
                 try await mockRedeemService?.redeem(orders, profileId: UUID()).async() ?? []
             }
@@ -85,51 +82,35 @@ class PharmacyDetailDomainTests: XCTestCase {
         )!
     )
 
-    lazy var allServicesPharmacy: PharmacyLocationViewModel = {
-        PharmacyLocationViewModel(
-            pharmacy: PharmacyLocation(
-                id: "id",
-                telematikID: "telematikID",
-                types: [.delivery, .mobl, .outpharm],
-                avsEndpoints: .init(
-                    onPremiseUrl: "some",
-                    shipmentUrl: "some",
-                    deliveryUrl: "some"
-                ),
-                avsCertificates: []
-            )
+    lazy var allServicesPharmacy: PharmacyLocationViewModel = .init(
+        pharmacy: PharmacyLocation(
+            id: "id",
+            telematikID: "telematikID",
+            types: [.delivery, .mobl, .outpharm]
         )
-    }()
+    )
 
-    lazy var mixedServicesPharmacy: PharmacyLocationViewModel = {
-        PharmacyLocationViewModel(
-            pharmacy: PharmacyLocation(
-                id: "id",
-                telematikID: "telematikID",
-                types: [.delivery, .mobl, .outpharm],
-                avsEndpoints: .init(
-                    shipmentUrl: "some"
-                ),
-                avsCertificates: []
-            )
+    lazy var mixedServicesPharmacy: PharmacyLocationViewModel = .init(
+        pharmacy: PharmacyLocation(
+            id: "id",
+            telematikID: "telematikID",
+            types: [.delivery, .mobl, .outpharm]
         )
-    }()
+    )
 
-    lazy var noAVSServicesPharmacy: PharmacyLocationViewModel = {
-        PharmacyLocationViewModel(
-            pharmacy: PharmacyLocation(
-                id: "id",
-                telematikID: "telematikID",
-                types: [.delivery, .mobl, .outpharm],
-                avsEndpoints: nil,
-                avsCertificates: []
-            )
+    lazy var noAVSServicesPharmacy: PharmacyLocationViewModel = .init(
+        pharmacy: PharmacyLocation(
+            id: "id",
+            telematikID: "telematikID",
+            types: [.delivery, .mobl, .outpharm]
         )
-    }()
+    )
 
-    lazy var noServicePharmacy: PharmacyLocationViewModel = {
-        .init(pharmacy: PharmacyLocation(id: "id", telematikID: "telematikID", types: []))
-    }()
+    lazy var noServicePharmacy: PharmacyLocationViewModel = .init(pharmacy: PharmacyLocation(
+        id: "id",
+        telematikID: "telematikID",
+        types: []
+    ))
 
     func testRedeemFlowWithAProfileThatHasInsuranceId() async {
         // Given a pharmacy with all avs and ErxTaskRepository services
@@ -152,9 +133,11 @@ class PharmacyDetailDomainTests: XCTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         let prescriptions = Prescription.Fixtures.prescriptions.filter(\.isRedeemable)
-        mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-            .setFailureType(to: PrescriptionRepositoryError.self)
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+            Just(prescriptions)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(prescriptions)
         let selectedOption = RedeemOption.delivery
 
@@ -177,6 +160,7 @@ class PharmacyDetailDomainTests: XCTestCase {
                 pharmacy: pharmacyModel.pharmacyLocation
             )))) {
                 $0.serviceOptionState.availableOptions = [.delivery, .onPremise, .shipment]
+                $0.serviceOptionState.validOptions = [.delivery, .onPremise, .shipment]
                 $0.serviceOptionState.redeemOptionProvider = RedeemOptionProvider(
                     wasAuthenticatedBefore: true,
                     pharmacy: pharmacyModel.pharmacyLocation
@@ -209,9 +193,11 @@ class PharmacyDetailDomainTests: XCTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         let prescriptions = Prescription.Fixtures.prescriptions.filter(\.isRedeemable)
-        mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-            .setFailureType(to: PrescriptionRepositoryError.self)
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+            Just(prescriptions)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(prescriptions)
 
         let selectedOption = RedeemOption.shipment
@@ -233,6 +219,7 @@ class PharmacyDetailDomainTests: XCTestCase {
             RedeemOptionProvider(wasAuthenticatedBefore: false, pharmacy: pharmacyModel.pharmacyLocation)
         ))) {
             $0.serviceOptionState.availableOptions = [.delivery, .onPremise, .shipment]
+            $0.serviceOptionState.validOptions = [.delivery, .onPremise, .shipment]
             $0.serviceOptionState.redeemOptionProvider = RedeemOptionProvider(
                 wasAuthenticatedBefore: false,
                 pharmacy: pharmacyModel.pharmacyLocation
@@ -264,9 +251,11 @@ class PharmacyDetailDomainTests: XCTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         let prescriptions = Prescription.Fixtures.prescriptions.filter(\.isRedeemable)
-        mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-            .setFailureType(to: PrescriptionRepositoryError.self)
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+            Just(prescriptions)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(prescriptions)
         let selectedOption = RedeemOption.onPremise
 
@@ -287,6 +276,7 @@ class PharmacyDetailDomainTests: XCTestCase {
             RedeemOptionProvider(wasAuthenticatedBefore: false, pharmacy: pharmacyModel.pharmacyLocation)
         ))) {
             $0.serviceOptionState.availableOptions = [.onPremise, .delivery, .shipment]
+            $0.serviceOptionState.validOptions = [.delivery, .onPremise, .shipment]
             $0.serviceOptionState.redeemOptionProvider = RedeemOptionProvider(
                 wasAuthenticatedBefore: false,
                 pharmacy: pharmacyModel.pharmacyLocation
@@ -318,9 +308,11 @@ class PharmacyDetailDomainTests: XCTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         let prescriptions = Prescription.Fixtures.prescriptions.filter(\.isRedeemable)
-        mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-            .setFailureType(to: PrescriptionRepositoryError.self)
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+            Just(prescriptions)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(prescriptions)
         let selectedOption = RedeemOption.onPremise
         // When loading the profile
@@ -340,6 +332,7 @@ class PharmacyDetailDomainTests: XCTestCase {
             RedeemOptionProvider(wasAuthenticatedBefore: false, pharmacy: pharmacyModel.pharmacyLocation)
         ))) {
             $0.serviceOptionState.availableOptions = [.onPremise, .delivery, .shipment]
+            $0.serviceOptionState.validOptions = [.delivery, .onPremise, .shipment]
             $0.serviceOptionState.redeemOptionProvider = RedeemOptionProvider(
                 wasAuthenticatedBefore: false,
                 pharmacy: pharmacyModel.pharmacyLocation
@@ -371,9 +364,11 @@ class PharmacyDetailDomainTests: XCTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         let prescriptions = Prescription.Fixtures.prescriptions.filter(\.isRedeemable)
-        mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-            .setFailureType(to: PrescriptionRepositoryError.self)
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+            Just(prescriptions)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(prescriptions)
         await sut.send(.task) {
             // technically this should happen on `sut.receive(.response(.loadLocalPrescriptionsReceived(expected)))`,
@@ -435,9 +430,11 @@ class PharmacyDetailDomainTests: XCTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         let prescriptions = Prescription.Fixtures.prescriptions.filter(\.isRedeemable)
-        mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-            .setFailureType(to: PrescriptionRepositoryError.self)
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+            Just(prescriptions)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(prescriptions)
         await sut.send(.task) {
             // technically this should happen on `sut.receive(.response(.loadLocalPrescriptionsReceived(expected)))`,
@@ -597,7 +594,8 @@ class PharmacyDetailDomainTests: XCTestCase {
         mockUserSession.profileReturnValue = Just(profile)
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
-        mockPrescriptionRepository.loadLocalForReturnValue = Just([])
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue = Just([])
             .setFailureType(to: PrescriptionRepositoryError.self)
             .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success([])
@@ -659,9 +657,11 @@ class PharmacyDetailDomainTests: XCTestCase {
 
             let prescriptions = nonReadyPrescriptions + [expectedPrescription]
 
-            mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-                .setFailureType(to: PrescriptionRepositoryError.self)
-                .eraseToAnyPublisher()
+            mockPrescriptionRepository
+                .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+                Just(prescriptions)
+                    .setFailureType(to: PrescriptionRepositoryError.self)
+                    .eraseToAnyPublisher()
             await sut.send(.task) {
                 // technically this should happen on `sut.receive(.response(.loadLocalPrescriptionsReceived(expected)))`
                 // due to shared state the test snapshot is wrong here, this might get fixed within TCA in the future?
@@ -678,6 +678,7 @@ class PharmacyDetailDomainTests: XCTestCase {
                 RedeemOptionProvider(wasAuthenticatedBefore: false, pharmacy: pharmacyModel.pharmacyLocation)
             ))) {
                 $0.serviceOptionState.availableOptions = [.onPremise, .delivery, .shipment]
+                $0.serviceOptionState.validOptions = [.delivery, .onPremise, .shipment]
                 $0.serviceOptionState.redeemOptionProvider = RedeemOptionProvider(
                     wasAuthenticatedBefore: false,
                     pharmacy: pharmacyModel.pharmacyLocation
@@ -704,9 +705,11 @@ class PharmacyDetailDomainTests: XCTestCase {
 
         let prescriptions = [Prescription.Dummies.prescriptionReady, Prescription.Dummies.scanned]
 
-        mockPrescriptionRepository.loadLocalForReturnValue = Just(prescriptions)
-            .setFailureType(to: PrescriptionRepositoryError.self)
-            .eraseToAnyPublisher()
+        mockPrescriptionRepository
+            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
+            Just(prescriptions)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(prescriptions)
         await sut.send(.task) {
             // technically this should happen on `sut.receive(.response(.loadLocalPrescriptionsReceived(expected)))`
@@ -724,6 +727,7 @@ class PharmacyDetailDomainTests: XCTestCase {
             RedeemOptionProvider(wasAuthenticatedBefore: false, pharmacy: pharmacyModel.pharmacyLocation)
         ))) {
             $0.serviceOptionState.availableOptions = [.delivery, .onPremise, .shipment]
+            $0.serviceOptionState.validOptions = [.delivery, .onPremise, .shipment]
             $0.serviceOptionState.redeemOptionProvider = RedeemOptionProvider(
                 wasAuthenticatedBefore: false,
                 pharmacy: pharmacyModel.pharmacyLocation

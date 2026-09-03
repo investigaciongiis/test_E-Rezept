@@ -29,25 +29,10 @@ import FeatureCardWall
 import Foundation
 import XCTestDynamicOverlay
 
-// MARK: TCA Dependency eRpKit
-
-import eRpKit
-
-extension FHIRDateFormatter: DependencyKey {
-    public static let liveValue = FHIRDateFormatter.shared
-
-    public static let testValue = FHIRDateFormatter.shared
-}
-
-extension DependencyValues {
-    var fhirDateFormatter: FHIRDateFormatter {
-        get { self[FHIRDateFormatter.self] }
-        set { self[FHIRDateFormatter.self] = newValue }
-    }
-}
-
 // MARK: - ErxTask
 
+import AsyncAlgorithms
+import eRpKit
 import ErxTaskRepository
 import IDP
 import IDPLive
@@ -66,164 +51,219 @@ extension ErxTaskRepository: DependencyKey {
         }
     }
 
-    public static let liveValue = {
-        ErxTaskRepository { taskId, accessCode, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadRemoteTask(
-                    taskId: taskId,
-                    accessCode: accessCode,
-                    profileId: profileId
-                )
-            }
-            return try await Self.defaultImplementation.loadRemoteTask(
+    public static let liveValue = ErxTaskRepository { taskId, accessCode, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadRemoteTask(
                 taskId: taskId,
                 accessCode: accessCode,
                 profileId: profileId
             )
-        } loadLocalTask: { taskId, accessCode in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return Self.demoMode.loadLocalTask(taskId: taskId, accessCode: accessCode)
-            }
-            return Self.defaultImplementation.loadLocalTask(taskId: taskId, accessCode: accessCode)
-        } loadLocalAllTasks: { profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return Self.demoMode.loadLocalAllTasks(profileId: profileId)
-            }
-            return Self.defaultImplementation.loadLocalAllTasks(profileId: profileId)
-        } loadRemoteAllTasks: { locale, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadRemoteAllTasks(locale: locale, profileId: profileId)
-            }
-            return try await Self.defaultImplementation.loadRemoteAllTasks(locale: locale, profileId: profileId)
-        } saveTask: { tasks, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.saveTask(erxTasks: tasks, profileId: profileId)
-            }
-            return try await Self.defaultImplementation.saveTask(erxTasks: tasks, profileId: profileId)
-        } deleteTask: { erxTasks, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.deleteTask(erxTasks: erxTasks, profileId: profileId)
-            }
-            return try await Self.defaultImplementation.deleteTask(erxTasks: erxTasks, profileId: profileId)
-        } markTaskEURedeemable: { taskId, byPatientAuthorization in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.markTaskEURedeemable(taskId, byPatientAuthorization)
-            }
-            return try await Self.defaultImplementation.markTaskEURedeemable(taskId, byPatientAuthorization)
-        } redeem: { order in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.redeem(order)
-            }
-            return try await Self.defaultImplementation.redeem(order)
-        } loadLocalCommunications: { profile in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadLocalCommunications(profile: profile)
-            }
-            return try await Self.defaultImplementation.loadLocalCommunications(profile: profile)
-        } saveLocalCommunications: { communications, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.saveLocalCommunications(
-                    communications: communications,
-                    profileId: profileId
-                )
-            }
-            return try await Self.defaultImplementation.saveLocalCommunications(
+        }
+        return try await Self.defaultImplementation.loadRemoteTask(
+            taskId: taskId,
+            accessCode: accessCode,
+            profileId: profileId
+        )
+    } loadLocalTask: { taskId, accessCode in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return Self.demoMode.loadLocalTask(taskId: taskId, accessCode: accessCode)
+        }
+        return Self.defaultImplementation.loadLocalTask(taskId: taskId, accessCode: accessCode)
+    } loadLocalAllTasks: { profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return Self.demoMode.loadLocalAllTasks(profileId: profileId)
+        }
+        return Self.defaultImplementation.loadLocalAllTasks(profileId: profileId)
+    } loadRemoteAllTasks: { locale, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadRemoteAllTasks(locale: locale, profileId: profileId)
+        }
+        return try await Self.defaultImplementation.loadRemoteAllTasks(locale: locale, profileId: profileId)
+    } saveTask: { tasks, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.saveTask(erxTasks: tasks, profileId: profileId)
+        }
+        return try await Self.defaultImplementation.saveTask(erxTasks: tasks, profileId: profileId)
+    } deleteTask: { erxTasks, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.deleteTask(erxTasks: erxTasks, profileId: profileId)
+        }
+        return try await Self.defaultImplementation.deleteTask(erxTasks: erxTasks, profileId: profileId)
+    } markTaskEURedeemable: { taskId, profileId, byPatientAuthorization in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.markTaskEURedeemable(taskId, profileId, byPatientAuthorization)
+        }
+        return try await Self.defaultImplementation.markTaskEURedeemable(taskId, profileId, byPatientAuthorization)
+    } redeem: { order in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.redeem(order)
+        }
+        return try await Self.defaultImplementation.redeem(order)
+    } loadLocalCommunications: { profile in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadLocalCommunications(profile: profile)
+        }
+        return try await Self.defaultImplementation.loadLocalCommunications(profile: profile)
+    } saveLocalCommunications: { communications, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.saveLocalCommunications(
                 communications: communications,
                 profileId: profileId
             )
-        } updateLocalDiGaInfo: { diGaInfo in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.updateLocalDiGaInfo(diGaInfo)
-            }
-            return try await Self.defaultImplementation.updateLocalDiGaInfo(diGaInfo)
-        } countAllUnreadCommunicationsAndChargeItems: { profileId, commProfile in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.countAllUnreadCommunicationsAndChargeItems(profileId, commProfile)
-            }
-            return try await Self.defaultImplementation.countAllUnreadCommunicationsAndChargeItems(
-                profileId,
-                commProfile
-            )
-        } loadRemoteLatestAuditEvents: { locale in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadRemoteLatestAuditEvents(locale)
-            }
-            return try await Self.defaultImplementation.loadRemoteLatestAuditEvents(locale)
-        } loadRemoteAuditEvents: { url, locale in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadRemoteAuditEvents(url, locale)
-            }
-            return try await Self.defaultImplementation.loadRemoteAuditEvents(url, locale)
-        } loadRemoteChargeItems: { profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadRemoteChargeItems(profileId)
-            }
-            return try await Self.defaultImplementation.loadRemoteChargeItems(profileId)
-        } fetchConsents: {
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.fetchConsents()
-            }
-            return try await Self.defaultImplementation.fetchConsents()
-        } loadLocalChargeItem: { profileId, chargeItemId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadLocalChargeItem(profileId, chargeItemId)
-            }
-            return try await Self.defaultImplementation.loadLocalChargeItem(profileId, chargeItemId)
-        } loadLocalAllChargeItems: { profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.loadLocalAllChargeItems(profileId)
-            }
-            return try await Self.defaultImplementation.loadLocalAllChargeItems(profileId)
-        } saveChargeItems: { chargeItems, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.saveChargeItems(chargeItems, profileId)
-            }
-            return try await Self.defaultImplementation.saveChargeItems(chargeItems, profileId)
-        } deleteChargeItems: { chargeItems, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.deleteChargeItems(chargeItems, profileId)
-            }
-            return try await Self.defaultImplementation.deleteChargeItems(chargeItems, profileId)
-        } deleteLocalChargeItems: { chargeItems, profileId in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.deleteLocalChargeItems(chargeItems, profileId)
-            }
-            return try await Self.defaultImplementation.deleteLocalChargeItems(chargeItems, profileId)
-        } grantConsent: { consent in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.grantConsent(consent)
-            }
-            return try await Self.defaultImplementation.grantConsent(consent)
-        } revokeConsent: { category in
-            @Shared(.isDemoMode) var isDemoMode
-            if isDemoMode {
-                return try await Self.demoMode.revokeConsent(category)
-            }
-            return try await Self.defaultImplementation.revokeConsent(category)
         }
-    }()
+        return try await Self.defaultImplementation.saveLocalCommunications(
+            communications: communications,
+            profileId: profileId
+        )
+    } updateLocalDiGaInfo: { diGaInfo in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.updateLocalDiGaInfo(diGaInfo)
+        }
+        return try await Self.defaultImplementation.updateLocalDiGaInfo(diGaInfo)
+    } countAllUnreadCommunicationsAndChargeItems: { profileId, commProfile in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return Self.demoMode.countAllUnreadCommunicationsAndChargeItems(profileId, commProfile)
+        }
+        return Self.defaultImplementation.countAllUnreadCommunicationsAndChargeItems(
+            profileId,
+            commProfile
+        )
+    } loadRemoteLatestAuditEvents: { locale in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadRemoteLatestAuditEvents(locale)
+        }
+        return try await Self.defaultImplementation.loadRemoteLatestAuditEvents(locale)
+    } loadRemoteAuditEvents: { url, locale in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadRemoteAuditEvents(url, locale)
+        }
+        return try await Self.defaultImplementation.loadRemoteAuditEvents(url, locale)
+    } loadRemoteChargeItems: { profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadRemoteChargeItems(profileId)
+        }
+        return try await Self.defaultImplementation.loadRemoteChargeItems(profileId)
+    } fetchConsents: { profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.fetchConsents(profileId)
+        }
+        return try await Self.defaultImplementation.fetchConsents(profileId)
+    } loadLocalChargeItem: { profileId, chargeItemId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadLocalChargeItem(profileId, chargeItemId)
+        }
+        return try await Self.defaultImplementation.loadLocalChargeItem(profileId, chargeItemId)
+    } loadLocalAllChargeItems: { profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadLocalAllChargeItems(profileId)
+        }
+        return try await Self.defaultImplementation.loadLocalAllChargeItems(profileId)
+    } saveChargeItems: { chargeItems, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.saveChargeItems(chargeItems, profileId)
+        }
+        return try await Self.defaultImplementation.saveChargeItems(chargeItems, profileId)
+    } deleteChargeItems: { chargeItems, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.deleteChargeItems(chargeItems, profileId)
+        }
+        return try await Self.defaultImplementation.deleteChargeItems(chargeItems, profileId)
+    } deleteLocalChargeItems: { chargeItems, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.deleteLocalChargeItems(chargeItems, profileId)
+        }
+        return try await Self.defaultImplementation.deleteLocalChargeItems(chargeItems, profileId)
+    } grantConsent: { consent, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.grantConsent(consent, profileId)
+        }
+        return try await Self.defaultImplementation.grantConsent(consent, profileId)
+    } revokeConsent: { category, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.revokeConsent(category, profileId)
+        }
+        return try await Self.defaultImplementation.revokeConsent(category, profileId)
+    } loadRemoteEuAccessCode: {
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadRemoteEuAccessCode()
+        }
+        return try await Self.defaultImplementation.loadRemoteEuAccessCode()
+    } grantEuAccessPermission: { euAccessCode in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.grantEuAccessPermission(euAccessCode)
+        }
+        return try await Self.defaultImplementation.grantEuAccessPermission(euAccessCode)
+    } deleteEuAccessCode: { profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.deleteEuAccessCode(profileId: profileId)
+        }
+        return try await Self.defaultImplementation.deleteEuAccessCode(profileId: profileId)
+    } saveEuCommunication: { euCommunications, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.saveEuCommunication(
+                euCommunications: euCommunications,
+                profileId: profileId
+            )
+        }
+        return try await Self.defaultImplementation.saveEuCommunication(
+            euCommunications: euCommunications,
+            profileId: profileId
+        )
+    } deleteEuCommunications: { euCommunications, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.deleteEuCommunications(
+                euCommunications: euCommunications,
+                profileId: profileId
+            )
+        }
+        return try await Self.defaultImplementation.deleteEuCommunications(
+            euCommunications: euCommunications,
+            profileId: profileId
+        )
+    } loadEuCommunications: { countryCode, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadEuCommunications(countryCode: countryCode, profileId: profileId)
+        }
+        return try await Self.defaultImplementation.loadEuCommunications(
+            countryCode: countryCode,
+            profileId: profileId
+        )
+    } loadLatestActiveEuCommunication: { profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return try await Self.demoMode.loadLatestActiveEuCommunication(profileId: profileId)
+        }
+        return try await Self.defaultImplementation.loadLatestActiveEuCommunication(profileId: profileId)
+    }
 
     public static let previewValue = ErxTaskRepository()
 }
@@ -245,9 +285,14 @@ extension ErxTaskRepository {
         @Dependency(\.erxLocalDataStore) var disk
 
         return ErxTaskRepository { taskId, accessCode, profileId in
-            if let accessCode = accessCode {
+            if let accessCode {
                 do {
-                    guard let remoteTask = try await cloud.fetchTask(by: taskId, accessCode: accessCode).async()
+                    guard let remoteTask = try await cloud.fetchTask(
+                        by: taskId,
+                        accessCode: accessCode,
+                        profileId: profileId
+                    )
+                    .async()
                     else { return nil }
                     _ = try await disk.save(tasks: [remoteTask], in: profileId, updateProfileLastAuthenticated: false)
                         .async()
@@ -304,8 +349,9 @@ extension ErxTaskRepository {
                 }
                 // Delete remote & locally when at least one is not a scanned task
             } else {
+                @Shared(.selectedProfileId) var selectedProfileId: UUID
                 do {
-                    _ = try await cloud.delete(tasks: erxTasks).async()
+                    _ = try await cloud.delete(tasks: erxTasks, profileId: profileId ?? selectedProfileId).async()
                     _ = try await disk.delete(tasks: erxTasks, in: profileId).async()
                     try await deleteSchedules(schedules)
                 } catch let error as LocalStoreError {
@@ -314,11 +360,27 @@ extension ErxTaskRepository {
                     throw ErxRepositoryError.remote(error)
                 }
             }
-        } markTaskEURedeemable: { _, _ in
-            nil
-        } redeem: { order in
+        } markTaskEURedeemable: { taskId, profileId, authorization in
             do {
-                return try await cloud.redeem(order: order).async()
+                _ = try await cloud.markEURedeemable(
+                    for: taskId,
+                    byPatientAuthorization: authorization,
+                    profileId: profileId
+                )
+                .async()
+                var task = try await disk.fetchTask(by: taskId, accessCode: nil).async()
+                task?.isSetEURedeemableByPatient = authorization
+                if let task {
+                    _ = try await disk.save(tasks: [task], in: profileId, updateProfileLastAuthenticated: false).async()
+                }
+                return
+            } catch let error as RemoteStoreError {
+                throw ErxRepositoryError.remote(error)
+            }
+        } redeem: { order in
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
+            do {
+                return try await cloud.redeem(order: order, profileId: selectedProfileId).async()
             } catch let error as RemoteStoreError {
                 throw ErxRepositoryError.remote(error)
             }
@@ -341,35 +403,65 @@ extension ErxTaskRepository {
                 throw ErxRepositoryError.local(error)
             }
         } countAllUnreadCommunicationsAndChargeItems: { profileId, commProfile in
-            do {
-                let communications = try await disk.listAllCommunications(for: commProfile).async()
-                let chargeItems = try await disk.listAllChargeItems(of: profileId).async()
-                // filter for unique communications
-                let uniqueCommunications = communications.filterUnique()
-                // make sure there is a communication to an existing charge item
-                // since there can be chargeItems without orders
-                let taskIds = uniqueCommunications.map(\.taskIds)
-                let relevantChargeItems = chargeItems.filter { chargeItem in
-                    taskIds.contains { task in
-                        task.contains(chargeItem.identifier)
+            AsyncThrowingStream { continuation in
+                Task {
+                    do {
+                        let communicationValues = disk.listAllCommunications(for: commProfile)
+                            .buffer(
+                                size: 1,
+                                prefetch: .byRequest,
+                                whenFull: .dropOldest
+                            ).values
+                        let euCommunicationValues = disk.listAllEuCommunication(countryCode: nil, profileId: nil)
+                            .buffer(
+                                size: 1,
+                                prefetch: .byRequest,
+                                whenFull: .dropOldest
+                            ).values
+                        let chargeItemValues = disk.listAllChargeItems(of: profileId)
+                            .buffer(
+                                size: 1,
+                                prefetch: .byRequest,
+                                whenFull: .dropOldest
+                            ).values
+
+                        for try await (communications, euCommunications, chargeItems) in AsyncAlgorithms
+                            .combineLatest(communicationValues, euCommunicationValues, chargeItemValues) {
+                            // filter for unique communications
+                            let uniqueCommunications = communications.filterUnique()
+                            // make sure there is a communication to an existing charge item
+                            // since there can be chargeItems without orders
+                            let taskIds = uniqueCommunications.map(\.taskIds)
+                            let relevantChargeItems = chargeItems.filter { chargeItem in
+                                taskIds.contains { task in
+                                    task.contains(chargeItem.identifier)
+                                }
+                            }
+                            var count = 0
+                            count += uniqueCommunications.filter { $0.isRead == false }.count
+                            count += euCommunications.filter { $0.isRead == false }.count
+                            count += relevantChargeItems.filter { $0.isRead == false }.count
+                            continuation.yield(count)
+                        }
+
+                        continuation.finish()
+                    } catch let error as LocalStoreError {
+                        continuation.finish(throwing: ErxRepositoryError.local(error))
                     }
                 }
-                var count = 0
-                count += uniqueCommunications.filter { $0.isRead == false }.count
-                count += relevantChargeItems.filter { $0.isRead == false }.count
-                return count
-            } catch let error as LocalStoreError {
-                throw ErxRepositoryError.local(error)
             }
         } loadRemoteLatestAuditEvents: { locale in
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
             do {
-                return try await cloud.listAllAuditEvents(after: nil, for: locale).async()
+                return try await cloud.listAllAuditEvents(after: nil, for: locale, profileId: selectedProfileId).async()
             } catch let error as RemoteStoreError {
                 throw ErxRepositoryError.remote(error)
             }
         } loadRemoteAuditEvents: { url, locale in
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
             do {
-                return try await cloud.listAuditEventsNextPage(from: url, locale: locale).async()
+                return try await cloud.listAuditEventsNextPage(from: url, locale: locale, profileId: selectedProfileId)
+                    .async()
             } catch let error as RemoteStoreError {
                 throw ErxRepositoryError.remote(error)
             }
@@ -382,9 +474,9 @@ extension ErxTaskRepository {
             } catch let error as RemoteStoreError {
                 throw ErxRepositoryError.remote(error)
             }
-        } fetchConsents: {
+        } fetchConsents: { profileId in
             do {
-                return try await cloud.fetchConsents().async()
+                return try await cloud.fetchConsents(profileId: profileId).async()
             } catch let error as RemoteStoreError {
                 throw ErxRepositoryError.remote(error)
             }
@@ -407,8 +499,9 @@ extension ErxTaskRepository {
                 throw ErxRepositoryError.local(error)
             }
         } deleteChargeItems: { chargeItems, profileId in
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
             do {
-                _ = try await cloud.delete(chargeItems: chargeItems).async()
+                _ = try await cloud.delete(chargeItems: chargeItems, profileId: profileId ?? selectedProfileId).async()
                 _ = try await disk.delete(of: profileId, chargeItems: chargeItems.map(\.sparseChargeItem)).async()
             } catch let error as LocalStoreError {
                 throw ErxRepositoryError.local(error)
@@ -421,15 +514,61 @@ extension ErxTaskRepository {
             } catch let error as LocalStoreError {
                 throw ErxRepositoryError.local(error)
             }
-        } grantConsent: { consent in
+        } grantConsent: { consent, profileId in
             do {
-                return try await cloud.grantConsent(consent).async()
+                return try await cloud.grantConsent(consent, profileId: profileId).async()
             } catch let error as RemoteStoreError {
                 throw ErxRepositoryError.remote(error)
             }
-        } revokeConsent: { category in
+        } revokeConsent: { category, profileId in
             do {
-                _ = try await cloud.revokeConsent(category).async()
+                _ = try await cloud.revokeConsent(category, profileId: profileId).async()
+            } catch let error as RemoteStoreError {
+                throw ErxRepositoryError.remote(error)
+            }
+        } loadRemoteEuAccessCode: {
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
+            do {
+                return try await cloud.loadRemoteEuAccessCode(profileId: selectedProfileId).async()
+            } catch let error as RemoteStoreError {
+                throw ErxRepositoryError.remote(error)
+            }
+        } grantEuAccessPermission: { euAccessCode in
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
+            do {
+                return try await cloud.grantEuAccessPermission(accessCode: euAccessCode, profileId: selectedProfileId)
+                    .async()
+            } catch let error as RemoteStoreError {
+                throw ErxRepositoryError.remote(error)
+            }
+        } deleteEuAccessCode: { profileId in
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
+            do {
+                _ = try await cloud.deleteEuAccessCode(profileId: profileId ?? selectedProfileId).async()
+            } catch let error as RemoteStoreError {
+                throw ErxRepositoryError.remote(error)
+            }
+        } saveEuCommunication: { euCommunications, profileId in
+            do {
+                _ = try await disk.save(euCommunications: euCommunications, profileId: profileId).async()
+            } catch let error as LocalStoreError {
+                throw ErxRepositoryError.local(error)
+            }
+        } deleteEuCommunications: { euCommunications, profileId in
+            do {
+                _ = try await disk.delete(euCommunications: euCommunications, profileId: profileId).async()
+            } catch let error as LocalStoreError {
+                throw ErxRepositoryError.local(error)
+            }
+        } loadEuCommunications: { countryCode, profileId in
+            do {
+                return try await disk.listAllEuCommunication(countryCode: countryCode, profileId: profileId).async()
+            } catch let error as RemoteStoreError {
+                throw ErxRepositoryError.remote(error)
+            }
+        } loadLatestActiveEuCommunication: { profileId in
+            do {
+                return try await disk.loadLatestActiveEuCommunication(profileId: profileId).async()
             } catch let error as RemoteStoreError {
                 throw ErxRepositoryError.remote(error)
             }
@@ -450,18 +589,27 @@ extension ErxTaskRepository {
         -> Void = { profileId in
             @Dependency(\.erxRemoteDataStore) var cloud
             @Dependency(\.erxLocalDataStore) var disk
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
+            let resolvedProfileId = profileId ?? selectedProfileId
             let timestamp = try await disk.fetchLatestTimestampForCommunications(of: profileId).async()
-            let communications = try await cloud.listAllCommunications(after: timestamp, for: .all).async()
+            let communications = try await cloud.listAllCommunications(
+                after: timestamp,
+                for: .all,
+                profileId: resolvedProfileId
+            )
+            .async()
             _ = try await disk.save(communications: communications, of: profileId).async()
         }
 
     static let loadRemoteLatestTasks: @Sendable (_ profileId: UUID?) async throws -> Void = { profileId in
         @Dependency(\.erxRemoteDataStore) var cloud
         @Dependency(\.erxLocalDataStore) var disk
+        @Shared(.selectedProfileId) var selectedProfileId: UUID
+        let resolvedProfileId = profileId ?? selectedProfileId
         let timestamp = try await disk.fetchLatestLastModifiedForErxTasks(of: profileId).async()
-        let tasks = try await cloud.listAllTasks(after: timestamp).async()
-        let updatedTasks = try await loadAndUpdateAllDetailedTasks(tasks)
-        try await loadRemoteMedicationDispenses(updatedTasks.content)
+        let tasks = try await cloud.listAllTasks(after: timestamp, profileId: resolvedProfileId).async()
+        let updatedTasks = try await loadAndUpdateAllDetailedTasks(tasks, resolvedProfileId)
+        try await loadRemoteMedicationDispenses(updatedTasks.content, resolvedProfileId)
         let result = try await disk.save(
             tasks: updatedTasks.content,
             in: profileId,
@@ -481,9 +629,11 @@ extension ErxTaskRepository {
         -> Void = { previousPage, profileId in
             @Dependency(\.erxRemoteDataStore) var cloud
             @Dependency(\.erxLocalDataStore) var disk
-            let nextPage = try await cloud.listTasksNextPage(of: previousPage).async()
-            let updatedTasks = try await loadAndUpdateAllDetailedTasks(nextPage)
-            try await loadRemoteMedicationDispenses(updatedTasks.content)
+            @Shared(.selectedProfileId) var selectedProfileId: UUID
+            let resolvedProfileId = profileId ?? selectedProfileId
+            let nextPage = try await cloud.listTasksNextPage(of: previousPage, profileId: resolvedProfileId).async()
+            let updatedTasks = try await loadAndUpdateAllDetailedTasks(nextPage, resolvedProfileId)
+            try await loadRemoteMedicationDispenses(updatedTasks.content, resolvedProfileId)
             let result = try await disk.save(
                 tasks: updatedTasks.content,
                 in: profileId,
@@ -496,8 +646,11 @@ extension ErxTaskRepository {
             }
         }
 
-    private static let loadAndUpdateAllDetailedTasks: @Sendable (_ tasks: PagedContent<[ErxTask]>) async throws
-        -> PagedContent<[ErxTask]> = { tasks in
+    private static let loadAndUpdateAllDetailedTasks: @Sendable (
+        _ tasks: PagedContent<[ErxTask]>,
+        _ profileId: UUID
+    ) async throws
+        -> PagedContent<[ErxTask]> = { tasks, profileId in
             @Dependency(\.erxRemoteDataStore) var cloud
             @Dependency(\.erxLocalDataStore) var disk
             // Load and update cancelled local ErxTasks
@@ -513,7 +666,7 @@ extension ErxTaskRepository {
                 content: tasks.content
                     .filter { $0.status != .cancelled },
                 next: tasks.next
-            ))
+            ), profileId: profileId)
                 .async()
 
             // Early out if no cancelled tasks are present
@@ -527,12 +680,15 @@ extension ErxTaskRepository {
             )
         }
 
-    private static let loadRemoteMedicationDispenses: @Sendable (_ tasks: [ErxTask]) async throws -> Void = { tasks in
+    private static let loadRemoteMedicationDispenses: @Sendable (
+        _ tasks: [ErxTask],
+        _ profileId: UUID
+    ) async throws -> Void = { tasks, profileId in
         @Dependency(\.erxRemoteDataStore) var cloud
         @Dependency(\.erxLocalDataStore) var disk
         for task in tasks {
             if task.lastMedicationDispense != nil || task.status == .completed {
-                let medDispense = try await cloud.listMedicationDispenses(for: task.id).async()
+                let medDispense = try await cloud.listMedicationDispenses(for: task.id, profileId: profileId).async()
                 _ = try await disk.save(medicationDispenses: medDispense).async()
             }
         }
@@ -541,9 +697,170 @@ extension ErxTaskRepository {
     private static let loadRemoteLatestChargeItems: @Sendable (_ profileId: UUID?) async throws -> Void = { profileId in
         @Dependency(\.erxRemoteDataStore) var cloud
         @Dependency(\.erxLocalDataStore) var disk
+        @Shared(.selectedProfileId) var selectedProfileId: UUID
+        let resolvedProfileId = profileId ?? selectedProfileId
         let timestamp = try await disk.fetchLatestTimestampForChargeItems(of: profileId).async()
-        let chargeItems = try await cloud.listAllChargeItems(after: timestamp).async()
+        let chargeItems = try await cloud.listAllChargeItems(after: timestamp, profileId: resolvedProfileId).async()
         _ = try await disk.save(chargeItems: chargeItems.map(\.sparseChargeItem), of: profileId).async()
+    }
+}
+
+import FeatureEURedeem
+
+extension EuRedeemService: DependencyKey {
+    public static let liveValue: EuRedeemService = .init { countryCode, profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return EuAccessCode(
+                accessCode: "DEMOCODE",
+                countryCode: countryCode,
+                validUntil: Calendar.current.date(byAdding: .hour, value: 1, to: Date()),
+                createdAt: Date()
+            )
+        }
+        return try await Self.defaultValue.grantEuAccessCode(countryCode: countryCode, profileId: profileId)
+    } markTaskEURedeemable: { taskId, byPatientAuthorization, profileId in
+        try await Self.defaultValue.markTaskEURedeemable(
+            taskId: taskId,
+            byPatientAuthorization: byPatientAuthorization,
+            profileId: profileId
+        )
+    } deleteEuAccessCode: { profileId in
+        @Shared(.isDemoMode) var isDemoMode
+        if isDemoMode {
+            return
+        }
+        return try await Self.defaultValue.deleteEuAccessCode(profileId: profileId)
+    }
+
+    /// Live implementation of EuRedeemService
+    public static let defaultValue = EuRedeemService { countryCode, profileId in
+        @Dependency(\.userSessionProvider) var userSessionProvider
+        @Dependency(\.euAccessCodeGenerator) var euAccessCodeGenerator
+        @Dependency(\.erxTaskRepository) var erxTaskRepository
+        @Dependency(\.calendar) var calendar
+        @Dependency(\.dateProvider) var dateProvider
+
+        let userSession = userSessionProvider.userSession(for: profileId)
+        let loginHandler = userSession.idpSessionLoginHandler
+        let isAuthenticatedResult = try await loginHandler.isAuthenticatedOrAuthenticate().async()
+
+        switch isAuthenticatedResult {
+        case .success(true):
+            do {
+                let generatedCode = try await euAccessCodeGenerator.generatAccessCode()
+                let euAccessCode = EuAccessCode(
+                    accessCode: generatedCode,
+                    countryCode: countryCode
+                )
+
+                let grantedEuAccessCode = try await erxTaskRepository.grantEuAccessPermission(euAccessCode)
+
+                // Check if we already got an EuAccessCode from this country in the last 7 days
+                let localEuCommunications = try await erxTaskRepository.loadEuCommunications(
+                    countryCode: countryCode,
+                    profileId: profileId
+                )
+
+                let todayStart = calendar.startOfDay(for: dateProvider())
+
+                let hasRecentCode: Bool = {
+                    guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: todayStart)
+                    else { return false }
+
+                    let latestCreatedAt = localEuCommunications
+                        .compactMap(\.euAccessCode)
+                        .filter { $0.countryCode == countryCode }
+                        .compactMap(\.createdAt)
+                        .max()
+
+                    return latestCreatedAt.map { date in
+                        date >= sevenDaysAgo
+                    } ?? false
+                }()
+
+                var updatedEuCommunications: [EuCommunication] = []
+                if hasRecentCode {
+                    updatedEuCommunications.append(
+                        EuCommunication(
+                            eventType: .refreshedAccessCode,
+                            orderId: localEuCommunications.first?.orderId ?? UUID().uuidString,
+                            euAccessCode: grantedEuAccessCode,
+                            countryCode: countryCode
+                        )
+                    )
+                } else {
+                    updatedEuCommunications.append(
+                        EuCommunication(
+                            eventType: .createdAccessCode,
+                            orderId: UUID().uuidString,
+                            euAccessCode: grantedEuAccessCode,
+                            countryCode: countryCode
+                        )
+                    )
+                }
+
+                // we can only have one active euAccessCode and invalidate this one
+                if var latest = try await erxTaskRepository.loadLatestActiveEuCommunication(profileId: profileId) {
+                    latest.euAccessCode = nil
+                    updatedEuCommunications.append(latest)
+                }
+
+                try await erxTaskRepository.saveEuCommunication(
+                    euCommunications: updatedEuCommunications,
+                    profileId: profileId
+                )
+
+                return grantedEuAccessCode
+            } catch {
+                throw EuRedeemServiceError.from(error)
+            }
+        case .success(false):
+            throw EuRedeemServiceError.noTokenAvailable
+        case let .failure(error):
+            throw EuRedeemServiceError.loginHandler(error: error)
+        }
+    } markTaskEURedeemable: { taskId, byPatientAuthorization, profileId in
+        do {
+            @Dependency(\.erxTaskRepository) var erxTaskRepository
+            _ = try await erxTaskRepository.markTaskEURedeemable(
+                taskId: taskId,
+                profileId: profileId,
+                byPatientAuthorization: byPatientAuthorization
+            )
+            // Only add EuCommunication when we already have an active EuAccessCode
+            if var latest = try await erxTaskRepository.loadLatestActiveEuCommunication(profileId: profileId) {
+                @Dependency(\.date.now) var now
+                let newCommunication = EuCommunication(
+                    eventType: byPatientAuthorization ? .addedTask : .removedTask,
+                    taskId: taskId,
+                    orderId: latest.orderId,
+                    timestamp: now,
+                    countryCode: latest.countryCode
+                )
+                try await erxTaskRepository.saveEuCommunication(euCommunications: [newCommunication],
+                                                                profileId: profileId)
+            }
+            return
+        } catch {
+            throw EuRedeemServiceError.from(error)
+        }
+    } deleteEuAccessCode: { profileId in
+        do {
+            @Dependency(\.erxTaskRepository) var erxTaskRepository
+            try await erxTaskRepository.deleteEuAccessCode(profileId: profileId)
+            if var latest = try await erxTaskRepository.loadLatestActiveEuCommunication(profileId: profileId) {
+                latest.eventType = .deletedAccessCode(
+                    origin: latest.eventType == .createdAccessCode ? .created : .refreshed
+                )
+                latest.euAccessCode?.accessCode = nil
+                latest.euAccessCode?.validUntil = nil
+
+                try await erxTaskRepository.saveEuCommunication(euCommunications: [latest], profileId: profileId)
+            }
+        } catch {
+            throw EuRedeemServiceError.from(error)
+        }
     }
 }
 
@@ -660,7 +977,7 @@ extension DependencyValues {
 }
 
 extension NFCSignatureProvider: DependencyKey {
-    // Note: Virtual EGK implementation and demo mode check could be added here in the future
+    /// Note: Virtual EGK implementation and demo mode check could be added here in the future
     public static let liveValue = NFCSignatureProvider { can, pin, challenge, profileID in
         @Shared(.isDemoMode) var isDemoMode
         if isDemoMode {
@@ -759,19 +1076,46 @@ extension DependencyValues {
     }
 }
 
-struct SecureEnclaveSignatureProviderDependency: DependencyKey {
-    static let liveValue: SecureEnclaveSignatureProvider = UsersSessionContainerDependency.liveValue.userSession
-        .secureEnclaveSignatureProvider
+@DependencyClient
+struct SecureEnclaveSignatureProviderFactory {
+    let construct: (_ profileId: UUID) -> SecureEnclaveSignatureProvider
+}
 
-    static let previewValue: SecureEnclaveSignatureProvider = DummySecureEnclaveSignatureProvider()
+extension SecureEnclaveSignatureProviderFactory: DependencyKey {
+    static let liveValue = SecureEnclaveSignatureProviderFactory { profileId in
+        @Shared(.isDemoMode) var isDemoMode
 
-    static let testValue: SecureEnclaveSignatureProvider = UnimplementedSecureEnclaveSignatureProvider()
+        if isDemoMode {
+            return DummySecureEnclaveSignatureProvider()
+        }
+
+        @Dependency(\.schedulers) var schedulers
+        let secureUserStore = KeychainStorage(
+            profileId: profileId,
+            schedulers: schedulers
+        )
+        #if ENABLE_DEBUG_VIEW && targetEnvironment(simulator)
+        return DefaultSecureEnclaveSignatureProvider(
+            storage: secureUserStore,
+            keyIdentifierGenerator: { try generateSecureRandom(length: 32) },
+            privateKeyContainerProvider: { try PrivateKeyContainer.createFromKeyChain(with: $0) }
+        )
+        #else
+        return DefaultSecureEnclaveSignatureProvider(
+            storage: secureUserStore
+        )
+        #endif
+    }
+
+    static let previewValue = SecureEnclaveSignatureProviderFactory { _ in
+        DummySecureEnclaveSignatureProvider()
+    }
 }
 
 extension DependencyValues {
-    var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider {
-        get { self[SecureEnclaveSignatureProviderDependency.self] }
-        set { self[SecureEnclaveSignatureProviderDependency.self] = newValue }
+    var secureEnclaveSignatureProviderFactory: SecureEnclaveSignatureProviderFactory {
+        get { self[SecureEnclaveSignatureProviderFactory.self] }
+        set { self[SecureEnclaveSignatureProviderFactory.self] = newValue }
     }
 }
 
@@ -827,10 +1171,10 @@ extension PharmacyRepository: DependencyKey {
                 updated.types = remotePharmacy.types
                 updated.status = remotePharmacy.status
                 updated.hoursOfOperation = remotePharmacy.hoursOfOperation
+                updated.physicalFeatures = remotePharmacy.physicalFeatures
+                updated.specialities = remotePharmacy.specialities
                 updated.emergencyServiceHours = remotePharmacy.emergencyServiceHours
                 updated.specialClosingHours = remotePharmacy.specialClosingHours
-                updated.avsEndpoints = remotePharmacy.avsEndpoints
-                updated.avsCertificates = remotePharmacy.avsCertificates
 
                 return updated
 
@@ -900,7 +1244,15 @@ extension PharmacyRepository: DependencyKey {
             do {
                 @Dependency(\.coreDataControllerFactory) var coreDataControllerFactory
                 let disk = PharmacyCoreDataStore(coreDataControllerFactory: coreDataControllerFactory)
-                return try await disk.listPharmacies(count: count).async()
+                return try await disk.listPharmacies(count: count)
+                    // For now this method is called by PharmacySearchDomain only for populating the overview
+                    // Here we only want to show pharmacies that
+                    //  - have been "used" at least once before and/or
+                    //  - are currently marked as favourite
+                    .map { (pharmacyLocations: [PharmacyLocation]) -> [PharmacyLocation] in
+                        pharmacyLocations.filter { $0.isFavorite || $0.lastUsed != nil }
+                    }
+                    .async()
             } catch let error as LocalStoreError {
                 throw PharmacyRepositoryError.local(error)
             }
@@ -991,6 +1343,8 @@ extension PharmacyRemoteDataStore: DependencyKey {
 extension PharmacyRemoteDataStore {
     static func apiFiltersForNearbySearch(filter: [PharmacyRepositoryFilter])
         -> [PharmacyRemoteDataStoreFilter] {
+        var result: [PharmacyRemoteDataStoreFilter] = []
+
         let filterTexts: [String] = filter.compactMap {
             switch $0 {
             case .ready:
@@ -999,25 +1353,87 @@ extension PharmacyRemoteDataStore {
                 return "Versand"
             case .delivery:
                 return "Botendienst"
+            case .pickup:
+                return "Handverkauf"
+            case let .characteristic(value):
+                return nearbySearchText(for: value)
+            case let .specialty(value):
+                return nearbySearchText(for: value)
             }
         }
-        guard !filterTexts.isEmpty else {
-            return []
+        if !filterTexts.isEmpty {
+            result.append(PharmacyRemoteDataStoreFilter(key: "text", value: filterTexts.joined(separator: " ")))
         }
-        return [PharmacyRemoteDataStoreFilter(key: "text", value: filterTexts.joined(separator: " "))]
+
+        return result
+    }
+
+    /// Maps characteristic codes to their German keyword for the `text` search parameter
+    /// in the `nearPharmacy` operation, which does not support the `characteristic` query parameter.
+    private static func nearbySearchText(for characteristic: PharmacyRepositoryFilter.Characteristic) -> String {
+        switch characteristic {
+        case .parking: return "Parkmöglichkeit"
+        case .publicTransport: return "ÖPNV"
+        case .barrierFree: return "Barrierefrei"
+        case .pickupAutomat: return "Abholautomat"
+        }
+    }
+
+    /// Maps specialty codes to their main German keyword for the `text` search parameter
+    /// in the `nearPharmacy` operation, which does not support the `specialty` query parameter.
+    private static func nearbySearchText(for specialty: PharmacyRepositoryFilter.Specialty) -> String {
+        switch specialty {
+        case .sterileCompounding: return "Sterilherstellung"
+        case .hypertension: return "Bluthochdruck"
+        case .inhalationTechnique: return "Inhalationstechnik"
+        case .polymedication: return "Polymedikation"
+        case .oralCancerTherapy: return "Krebstherapie"
+        case .organTransplantation: return "Organtransplantation"
+        case .vaccination: return "Impfung"
+        case .bodyMeasurements: return "Körperwerte"
+        case .allergyTest: return "Allergietest"
+        case .travelMedicineConsultation: return "Reisemedizin"
+        }
     }
 
     static func apiFiltersForNormalSearch(filter: [PharmacyRepositoryFilter])
         -> [PharmacyRemoteDataStoreFilter] {
-        filter.compactMap {
+        var result: [PharmacyRemoteDataStoreFilter] = filter.compactMap {
             switch $0 {
-            case .ready:
+            case .ready, .characteristic, .specialty:
                 return nil
             case .shipment:
                 return PharmacyRemoteDataStoreFilter(key: "specialty", value: Specialty.shipment.rawValue)
             case .delivery:
                 return PharmacyRemoteDataStoreFilter(key: "specialty", value: Specialty.delivery.rawValue)
+            case .pickup:
+                return PharmacyRemoteDataStoreFilter(key: "specialty", value: Specialty.pickup.rawValue)
             }
+        }
+
+        result.append(contentsOf: characteristicFilters(from: filter))
+        result.append(contentsOf: specialtyFilters(from: filter))
+
+        return result
+    }
+
+    /// Collects all `.characteristic` filter values into individual `characteristic` query parameters.
+    /// Repeating the same FHIR search parameter produces AND semantics.
+    private static func characteristicFilters(from filter: [PharmacyRepositoryFilter])
+        -> [PharmacyRemoteDataStoreFilter] {
+        filter.compactMap {
+            guard case let .characteristic(value) = $0 else { return nil }
+            return PharmacyRemoteDataStoreFilter(key: "characteristic", value: value.rawValue)
+        }
+    }
+
+    /// Collects all `.specialty` filter values into individual `specialty` query parameters.
+    /// Repeating the same FHIR search parameter produces AND semantics.
+    private static func specialtyFilters(from filter: [PharmacyRepositoryFilter])
+        -> [PharmacyRemoteDataStoreFilter] {
+        filter.compactMap {
+            guard case let .specialty(value) = $0 else { return nil }
+            return PharmacyRemoteDataStoreFilter(key: "specialty", value: value.rawValue)
         }
     }
 }
@@ -1152,7 +1568,9 @@ struct ErxRemoteDataStoreDependencyKey: DependencyKey {
     static var liveValue: ErxRemoteDataStore = {
         @Dependency(\.fhirClientServiceFactory) var fhirClientServiceFactory
 
-        return ErxTaskFHIRDataStore(factory: fhirClientServiceFactory.erpClient)
+        return ErxTaskFHIRDataStore { profileId in
+            fhirClientServiceFactory.erpClientForProfile(profileId)
+        }
     }()
 }
 
@@ -1161,6 +1579,16 @@ extension DependencyValues {
         get { self[ErxRemoteDataStoreDependencyKey.self] }
         set { self[ErxRemoteDataStoreDependencyKey.self] = newValue }
     }
+}
+
+import FeatureCommunication
+
+extension InternalCommunicationClient: DependencyKey {
+    public static var liveValue: InternalCommunicationClient = {
+        @Dependency(\.userDataStore) var userDataStore
+
+        return Self.live(userDataStore: userDataStore)
+    }()
 }
 
 // swiftlint:enable file_length

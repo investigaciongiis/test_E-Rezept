@@ -43,14 +43,14 @@ struct HealthCardPasswordIntroductionDomain {
         }
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         // sourcery: AnalyticsScreen = healthCardPassword_can
         case can(HealthCardPasswordCanDomain)
     }
 
     var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -80,3 +80,6 @@ extension HealthCardPasswordIntroductionDomain {
         }
     }
 }
+
+extension HealthCardPasswordIntroductionDomain.Destination.State: Equatable {}
+extension HealthCardPasswordIntroductionDomain.Destination.Action: Equatable {}

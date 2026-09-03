@@ -33,25 +33,27 @@ import XCTest
 final class VAUInterceptorTests: XCTestCase {
     func testIntercept() async throws {
         // given
-        let vauAccessTokenProvider = MockVAUAccessTokenProvider()
+        let vauAccessTokenProvider = VAUAccessTokenProviderMock()
         vauAccessTokenProvider.vauBearerToken = Just("SomeAccessToken").setFailureType(to: VAUError.self)
             .eraseToAnyPublisher()
-        let mockVAUCrypto = MockVAUCrypto()
-        mockVAUCrypto.decryptDataReturnValue = ""
-        mockVAUCrypto.encryptReturnValue = Data()
-        let mockVAUCryptoProvider = MockVAUCryptoProvider()
-        mockVAUCryptoProvider.provideForVauCertificateBearerTokenReturnValue = mockVAUCrypto
+        let mockVAUCrypto = VAUCryptoMock()
+        mockVAUCrypto.decryptDataDataStringReturnValue = ""
+        mockVAUCrypto.encryptDataReturnValue = Data()
+        let mockVAUCryptoProvider = VAUCryptoProviderMock()
+        mockVAUCryptoProvider
+            .provideForMessageStringVauCertificateVAUCertificateBearerTokenBearerTokenVAUCryptoReturnValue =
+            mockVAUCrypto
         let trustStoreSession = TrustStoreSessionMock()
         trustStoreSession.vauCertificateX509ReturnValue = Self.defaultVauCertificate
 
-        let session = VAUSession(
-            vauServer: URL(string: "http://some-service.com")!,
+        let session = try VAUSession(
+            vauServer: XCTUnwrap(URL(string: "http://some-service.com")),
             vauAccessTokenProvider: vauAccessTokenProvider,
             vauCryptoProvider: mockVAUCryptoProvider,
             vauStorage: MemStorage(),
             trustStoreSession: trustStoreSession
         )
-        let request = URLRequest(url: URL(string: "http://www.url.com")!)
+        let request = try URLRequest(url: XCTUnwrap(URL(string: "http://www.url.com")))
         let chain = PassThroughChain(request: request)
 
         let sut = VAUInterceptor(vauSession: session)
@@ -63,10 +65,10 @@ final class VAUInterceptorTests: XCTestCase {
 
     func testProcessToVauRequest() throws {
         // given
-        var urlRequest = URLRequest(url: URL(string: "http://some-service.com/path")!)
+        var urlRequest = try URLRequest(url: XCTUnwrap(URL(string: "http://some-service.com/path")))
         urlRequest.httpBody = Data([0x0, 0x1])
         let vauCryptoProvider = EciesVAUCryptoProvider()
-        let vauEndPoint = URL(string: "http://some-service.com/VAU/a1b2")!
+        let vauEndPoint = try XCTUnwrap(URL(string: "http://some-service.com/VAU/a1b2"))
         let bearerToken = "Bearer Bearer"
         let vauCertificate = X509VAUCertificate(x509: Self.defaultVauCertificate)
 
@@ -90,7 +92,7 @@ final class VAUInterceptorTests: XCTestCase {
         let vauCertificate = X509VAUCertificate(x509: Self.defaultVauCertificate)
         let vauCrypto = try EciesVAUCryptoProvider()
             .provide(for: "message", vauCertificate: vauCertificate, bearerToken: "Bearer xyz")
-        let url = URL(string: "http://some-service.com/path")!
+        let url = try XCTUnwrap(URL(string: "http://some-service.com/path"))
 
         // when
         let processedResponse =

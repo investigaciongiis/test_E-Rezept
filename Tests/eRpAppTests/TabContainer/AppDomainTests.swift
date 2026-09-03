@@ -23,12 +23,13 @@
 import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
+import FeatureCommunication
 import Nimble
 import XCTest
 
 @MainActor
 final class AppDomainTests: XCTestCase {
-    var mockUserDataStore: MockUserDataStore!
+    var mockUserDataStore: UserDataStoreMock!
 
     typealias TestStore = TestStoreOf<AppDomain>
 
@@ -43,6 +44,7 @@ final class AppDomainTests: XCTestCase {
                 main: Self.Fixtures.mainDomainState,
                 pharmacy: Self.Fixtures.pharmacyContainerState,
                 orders: Self.Fixtures.ordersDomainState,
+                messages: Self.Fixtures.messageThreadListDomainState,
                 settings: SettingsDomain.State(
                     destination: nil
                 ),
@@ -64,6 +66,7 @@ final class AppDomainTests: XCTestCase {
                 main: Self.Fixtures.mainDomainState,
                 pharmacy: Self.Fixtures.pharmacyContainerState,
                 orders: Self.Fixtures.ordersDomainState,
+                messages: Self.Fixtures.messageThreadListDomainState,
                 settings: SettingsDomain.State(
                     destination: .healthCardPasswordForgotPin(.init(mode: .forgotPin))
                 ),
@@ -88,6 +91,7 @@ final class AppDomainTests: XCTestCase {
                 main: Self.Fixtures.mainDomainState,
                 pharmacy: Self.Fixtures.pharmacyContainerState,
                 orders: Self.Fixtures.ordersDomainState,
+                messages: Self.Fixtures.messageThreadListDomainState,
                 settings: SettingsDomain.State(
                     destination: .healthCardPasswordForgotPin(HealthCardPasswordIntroductionDomain.State(
                         mode: .forgotPin,
@@ -135,6 +139,7 @@ final class AppDomainTests: XCTestCase {
             searchState: .searchResultEmpty
         )
 
-        static let ordersDomainState = OrdersDomain.State()
+        static let ordersDomainState = OrdersDomain.State(communicationMessage: Shared(value: []))
+        static let messageThreadListDomainState = MessageThreadListDomain.State()
     }
 }

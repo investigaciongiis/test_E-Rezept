@@ -20,7 +20,6 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AVS
 import BfArM
 import CodedError
 import Combine
@@ -44,18 +43,12 @@ enum UserSessionError: Error, Equatable {
 /// An instance of `UserSession` holds all stores used by the app that need to be changeable per profile and demo user
 /// sourcery: StreamWrapped
 protocol UserSession {
-    /// Last authentication state of the app. This value should not get stale as it should inform on the latest state.
-    var isAuthenticated: AnyPublisher<Bool, UserSessionError> { get }
-
     var ordersRepository: OrdersRepository { get }
 
     var profileDataStore: ProfileDataStore { get }
 
     /// Access to the store of `ShipmentInfo` objects
     var shipmentInfoDataStore: ShipmentInfoDataStore { get }
-
-    /// Check for forced app updates
-    var updateChecker: UpdateChecker { get }
 
     /// The UserDefaults repository for this session
     var localUserStore: UserDataStore { get }
@@ -79,17 +72,9 @@ protocol UserSession {
 
     var trustStoreSession: TrustStoreSession { get }
 
-    /// Affected manager when app (start) is secured by password usage
-    var appSecurityManager: AppSecurityManager { get }
-
-    // Manager that gathering information about device security and the user's acknowledgement thereof
-    var deviceSecurityManager: DeviceSecurityManager { get }
-
     var profileId: UUID { get }
 
     func profile() -> AnyPublisher<Profile, LocalStoreError>
-
-    var avsSession: AVSSession { get }
 
     var avsTransactionDataStore: AVSTransactionDataStore { get }
 
@@ -100,8 +85,6 @@ protocol UserSession {
     var idpSessionLoginHandler: LoginHandler { get }
 
     var pairingIdpSessionLoginHandler: LoginHandler { get }
-
-    var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider { get }
 }
 
 struct UserSessionDependency: DependencyKey {

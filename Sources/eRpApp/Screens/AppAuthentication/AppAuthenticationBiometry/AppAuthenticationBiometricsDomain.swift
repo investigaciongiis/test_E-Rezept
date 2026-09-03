@@ -29,7 +29,7 @@ import LocalAuthentication
 
 @Reducer
 struct AppAuthenticationBiometricsDomain {
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
@@ -57,7 +57,7 @@ struct AppAuthenticationBiometricsDomain {
     @Dependency(\.authenticationChallengeProvider) var authenticationChallengeProvider: AuthenticationChallengeProvider
 
     var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -89,3 +89,6 @@ extension AppAuthenticationBiometricsDomain {
         static let state = State(biometryType: .faceID, startImmediateAuthenticationChallenge: false)
     }
 }
+
+extension AppAuthenticationBiometricsDomain.Destination.State: Equatable {}
+extension AppAuthenticationBiometricsDomain.Destination.Action: Equatable {}

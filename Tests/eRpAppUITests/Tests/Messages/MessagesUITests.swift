@@ -25,7 +25,7 @@ import Nimble
 import XCTest
 
 @MainActor
-class MessagesUITests: XCTestCase, Sendable {
+class MessagesUITests: XCTestCase {
     var app: XCUIApplication!
 
     override func setUp() async throws {
@@ -52,7 +52,8 @@ class MessagesUITests: XCTestCase, Sendable {
         _ = app.wait(for: .runningForeground, timeout: 10.0)
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
+        // swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 

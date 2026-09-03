@@ -42,16 +42,6 @@ extension FootnoteView {
         self.init(text: text.key, a11y: a11y)
     }
 }
-extension FormTextFieldView {
-    init(placeholder: String? = nil, subtitle: StringAsset? = nil, text: Binding<String>, showSeparator: Bool = true) {
-    self.init(placeholder: placeholder, subtitle: subtitle?.key, text: text, showSeparator: showSeparator)
-    }
-}
-extension HeadernoteView {
-    init(text: StringAsset, a11y: String) {
-        self.init(text: text.key, a11y: a11y)
-    }
-}
 extension KeyValuePair {
     init(key: StringAsset, value: StringAsset, bundle: Bundle? = nil) {
     self.init(key: key.key, value: value.key, bundle: bundle)
@@ -70,11 +60,6 @@ extension LegalNoticeView.LegalNoticeSectionView {
         self.init(title: title?.key, text: text.key)
     }
 }
-extension ListCellView {
-    init(iconSize: CGFloat = 22, sfSymbolName: String, text: StringAsset) {
-        self.init(iconSize: iconSize, sfSymbolName: sfSymbolName, text: text.key)
-    }
-}
 extension MedicationRedeemView {
     init(text: StringAsset, a11y: String, isEnabled: Bool = false, action: @escaping () -> Void) {
         self.init(text: text.key, a11y: a11y, isEnabled: isEnabled, action: action)
@@ -85,19 +70,9 @@ extension OptInCell {
         self.init(text: text.key, isOn: isOn)
     }
 }
-extension PrimaryTextFieldView {
-    init(placeholder: StringAsset, text: Binding<String>, a11y: String) {
-        self.init(placeholder: placeholder.key, text: text, a11y: a11y)
-    }
-}
 extension ProgressTile {
     init(icon: String, title: StringAsset, description: String? = nil, state: State) {
         self.init(icon: icon, title: title.key, description: description, state: state)
-    }
-}
-extension SectionHeaderView {
-    init(text: StringAsset, a11y: String) {
-        self.init(text: text.key, a11y: a11y)
     }
 }
 extension StatusView {
@@ -127,10 +102,5 @@ extension SubTitleTop {
 extension Tile {
     init(iconSystemName: String? = nil, iconName: String? = nil, title: StringAsset, description: StringAsset? = nil, discloseIcon: String, isDisabled: Bool = false) {
         self.init(iconSystemName: iconSystemName, iconName: iconName, title: title.key, description: description?.key, discloseIcon: discloseIcon, isDisabled: isDisabled)
-    }
-}
-extension ToggleCell {
-    init(text: StringAsset, a11y: String, systemImage: String? = nil, textColor: Color = Colors.systemLabel, iconColor: Color = Colors.primary500, backgroundColor: Color = Colors.systemBackgroundTertiary, isToggleOn: Binding<Bool> = .constant(false), isDisabled: Binding<Bool> = .constant(false)) {
-    self.init(text: text.key, a11y: a11y, systemImage: systemImage, textColor: textColor, iconColor: iconColor, backgroundColor: backgroundColor, isToggleOn: isToggleOn, isDisabled: isDisabled)
     }
 }

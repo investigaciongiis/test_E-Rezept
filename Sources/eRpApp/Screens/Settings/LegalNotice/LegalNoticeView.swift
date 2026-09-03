@@ -64,11 +64,13 @@ extension LegalNoticeView {
         var title: LocalizedStringKey?
         var text: LocalizedStringKey
         var body: some View {
-            if let title = title {
+            if let title {
                 Text(title, bundle: .module)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.headline)
                     .padding(.top, 20)
+                    .accessibilityHeading(.h2)
+                    .accessibilityAddTraits(.isHeader)
             }
             Text(text, bundle: .module)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -86,39 +88,44 @@ extension LegalNoticeView {
         var phoneLink: URL?
 
         var body: some View {
-            if let title = title {
+            if let title {
                 Text(title, bundle: .module)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.headline)
                     .padding(.top, 20)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityHeading(.h2)
             }
-            if let webLink = webLink {
+            if let webLink {
                 HStack {
                     Image(systemName: SFSymbolName.network)
                         .frame(width: iconSize)
                         .foregroundColor(Colors.primary700)
+                        .accessibilityHidden(true)
                     Link(L10n.stgLnoLinkTextContact, destination: webLink)
                         .foregroundColor(Colors.primary700)
                         .accessibility(identifier: A18n.settings.legalNotice.stgLnoLinkContact)
                 }
                 .padding(.top, 1)
             }
-            if let emailLink = emailLink {
+            if let emailLink {
                 HStack {
                     Image(systemName: SFSymbolName.mail)
                         .frame(width: iconSize)
                         .foregroundColor(Colors.primary700)
+                        .accessibilityHidden(true)
                     Link(L10n.stgLnoMailTextContact, destination: emailLink)
                         .foregroundColor(Colors.primary700)
                         .accessibility(identifier: A18n.settings.legalNotice.stgLnoMailContact)
                 }
                 .padding(.top, 1)
             }
-            if let phoneLink = phoneLink {
+            if let phoneLink {
                 HStack {
                     Image(systemName: SFSymbolName.phone)
                         .frame(width: iconSize)
                         .foregroundColor(Colors.primary700)
+                        .accessibilityHidden(true)
                     Link(L10n.stgLnoPhoneTextContact, destination: phoneLink)
                         .foregroundColor(Colors.primary700)
                         .accessibility(identifier: A18n.settings.legalNotice.stgLnoPhoneContact)

@@ -31,17 +31,18 @@ extension SceneDelegate {
             self.router = router
         }
 
-        // Dependencies framework is not setup for routing here!
+        /// Dependencies framework is not setup for routing here!
         var router: Routing
 
         @MainActor
         func userNotificationCenter(_: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-            // swiftlint:disable force_cast force_unwrapping
-            await router.routeTo(.mainScreen(.medicationReminder(
-                (response.notification.request.content.userInfo["entries"] as! [String])
-                    .map { UUID(uuidString: $0)! }
-            )))
-            // swiftlint:enable force_cast force_unwrapping
+            // swiftlint:disable force_unwrapping
+            if let medicationReminderEntriesUUIDs = response.notification.request.content
+                .userInfo["entries"] as? [String] {
+                let medicationReminderEntries = medicationReminderEntriesUUIDs.map { UUID(uuidString: $0)! }
+                await router.routeTo(.mainScreen(.medicationReminder(medicationReminderEntries)))
+            }
+            // swiftlint:enable force_unwrapping
         }
 
         func userNotificationCenter(

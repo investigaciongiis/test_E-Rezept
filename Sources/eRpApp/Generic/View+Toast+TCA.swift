@@ -34,7 +34,9 @@ struct ToastState<Action: Equatable>: Equatable, Identifiable {
 
     let uuid = UUID()
 
-    var id: UUID { uuid }
+    var id: UUID {
+        uuid
+    }
 
     let style: Style
 
@@ -55,7 +57,7 @@ extension View {
     ///   - toDestinationState: A transformation to extract alert state from the presentation state.
     ///   - fromDestinationAction: A transformation to embed alert actions into the presentation
     ///     action.
-    @ViewBuilder func toast<State, Action, ToastAction>(
+    func toast<State, Action, ToastAction>(
         _ store: Store<PresentationState<State>, PresentationAction<Action>>,
         state toDestinationState: @escaping (State) -> ToastState<ToastAction>?,
         action fromDestinationAction: @escaping (ToastAction) -> Action
@@ -126,7 +128,7 @@ struct TCAToast_PreviewProvider: PreviewProvider {
     // sourcery: SkipSourcery
     @Reducer
     struct Domain {
-        @Reducer(state: .equatable, action: .equatable)
+        @Reducer
         enum Destination {
             // sourcery: AnalyticsScreen = alert
             @ReducerCaseEphemeral
@@ -165,7 +167,7 @@ struct TCAToast_PreviewProvider: PreviewProvider {
                     state
                         .destination =
                         .toast(.init(style: .action("Action",
-                                                    .init(action: .send(.customAction), label: { TextState("abc") }))))
+                                                    .init(action: .send(.customAction)) { TextState("abc") })))
                     return .none
                 case .destination(.presented(.toast(.customAction))):
                     state.destination = nil
@@ -217,3 +219,6 @@ struct TCAToast_PreviewProvider: PreviewProvider {
         })
     }
 }
+
+extension TCAToast_PreviewProvider.Domain.Destination.State: Equatable {}
+extension TCAToast_PreviewProvider.Domain.Destination.Action: Equatable {}

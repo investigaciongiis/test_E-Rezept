@@ -44,7 +44,7 @@ public struct CardWallLoginOptionDomain {
     }
 
     /// Destination states for navigation from login option screen
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     public enum Destination {
         // sourcery: AnalyticsScreen = alert
         /// Show alert dialog
@@ -99,7 +99,7 @@ public struct CardWallLoginOptionDomain {
     public var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -110,16 +110,15 @@ public struct CardWallLoginOptionDomain {
             if state.selectedLoginOption.isWithBiometry {
                 guard canUseBiometrics() else {
                     state.destination = .alert(ErpAlertState(
-                        title: L10n.cdwTxtBiometrySetupIncomplete,
-                        actions: {
-                            ButtonState(role: .cancel) {
-                                .init(L10n.alertBtnOk)
-                            }
-                            ButtonState(action: .openAppSpecificSettings) {
-                                .init(L10n.tabTxtSettings)
-                            }
+                        title: L10n.cdwTxtBiometrySetupIncomplete
+                    ) {
+                        ButtonState(role: .cancel) {
+                            .init(L10n.alertBtnOk)
                         }
-                    ))
+                        ButtonState(action: .openAppSpecificSettings) {
+                            .init(L10n.tabTxtSettings)
+                        }
+                    })
                     return .none
                 }
                 // [REQ:gemSpec_IDP_Frontend:A_21574] Present user information
@@ -129,7 +128,7 @@ public struct CardWallLoginOptionDomain {
         case .destination(.presented(.alert(.openAppSpecificSettings))):
             guard let url = URL(string: UIApplication.openSettingsURLString) else { return .none }
             return .run { _ in
-                await openURLHandler.open(url)
+                _ = await openURLHandler.open(url)
             }
         case .advance:
             state.destination = .readCard(.init(profileId: state.profileId,
@@ -229,3 +228,6 @@ extension CardWallLoginOptionDomain {
         }
     }
 }
+
+extension CardWallLoginOptionDomain.Destination.State: Equatable {}
+extension CardWallLoginOptionDomain.Destination.Action: Equatable {}

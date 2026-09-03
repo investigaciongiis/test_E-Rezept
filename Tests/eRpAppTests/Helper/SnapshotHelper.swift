@@ -36,7 +36,7 @@ extension ViewImageConfig {
 }
 
 extension XCTestCase {
-    func figmaReference<T>() -> [String: Snapshotting<T, UIImage>] where T: SwiftUI.View {
+    func figmaReference<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
         [
             "light": .image(
                 precision: defaultPrecision,
@@ -50,7 +50,7 @@ extension XCTestCase {
         ]
     }
 
-    func snapshotModi<T>() -> [String: Snapshotting<T, UIImage>] where T: SwiftUI.View {
+    func snapshotModi<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
         [
             "light": .image(
                 precision: defaultPrecision,
@@ -74,7 +74,7 @@ extension XCTestCase {
         ]
     }
 
-    func snapshotModiContentSizeXL<T>() -> [String: Snapshotting<T, UIImage>] where T: SwiftUI.View {
+    func snapshotModiContentSizeXL<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
         [
             "accessibilityXL": .image(
                 precision: defaultPrecision,
@@ -84,8 +84,7 @@ extension XCTestCase {
         ]
     }
 
-    func snapshotModiCurrentDevice<T>() -> [String: Snapshotting<T, UIImage>]
-        where T: SwiftUI.View {
+    func snapshotModiCurrentDevice<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
         [
             "iPhoneXsMax.light":
                 .image(
@@ -106,16 +105,15 @@ extension XCTestCase {
                     precision: defaultPrecision,
                     perceptualPrecision: defaultPerceptualPrecision,
                     layout: .device(config: ViewImageConfig.iPhone13.noInsets()),
-                    traits: UITraitCollection(traitsFrom: [
-                        UITraitCollection(userInterfaceStyle: .dark),
-                        UITraitCollection(preferredContentSizeCategory: .medium),
-                    ])
+                    traits: UITraitCollection { mutableTraits in
+                        mutableTraits.userInterfaceStyle = .dark
+                        mutableTraits.preferredContentSizeCategory = .medium
+                    }
                 ),
         ]
     }
 
-    func snapshotModiOnDevices<T>() -> [String: Snapshotting<T, UIImage>]
-        where T: SwiftUI.View {
+    func snapshotModiOnDevices<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
         [
             "iPhoneSe.light":
                 .image(
@@ -148,8 +146,7 @@ extension XCTestCase {
         ]
     }
 
-    func snapshotModiOnDevicesWithAccessibility<T>() -> [String: Snapshotting<T, UIImage>]
-        where T: SwiftUI.View {
+    func snapshotModiOnDevicesWithAccessibility<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
         [
             "iPhoneX.light.xs":
                 .image(
@@ -161,8 +158,7 @@ extension XCTestCase {
         ]
     }
 
-    func snapshotModiOnDevicesWithAccessibilityXL<T>() -> [String: Snapshotting<T, UIImage>]
-        where T: SwiftUI.View {
+    func snapshotModiOnDevicesWithAccessibilityXL<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
         [
             "iPhoneX.light.xl":
                 .image(
@@ -174,18 +170,20 @@ extension XCTestCase {
         ]
     }
 
-    func snapshotModiOnDevicesWithTheming<T>(mode: UIUserInterfaceStyle = .dark) -> [String: Snapshotting<T, UIImage>]
-        where T: SwiftUI.View {
+    func snapshotModiOnDevicesWithTheming<T: SwiftUI.View>(mode: UIUserInterfaceStyle = .dark) -> [String: Snapshotting<
+        T,
+        UIImage
+    >] {
         [
             "iPhoneX.\(mode == .dark ? "dark" : "light")":
                 .image(
                     precision: defaultPrecision,
                     perceptualPrecision: defaultPerceptualPrecision,
                     layout: .device(config: ViewImageConfig.iPhoneX.noInsets()),
-                    traits: UITraitCollection(traitsFrom: [
-                        UITraitCollection(userInterfaceStyle: mode),
-                        UITraitCollection(preferredContentSizeCategory: .medium),
-                    ])
+                    traits: UITraitCollection { mutableTraits in
+                        mutableTraits.userInterfaceStyle = mode
+                        mutableTraits.preferredContentSizeCategory = .medium
+                    }
                 ),
         ]
     }
@@ -248,7 +246,7 @@ struct OffsetPreview: View {
     }
 
     var body: some View {
-        Snapshot(self.snapshotting) {
+        Snapshot(snapshotting) {
             NavigationStack {
                 Text("*")
                     .navigationTitle("⚕︎ Redeem")
@@ -258,7 +256,7 @@ struct OffsetPreview: View {
     }
 }
 
-struct Snapshot<Content>: View where Content: View {
+struct Snapshot<Content: View>: View {
     private let content: () -> Content
     @State private var image: Image?
     private let snapshotting: Snapshotting<AnyView, UIImage>
@@ -272,14 +270,14 @@ struct Snapshot<Content>: View where Content: View {
 
     var body: some View {
         ZStack {
-            self.image?
+            image?
                 .resizable()
                 .aspectRatio(contentMode: .fit)
         }
         .onAppear {
-            self.snapshotting
-                .snapshot(AnyView(self.content()))
-                .run { self.image = Image(uiImage: $0) }
+            snapshotting
+                .snapshot(AnyView(content()))
+                .run { image = Image(uiImage: $0) }
         }
     }
 }
@@ -302,24 +300,19 @@ extension ViewImageConfig {
 
 extension UITraitCollection {
     static func iPhone14(_ orientation: ViewImageConfig.Orientation) -> UITraitCollection {
-        let base: [UITraitCollection] = [
-            .init(forceTouchCapability: .available),
-            .init(layoutDirection: .leftToRight),
-            .init(preferredContentSizeCategory: .medium),
-            .init(userInterfaceIdiom: .phone),
-        ]
-
         switch orientation {
         case .landscape:
-            return .init(traitsFrom: base + [
-                .init(horizontalSizeClass: .regular),
-                .init(verticalSizeClass: .compact),
-            ])
+            return UITraitCollection { mutableTraits in
+                mutableTraits.userInterfaceIdiom = .phone
+                mutableTraits.horizontalSizeClass = .regular
+                mutableTraits.verticalSizeClass = .compact
+            }
         case .portrait:
-            return .init(traitsFrom: base + [
-                .init(horizontalSizeClass: .compact),
-                .init(verticalSizeClass: .regular),
-            ])
+            return UITraitCollection { mutableTraits in
+                mutableTraits.userInterfaceIdiom = .phone
+                mutableTraits.horizontalSizeClass = .compact
+                mutableTraits.verticalSizeClass = .regular
+            }
         }
     }
 }

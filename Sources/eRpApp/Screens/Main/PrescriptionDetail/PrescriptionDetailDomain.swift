@@ -86,7 +86,6 @@ struct PrescriptionDetailDomain {
         case delegate(Delegate)
         case setNavigation(tag: Destination.Tag?)
         case destination(PresentationAction<Destination.Action>)
-
         case redeemPressed
         case showAlert(ShareSheetDomain.Error)
 
@@ -133,7 +132,7 @@ struct PrescriptionDetailDomain {
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -277,13 +276,12 @@ struct PrescriptionDetailDomain {
             state.destination = .alert(
                 ErpAlertState(
                     for: error,
-                    title: L10n.dmcAlertTitle,
-                    actions: {
-                        ButtonState(role: .cancel) {
-                            .init(L10n.alertBtnOk)
-                        }
+                    title: L10n.dmcAlertTitle
+                ) {
+                    ButtonState(role: .cancel) {
+                        .init(L10n.alertBtnOk)
                     }
-                )
+                }
             )
             return .none
         case let .response(.taskDeletedReceived(.failure(fail))):
@@ -347,7 +345,6 @@ struct PrescriptionDetailDomain {
             return .run { send in
                 await send(.chargeItemGrantConsent)
             }
-
         case .chargeItemGrantConsent:
             guard let profileId = state.profile?.id
             else { return .none }
@@ -461,6 +458,8 @@ struct PrescriptionDetailDomain {
                 state.destination = .errorInfo(.init())
             case .selfPayerInfo:
                 state.destination = .selfPayerInfo(.init())
+            case .tPrescriptionInfo:
+                state.destination = .tPrescriptionInfo(.init())
             case .scannedPrescriptionInfo:
                 state.destination = .scannedPrescriptionInfo(.init())
             case .coPaymentInfo:
@@ -503,6 +502,12 @@ struct PrescriptionDetailDomain {
                 guard let accidentInfo = state.prescription.medicationRequest.accidentInfo else { return .none }
                 let accidentInfoState = AccidentInfoDomain.State(accidentInfo: accidentInfo)
                 state.destination = .accidentInfo(accidentInfoState)
+            case .teratogenicInfo:
+                guard let teratogenicInfo = state.prescription.medicationRequest
+                    .teratogenicRelatedInformation else { return .none }
+                state.destination = .teratogenicInfo(
+                    TeratogenicInfoDomain.State(teratogenicInfo: teratogenicInfo)
+                )
             case .technicalInformations:
                 let techInfoState = TechnicalInformationsDomain.State(
                     taskId: state.prescription.erxTask.identifier,
@@ -530,8 +535,7 @@ struct PrescriptionDetailDomain {
             guard let url = URL(string: "https://gesund.bund.de") else { return .none }
 
             return .run { _ in
-                guard await openURLHandler.canOpenURL(url) else { return }
-                await openURLHandler.open(url)
+                _ = await openURLHandler.open(url)
             }
         case let .setName(newName):
             let name = newName
@@ -643,7 +647,7 @@ extension ErxTask {
     }
 }
 
-extension Collection where Element == ErxTask {
+extension Collection<ErxTask> {
     func shareUrl() -> URL? {
         let shareTasks = map { SharedTask(with: $0).asString }.joined(separator: "&")
         guard let encoded = try? JSONEncoder().encode([shareTasks]),

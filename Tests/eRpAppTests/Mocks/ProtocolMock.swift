@@ -21,7 +21,6 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AVS
 import BfArM
 import Combine
 @testable import eRpFeatures
@@ -37,21 +36,15 @@ import Profiles
 import TrustStore
 import VAUClient
 
-// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
-
+// swiftformat:disable emptyExtensions
 // sourcery:begin: AutoMockable
 extension SearchHistory {}
-// sourcery:end
-
-// sourcery:begin: ProtocolMock
 extension ActivityIndicating {}
 extension AuthenticationChallengeProvider {}
-extension AVSSession {}
 extension AVSTransactionDataStore {}
 extension ChargeItemListDomainService {}
 extension DeviceSecurityManagerSessionStorage {}
 extension ERPDateFormatter {}
-extension IDPSession {}
 extension LoginHandler {}
 extension MatrixCodeGenerator {}
 extension MedicationScheduleStore {}
@@ -69,7 +62,6 @@ extension Routing {}
 extension SecureEnclaveSignatureProvider {}
 extension SecureUserDataStore {}
 extension ShipmentInfoDataStore {}
-extension Tracker {}
 extension UserDataStore {}
 extension UserProfileService {}
 extension UsersSessionContainer {}
@@ -84,3 +76,4 @@ extension InternalCommunicationProtocol {}
 extension ErxLocalDataStore {}
 extension ErxRemoteDataStore {}
 // sourcery:end
+// swiftformat:enable emptyExtensions

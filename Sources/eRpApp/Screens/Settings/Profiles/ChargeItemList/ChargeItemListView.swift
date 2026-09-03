@@ -224,7 +224,7 @@ extension ChargeItemListView {
 //                                } label: {
 //                                    Label("Löschen", systemImage: "minus.circle")
 //                                }
-//                                .tint(Colors.red600)
+//                                .tint(Colors.red700)
 //                                Button("Check") {
 //                                }
 //                                .tint(Colors.primary700)
@@ -290,7 +290,7 @@ extension ChargeItemListView {
                         Spacer()
                     } icon: {
                         Image(systemName: SFSymbolName.chevronForward)
-                            .foregroundColor(Color(.tertiaryLabel))
+                            .foregroundColor(Colors.systemLabelSecondary)
                             .font(.body.weight(.semibold))
                     }
                     .labelStyle(TrailingIconLabelStyle2())
@@ -311,8 +311,8 @@ extension ChargeItemListView {
             }
 
             /// `LabelStyle` switching the icon to be trailing instead of leading.
-            public struct TrailingIconLabelStyle2: LabelStyle {
-                public func makeBody(configuration: Configuration) -> some View {
+            struct TrailingIconLabelStyle2: LabelStyle {
+                func makeBody(configuration: Configuration) -> some View {
                     HStack {
                         configuration.title
 

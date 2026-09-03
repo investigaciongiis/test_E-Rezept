@@ -104,16 +104,16 @@ struct PharmacySearchMapView: View {
                             Button(action: { store.send(.goToUser) }, label: {
                                 Image(systemName: store.pharmacyFilterOptions
                                     .contains(.currentLocation) ? SFSymbolName.locationFill : SFSymbolName.location)
-                                                                    .font(.system(size: 16, weight: .bold))
-                                                                    .foregroundColor(store.pharmacyFilterOptions
-                                                                        .contains(.currentLocation) ? Colors
-                                                                        .primary700 : Colors.systemGray)
-                                                                    .padding(16)
-                                                                    .background(Circle()
-                                                                        .foregroundColor(Colors
-                                                                            .systemColorWhite))
-                                                                    .padding(.all, 16)
-                                                                    .shadow(color: Colors.separator, radius: 4)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(store.pharmacyFilterOptions
+                                        .contains(.currentLocation) ? Colors
+                                        .primary700 : Colors.systemGray)
+                                    .padding(16)
+                                    .background(Circle()
+                                        .foregroundColor(Colors
+                                            .systemColorWhite))
+                                    .padding(.all, 16)
+                                    .shadow(color: Colors.separator, radius: 4)
                             }).accessibility(identifier: A11y.pharmacySearchMap.phaSearchMapBtnGoToUser)
                         }
                         Button {
@@ -134,7 +134,7 @@ struct PharmacySearchMapView: View {
             ClusterView(store: store)
                 .presentationDetents([.fraction(0.45), .fraction(0.85), .large])
         }
-        .smallSheet($store.scope(
+        .fullScreenCover(item: $store.scope(
             state: \.destination?.filter,
             action: \.destination.filter
         )) { store in
@@ -160,7 +160,7 @@ struct PharmacySearchMapView: View {
             await store.send(.onAppear).finish()
             UIApplication.shared.dismissKeyboard()
         }
-        /// Workaround for navigationbar visible on Map after Search for iPhone 12 Mini
+        // Workaround for navigationbar visible on Map after Search for iPhone 12 Mini
         .onAppear { navigationBarHidden = true }
         .navigationBarHidden(navigationBarHidden)
     }
@@ -183,7 +183,7 @@ extension PharmacySearchMapView {
                                 .padding(12)
                                 .background(Circle().foregroundColor(Colors.systemFillTertiary))
                         })
-                            .accessibilityIdentifier(A11y.pharmacySearchMap.phaSearchMapBtnClusterClose)
+                        .accessibilityIdentifier(A11y.pharmacySearchMap.phaSearchMapBtnClusterClose)
                     }
 
                     Text("\(store.clusterPharmacies.count) \(L10n.phaSearchMapTxtClusterHeader.text)")
@@ -193,7 +193,8 @@ extension PharmacySearchMapView {
 
                 ScrollView {
                     SingleElementSectionContainer {
-                        ForEach(store.clusterPharmacies) { pharmacyViewModel in
+                        ForEach(Array(store.clusterPharmacies.enumerated()),
+                                id: \.element) { index, pharmacyViewModel in
                             Button(
                                 action: {
                                     store.send(.delegate(.showDetails(pharmacyViewModel)))
@@ -210,12 +211,9 @@ extension PharmacySearchMapView {
                                           icon: {})
                                 }
                             )
-                            .buttonStyle(
-                                .navigation(showSeparator: pharmacyViewModel !=
-                                    store.clusterPharmacies
-                                    .last)
-                            )
-                            .modifier(SectionContainerCellModifier())
+                            .buttonStyle(.navigation)
+                            .modifier(SectionContainerCellModifier(last: index ==
+                                    store.clusterPharmacies.count - 1))
                             .accessibilityIdentifier(A11y.pharmacySearchMap
                                 .phaSearchMapBtnClusterPharmacy)
                         }

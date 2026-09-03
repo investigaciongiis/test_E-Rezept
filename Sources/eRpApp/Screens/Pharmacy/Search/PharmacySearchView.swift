@@ -21,6 +21,7 @@
 //
 
 import ComposableArchitecture
+import eRpKit
 import eRpStyleKit
 import FeatureEURedeem
 import Perception
@@ -37,7 +38,7 @@ struct PharmacySearchView: View {
         VStack(spacing: 0) {
             DebugPharmacies(store: store)
 
-            ZStack {
+            Group {
                 switch store.searchState {
                 case .searchAfterLocalizationWasAuthorized,
                      .localizingDevice:
@@ -46,7 +47,6 @@ struct PharmacySearchView: View {
                 case .startView:
                     ScrollView {
                         PharmacySearchStartView(store: store)
-                            .accessibility(identifier: A11y.pharmacySearch.phaSearchLocalizingDevice)
                     }
                 case .searchResultEmpty:
                     VStack {
@@ -55,8 +55,6 @@ struct PharmacySearchView: View {
                         }, removeFilter: { option in
                             store.send(.removeFilterOption(option.element), animation: .default)
                         }, elements: filter)
-                            .padding(.horizontal)
-                            .transition(.move(edge: .top).combined(with: .opacity))
 
                         if store.isEURedeemable, !store.hideEURedeemHint {
                             EURedeemHintView {
@@ -64,6 +62,7 @@ struct PharmacySearchView: View {
                             } closeAction: {
                                 store.send(.hideEuRedeemHint, animation: .easeOut)
                             }
+                            .padding(.top, 16)
                         }
 
                         NoResultsView()
@@ -71,8 +70,16 @@ struct PharmacySearchView: View {
                             .padding(.horizontal, 30)
                     }
                 case .error:
-                    ErrorView { store.send(.performSearch) }
-                        .accessibility(identifier: A11y.pharmacySearch.phaSearchError)
+                    VStack {
+                        PharmacyFilterBar(openFiltersAction: {
+                            store.send(.showPharmacyFilter, animation: .default)
+                        }, removeFilter: { option in
+                            store.send(.removeFilterOption(option.element), animation: .default)
+                        }, elements: filter)
+
+                        ErrorView { store.send(.performSearch) }
+                            .accessibility(identifier: A11y.pharmacySearch.phaSearchError)
+                    }
                 case .searchRunning,
                      .searchResultOk:
                     ZStack(alignment: .bottomTrailing) {
@@ -85,9 +92,6 @@ struct PharmacySearchView: View {
                                     animation: .default
                                 )
                             }, elements: filter)
-                                .padding(.horizontal)
-                                .transition(.move(edge: .top)
-                                    .combined(with: .opacity))
                         }, content: {
                             if store.isEURedeemable, !store.hideEURedeemHint {
                                 EURedeemHintView {
@@ -112,14 +116,14 @@ struct PharmacySearchView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)
-            .overlay(VStack {
+            .overlay(alignment: .top) {
                 if store.searchState == .searchRunning {
                     SearchRunningView()
                         .accessibility(identifier: A11y.pharmacySearch.phaSearchSearchRunning)
                         .transition(.slide)
                         .padding(.top, 80)
                 }
-            }, alignment: .top)
+            }
 
             Spacer(minLength: 0)
 
@@ -186,7 +190,7 @@ struct PharmacySearchView: View {
         @Bindable var store: StoreOf<PharmacySearchDomain>
 
         struct Suggestion: View {
-            internal init(_ text: String) {
+            init(_ text: String) {
                 self.text = text
             }
 
@@ -213,8 +217,6 @@ struct PharmacySearchView: View {
                 ForEach(searchHistory, id: \.hash) { item in
                     Suggestion(item)
                 }
-            } else {
-                EmptyView()
             }
         }
     }
@@ -248,7 +250,7 @@ extension View {
         ) { store in
             PharmacyDetailView(store: store)
         }
-        .smallSheet(store.scope(
+        .fullScreenCover(item: store.scope(
             state: \.destination?.pharmacyFilter,
             action: \.destination.pharmacyFilter
         )) { store in
@@ -291,7 +293,7 @@ extension PharmacySearchView {
         var body: some View {
             SingleElementSectionContainer {
                 LazyVStack(spacing: 0) {
-                    ForEach(store.pharmacies) { pharmacyViewModel in
+                    ForEach(Array(store.pharmacies.enumerated()), id: \.element) { index, pharmacyViewModel in
                         Button(
                             action: { store.send(.showDetails(pharmacyViewModel)) },
                             label: { Label(title: {
@@ -306,8 +308,8 @@ extension PharmacySearchView {
                         )
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibility(identifier: A11y.pharmacySearch.phaSearchTxtResultListEntry)
-                        .buttonStyle(.navigation(showSeparator: true))
-                        .modifier(SectionContainerCellModifier(last: false))
+                        .buttonStyle(.navigation)
+                        .modifier(SectionContainerCellModifier(last: index == store.pharmacies.count - 1))
                     }
                 }
             }
@@ -410,12 +412,45 @@ struct PharmacySearchView_Previews: PreviewProvider {
             PharmacySearchView(store: PharmacySearchDomain.Dummies.store)
         }
         .tint(Colors.primary700)
+        .previewDisplayName("Start View (no local pharmacies)")
+
+        NavigationStack {
+            PharmacySearchView(
+                store: PharmacySearchDomain.Dummies.storeOf(
+                    PharmacySearchDomain.Dummies.stateStartViewWithFavorites
+                )
+            )
+        }
+        .tint(Colors.primary700)
+        .previewDisplayName("With Favorites")
+
+        NavigationStack {
+            PharmacySearchView(
+                store: PharmacySearchDomain.Dummies.storeOf(
+                    PharmacySearchDomain.Dummies.stateStartViewWithRecentlyUsed
+                )
+            )
+        }
+        .tint(Colors.primary700)
+        .previewDisplayName("With Recently Used (no favorites)")
+
+        NavigationStack {
+            PharmacySearchView(
+                store: PharmacySearchDomain.Dummies.storeOf(
+                    PharmacySearchDomain.Dummies.stateStartViewLoading
+                )
+            )
+        }
+        .tint(Colors.primary700)
+        .previewDisplayName("Loading")
 
         NavigationStack {
             PharmacySearchView(
                 store: PharmacySearchDomain.Dummies.storeOf(PharmacySearchDomain.Dummies.stateSearchResultOk)
             )
         }
+        .tint(Colors.primary700)
         .preferredColorScheme(.dark)
+        .previewDisplayName("Search Results (dark)")
     }
 }

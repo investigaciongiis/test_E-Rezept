@@ -33,7 +33,7 @@ import SwiftUI
 
 @Reducer
 struct MedicationReminderListDomain {
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         case medicationReminder(MedicationReminderSetupDomain)
         @ReducerCaseEphemeral
@@ -54,7 +54,10 @@ struct MedicationReminderListDomain {
     }
 
     struct ProfileMedicationReminder: Identifiable, Equatable {
-        var id: UUID { profile.id }
+        var id: UUID {
+            profile.id
+        }
+
         var profile: UserProfile
         var medicationProfileReminderList: [MedicationSchedule]
     }
@@ -95,11 +98,14 @@ struct MedicationReminderListDomain {
                     .eraseToAnyPublisher
             )
         case let .loadReceived(.failure(error)):
-            state.destination = .alert(ErpAlertState(for: error, actions: {
+            state.destination = .alert(ErpAlertState(
+                for: error,
+                title: nil
+            ) {
                 ButtonState(role: .cancel) {
                     .init(L10n.alertBtnOk)
                 }
-            }))
+            })
             return .none
         case let .loadReceived(.success(profiles)):
             state.profileMedicationReminder = []
@@ -133,11 +139,14 @@ struct MedicationReminderListDomain {
                 .append(ProfileMedicationReminder(profile: profile, medicationProfileReminderList: reminder))
             return .none
         case let .profileMedicationReminderFailed(error):
-            state.destination = .alert(ErpAlertState(for: error, actions: {
+            state.destination = .alert(ErpAlertState(
+                for: error,
+                title: nil
+            ) {
                 ButtonState(role: .cancel) {
                     .init(L10n.alertBtnOk)
                 }
-            }))
+            })
             return .none
         case let .deleteFromProfileMedicationReminderList(
             profileMedicationReminderId,
@@ -153,7 +162,7 @@ struct MedicationReminderListDomain {
                 .filter { profileMedicationReminderListIndexSet.contains($0.offset) }
                 .map(\.element)
             state.profileMedicationReminder[index].medicationProfileReminderList
-                .removeAll(where: { schedulesToDelete.contains($0) })
+                .removeAll { schedulesToDelete.contains($0) }
             if state.profileMedicationReminder[index].medicationProfileReminderList.isEmpty {
                 state.profileMedicationReminder.remove(at: index)
             }
@@ -190,3 +199,6 @@ extension MedicationReminderListDomain {
         }
     }
 }
+
+extension MedicationReminderListDomain.Destination.State: Equatable {}
+extension MedicationReminderListDomain.Destination.Action: Equatable {}

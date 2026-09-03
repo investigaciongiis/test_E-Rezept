@@ -60,20 +60,18 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
     }
 
     let memStorage = MemStorage()
-    lazy var trustStoreSession: TrustStoreSession = {
-        DefaultTrustStoreSession(
-            serverURL: environment.appConfiguration.erp,
-            trustAnchor: environment.appConfiguration.trustAnchor,
-            trustStoreStorage: memStorage,
-            httpClient: DefaultHTTPClient(
-                urlSessionConfiguration: .ephemeral,
-                interceptors: [
-                    AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
-                    LoggingInterceptor(log: .body),
-                ]
-            )
+    lazy var trustStoreSession: TrustStoreSession = DefaultTrustStoreSession(
+        serverURL: environment.appConfiguration.erp,
+        trustAnchor: environment.appConfiguration.trustAnchor,
+        trustStoreStorage: memStorage,
+        httpClient: DefaultHTTPClient(
+            urlSessionConfiguration: .ephemeral,
+            interceptors: [
+                AdditionalHeaderInterceptor(additionalHeader: environment.appConfiguration.erpAdditionalHeader),
+                LoggingInterceptor(log: .body),
+            ]
         )
-    }()
+    )
 
     lazy var idpSession: IDPSession = {
         let schedulers = Schedulers(computeScheduler: DispatchQueue(label: "serial-test").eraseToAnyScheduler())
@@ -127,14 +125,14 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         return ErxTaskFHIRDataStore(fhirClient: fhirClient)
     }()
 
-    lazy var vauSession: VAUSession = {
-        VAUSession(
-            vauServer: environment.appConfiguration.erp,
-            vauAccessTokenProvider: idpSession.asVAUAccessTokenProvider(),
-            vauStorage: memStorage,
-            trustStoreSession: trustStoreSession
-        )
-    }()
+    let testProfileId = UUID()
+
+    lazy var vauSession: VAUSession = .init(
+        vauServer: environment.appConfiguration.erp,
+        vauAccessTokenProvider: idpSession.asVAUAccessTokenProvider(),
+        vauStorage: memStorage,
+        trustStoreSession: trustStoreSession
+    )
 
     func testLoadingDataFromRemote() throws {
         guard let signer = environment.brainpool256r1Signer else {
@@ -162,7 +160,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         expect(didLogin).to(beTrue())
 
         // trying to revoke consent precautiously in case test failed before
-        cloudStorage.revokeConsent(.chargcons)
+        cloudStorage.revokeConsent(.chargcons, profileId: testProfileId)
             .first()
             .replaceError(with: false)
             .test(timeout: 60.0, expectations: { _ in })
@@ -217,12 +215,13 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var success = false
         withDependencies {
             let profile = Profile(name: "Test User")
-            let profileDataStoreMock = MockProfileDataStore()
-            profileDataStoreMock.fetchProfileByReturnValue = Just(profile)
+            let profileDataStoreMock = ProfileDataStoreMock()
+            profileDataStoreMock
+                .fetchProfileByIdentifierProfileIDAnyPublisherProfileLocalStoreErrorReturnValue = Just(profile)
                 .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
             $0.profileDataStore = profileDataStoreMock
             $0.erxRemoteDataStore = cloud
-            $0.erxLocalDataStore = MockErxLocalDataStore()
+            $0.erxLocalDataStore = ErxLocalDataStoreMock()
             $0.medicationScheduleRepository = .testValue
         } operation: {
             let cancellable = redeemService.redeem([order], profileId: UUID())
@@ -283,7 +282,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var success = false
         var finished = false
         var receivedErxTasks: [ErxTask] = []
-        cloudStorage.listAllTasks(after: nil)
+        cloudStorage.listAllTasks(after: nil, profileId: testProfileId)
             .first()
             .test(
                 timeout: 300,
@@ -309,7 +308,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var finished = false
         var success = false
 
-        let cancellable = cloudStorage.listAllAuditEvents(after: nil, for: nil)
+        let cancellable = cloudStorage.listAllAuditEvents(after: nil, for: nil, profileId: testProfileId)
             .first()
             .sink(receiveCompletion: { completion in
                 switch completion {
@@ -334,7 +333,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var finished = false
         var success = false
 
-        let cancellable = cloudStorage.listAllCommunications(after: nil, for: .all)
+        let cancellable = cloudStorage.listAllCommunications(after: nil, for: .all, profileId: testProfileId)
             .first()
             .sink(receiveCompletion: { completion in
                 switch completion {
@@ -360,7 +359,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
         var success = false
         var receivedConsents = [ErxConsent]()
 
-        cloudStorage.fetchConsents()
+        cloudStorage.fetchConsents(profileId: testProfileId)
             .first()
             .test(
                 timeout: 300,
@@ -396,7 +395,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
             policyRule: .optIn
         )
 
-        cloudStorage.grantConsent(consent)
+        cloudStorage.grantConsent(consent, profileId: testProfileId)
             .first()
             .test(
                 timeout: 300,
@@ -423,7 +422,7 @@ final class ErxTaskFHIRDataStoreIntegrationTests: XCTestCase {
 
         let consentCategory = ErxConsent.Category.chargcons
 
-        cloudStorage.revokeConsent(consentCategory)
+        cloudStorage.revokeConsent(consentCategory, profileId: testProfileId)
             .first()
             .test(
                 timeout: 300,

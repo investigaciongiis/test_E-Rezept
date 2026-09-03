@@ -4,7 +4,7 @@
     "Developer": "gematik GmbH",
     "Category": "Digital Health / Electronic Prescription",
     "Supported platforms": "iOS 17.0 or later",
-    "Version": "1.35.0",
+    "Version": "1.38.0",
     "Last update": "19/08/2026",
     "Compatible idioms": "iPhone",
     "Source": "Open source",
@@ -21,5 +21,5 @@
     ]
   },
   "header_text": "i-mSEC-AT Audit Summary — E-Rezept App",
-  "cover_page_text": "E-Rezept App — v1.35.0"
+  "cover_page_text": "E-Rezept App — v1.38.0"
 }

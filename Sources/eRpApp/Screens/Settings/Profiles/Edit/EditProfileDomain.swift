@@ -23,9 +23,12 @@
 import AsyncHelpers
 import Combine
 import ComposableArchitecture
+import ConsentService
 import eRpKit
 import eRpLocalStorage
 import eRpResources
+import FeatureCardWall
+import FeatureEURedeem
 import FeatureHelpers
 import Foundation
 import IDP
@@ -46,9 +49,6 @@ struct EditProfileDomain {
         var userImageData: Data?
         var color: ProfileColor
         var token: IDPToken?
-        var hasBiometricKeyID: Bool?
-        var availableSecurityOptions: [AppSecurityOption] = []
-        var securityOptionsError: AppSecurityManagerError?
         @Presents var destination: Destination.State?
         var insuranceType: Profile.InsuranceType
         var routeToChargeItemList = false
@@ -70,6 +70,13 @@ struct EditProfileDomain {
             }
         }
 
+        var isEURedeemable: Bool {
+            @Shared(.euRedeemPrescriptionsFeature) var euRedeemPrescriptionsFeature: Bool
+            return euRedeemPrescriptionsFeature
+        }
+
+        var euRedeemConsentCheck: ConsentService.CheckResult = .notGranted
+
         init(name: String,
              acronym: String,
              fullName: String?,
@@ -81,10 +88,7 @@ struct EditProfileDomain {
              color: ProfileColor,
              profileId: UUID,
              token: IDPToken? = nil,
-             hasBiometricKeyID: Bool? = nil,
              destination: EditProfileDomain.Destination.State? = nil,
-             availableSecurityOptions: [AppSecurityOption] = [],
-             securityOptionsError: AppSecurityManagerError? = nil,
              insuranceType: Profile.InsuranceType = .unknown) {
             self.name = name
             self.acronym = acronym
@@ -97,9 +101,6 @@ struct EditProfileDomain {
             self.profileId = profileId
             self.destination = destination
             self.token = token
-            self.hasBiometricKeyID = hasBiometricKeyID
-            self.availableSecurityOptions = availableSecurityOptions
-            self.securityOptionsError = securityOptionsError
             self.insuranceType = insuranceType
         }
 
@@ -121,24 +122,30 @@ struct EditProfileDomain {
         }
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Destination {
         // sourcery: AnalyticsScreen = alert
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
         // sourcery: AnalyticsScreen = profile_auditEvents
         case auditEvents(AuditEventsDomain)
+        // sourcery: AnalyticsScreen = profile_notificationChannels
+        case notificationChannels(NotificationChannelsDomain)
         // sourcery: AnalyticsScreen = profile_registeredDevices
         case registeredDevices(RegisteredDevicesDomain)
         // sourcery: AnalyticsScreen = chargeItemList
         case chargeItemList(ChargeItemListDomain)
+        // sourcery: AnalyticsScreen = cardWall
+        case cardWall(CardWallIntroductionDomain)
         // sourcery: AnalyticsScreen = profile_insuranceDrawer
         case insuranceDrawer
+        case euRedeemConsent(FeatureEURedeem.ConsentDomain)
         case editProfilePicture(EditProfilePictureDomain)
 
         enum Alert: Equatable {
+            case dismiss
+            case cardWall
             case confirmDeleteProfile
-            case confirmDeleteBiometricPairing
         }
     }
 
@@ -155,12 +162,14 @@ struct EditProfileDomain {
         case setUserToFederalInsured
         case login
         case relogin
-        case showDeleteBiometricPairingAlert
+        case showCardWall
+        case showEURedeemConsent
 
         case destination(PresentationAction<Destination.Action>)
         case resetNavigation
         case registeredDevicesTapped
         case auditEventsTapped
+        case pushNotificationsTapped
         case chargeItemListTapped
         case editProfilePictureTapped
         case response(Response)
@@ -168,11 +177,10 @@ struct EditProfileDomain {
 
         enum Response: Equatable {
             case updateProfileReceived(Result<Bool, LocalStoreError>)
-            case deleteBiometricPairingReceived(Result<Bool, IDPError>)
             case canReceived(String?)
             case tokenReceived(IDPToken?)
-            case biometricKeyIDReceived(Bool)
             case profileReceived(Result<Profile?, LocalStoreError>)
+            case euConsentCheckReceived(Result<ConsentService.CheckResult, ConsentService.Error>)
         }
 
         enum Delegate {
@@ -181,11 +189,10 @@ struct EditProfileDomain {
         }
     }
 
-    @Dependency(\.appSecurityManager) var appSecurityManager: AppSecurityManager
     @Dependency(\.schedulers) var schedulers: Schedulers
     @Dependency(\.profileDataStore) var profileDataStore: ProfileDataStore
 
-    // Use changebaleUserSesisonContainer to set the correct user session for demo mode
+    /// Use changebaleUserSesisonContainer to set the correct user session for demo mode
     var userDataStore: UserDataStore {
         changeableUserSessionContainer.userSession.localUserStore
     }
@@ -196,11 +203,12 @@ struct EditProfileDomain {
     @Dependency(\.router) var router: Routing
     @Dependency(\.pasteboardService) var pasteboardService: PasteboardService
     @Dependency(\.hapticFeedbackGenerator) var hapticFeedback
+    @Dependency(\.consentService) var consentService: ConsentService
 
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -208,13 +216,8 @@ struct EditProfileDomain {
     func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .task:
-            let availableOptions = appSecurityManager.availableSecurityOptions
-            state.availableSecurityOptions = availableOptions.options
-            state.securityOptionsError = availableOptions.error
-
             return .merge(
                 subscribeToTokenUpdates(for: state.profileId),
-                subscribeToBiometricKeyIDUpdates(for: state.profileId),
                 subscribeToCanUpdates(with: state.profileId),
                 .publisher(
                     profileDataStore.fetchProfile(by: state.profileId)
@@ -224,7 +227,18 @@ struct EditProfileDomain {
                         .map(Action.response)
                         .receive(on: schedulers.main)
                         .eraseToAnyPublisher
-                )
+                ),
+                .run { [profileId = state.profileId] send in
+                    do {
+                        let result = try await consentService.checkForConsent(
+                            category: .euDispense,
+                            profileID: profileId
+                        )
+                        await send(.response(.euConsentCheckReceived(.success(result))))
+                    } catch let error as ConsentService.Error {
+                        await send(.response(.euConsentCheckReceived(.failure(error))))
+                    }
+                }
             )
         case .onAppear:
             // Routing needs to be split from EditProfileView on
@@ -239,9 +253,6 @@ struct EditProfileDomain {
             return .none
         case let .response(.tokenReceived(token)):
             state.token = token
-            return .none
-        case let .response(.biometricKeyIDReceived(result)):
-            state.hasBiometricKeyID = result
             return .none
         case let .response(.canReceived(can)):
             state.can = can
@@ -297,6 +308,62 @@ struct EditProfileDomain {
         case .changeInsurance:
             state.destination = .insuranceDrawer
             return .none
+        case .showCardWall:
+            state.destination = .cardWall(.init(isNFCReady: true, profileId: state.profileId))
+            return .none
+        case .showEURedeemConsent:
+            let constentType: ConsentDomain.ConsentType = {
+                switch state.euRedeemConsentCheck {
+                case .granted:
+                    return .granted
+                case .notGranted:
+                    return .notGranted
+                case .notAuthenticated, .error:
+                    return .unknown
+                }
+            }()
+            state.destination = .euRedeemConsent(.init(
+                profileID: state.profileId,
+                consentType: constentType
+            ))
+            return .none
+        case let .response(.euConsentCheckReceived(.success(result))):
+            state.euRedeemConsentCheck = result
+            return .none
+        case let .response(.euConsentCheckReceived(.failure(error))):
+            state.destination = .alert(.init(for: error, title: L10n.errTitleGeneric))
+            return .none
+        case let .destination(.presented(.euRedeemConsent(.delegate(action)))):
+            switch action {
+            case .consentAccepted, .consentDeclined, .close:
+                state.destination = nil
+                return .none
+            case .showCardWall:
+                state.destination = .alert(AlertStates.grantConsentServiceNotAuthenticated)
+                return .none
+            }
+        case .destination(.presented(.alert(.cardWall))):
+            return .run { send in
+                await send(.showCardWall)
+            }
+        case .destination(.presented(.cardWall(action: .delegate(.close)))):
+            state.destination = nil
+            return .none
+        case .destination(.dismiss):
+            if case .cardWall = state.destination {
+                return .run { [profileId = state.profileId] send in
+                    do {
+                        let result = try await consentService.checkForConsent(
+                            category: .euDispense,
+                            profileID: profileId
+                        )
+                        await send(.response(.euConsentCheckReceived(.success(result))))
+                    } catch let error as ConsentService.Error {
+                        await send(.response(.euConsentCheckReceived(.failure(error))))
+                    }
+                }
+            }
+            return .none
         case .setUserToGKVInsured:
             state.insuranceType = .gKV
             return changeInsurance(for: .gKV, with: state.profileId)
@@ -325,7 +392,6 @@ struct EditProfileDomain {
         case let .response(.updateProfileReceived(.failure(error))):
             state.destination = .alert(.init(for: error))
             return .none
-
         // [REQ:BSI-eRp-ePA:O.Auth_14#3|6] The domain accepts the intent and wipes tokens and other login related data
         case .delegate(.logout):
             state.token = nil
@@ -334,17 +400,14 @@ struct EditProfileDomain {
                 try await profileSecureDataWiper.wipeSecureData(of: profileId).async()
             }
         case .login:
-            userDataStore.set(selectedProfileId: state.profileId)
-            return .run { _ in
-                await router.routeTo(.mainScreen(.login))
+            return .run { send in
+                await send(.showCardWall)
             }
         case .relogin:
             state.token = nil
-            return .run { [profileId = state.profileId] _ in
+            return .run { [profileId = state.profileId] send in
                 try await profileSecureDataWiper.wipeSecureData(of: profileId).async()
-
-                userDataStore.set(selectedProfileId: profileId)
-                await router.routeTo(.mainScreen(.login))
+                await send(.showCardWall)
             }
         case .resetNavigation:
             state.destination = nil
@@ -354,6 +417,16 @@ struct EditProfileDomain {
             return .none
         case .auditEventsTapped:
             state.destination = .auditEvents(.init(profileUUID: state.profileId))
+            return .none
+        case .pushNotificationsTapped:
+            // Registration is persisted per profile; derive `isRegistered` from it so a pusher
+            // registered in a previous session is recognised (otherwise the consent dialog would
+            // be shown again and channel states would not be loaded on entry).
+            @Shared(.pushNotificationRegistrations) var registrations
+            let isRegistered = registrations[state.profileId.uuidString] != nil
+            state.destination = .notificationChannels(
+                .init(profileId: state.profileId, isRegistered: isRegistered)
+            )
             return .none
         case .chargeItemListTapped:
             state.destination = .chargeItemList(.init(profileId: state.profileId))
@@ -372,27 +445,6 @@ struct EditProfileDomain {
              .destination(.presented(.chargeItemList)),
              .destination(.presented(.editProfilePicture)):
             return .none
-        case .showDeleteBiometricPairingAlert:
-            state.destination = .alert(AlertStates.deleteBiometricPairing)
-            return .none
-        case .destination(.presented(.alert(.confirmDeleteBiometricPairing))):
-            state.destination = nil
-            return .publisher(
-                deleteBiometricPairing(for: state.profileId)
-                    .eraseToAnyPublisher
-            )
-        case let .response(.deleteBiometricPairingReceived(result)):
-            switch result {
-            case .success:
-                state.destination = nil
-                let profileId = state.profileId
-                return .run { _ in
-                    try await profileSecureDataWiper.wipeSecureData(of: profileId).async()
-                }
-            case let .failure(error):
-                state.destination = .alert(AlertStates.deleteBiometricPairingFailed(with: error))
-                return .none
-            }
         case .destination,
              .binding,
              .delegate:
@@ -417,17 +469,6 @@ extension EditProfileDomain {
             userSessionProvider.userSession(for: profileId).secureUserStore.can
                 .receive(on: schedulers.main.animation())
                 .map(Action.Response.canReceived)
-                .map(Action.response)
-                .eraseToAnyPublisher
-        )
-    }
-
-    func subscribeToBiometricKeyIDUpdates(for profileId: UUID) -> Effect<Action> {
-        .publisher(
-            userSessionProvider.userSession(for: profileId).secureUserStore.keyIdentifier
-                .receive(on: schedulers.main.animation())
-                .map { $0 != nil }
-                .map(Action.Response.biometricKeyIDReceived)
                 .map(Action.response)
                 .eraseToAnyPublisher
         )
@@ -485,45 +526,6 @@ extension EditProfileDomain {
                 }
                 .receive(on: schedulers.main)
                 .catchToPublisher()
-    }
-
-    func deleteBiometricPairing(for profileId: UUID) -> AnyPublisher<Action, Never> {
-        let profileUserSession = userSessionProvider.userSession(for: profileId)
-        let loginHandler = profileUserSession.pairingIdpSessionLoginHandler
-
-        return loginHandler.isAuthenticatedOrAuthenticate()
-            .first()
-            .flatMap { result -> AnyPublisher<IDPToken?, Never> in
-                if case .failure = result {
-                    return Just(nil).eraseToAnyPublisher()
-                }
-                return profileUserSession.pairingIdpSession.autoRefreshedToken // -> AnyPublisher<IDPToken?, IDPError>
-                    .catch { _ in Just(nil) }
-                    .eraseToAnyPublisher()
-            }
-            .first()
-            .combineLatest(
-                profileUserSession.secureUserStore.keyIdentifier // -> AnyPublisher<Data?, Never>
-            )
-            .first()
-            .flatMap { pairingToken, keyIdentifier -> AnyPublisher<Action, Never> in
-                guard let keyIdentifier = keyIdentifier,
-                      let pairingToken = pairingToken,
-                      let base64KeyIdentifier = keyIdentifier.encodeBase64UrlSafe(),
-                      let deviceIdentifier = String(data: base64KeyIdentifier, encoding: .utf8) else {
-                    return Just(Action.relogin).eraseToAnyPublisher()
-                }
-
-                return profileUserSession.pairingIdpSession.unregisterDevice(deviceIdentifier, token: pairingToken)
-                    // -> AnyPublisher<Bool, IDPError>
-                    .catchToPublisher()
-                    .map(Action.Response.deleteBiometricPairingReceived)
-                    .map(Action.response)
-                    .eraseToAnyPublisher()
-            }
-            .first()
-            .receive(on: schedulers.main)
-            .eraseToAnyPublisher()
     }
 }
 
@@ -590,49 +592,31 @@ extension EditProfileDomain {
     enum AlertStates {
         typealias Action = EditProfileDomain.Destination.Alert
 
-        static let deleteProfile: ErpAlertState<Action> = {
-            .init(
-                title: L10n.stgTxtEditProfileDeleteConfirmationTitle,
-                actions: {
-                    ButtonState(role: .destructive, action: .confirmDeleteProfile) {
-                        .init(L10n.dtlTxtDeleteYes)
-                    }
-                    ButtonState(role: .cancel) {
-                        .init(L10n.stgBtnEditProfileDeleteAlertCancel)
-                    }
-                },
-                message: L10n.stgTxtEditProfileDeleteConfirmationMessage
-            )
-        }()
-
-        static let deleteBiometricPairing: ErpAlertState<Action> = {
-            .init(
-                title: L10n.stgTxtEditProfileDeletePairingTitle,
-                actions: {
-                    ButtonState(role: .destructive, action: .confirmDeleteBiometricPairing) {
-                        .init(L10n.dtlTxtDeleteYes)
-                    }
-                    ButtonState(role: .cancel) {
-                        .init(L10n.stgBtnEditProfileDeleteAlertCancel)
-                    }
-                },
-                message: L10n.stgTxtEditProfileDeletePairingMessage
-            )
-        }()
-
-        static func deleteBiometricPairingFailed(with error: IDPError) -> ErpAlertState<Action> {
-            .init(
-                for: error,
-                title: L10n.stgTxtEditProfileDeletePairingError
-            ) {
-                ButtonState(role: .destructive, action: .confirmDeleteBiometricPairing) {
+        static let deleteProfile: ErpAlertState<Action> = .init(
+            title: L10n.stgTxtEditProfileDeleteConfirmationTitle,
+            actions: {
+                ButtonState(role: .destructive, action: .confirmDeleteProfile) {
                     .init(L10n.dtlTxtDeleteYes)
                 }
                 ButtonState(role: .cancel) {
                     .init(L10n.stgBtnEditProfileDeleteAlertCancel)
                 }
-            }
-        }
+            },
+            message: L10n.stgTxtEditProfileDeleteConfirmationMessage
+        )
+
+        static let grantConsentServiceNotAuthenticated = ErpAlertState<Action>(
+            title: L10n.euredeemSelectionTxtConsentNotLoggedInTitle,
+            actions: {
+                ButtonState(role: .cancel, action: .dismiss) {
+                    .init(L10n.errBtnCancel)
+                }
+                ButtonState(action: .cardWall) {
+                    .init(L10n.erxBtnAlertLogin)
+                }
+            },
+            message: L10n.euredeemSelectionTxtConsentNotLoggedInMessage
+        )
     }
 }
 
@@ -652,4 +636,6 @@ extension EditProfileDomain {
     }
 }
 
+extension EditProfileDomain.Destination.State: Equatable {}
+extension EditProfileDomain.Destination.Action: Equatable {}
 // swiftlint:enable type_body_length

@@ -68,6 +68,7 @@ public enum SFSymbolName {
     public static let cameraViewfinder = "camera.viewfinder"
     public static let docTextViewfinder = "doc.text.viewfinder"
     public static let plusViewFinder = "plus.viewfinder"
+    public static let forwardDisclosureIndicator = "chevron.forward"
     public static let rightDisclosureIndicator = "chevron.right"
     public static let rightDetailDisclosure = "chevron.right.circle.fill"
     public static let checkIcon = "checkmark.circle"
@@ -158,7 +159,7 @@ public enum SFSymbolName {
         }
     }
 
-    public static let speakerWave2 = "speaker.wave.2"
+    public static let speakerWave2Circle = "speaker.wave.2.circle"
     public static let lightbulbSlash = "lightbulb.slash"
     public static let questionmarkCircle = "questionmark.circle"
     public static let personCirclePlus = "person.crop.circle.badge.plus"
@@ -178,6 +179,8 @@ public enum SFSymbolName {
     public static let clockWarning = "clock.badge.exclamationmark"
     public static let iPhonelocked = "lock.iphone"
     public static let iPhoneGen2 = "iphone.smartbatterycase.gen2"
+    public static let macWindow = "macwindow"
+    public static let ipadLandscapeAndIphone = "ipad.landscape.and.iphone"
     public static let infoBubble = "info.bubble"
     public static let archivebox = "archivebox"
 

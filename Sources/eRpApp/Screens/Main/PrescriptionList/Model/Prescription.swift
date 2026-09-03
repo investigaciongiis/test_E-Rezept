@@ -22,6 +22,7 @@
 
 import eRpKit
 import eRpStyleKit
+import FeatureHelpers
 import Foundation
 import SwiftUI
 
@@ -100,7 +101,7 @@ struct Prescription: Equatable, Identifiable {
         for erxTask: ErxTask,
         type: PrescriptionType,
         whenHandedOver: String?,
-        date: Date = Date(),
+        date: Date = Date()
     ) -> Status {
         @Dependency(\.uiDateFormatter) var uiDateFormatter: UIDateFormatter
 
@@ -193,7 +194,6 @@ struct Prescription: Equatable, Identifiable {
             let formattedDate = ((erxTask.expiresOn as String?).map { uiDateFormatter.date($0) ?? "?" }) ?? "?"
 
             return .archived(message: L10n.erxTxtExpiredOn(formattedDate).text)
-
         case .completed:
             if let date = erxTask.lastModified?.date,
                erxTask.deviceRequest?.diGaInfo?.diGaState != nil {
@@ -306,6 +306,10 @@ struct Prescription: Equatable, Identifiable {
         }
     }
 
+    var isShipmentAvailable: Bool {
+        erxTask.flowType != .tPrescription && erxTask.flowType != .tPrescriptionForPKV
+    }
+
     var isPharmacyRedeemable: Bool {
         isRedeemable && !isDiGaPrescription
     }
@@ -371,7 +375,7 @@ extension MultiplePrescription {
     var isRedeemable: Bool {
         @Dependency(\.date) var dateGenerator
 
-        guard let startDate = startDate,
+        guard let startDate,
               let daysUntilStartDate = dateGenerator.now.days(until: startDate)
         else { return false }
 
@@ -524,7 +528,7 @@ extension Prescription {
             switch progress {
             case .request: return Colors.primary500
             case .insurance: return Colors.yellow500
-            case .download, .activate, .completed: return Colors.secondary600
+            case .download, .activate, .completed: return Colors.secondary700
             case .archive: return Colors.systemGray2
             case .noInformation: return Colors.red500
             }
@@ -600,6 +604,7 @@ extension Prescription {
             .map { Prescription(erxTask: $0) }
         static let prescriptionMVO = Prescription(erxTask: ErxTask.Demo.erxTask14)
         static let prescriptionSelfPayer = Prescription(erxTask: ErxTask.Demo.erxTaskSelfPayer)
+        static let prescriptionTPrescription = Prescription(erxTask: ErxTask.Demo.erxTaskTPrescription)
     }
 }
 
@@ -609,6 +614,19 @@ extension ErxTask {
             flowType == .directAssignmentForPKV ||
             id.starts(with: ErxTask.FlowType.Code.kDirectAssignment) ||
             id.starts(with: ErxTask.FlowType.Code.kDirectAssignmentForPKV)
+    }
+}
+
+extension ErxTask {
+    var isTPrescription: Bool {
+        flowType == .tPrescription ||
+            flowType == .tPrescriptionForPKV
+    }
+}
+
+extension [Prescription] {
+    func containsTPrescription() -> Bool {
+        contains { $0.erxTask.isTPrescription }
     }
 }
 

@@ -52,7 +52,7 @@ struct AppAuthenticationDomain {
         case subdomain(Subdomain.Action)
     }
 
-    @Reducer(state: .equatable, action: .equatable)
+    @Reducer
     enum Subdomain {
         case biometrics(AppAuthenticationBiometricsDomain)
         case password(AppAuthenticationPasswordDomain)
@@ -66,7 +66,7 @@ struct AppAuthenticationDomain {
     let didCompleteAuthentication: (() -> Void)?
 
     var body: some Reducer<State, Action> {
-        Reduce(self.core)
+        Reduce(core)
             .ifLet(\.subdomain, action: \.subdomain) {
                 Subdomain.body
             }
@@ -175,13 +175,17 @@ extension AppAuthenticationDomain {
         static let state = State()
 
         static let store = StoreOf<AppAuthenticationDomain>(initialState: state) {
-            AppAuthenticationDomain {}
+//            AppAuthenticationDomain {}
+            EmptyReducer()
         }
 
         static func storeFor(_ state: State) -> StoreOf<AppAuthenticationDomain> {
             Store(initialState: state) {
-                AppAuthenticationDomain {}
+                EmptyReducer()
             }
         }
     }
 }
+
+extension AppAuthenticationDomain.Subdomain.State: Equatable {}
+extension AppAuthenticationDomain.Subdomain.Action: Equatable {}

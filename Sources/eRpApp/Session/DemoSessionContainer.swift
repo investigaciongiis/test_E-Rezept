@@ -20,7 +20,6 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import AVS
 import BfArM
 import Combine
 import Dependencies
@@ -39,9 +38,9 @@ import TrustStore
 import VAUClient
 
 class DemoSessionContainer: UserSession {
-    internal init(schedulers: Schedulers,
-                  extAuthRequestStorage: ExtAuthRequestStorage = DummyExtAuthRequestStorage(),
-                  profileDataStore: ProfileDataStore = DemoProfileDataStore()) {
+    init(schedulers: Schedulers,
+         extAuthRequestStorage: ExtAuthRequestStorage = DummyExtAuthRequestStorage(),
+         profileDataStore: ProfileDataStore = DemoProfileDataStore()) {
         self.schedulers = schedulers
         self.extAuthRequestStorage = extAuthRequestStorage
         self.profileDataStore = profileDataStore
@@ -51,43 +50,27 @@ class DemoSessionContainer: UserSession {
 
     private let schedulers: Schedulers
 
-    lazy var idpSession: IDPSession = {
-        DemoIDPSession(storage: secureUserStore)
-    }()
+    lazy var idpSession: IDPSession = DemoIDPSession(storage: secureUserStore)
 
     var extAuthRequestStorage: ExtAuthRequestStorage
 
     var profileDataStore: ProfileDataStore
 
-    lazy var pairingIdpSession: IDPSession = {
-        DemoIDPSession(storage: secureUserStore)
-    }()
+    lazy var pairingIdpSession: IDPSession = DemoIDPSession(storage: secureUserStore)
 
-    lazy var secureUserStore: SecureUserDataStore = {
-        memoryStorage
-    }()
+    lazy var secureUserStore: SecureUserDataStore = memoryStorage
 
-    lazy var vauStorage: VAUStorage = {
-        DemoVAUStorage()
-    }()
+    lazy var vauStorage: VAUStorage = DemoVAUStorage()
 
-    lazy var localUserStore: UserDataStore = {
-        DemoUserDefaultsStore()
-    }()
+    lazy var localUserStore: UserDataStore = DemoUserDefaultsStore()
 
-    lazy var shipmentInfoDataStore: ShipmentInfoDataStore = {
-        DemoShipmentInfoStore()
-    }()
+    lazy var shipmentInfoDataStore: ShipmentInfoDataStore = DemoShipmentInfoStore()
 
-    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = {
-        idpSession.isLoggedIn
-            .mapError { UserSessionError.idpError(error: $0) }
-            .eraseToAnyPublisher()
-    }()
+    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = idpSession.isLoggedIn
+        .mapError { UserSessionError.idpError(error: $0) }
+        .eraseToAnyPublisher()
 
-    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = {
-        DefaultNFCResetRetryCounterController()
-    }()
+    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = DefaultNFCResetRetryCounterController()
 
     lazy var bfarmSession: BfArMSession = {
         let appConfiguration = UserDefaultsStore().appConfiguration
@@ -124,21 +107,13 @@ class DemoSessionContainer: UserSession {
         false
     }
 
-    lazy var ordersRepository: OrdersRepository = {
-        DemoOrdersRepository()
-    }()
+    lazy var ordersRepository: OrdersRepository = DemoOrdersRepository()
 
-    lazy var trustStoreSession: TrustStoreSession = {
-        DemoTrustStoreSession()
-    }()
+    lazy var trustStoreSession: TrustStoreSession = DemoTrustStoreSession()
 
-    lazy var appSecurityManager: AppSecurityManager = {
-        DemoAppSecurityPasswordManager()
-    }()
+    lazy var appSecurityManager: AppSecurityManager = DemoAppSecurityPasswordManager()
 
-    private(set) lazy var deviceSecurityManager: DeviceSecurityManager = {
-        DemoDeviceSecurityManager()
-    }()
+    private(set) lazy var deviceSecurityManager: DeviceSecurityManager = DemoDeviceSecurityManager()
 
     let profileId = DemoProfileDataStore.anna.id
 
@@ -154,45 +129,27 @@ class DemoSessionContainer: UserSession {
 
     lazy var profileSecureDataWiper: ProfileSecureDataWiper = DemoProfileSecureDataWiper()
 
-    lazy var avsSession: AVSSession = {
-        DemoAVSSession()
-    }()
+    lazy var avsTransactionDataStore: AVSTransactionDataStore = DemoAVSTransactionDataStore()
 
-    lazy var avsTransactionDataStore: AVSTransactionDataStore = {
-        DemoAVSTransactionDataStore()
-    }()
+    private lazy var demoPrescriptionRepositoryWithActivity: DefaultPrescriptionRepository = .init(
+        loginHandler: idpSessionLoginHandler
+    )
 
-    private lazy var demoPrescriptionRepositoryWithActivity: DefaultPrescriptionRepository = {
-        DefaultPrescriptionRepository(
-            loginHandler: idpSessionLoginHandler
-        )
-    }()
+    lazy var prescriptionRepository: PrescriptionRepository = demoPrescriptionRepositoryWithActivity
 
-    lazy var prescriptionRepository: PrescriptionRepository = {
-        demoPrescriptionRepositoryWithActivity
-    }()
+    lazy var activityIndicating: ActivityIndicating = demoPrescriptionRepositoryWithActivity
 
-    lazy var activityIndicating: ActivityIndicating = {
-        demoPrescriptionRepositoryWithActivity
-    }()
+    lazy var idpSessionLoginHandler: LoginHandler = DefaultLoginHandler(
+        idpSession: idpSession,
+        signatureProvider: secureEnclaveSignatureProvider
+    )
 
-    lazy var idpSessionLoginHandler: LoginHandler = {
-        DefaultLoginHandler(
-            idpSession: idpSession,
-            signatureProvider: secureEnclaveSignatureProvider
-        )
-    }()
+    lazy var pairingIdpSessionLoginHandler: LoginHandler = DefaultLoginHandler(
+        idpSession: pairingIdpSession,
+        signatureProvider: secureEnclaveSignatureProvider
+    )
 
-    lazy var pairingIdpSessionLoginHandler: LoginHandler = {
-        DefaultLoginHandler(
-            idpSession: pairingIdpSession,
-            signatureProvider: secureEnclaveSignatureProvider
-        )
-    }()
-
-    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = {
-        DummySecureEnclaveSignatureProvider()
-    }()
+    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = DummySecureEnclaveSignatureProvider()
 }
 
 class DummySessionContainer: DemoSessionContainer {

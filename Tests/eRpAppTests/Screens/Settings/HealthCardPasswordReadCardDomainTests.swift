@@ -33,17 +33,19 @@ import XCTest
 final class HealthCardPasswordReadCardDomainTests: XCTestCase {
     typealias TestStore = TestStoreOf<HealthCardPasswordReadCardDomain>
 
-    var mockNFCSessionController: NFCHealthCardPasswordControllerMock!
+    var mockNFCSessionController: MockNFCHealthCardPasswordController!
 
     let uiScheduler = DispatchQueue.test
-    lazy var schedulers: Schedulers = .init(
-        uiScheduler: self.uiScheduler.eraseToAnyScheduler()
-    )
+    lazy var schedulers: Schedulers = {
+        Schedulers(
+            uiScheduler: self.uiScheduler.eraseToAnyScheduler()
+        )
+    }()
 
     override func setUp() {
         super.setUp()
 
-        mockNFCSessionController = NFCHealthCardPasswordControllerMock()
+        mockNFCSessionController = MockNFCHealthCardPasswordController()
     }
 
     func testStore(for state: HealthCardPasswordReadCardDomain.State) -> TestStore {
@@ -55,14 +57,13 @@ final class HealthCardPasswordReadCardDomainTests: XCTestCase {
         }
     }
 
-    func testUnlockCard_Success() async {
+    func testUnlockCard_Success() async throws {
         let sut = testStore(
             for: .init(mode: .healthCardResetPinCounterNoNewSecret(can: "123123", puk: "12345678"))
         )
 
         mockNFCSessionController
-            .resetEgkMrPinRetryCounterCanStringPukStringModeNFCResetRetryCounterModeResultNFCHealthCardPasswordControllerResponseNFCHealthCardPasswordControllerErrorReturnValue =
-            .success(NFCHealthCardPasswordControllerResponse.success)
+            .resetEgkMrPinRetryCounterCanPukModeReturnValue = .success(NFCHealthCardPasswordControllerResponse.success)
 
         await sut.send(.readCard)
         await uiScheduler.advance()
@@ -84,9 +85,7 @@ final class HealthCardPasswordReadCardDomainTests: XCTestCase {
             )
         )
 
-        mockNFCSessionController
-            .changeReferenceDataCanStringOldStringNewStringModeNFCChangeReferenceDataModeResultNFCHealthCardPasswordControllerResponseNFCHealthCardPasswordControllerErrorReturnValue =
-            .success(.success)
+        mockNFCSessionController.changeReferenceDataCanOldNewModeReturnValue = .success(.success)
 
         await sut.send(.readCard)
         await uiScheduler.advance()
@@ -108,9 +107,7 @@ final class HealthCardPasswordReadCardDomainTests: XCTestCase {
             )
         )
 
-        mockNFCSessionController
-            .changeReferenceDataCanStringOldStringNewStringModeNFCChangeReferenceDataModeResultNFCHealthCardPasswordControllerResponseNFCHealthCardPasswordControllerErrorReturnValue =
-            .success(.commandBlocked)
+        mockNFCSessionController.changeReferenceDataCanOldNewModeReturnValue = .success(.commandBlocked)
 
         await sut.send(.readCard)
         await uiScheduler.advance()

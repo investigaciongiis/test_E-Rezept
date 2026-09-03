@@ -77,7 +77,9 @@ extension MKCoordinateRegion {
 // swiftlint:enable identifier_name
 
 struct MapViewWithClustering: UIViewRepresentable {
-    static var isTestingEnvironment: Bool = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    static var isTestingEnvironment: Bool = {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }()
 
     @Binding var region: MKCoordinateRegionContainer
     var showUserLocation = true
@@ -102,7 +104,7 @@ struct MapViewWithClustering: UIViewRepresentable {
         /// Handling the update of the region binding
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated _: Bool) {
             DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
+                guard let self = self else { return }
                 self.parent.region = .delegate(mapView.region)
             }
         }
@@ -137,7 +139,8 @@ struct MapViewWithClustering: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let mapView = MKMapView()
         guard !Self.isTestingEnvironment else {
-            return context.coordinator.greyView
+            let greyView = context.coordinator.greyView
+            return greyView
         }
         mapView.delegate = context.coordinator
         mapView.setRegion(region.region, animated: false)

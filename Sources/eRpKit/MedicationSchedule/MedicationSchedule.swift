@@ -104,9 +104,7 @@ extension MedicationSchedule {
         case saturday = 6
         case sunday = 7
 
-        public var id: Int {
-            rawValue
-        }
+        public var id: Int { rawValue }
     }
 }
 

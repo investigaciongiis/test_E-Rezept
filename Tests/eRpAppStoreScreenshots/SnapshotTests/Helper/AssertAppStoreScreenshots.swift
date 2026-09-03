@@ -41,8 +41,8 @@ let appStoreViewConfigs: [String: ViewImageConfig] = [
 ]
 
 @MainActor
-func assertAppStoreSnapshots(
-    for view: some View,
+func assertAppStoreSnapshots<SnapshotContent: View>(
+    for view: SnapshotContent,
     backgroundColor: Color,
     colorScheme: ColorScheme,
     precision: Float = defaultPrecision,

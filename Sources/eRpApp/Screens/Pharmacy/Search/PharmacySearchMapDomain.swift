@@ -73,11 +73,11 @@ struct PharmacySearchMapDomain {
             @Shared(.euRedeemPrescriptionsFeature) var euRedeemPrescriptionsFeature: Bool
             return euRedeemPrescriptionsFeature
                 && isoCountryCode != "DE"
-                && Country.europeanCountryCodes.contains(isoCountryCode ?? "")
+                && EUCountry.europeanCountryCodes.contains(isoCountryCode ?? "")
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = pharmacySearch_detail
         case pharmacy(PharmacyDetailDomain)
@@ -107,14 +107,14 @@ struct PharmacySearchMapDomain {
         case goToUser
         case showClusterSheet([PlaceholderAnnotation])
         case setMapAfterLocationUpdate
-        /// Pharmacy details
+        // Pharmacy details
         case showDetails(PharmacyLocationViewModel)
         // Device location
         case requestLocation
         case locationManager(LocationManager.Action)
-        /// Pharmacy filter
+        // Pharmacy filter
         case showPharmacyFilter
-        /// EU redeem
+        // EU redeem
         case hideEuRedeemHint
 
         case destination(PresentationAction<Destination.Action>)
@@ -132,10 +132,7 @@ struct PharmacySearchMapDomain {
 
         @CasePathable
         enum Response: Equatable {
-            case pharmaciesReceived(
-                Result<[PharmacyLocation], PharmacyRepositoryError>,
-                CLLocationCoordinate2D
-            )
+            case pharmaciesReceived(Result<[PharmacyLocation], PharmacyRepositoryError>, CLLocationCoordinate2D)
         }
     }
 
@@ -149,7 +146,7 @@ struct PharmacySearchMapDomain {
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -164,19 +161,19 @@ struct PharmacySearchMapDomain {
                 pharmacies = state.pharmacies,
                 text = state.searchText
             ] send in
-                let locationStatus = await locationManager.authorizationStatus()
-                if locationStatus == .notDetermined {
-                    await send(.requestLocation)
-                } else if pharmacies.isEmpty {
-                    guard let action = try? await searchPharmacies(
-                        location: Location(rawValue: .init(latitude: center.latitude, longitude: center.longitude)),
-                        filter: filter,
-                        searchText: text
-                    ) else {
-                        return
-                    }
-                    await send(action)
+            let locationStatus = await locationManager.authorizationStatus()
+            if locationStatus == .notDetermined {
+                await send(.requestLocation)
+            } else if pharmacies.isEmpty {
+                guard let action = try? await searchPharmacies(
+                    location: Location(rawValue: .init(latitude: center.latitude, longitude: center.longitude)),
+                    filter: filter,
+                    searchText: text
+                ) else {
+                    return
                 }
+                await send(action)
+            }
             }
         // swiftlint:enable closure_parameter_position
         case .setMapAfterLocationUpdate:
@@ -262,9 +259,7 @@ struct PharmacySearchMapDomain {
                         timeOnlyFormatter: uiDateFormatter.timeOnlyFormatter
                     )
                 }
-                .filter(
-                    by: state.pharmacyFilterOptions
-                )
+                .filter(by: state.pharmacyFilterOptions)
 
                 state.mapLocation = .manual(.init(
                     center: location,
@@ -376,10 +371,10 @@ struct PharmacySearchMapDomain {
             return .none
         case let .locationManager(.didUpdateLocations(locations)):
             state.currentUserLocation = locations.first
-            return .run { send in
+            return .run(operation: { send in
                 await send(.setMapAfterLocationUpdate)
                 await locationManager.stopUpdatingLocation()
-            }
+            })
         case .showPharmacyFilter:
             state.destination = .filter(.init(
                 pharmacyFilterOptions: state.$pharmacyFilterOptions,
@@ -406,35 +401,39 @@ struct PharmacySearchMapDomain {
 }
 
 extension PharmacySearchMapDomain {
-    static var locationPermissionAlertState: ErpAlertState<Destination.Alert> = .init(
-        title: L10n.phaSearchTxtLocationAlertTitle,
-        actions: {
-            ButtonState(role: .cancel, action: .close) {
-                .init(L10n.alertBtnOk)
-            }
-            ButtonState(action: .openAppSpecificSettings) {
-                .init(L10n.stgTxtTitle)
-            }
-        },
-        message: L10n.phaSearchTxtLocationAlertMessage
-    )
+    static var locationPermissionAlertState: ErpAlertState<Destination.Alert> = {
+        .init(
+            title: L10n.phaSearchTxtLocationAlertTitle,
+            actions: {
+                ButtonState(role: .cancel, action: .close) {
+                    .init(L10n.alertBtnOk)
+                }
+                ButtonState(action: .openAppSpecificSettings) {
+                    .init(L10n.stgTxtTitle)
+                }
+            },
+            message: L10n.phaSearchTxtLocationAlertMessage
+        )
+    }()
 
-    static var serverErrorAlertState: ErpAlertState<Destination.Alert> = .init(
-        title: L10n.phaSearchTxtErrorNoServerResponseHeadline,
-        actions: {
-            ButtonState(role: .cancel, action: .close) {
-                .init(L10n.phaSearchMapBtnErrorCancel)
-            }
-            ButtonState(action: .performSearch) {
-                .init(L10n.phaSearchBtnErrorNoServerResponse)
-            }
-        },
-        message: L10n.phaSearchTxtErrorNoServerResponseSubheadline
-    )
+    static var serverErrorAlertState: ErpAlertState<Destination.Alert> = {
+        .init(
+            title: L10n.phaSearchTxtErrorNoServerResponseHeadline,
+            actions: {
+                ButtonState(role: .cancel, action: .close) {
+                    .init(L10n.phaSearchMapBtnErrorCancel)
+                }
+                ButtonState(action: .performSearch) {
+                    .init(L10n.phaSearchBtnErrorNoServerResponse)
+                }
+            },
+            message: L10n.phaSearchTxtErrorNoServerResponseSubheadline
+        )
+    }()
 
     func openSettings() async {
         if let url = URL(string: UIApplication.openSettingsURLString) {
-            _ = await openURLHandler.open(url)
+            await openURLHandler.open(url)
         }
     }
 
@@ -444,17 +443,13 @@ extension PharmacySearchMapDomain {
         searchText: String = ""
     ) async throws -> PharmacySearchMapDomain.Action {
         let position = Position(lat: location.coordinate.latitude, lon: location.coordinate.longitude)
-
         do {
             let response = try await pharmacyRepository.searchRemote(
                 searchText,
                 position,
                 filter.asPharmacyRepositoryFilters
             )
-            return Action.response(.pharmaciesReceived(
-                .success(response),
-                location.coordinate
-            ))
+            return Action.response(.pharmaciesReceived(.success(response), location.coordinate))
         } catch let error as PharmacyRepositoryError {
             return Action.response(.pharmaciesReceived(.failure(error), location.coordinate))
         }
@@ -463,7 +458,7 @@ extension PharmacySearchMapDomain {
     /// This function calculates the span needed to display up to the seventh (or last) pharmacy on the Map.
     func calculateSpan(pharmacies: [PharmacyLocationViewModel],
                        currentLocation: CLLocationCoordinate2D) -> MKCoordinateSpan {
-        // First filtering and sorting all pharmacies by distance from the current Location
+        /// First filtering and sorting all pharmacies by distance from the current Location
         let filteredAndSorted = pharmacies.sorted { first, second in
             guard let first = first.distanceInM else {
                 return second.distanceInM != nil
@@ -544,13 +539,10 @@ Equatable {
     }
 }
 
-extension MKCoordinateSpan: @retroactive
-Equatable {
+extension MKCoordinateSpan: @retroactive Equatable {
     public static func ==(lhs: MKCoordinateSpan, rhs: MKCoordinateSpan) -> Bool {
         lhs.latitudeDelta == rhs.latitudeDelta && lhs.longitudeDelta == lhs.longitudeDelta
     }
 }
 
-extension PharmacySearchMapDomain.Destination.State: Equatable {}
-extension PharmacySearchMapDomain.Destination.Action: Equatable {}
 // swiftlint:enable type_body_length

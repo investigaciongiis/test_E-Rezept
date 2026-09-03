@@ -64,7 +64,6 @@ extension ErxTaskEntity {
     @NSManaged public var practitioner: ErxTaskPractitionerEntity?
     @NSManaged public var profile: ProfileEntity?
     @NSManaged public var quantity: ErxTaskQuantityEntity?
-    @NSManaged public var teratogenicInfo: ErxTaskTeratogenicInfoEntity?
 }
 
 // MARK: Generated accessors for avsTransaction

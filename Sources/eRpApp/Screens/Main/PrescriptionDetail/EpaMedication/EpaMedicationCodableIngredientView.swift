@@ -30,32 +30,28 @@ struct EpaMedicationCodableIngredientView: View {
     var body: some View {
         ScrollView(.vertical) {
             SectionContainer {
-                LabeledContent {
-                    Text(store.displayName)
-                } label: {
-                    Text(L10n.prscDtlMedIngredientName)
-                }
+                SubTitle(
+                    title: store.displayName,
+                    description: L10n.prscDtlMedIngredientName
+                )
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedIngredientName)
 
-                LabeledContent {
-                    Text(store.strengthText)
-                } label: {
-                    Text(L10n.prscDtlMedTxtAmount)
-                }
+                SubTitle(
+                    title: store.strengthText,
+                    description: L10n.prscDtlMedTxtAmount
+                )
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedIngredientStrength)
 
-                LabeledContent {
-                    Text(store.form)
-                } label: {
-                    Text(L10n.prscFdTxtDetailsDosageForm)
-                }
+                SubTitle(
+                    title: store.form,
+                    description: L10n.prscFdTxtDetailsDosageForm
+                )
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedIngredientForm)
 
-                LabeledContent {
-                    Text(store.number)
-                } label: {
-                    Text(L10n.prscDtlMedTxtIngredinetNumber)
-                }
+                SubTitle(
+                    title: store.number,
+                    description: L10n.prscDtlMedTxtIngredinetNumber
+                )
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedIngredientNumber)
             }.sectionContainerStyle(.inline)
         }

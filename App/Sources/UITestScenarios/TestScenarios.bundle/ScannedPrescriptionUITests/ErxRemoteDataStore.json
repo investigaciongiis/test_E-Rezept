@@ -1,11 +1,11 @@
 {
-   "listAllCommunicationsAfterForProfileIdRecordings":{
+   "listAllCommunicationsAfterForRecordings":{
       "type":"repeated",
       "payload":[
          
       ]
    },
-   "listAllTasksAfterProfileIdRecordings":{
+   "listAllTasksAfterRecordings":{
       "type":"repeated",
       "payload":{
          "content":[
@@ -46,7 +46,7 @@
          ]
       }
    },
-   "listDetailedTasksForProfileIdRecordings":{
+   "listDetailedTasksForRecordings":{
       "type":"steps",
       "payload":[
          {

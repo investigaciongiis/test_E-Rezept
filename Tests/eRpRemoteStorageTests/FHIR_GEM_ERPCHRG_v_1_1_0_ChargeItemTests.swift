@@ -27,13 +27,13 @@ import ModelsR4
 import Nimble
 import XCTest
 
-/// FHIR GEM ERPCHRG tests for ChargeItem in Version 1.1.0
+// FHIR GEM ERPCHRG tests for ChargeItem in Version 1.1.0
 final class FHIR_GEM_ERPCHRG_v_1_1_0_ChargeItemTests: XCTestCase {
     func testParseChargeItem() throws {
         guard let chargeItem = try decode(resource: "GEM_ERPCHRG_PR_ChargeItem.json")
             .parseErxChargeItem(
                 id: "200.000.001.206.112.29",
-                with: Data("fhirData".utf8)
+                with: "fhirData".data(using: .utf8)!
             )
         else {
             fail("Could not parse ModelsR4.Bundle into ChargeItemBundle.")
@@ -49,7 +49,7 @@ final class FHIR_GEM_ERPCHRG_v_1_1_0_ChargeItemTests: XCTestCase {
         expect(chargeItem.medication?.dosageForm) == "TAB"
         expect(chargeItem.medication?.normSizeCode) == "N3"
         expect(chargeItem.medication?.pzn) == "05392039"
-        expect(chargeItem.medication?.amount?.description) == "1 Stk"
+        expect(chargeItem.medication?.amount?.description).to(beNil())
         expect(chargeItem.medication?.ingredients.first?.text) == "Venlafaxinhydrochlorid"
         expect(chargeItem.medication?.ingredients.first?.strength?.numerator.value) == "84.88"
         // medication request

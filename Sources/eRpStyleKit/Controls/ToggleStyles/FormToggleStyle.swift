@@ -28,10 +28,17 @@ import SwiftUI
 /// To manually apply this style to a button, or to a view that contains buttons, use
 /// the ``View.buttonStyle(.form)`` modifier.
 public struct FormToggleStyle: ToggleStyle {
+    let showSeparator: Bool
+
+    public init(showSeparator: Bool) {
+        self.showSeparator = showSeparator
+    }
+
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .labelStyle(ToggleLabelStyle(
-                isOn: configuration.$isOn
+                isOn: configuration.$isOn,
+                showSeparator: showSeparator
             ))
             .labeledContentStyle(.automatic)
     }
@@ -40,8 +47,7 @@ public struct FormToggleStyle: ToggleStyle {
 public struct ToggleLabelStyle: LabelStyle {
     @Binding var isOn: Bool
 
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
-    @Environment(\.sectionContainerElementInformation.isRootElement) var isRootElement
+    let showSeparator: Bool
 
     public func makeBody(configuration: Configuration) -> some View {
         Label {
@@ -51,8 +57,7 @@ public struct ToggleLabelStyle: LabelStyle {
                 Toggle(isOn: $isOn) {}
                     .toggleStyle(DefaultToggleStyle())
             }
-            .rootSectionContainerElement(false)
-            .bottomDividerIfNeeded()
+            .bottomDivider(showSeparator: showSeparator)
 
         } icon: {
             configuration.icon
@@ -67,27 +72,5 @@ extension ToggleStyle where Self == FormToggleStyle {
     ///
     /// To manually apply this style to a button, or to a view that contains buttons, use
     /// the ``View.buttonStyle(.form)`` modifier.
-    public static var plain: FormToggleStyle {
-        FormToggleStyle()
-    }
-}
-
-#Preview {
-    SectionContainer {
-        Toggle(isOn: .constant(true)) {
-            Label {
-                Text("Toggle Label")
-            } icon: {
-                Image(systemName: SFSymbolName.bell)
-            }
-        }
-        Toggle(isOn: .constant(false)) {
-            Label {
-                Text("Toggle Label Off")
-            } icon: {
-                Image(systemName: SFSymbolName.bell)
-            }
-        }
-    }
-    .sectionContainerStyle(.bordered)
+    public static var plain: FormToggleStyle { FormToggleStyle(showSeparator: true) }
 }

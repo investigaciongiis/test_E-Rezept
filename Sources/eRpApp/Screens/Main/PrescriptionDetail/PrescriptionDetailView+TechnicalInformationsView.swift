@@ -31,20 +31,16 @@ extension PrescriptionDetailView {
         var body: some View {
             ScrollView(.vertical) {
                 SectionContainer {
-                    LabeledContent {
-                        Text(store.accessCode ?? "")
-                            .monospaced()
-                    } label: {
-                        Text(L10n.prscDtlTiTxtAccessCode)
-                    }
+                    SubTitle(
+                        title: store.accessCode ?? "",
+                        description: L10n.prscDtlTiTxtAccessCode
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlTiAccessCode)
 
-                    LabeledContent {
-                        Text(store.taskId)
-                            .monospaced()
-                    } label: {
-                        Text(L10n.prscDtlTiTxtTaskId)
-                    }
+                    SubTitle(
+                        title: store.taskId,
+                        description: L10n.prscDtlTiTxtTaskId
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlTiTaskId)
 
                 }.sectionContainerStyle(.inline)

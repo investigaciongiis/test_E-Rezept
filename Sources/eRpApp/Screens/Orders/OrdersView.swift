@@ -33,6 +33,10 @@ struct OrdersView: View {
     // TODO: move dependency into domain and do formatting in the view model // swiftlint:disable:this todo
     @Dependency(\.uiDateFormatter) var uiDateFormatter
 
+    init(store: StoreOf<OrdersDomain>) {
+        self.store = store
+    }
+
     var body: some View {
         NavigationStack {
             VStack {
@@ -45,7 +49,7 @@ struct OrdersView: View {
                                     message: message.latestMessage,
                                     subtitle: uiDateFormatter.relativeDate(message.lastUpdated) ?? "",
                                     isNew: message.hasUnreadMessages,
-                                    prescriptionCount: message.tasksCount
+                                    prescriptionCount: message.order?.tasksCount ?? 0
                                 ) {
                                     store.send(.didSelect(message.id))
                                 }
@@ -105,8 +109,7 @@ struct OrdersView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             OrdersView(store: OrdersDomain.Dummies.store)
-            OrdersView(store: OrdersDomain.Dummies
-                .storeFor(OrdersDomain.State(communicationMessage: Shared(value: []))))
+            OrdersView(store: OrdersDomain.Dummies.storeFor(OrdersDomain.State(communicationMessage: [])))
         }
     }
 }

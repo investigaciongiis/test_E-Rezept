@@ -88,7 +88,7 @@ extension ModelsR4.Medication {
     }
 
     var epaMedicationForm: EpaMedicationFormCodableConcept? {
-        guard let form else {
+        guard let form = form else {
             return nil
         }
         let codings: [EpaMedicationCoding<FormCodingSystem>] = form.coding?.compactMap {

@@ -25,11 +25,14 @@ import eRpKit
 import Pharmacy
 import TrustStore
 
-// swiftformat:disable emptyExtensions
+// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
+
 // sourcery:begin: AutoMockable
 extension TrustStoreSession {}
+// sourcery:end
+
+// sourcery:begin: ProtocolMock
 extension ErxLocalDataStore {}
 extension PharmacyLocalDataStore {}
 extension ProfileDataStore {}
 // sourcery:end
-// swiftformat:enable emptyExtensions

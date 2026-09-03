@@ -43,15 +43,18 @@ final class IntegrationTestsConfiguration: Sendable {
     let appConfiguration: AppConfiguration
     let brainpool256r1Signer: Brainpool256r1Signer?
     let idpsekURLServer: AppConfiguration.Server?
+    let gemDevAvsConfiguration: AVSIntegrationTestConfiguration?
 
     init(
         appConfiguration: AppConfiguration,
         brainpool256r1Signer: Brainpool256r1Signer? = nil,
-        idpsekURLServer: AppConfiguration.Server? = nil
+        idpsekURLServer: AppConfiguration.Server? = nil,
+        gemDevAvsConfiguration: AVSIntegrationTestConfiguration? = nil
     ) {
         self.appConfiguration = appConfiguration
         self.brainpool256r1Signer = brainpool256r1Signer
         self.idpsekURLServer = idpsekURLServer
+        self.gemDevAvsConfiguration = gemDevAvsConfiguration
     }
 }
 
@@ -72,28 +75,28 @@ let integrationTestsEnvironmentDummy = IntegrationTestsConfiguration(
         fhirVzd: AppConfiguration.Server(url: "http://dummy.fhir-vzd.server", header: [:]),
         eRezept: AppConfiguration.Server(url: "http://dummy.api-erezept.server", header: [:]),
         organDonationUrl: nil,
-        clientId: "dummyClientId",
-        pushGateway: URL(string: "http://dummy.push-gateway.server")!
+        clientId: "dummyClientId"
     )!,
     brainpool256r1Signer: nil,
-    idpsekURLServer: nil
+    idpsekURLServer: nil,
+    gemDevAvsConfiguration: nil
 )
 
 extension IntegrationTestsConfiguration {
-    /// Signing identity for Test-User: Juna Fuchs, Kvnr: X114428530
-    static let signer = try? Brainpool256r1Signer(
+    // Signing identity for Test-User: Juna Fuchs, Kvnr: X114428530
+    static let signer = try! Brainpool256r1Signer(
         x5c: Bundle(for: IntegrationTestsConfiguration.self)
             .path(
                 forResource: "109500969_X114428530_c.ch.aut-ecc-51",
                 ofType: "crt",
                 inDirectory: "Certificates.bundle"
-            ),
+            )!,
         key: Bundle(for: IntegrationTestsConfiguration.self)
             .path(
                 forResource: "109500969_X114428530_c.ch.aut-ecc-51",
                 ofType: "bin",
                 inDirectory: "Certificates.bundle"
-            )
+            )!
     )
 }
 
@@ -136,8 +139,10 @@ let integrationTestsEnvironmentTU: IntegrationTestsConfiguration = {
     )
 }()
 
-let integrationTestsEnvironmentPU: IntegrationTestsConfiguration = .init(
-    appConfiguration: environmentPU,
-    brainpool256r1Signer: nil,
-    idpsekURLServer: nil
-)
+let integrationTestsEnvironmentPU: IntegrationTestsConfiguration = {
+    IntegrationTestsConfiguration(
+        appConfiguration: environmentPU,
+        brainpool256r1Signer: nil,
+        idpsekURLServer: nil
+    )
+}()

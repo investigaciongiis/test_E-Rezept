@@ -69,8 +69,8 @@ struct PrescriptionListDomain {
 
         var showRedeemDiGaButton: Bool {
             let openPrescription = prescriptions.filter { !$0.isArchived }
-            return openPrescription.filter(\.isDiGaPrescription).count >= 1
-                && !openPrescription.contains { !$0.isDiGaPrescription }
+            return openPrescription.filter(\.isDiGaPrescription).count >= 1 && openPrescription
+                .filter { !$0.isDiGaPrescription }.isEmpty
         }
 
         init(
@@ -147,7 +147,7 @@ struct PrescriptionListDomain {
     }
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
     }
 
     // swiftlint:disable:next cyclomatic_complexity function_body_length
@@ -165,10 +165,10 @@ struct PrescriptionListDomain {
             // If we already we also want to trigger a remote load
             if state.profile != nil {
                 return .concatenate(
-                    .run { _ in
+                    .run(operation: { _ in
                         // sleep a few seconds to allow UI to settle for iOS 17 padding glitch
                         try await Task.sleep(for: .seconds(0.1))
-                    },
+                    }),
                     .merge(
                         .publisher(profilePublisher),
                         .send(.loadRemotePrescriptionsAndSave)
@@ -176,10 +176,10 @@ struct PrescriptionListDomain {
                 )
             }
             return .concatenate(
-                .run { _ in
+                .run(operation: { _ in
                     // sleep a few seconds to allow UI to settle for iOS 17 padding glitch
                     try await Task.sleep(for: .seconds(0.1))
-                },
+                }),
                 .publisher(
                     profilePublisher
                 )
@@ -223,7 +223,7 @@ struct PrescriptionListDomain {
             state.prescriptions = loadingState.value ?? []
             // check if user has a DiGA prescription
             if state.appDefaults.diga.hasPrescripedDiga == false,
-               state.prescriptions.contains(where: \.isDiGaPrescription) {
+               state.prescriptions.first(where: { $0.isDiGaPrescription }) != nil {
                 state.$appDefaults.withLock { $0.diga.hasPrescripedDiga = true }
             }
             return .none
@@ -359,16 +359,16 @@ extension Publisher where Output == PrescriptionRepositoryLoadRemoteResult, Fail
             PrescriptionRepositoryLoadRemoteResult,
             PrescriptionRepositoryError
         > in
-            if case let PrescriptionRepositoryError
-                .erxRepository(.remote(.fhirClient(FHIRClient.Error.http(fhirClientHttpError)))) = error,
-                case let .httpError(urlError) = fhirClientHttpError.httpClientError,
-                urlError.code.rawValue == HTTPStatusCode.forbidden.rawValue ||
-                urlError.code.rawValue == HTTPStatusCode.unauthorized.rawValue {
-                return Just(PrescriptionRepositoryLoadRemoteResult.authenticationRequired)
-                    .setFailureType(to: PrescriptionRepositoryError.self)
-                    .eraseToAnyPublisher()
-            }
-            return Fail(error: error).eraseToAnyPublisher()
+        if case let PrescriptionRepositoryError
+            .erxRepository(.remote(.fhirClient(FHIRClient.Error.http(fhirClientHttpError)))) = error,
+            case let .httpError(urlError) = fhirClientHttpError.httpClientError,
+            urlError.code.rawValue == HTTPStatusCode.forbidden.rawValue ||
+            urlError.code.rawValue == HTTPStatusCode.unauthorized.rawValue {
+            return Just(PrescriptionRepositoryLoadRemoteResult.authenticationRequired)
+                .setFailureType(to: PrescriptionRepositoryError.self)
+                .eraseToAnyPublisher()
+        }
+        return Fail(error: error).eraseToAnyPublisher()
         }
         .eraseToAnyPublisher()
     }

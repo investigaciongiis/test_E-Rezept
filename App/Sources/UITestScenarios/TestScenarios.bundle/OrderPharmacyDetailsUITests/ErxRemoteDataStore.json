@@ -1,10 +1,10 @@
 {
-    "listMedicationDispensesForProfileIdRecordings":
+    "listMedicationDispensesForRecordings":
     {
         "type": "repeated",
         "payload": []
     },
-    "redeemOrderProfileIdRecordings":
+    "redeemOrderRecordings":
     {
         "type": "repeated",
         "payload":
@@ -30,7 +30,7 @@
             }
         }
     },
-    "listAllCommunicationsAfterForProfileIdRecordings":
+    "listAllCommunicationsAfterForRecordings":
     {
         "type": "repeated",
         "payload":
@@ -53,7 +53,7 @@
             }
         ]
     },
-    "listAllTasksAfterProfileIdRecordings":
+    "listAllTasksAfterRecordings":
     {
         "type": "repeated",
         "payload":
@@ -97,7 +97,7 @@
             ]
         }
     },
-    "listDetailedTasksForProfileIdRecordings":
+    "listDetailedTasksForRecordings":
     {
         "type": "repeated",
         "payload":

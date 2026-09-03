@@ -28,38 +28,27 @@ import SwiftUI
 ///
 /// - Warning: Attention: This style only works within **`SectionContainer`s**
 public struct DetailNavigationButtonStyle: ButtonStyle {
+    let showSeparator: Bool
     let minChevronSpacing: CGFloat
 
-    init(minChevronSpacing: CGFloat? = nil) {
+    init(showSeparator: Bool, minChevronSpacing: CGFloat? = nil) {
+        self.showSeparator = showSeparator
         self.minChevronSpacing = minChevronSpacing ?? 16
     }
 
-    public func makeBody(configuration: Configuration) -> some View {
-        DetailNavigationButtonBody(
-            minChevronSpacing: minChevronSpacing,
-            configuration: configuration
-        )
-    }
-}
-
-private struct DetailNavigationButtonBody: View {
-    let minChevronSpacing: CGFloat
-    let configuration: ButtonStyleConfiguration
-
     @Environment(\.sectionContainerStyle) var style
     @Environment(\.isEnabled) var isEnabled: Bool
-    @Environment(\.sectionContainerElementInformation) var sectionContainerElementInformation
 
-    var body: some View {
+    public func makeBody(configuration: Configuration) -> some View {
         HStack {
             configuration.label
                 .opacity(isEnabled ? 1.0 : 0.3)
-                .keyValuePairStyle(SeparatedKeyValuePairStyle())
-                .subTitleStyle(.navigation(minChevronSpacing: minChevronSpacing))
+                .keyValuePairStyle(SeparatedKeyValuePairStyle(showSeparator: showSeparator))
+                .subTitleStyle(.navigation(showSeparator: showSeparator, minChevronSpacing: minChevronSpacing))
                 .labelStyle(DetailNavigationLabelStyle(
+                    showSeparator: showSeparator,
                     minChevronSpacing: minChevronSpacing
                 ))
-                .sectionContainerElementInformation(sectionContainerElementInformation.enableNavigationLink())
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .foregroundColor(Colors.systemLabel)
@@ -70,7 +59,13 @@ private struct DetailNavigationButtonBody: View {
 }
 
 struct DetailNavigationLabelStyle: LabelStyle {
+    let showSeparator: Bool
     let minChevronSpacing: CGFloat
+
+    init(showSeparator: Bool, minChevronSpacing: CGFloat) {
+        self.showSeparator = showSeparator
+        self.minChevronSpacing = minChevronSpacing
+    }
 
     func makeBody(configuration: Configuration) -> some View {
         Label(title: {
@@ -80,20 +75,20 @@ struct DetailNavigationLabelStyle: LabelStyle {
                 Spacer(minLength: minChevronSpacing)
 
                 Image(systemName: SFSymbolName.chevronForward)
-                    .foregroundColor(Colors.systemLabelSecondary)
+                    .foregroundColor(Color(.tertiaryLabel))
                     .font(.body.weight(.semibold))
             }
         }, icon: {
             configuration.icon
         })
-        .labelStyle(SectionContainerLabelStyle())
-        .subTitleStyle(.navigation(minChevronSpacing: minChevronSpacing))
-        .keyValuePairStyle(PlainKeyValuePairStyle())
+            .labelStyle(SectionContainerLabelStyle(showSeparator: showSeparator))
+            .subTitleStyle(.navigation(showSeparator: showSeparator, minChevronSpacing: minChevronSpacing))
+            .keyValuePairStyle(PlainKeyValuePairStyle())
     }
 }
 
 public struct BottomDividerStyle: ViewModifier {
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
+    @Environment(\.sectionContainerIsLastElement) var isLastElement: Bool
     let showSeparator: Bool
 
     public init(showSeparator: Bool) {
@@ -113,34 +108,9 @@ public struct BottomDividerStyle: ViewModifier {
     }
 }
 
-public struct SectionContainerBottomDividerStyle: ViewModifier {
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
-    @Environment(\.sectionContainerElementInformation.isRootElement) var isRootElement
-
-    public func body(content: Content) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            content
-                .padding([.bottom, .trailing, .top], isRootElement ? 16 : 0)
-
-            if isRootElement, !isLastElement {
-                Divider()
-            }
-        }
-        .frame(
-            maxWidth: .infinity,
-            minHeight: isRootElement ? 44 : 0,
-            alignment: .leading
-        )
-    }
-}
-
 extension View {
     func bottomDivider(showSeparator: Bool = true) -> some View {
         modifier(BottomDividerStyle(showSeparator: showSeparator))
-    }
-
-    func bottomDividerIfNeeded() -> some View {
-        modifier(SectionContainerBottomDividerStyle())
     }
 }
 
@@ -176,9 +146,7 @@ extension ButtonStyle where Self == DetailNavigationButtonStyle {
     /// the ``View/buttonStyle(_:)`` modifier.
     ///
     /// - Warning: Attention: This style only works within **`SectionContainer`s**
-    public static var navigation: DetailNavigationButtonStyle {
-        DetailNavigationButtonStyle()
-    }
+    public static var navigation: DetailNavigationButtonStyle { DetailNavigationButtonStyle(showSeparator: true) }
 
     /// A button style that applies a navigation chevron and optionally skips the divider.
     ///
@@ -186,8 +154,9 @@ extension ButtonStyle where Self == DetailNavigationButtonStyle {
     /// the ``View/buttonStyle(.navigation(showSeparator:))`` modifier.
     ///
     /// - Warning: Attention: This style only works within **`SectionContainer`s**
-    public static func navigation(minChevronSpacing: CGFloat? = nil) -> DetailNavigationButtonStyle {
-        DetailNavigationButtonStyle(minChevronSpacing: minChevronSpacing)
+    public static func navigation(showSeparator: Bool = true,
+                                  minChevronSpacing: CGFloat? = nil) -> DetailNavigationButtonStyle {
+        DetailNavigationButtonStyle(showSeparator: showSeparator, minChevronSpacing: minChevronSpacing)
     }
 }
 
@@ -205,7 +174,7 @@ struct DetailNavigationButtonStyle_Preview: PreviewProvider {
                                 .bottomDivider()
                                 .padding(.leading)
                         })
-                        .buttonStyle(.navigation)
+                            .buttonStyle(.navigation)
 
                         Button(action: {}, label: {
                             Label(title: {
@@ -217,17 +186,17 @@ struct DetailNavigationButtonStyle_Preview: PreviewProvider {
                                 }
                             }, icon: {})
                         })
-                        .buttonStyle(.navigation)
+                            .buttonStyle(.navigation)
 
                         Button(action: {}, label: {
                             Label(title: { Text("Simple Label without icon") }, icon: {})
                         })
-                        .buttonStyle(.navigation)
+                            .buttonStyle(.navigation)
 
                         Button(action: {}, label: {
                             Label("Simple Label", systemImage: "qrcode")
                         })
-                        .buttonStyle(.navigation)
+                            .buttonStyle(.navigation)
 
                         Button(action: {}, label: {
                             Label(title: {
@@ -241,7 +210,7 @@ struct DetailNavigationButtonStyle_Preview: PreviewProvider {
                                 Image(systemName: "qrcode")
                             })
                         })
-                        .buttonStyle(.navigation)
+                            .buttonStyle(.navigation)
 
                         Toggle(isOn: .constant(true)) {
                             Label {
@@ -271,13 +240,13 @@ struct DetailNavigationButtonStyle_Preview: PreviewProvider {
                         Button(action: {}, label: {
                             SubTitle(title: "Here", description: "everything is optional", details: "some details")
                         })
-                        .buttonStyle(.navigation)
+                            .buttonStyle(.navigation)
 
                         Button(action: {}, label: {
                             SubTitle(title: "Here", description: "everything is optional", details: "some details")
                                 .subTitleStyle(.info)
                         })
-                        .buttonStyle(.navigation)
+                            .buttonStyle(.navigation)
                     })
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

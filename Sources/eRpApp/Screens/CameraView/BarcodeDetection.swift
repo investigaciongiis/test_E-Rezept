@@ -38,7 +38,7 @@ extension DependencyValues {
 }
 
 extension BarcodeDetection: DependencyKey {
-    static let liveValue = Self(
+    public static let liveValue = Self(
         detectImage: { image in
             guard let ciImage = CIImage(image: image) else {
                 return [.invalidCode]

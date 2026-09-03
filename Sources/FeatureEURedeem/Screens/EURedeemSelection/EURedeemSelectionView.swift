@@ -24,11 +24,11 @@ import ComposableArchitecture
 import eRpKit
 import eRpResources
 import eRpStyleKit
-import FeatureCardWall
 import SwiftUI
 
 public struct EURedeemSelectionView: View {
     @Bindable var store: StoreOf<EURedeemSelectionDomain>
+    @State var calculatedHeight = CGFloat(1)
 
     public init(store: StoreOf<EURedeemSelectionDomain>) {
         self.store = store
@@ -42,8 +42,6 @@ public struct EURedeemSelectionView: View {
                     Colors.primary100
                     // Replace with actual illustration asset
                     Image(asset: Asset.EUReedem.banner)
-                        .accessibilityLabel(L10n.euredeemSelectionBannerVoice.text)
-                        .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmImgSelectionBanner)
                         .frame(width: 120, height: 120)
                         .foregroundColor(.yellow)
                 }
@@ -55,27 +53,24 @@ public struct EURedeemSelectionView: View {
                         .font(.title)
                         .bold()
                         .padding(.top, 8)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmTxtSelectionTitle)
 
                     UIKitTextView(
                         attributedString: attributedSubtitle,
+                        calculatedHeight: $calculatedHeight,
                         font: .preferredFont(forTextStyle: .body),
                         foregroundColor: .label
                     ) { _ in
-                        store
-                            .send(.delegate(.selectInstructionButtonTapped(countryCode: store.selectedCountry?
-                                    .countryCode)))
+                        store.send(.delegate(.selectInstructionButtonTapped))
                     }
-                    .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmTxtSelectionSubtitle)
+                    .frame(height: calculatedHeight)
                 }
                 .padding(.horizontal)
                 .padding(.bottom)
                 .padding(.top, 32)
 
                 VStack(spacing: 16) {
-                    PrescriptionCell(store: store)
-                    CountryCell(store: store)
+                    prescriptionCell
+                    countryCell
                 }
                 .padding(.horizontal)
             }
@@ -85,31 +80,23 @@ public struct EURedeemSelectionView: View {
             VStack(spacing: 8) {
                 GreyDivider()
 
+                let isDisabled = store.selectedPrescriptions.isEmpty || store.selectedCountry == nil
                 Button(
-                    action: { store.send(.redeemButtonTapped) },
+                    action: { store.send(.delegate(.redeemButtonTapped)) },
                     label: { Text(L10n.euredeemSelectionBtnRedeem) }
                 )
-                .buttonStyle(.primaryHugging)
-                .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmBtnSelectionRedeem)
+                .buttonStyle(.primary(isEnabled: !isDisabled, width: .wideHugging))
+                .disabled(isDisabled)
                 .padding(.horizontal)
                 .padding(.top, 4)
                 .padding(.bottom)
             }
         }
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
-        .navigationDestination(item: $store.scope(
-            state: \.destination?.consent,
-            action: \.destination.consent
-        )) { store in
+        .sheet(item: $store.scope(state: \.destination?.consent, action: \.destination.consent)) { store in
             ConsentView(store: store)
         }
-        .fullScreenCover(
-            item: $store.scope(
-                state: \.destination?.cardWall,
-                action: \.destination.cardWall
-            )
-        ) { store in
-            CardWallIntroductionView(store: store)
+        .sheet(item: $store.scope(state: \.destination?.consent, action: \.destination.consent)) { store in
+            ConsentView(store: store)
         }
         .background(Color(uiColor: .systemBackground))
         .navigationBarTitleDisplayMode(.inline)
@@ -120,153 +107,105 @@ public struct EURedeemSelectionView: View {
                 }, label: {
                     Text(L10n.euredeemSelectionBtnClose)
                 })
-                .accessibility(identifier: A11y.redeem.eu.selection.eurdmBtnSelectionClose)
+                    .accessibility(identifier: "euredeem_selection_close_button")
             }
         }
         .toolbarBackground(.visible)
         .toolbarBackground(Colors.primary100, for: .navigationBar)
-        .task {
-            await store.send(.task).finish()
-        }
     }
 
-    struct PrescriptionCell: View {
-        @Bindable var store: StoreOf<EURedeemSelectionDomain>
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
-                Button {
-                    store.send(.delegate(.selectPrescriptionsButtonTapped))
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+    private var prescriptionCell: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                store.send(.delegate(.selectPrescriptionsButtonTapped))
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if store.prescriptions.isEmpty {
+                            Text(L10n.euredeemSelectionPrescriptionTitleNone)
+                                .font(.body)
+                                .foregroundColor(.red)
+                        } else {
                             if store.selectedPrescriptions.isEmpty {
                                 Text(L10n.euredeemSelectionPrescriptionTitleNone)
                                     .font(.body)
-                                    .foregroundStyle(
-                                        store.validation == .emptyPrescription
-                                            ? Colors.red700 : Colors.systemLabel
-                                    )
-                                    .accessibilityIdentifier(
-                                        A11y.redeem.eu.selection.eurdmTxtSelectionPrescriptionTitle
-                                    )
                             } else {
                                 Text(L10n.euredeemSelectionPrescriptionTitle)
                                     .font(.caption)
                                     .foregroundColor(.gray)
-                                    .accessibilityIdentifier(
-                                        A11y.redeem.eu.selection.eurdmTxtSelectionPrescriptionTitle
-                                    )
                                 // Show selected prescriptions
                                 ForEach(store.selectedPrescriptions) { prescription in
                                     Text(prescription.name)
                                         .font(.body)
-                                        .foregroundColor(Colors.systemLabel)
+                                        .foregroundColor(.primary)
                                 }
                             }
                         }
-
-                        Spacer()
-                        Image(systemName: SFSymbolName.chevronForward)
-                            .foregroundColor(.gray)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(
-                                store.validation == .emptyPrescription
-                                    ? Colors.red700 : Color.gray.opacity(0.3),
-                                lineWidth: 1
-                            )
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(PlainButtonStyle())
-                .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmBtnSelectionPrescriptions)
 
-                if store.validation == .emptyPrescription {
-                    Text(L10n.euredeemSelectionPrescriptionCaptionNone)
-                        .font(.caption)
-                        .foregroundColor(Colors.red700)
-                        .padding(.leading)
-                        .padding(.top, 8)
-                        .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmTxtSelectionPrescriptionCaption)
+                    Spacer()
+                    Image(systemName: SFSymbolName.chevronForward)
+                        .foregroundColor(.gray)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(
+                            store.prescriptions.isEmpty
+                                ? Color.red : Color.gray.opacity(0.3),
+                            lineWidth: 1
+                        )
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            if store.prescriptions.isEmpty {
+                Text(L10n.euredeemSelectionPrescriptionCaptionNone)
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.leading)
+                    .padding(.top, 8)
             }
         }
     }
 
-    struct CountryCell: View {
-        @Bindable var store: StoreOf<EURedeemSelectionDomain>
+    private var countryCell: some View {
+        Button(
+            action: { store.send(.delegate(.selectCountryButtonTapped)) },
+            label: {
+                HStack {
+                    if let country = store.selectedCountry {
+                        Text(country.flag)
+                            .font(.largeTitle)
 
-        var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
-                Button(
-                    action: { store.send(.delegate(.selectCountryButtonTapped)) },
-                    label: {
-                        HStack {
-                            if let country = store.selectedCountry {
-                                Text(country.flag)
-                                    .font(.largeTitle)
-                                    .accessibilityHidden(true)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L10n.euredeemSelectionCountryTitle)
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                        .accessibilityIdentifier(
-                                            A11y.redeem.eu.selection.eurdmTxtSelectionCountryTitle
-                                        )
-                                    Text(store.selectedCountry?.displayName ?? "")
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                }
-                            } else {
-                                let euCountry = Country(id: "EU", name: "European Union", telematikId: "")
-                                Text(euCountry.flag)
-                                    .font(.largeTitle)
-                                    .accessibilityHidden(true)
-
-                                Text(L10n.euredeemSelectionTxtNoCountry)
-                                    .font(.body)
-                                    .foregroundColor(
-                                        store.validation == .emptyCountry
-                                            ? Colors.red700 : Colors.systemLabel
-                                    )
-                                    .accessibilityIdentifier(
-                                        A11y.redeem.eu.selection.eurdmTxtSelectionCountryNoSelection
-                                    )
-                            }
-                            Spacer()
-                            Image(systemName: SFSymbolName.chevronForward)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.euredeemSelectionCountryTitle)
+                                .font(.caption)
                                 .foregroundColor(.gray)
+                            Text(store.selectedCountry?.name ?? "")
+                                .font(.body)
+                                .foregroundColor(.primary)
                         }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(
-                                    store.validation == .emptyCountry
-                                        ? Colors.red700 : Color.gray.opacity(0.3),
-                                    lineWidth: 1
-                                )
-                        )
-                        .contentShape(Rectangle())
+                    } else {
+                        let euCountry = Country(id: "EU", name: "European Union", telematikId: "")
+                        Text(euCountry.flag)
+                            .font(.largeTitle)
+                        Text(L10n.euredeemSelectionTxtNoCountry)
+                            .font(.body)
+                            .foregroundColor(.primary)
                     }
-                )
-                .buttonStyle(PlainButtonStyle())
-                .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmBtnSelectionCountry)
-
-                if store.validation == .emptyCountry {
-                    Text(L10n.euredeemSelectionCountryCaptionNone)
-                        .font(.caption)
-                        .foregroundColor(Colors.red700)
-                        .padding(.leading)
-                        .padding(.top, 8)
-                        .accessibilityIdentifier(A11y.redeem.eu.selection.eurdmTxtSelectionCountryCaption)
+                    Spacer()
+                    Image(systemName: SFSymbolName.chevronForward)
+                        .foregroundColor(.gray)
                 }
+                .padding()
+                .background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                .contentShape(Rectangle())
             }
-        }
+        )
+        .buttonStyle(PlainButtonStyle())
     }
 
     private var attributedSubtitle: AttributedString {

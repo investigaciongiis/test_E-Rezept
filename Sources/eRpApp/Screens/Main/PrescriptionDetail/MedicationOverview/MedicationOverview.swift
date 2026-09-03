@@ -33,21 +33,19 @@ struct MedicationOverview: View {
             SingleElementSectionContainer(
                 header: {
                     Label(L10n.prscDtlMedOvTxtSubscribedHeader)
-                        .padding(.horizontal)
                         .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedOvSubscribedHeader)
                 }, content: {
                     Button(action: { store.send(.showSubscribedMedication) }, label: {
-                        SubTitle(title: store.subscribed.displayName ?? L10n.prscFdTxtNa.text)
+                        SubTitle(title: store.subscribed.displayName)
                     })
-                    .buttonStyle(.navigation)
-                    .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedOvBtnSubscribedMedication)
+                        .buttonStyle(.navigation)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedOvBtnSubscribedMedication)
                 }
             ).sectionContainerStyle(.inline)
 
             SingleElementSectionContainer(
                 header: {
                     Label(L10n.prscDtlMedOvTxtDispensedHeader)
-                        .padding(.horizontal)
                         .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedOvDispensedHeader)
                 }, content: {
                     ForEach(store.dispensed.indices, id: \.self) { index in
@@ -81,7 +79,7 @@ struct MedicationOverview: View {
 
 extension ErxMedicationDispense {
     var displayName: String {
-        if let epaMedication {
+        if let epaMedication = epaMedication {
             return epaMedication.displayName ?? L10n.prscTxtFallbackName.text
         } else {
             return medication?.displayName ?? L10n.prscTxtFallbackName.text

@@ -25,6 +25,7 @@ import eRpKit
 import FeatureHelpers
 import Foundation
 import IDP
+import OpenSSL
 
 class MemoryStorage: SecureUserDataStore, IDPStorage {
     private let schedulers: Schedulers
@@ -67,13 +68,13 @@ class MemoryStorage: SecureUserDataStore, IDPStorage {
         discoveryState = document
     }
 
-    @Published private var certificateState: IDPX509?
+    @Published private var certificateState: X509?
 
-    var certificate: AnyPublisher<IDPX509?, Never> {
+    var certificate: AnyPublisher<X509?, Never> {
         $certificateState.eraseToAnyPublisher()
     }
 
-    func set(certificate: IDPX509?) {
+    func set(certificate: X509?) {
         certificateState = certificate
     }
 

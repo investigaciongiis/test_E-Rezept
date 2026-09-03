@@ -29,7 +29,7 @@ struct DiGaSupportView: View {
     @Bindable var store: StoreOf<DiGaDetailDomain>
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack {
             HStack {
                 Spacer()
                 CloseButton {
@@ -37,54 +37,52 @@ struct DiGaSupportView: View {
                 }
                 .accessibilityIdentifier(A11y.diga.support.digaDtlSupportBtnClose)
             }
-            .padding([.top, .horizontal])
 
-            ScrollView {
-                VStack(alignment: .center, spacing: 8) {
-                    Text(L10n.digaDtlSupportTxtHeader)
-                        .font(.headline)
-                        .accessibilityIdentifier(A11y.diga.support.digaDtlSupportTxtHeader)
+            VStack(alignment: .center, spacing: 8) {
+                Text(L10n.digaDtlSupportTxtHeader)
+                    .font(.headline)
+                    .accessibilityIdentifier(A11y.diga.support.digaDtlSupportTxtHeader)
 
-                    if let supportText = store.bfArMDisplayInfo?.supportText {
-                        supportText
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .multilineTextAlignment(.center)
-                            .padding(.bottom, 16)
-                            .accessibilityIdentifier(A11y.diga.support.digaDtlSupportTxtProvidedLink)
-                    }
-
-                    if let helpUrl = store.bfarmDiGaDetails?.helpUrl {
-                        Button {
-                            store.send(.openLink(urlString: helpUrl))
-                        } label: {
-                            Text(L10n.digaDtlSupportBtnOpenLink)
-                        }
-                        .accessibilityIdentifier(A11y.diga.support.digaDtlSupportBtnOpenLink)
-                        .buttonStyle(.primaryHugging)
-                    }
-
-                    if let handbookUrl = store.bfarmDiGaDetails?.handbookUrl {
-                        Button(
-                            action: { store.send(.openLink(urlString: handbookUrl)) },
-                            label: {
-                                Text(L10n.digaDtlSupportBtnOpenPdf).font(Font.body.weight(.semibold))
-                                    .multilineTextAlignment(.leading)
-                                    .padding(.vertical)
-                                    .padding(.horizontal, 64)
-                                    .foregroundColor(Colors.primary700)
-                            }
-                        )
-                        .accessibilityIdentifier(A11y.diga.support.digaDtlSupportBtnOpenPdf)
-                        .padding(.horizontal)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .buttonStyle(.secondary)
-                    }
+                if let supportText = store.bfArMDisplayInfo?.supportText {
+                    supportText
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 16)
+                        .accessibilityIdentifier(A11y.diga.support.digaDtlSupportTxtProvidedLink)
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
+
+                if let helpUrl = store.bfarmDiGaDetails?.helpUrl {
+                    Button {
+                        store.send(.openLink(urlString: helpUrl))
+                    } label: {
+                        Text(L10n.digaDtlSupportBtnOpenLink)
+                    }
+                    .accessibilityIdentifier(A11y.diga.support.digaDtlSupportBtnOpenLink)
+                    .buttonStyle(.primaryHugging)
+                }
+
+                if let handbookUrl = store.bfarmDiGaDetails?.handbookUrl {
+                    Button(
+                        action: { store.send(.openLink(urlString: handbookUrl)) },
+                        label: {
+                            Text(L10n.digaDtlSupportBtnOpenPdf).font(Font.body.weight(.semibold))
+                                .multilineTextAlignment(.leading)
+                                .padding(.vertical)
+                                .padding(.horizontal, 64)
+                                .foregroundColor(Colors.primary700)
+                        }
+                    )
+                    .accessibilityIdentifier(A11y.diga.support.digaDtlSupportBtnOpenPdf)
+                    .padding(.horizontal)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .buttonStyle(.secondary)
+                }
+
+                Spacer()
             }
         }
+        .padding()
         .frame(maxWidth: .infinity)
         .background(Colors.systemBackground.ignoresSafeArea())
     }

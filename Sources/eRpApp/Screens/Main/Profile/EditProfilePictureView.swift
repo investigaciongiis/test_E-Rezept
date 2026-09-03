@@ -164,7 +164,6 @@ extension EditProfilePictureView {
                         .padding([.leading, .trailing])
                         .padding(.top, 40)
                         .font(.headline.bold())
-                        .accessibilityAddTraits(.isHeader)
                 }
             }
         }
@@ -201,8 +200,8 @@ extension EditProfilePictureView {
                                     .background(Circle().foregroundColor(store.color.background))
                                     .border(store.color.border, width: 1, cornerRadius: 99)
                                     .clipShape(Circle())
+                                    .accessibilityLabel(image.accessibility)
                             })
-                            .accessibilityLabel(L10n.editPictureChooseAsAvatar(image.accessibility.text))
                         }
                     }
                 }

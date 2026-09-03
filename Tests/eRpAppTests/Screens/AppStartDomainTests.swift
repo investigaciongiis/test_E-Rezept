@@ -25,14 +25,13 @@ import Combine
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import FeatureCommunication
 import FeatureHelpers
 import Nimble
 import XCTest
 
 @MainActor
 final class AppStartDomainTests: XCTestCase {
-    var mockUserDataStore: UserDataStoreMock!
+    var mockUserDataStore: MockUserDataStore!
     static let now = Date()
 
     typealias TestStore = TestStoreOf<AppStartDomain>
@@ -40,15 +39,13 @@ final class AppStartDomainTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        mockUserDataStore = UserDataStoreMock()
+        mockUserDataStore = MockUserDataStore()
     }
 
     private func testStore(with state: AppStartDomain.State = .init()) -> TestStore {
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
         return TestStore(initialState: state) {
             AppStartDomain()
         } withDependencies: { dependencies in
@@ -57,8 +54,8 @@ final class AppStartDomainTests: XCTestCase {
             dependencies.schedulers = Schedulers(
                 uiScheduler: DispatchQueue.immediate.eraseToAnyScheduler()
             )
-            dependencies.appSecurityManager = AppSecurityManagerMock()
-            dependencies.router = RoutingMock()
+            dependencies.appSecurityManager = MockAppSecurityManager()
+            dependencies.router = MockRouting()
             dependencies.date = DateGenerator.constant(Self.now)
         }
     }
@@ -95,8 +92,7 @@ final class AppStartDomainTests: XCTestCase {
                             pharmacyFilterOptions: Shared(value: [])
                         )
                     ),
-                    orders: OrdersDomain.State(communicationMessage: Shared(value: [])),
-                    messages: MessageThreadListDomain.State(),
+                    orders: OrdersDomain.State(communicationMessage: []),
                     settings: SettingsDomain.State(),
                     unreadOrderMessageCount: 0,
                     unreadInternalCommunicationCount: 0
@@ -128,8 +124,7 @@ final class AppStartDomainTests: XCTestCase {
                             pharmacyFilterOptions: Shared(value: [])
                         )
                     ),
-                    orders: OrdersDomain.State(communicationMessage: Shared(value: [])),
-                    messages: MessageThreadListDomain.State(),
+                    orders: OrdersDomain.State(communicationMessage: []),
                     settings: .init(),
                     unreadOrderMessageCount: 0,
                     unreadInternalCommunicationCount: 0

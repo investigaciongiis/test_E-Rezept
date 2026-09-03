@@ -1,5 +1,4 @@
 // swiftlint:disable:this file_name
-// swiftlint:disable:this file_name
 //
 //  Copyright (Change Date see Readme), gematik GmbH
 //
@@ -25,11 +24,14 @@
 import TrustStore
 @testable import VAUClient
 
-// swiftformat:disable emptyExtensions
+// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
+
 // sourcery:begin: AutoMockable
 extension TrustStoreSession {}
+// sourcery:end
+
+// sourcery:begin: ProtocolMock
 extension VAUAccessTokenProvider {}
 extension VAUCrypto {}
 extension VAUCryptoProvider {}
 // sourcery:end
-// swiftformat:enable emptyExtensions

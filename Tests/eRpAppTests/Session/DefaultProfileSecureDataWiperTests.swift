@@ -29,23 +29,23 @@ import TestUtils
 import XCTest
 
 final class DefaultProfileSecureDataWiperTests: XCTestCase {
-    let mockUserSessionProvider = UserSessionProviderMock()
+    let mockUserSessionProvider = MockUserSessionProvider()
 
     func testwipingData() async throws {
         let mockIDPSession = IDPSessionMock()
-        let mockSecureUserStore = SecureUserDataStoreMock()
+        let mockSecureUserStore = MockSecureUserDataStore()
         let mockUserSession = MockUserSession(idpSession: mockIDPSession, secureUserStore: mockSecureUserStore)
-        mockUserSessionProvider.userSessionForUuidUUIDUserSessionReturnValue = mockUserSession
+        mockUserSessionProvider.userSessionForReturnValue = mockUserSession
         mockSecureUserStore.underlyingKeyIdentifier = Just(Data()).eraseToAnyPublisher()
 
         let sut = DefaultProfileSecureDataWiper(userSessionProvider: mockUserSessionProvider)
 
         try await sut.wipeSecureData(of: UUID()).async()
 
-        expect(self.mockUserSessionProvider.userSessionForUuidUUIDUserSessionCalled).to(beTrue())
-        expect(mockSecureUserStore.wipeVoidCalled).to(beTrue())
-        expect(mockSecureUserStore.setKeyIdentifierDataVoidCalled).to(beTrue())
+        expect(self.mockUserSessionProvider.userSessionForCalled).to(beTrue())
+        expect(mockSecureUserStore.wipeCalled).to(beTrue())
+        expect(mockSecureUserStore.setKeyIdentifierCalled).to(beTrue())
         expect(mockIDPSession.invalidateAccessToken_Called).to(beTrue())
-        expect(mockSecureUserStore.setKeyIdentifierDataVoidCalled).to(beTrue())
+        expect(mockSecureUserStore.setKeyIdentifierCalled).to(beTrue())
     }
 }

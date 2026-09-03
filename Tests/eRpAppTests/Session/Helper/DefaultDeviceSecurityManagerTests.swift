@@ -28,16 +28,16 @@ import TestUtils
 import XCTest
 
 final class DefaultDeviceSecurityManagerTests: XCTestCase {
-    var mockUserDataStore: UserDataStoreMock!
-    var deviceSecurityManagerSessionStorage: DeviceSecurityManagerSessionStorageMock!
+    var mockUserDataStore: MockUserDataStore!
+    var deviceSecurityManagerSessionStorage: MockDeviceSecurityManagerSessionStorage!
 
     var sut: DefaultDeviceSecurityManager!
 
     override func setUp() {
         super.setUp()
 
-        mockUserDataStore = UserDataStoreMock()
-        deviceSecurityManagerSessionStorage = DeviceSecurityManagerSessionStorageMock()
+        mockUserDataStore = MockUserDataStore()
+        deviceSecurityManagerSessionStorage = MockDeviceSecurityManagerSessionStorage()
 
         sut = DefaultDeviceSecurityManager(userDataStore: mockUserDataStore,
                                            sessionStorage: deviceSecurityManagerSessionStorage)

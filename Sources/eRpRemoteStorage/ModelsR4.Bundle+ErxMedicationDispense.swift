@@ -74,7 +74,7 @@ extension ModelsR4.Bundle {
             identifier: identifier,
             taskId: taskId,
             insuranceId: medicationDispense.insuranceIdentifier,
-            dosageInstruction: medicationDispense.effectiveDosageInstruction,
+            dosageInstruction: medicationDispense.firstDosageInstruction,
             telematikId: medicationDispense.firstPerformerID,
             whenHandedOver: medicationDispense.handOverDate,
             quantity: medicationDispense.erxTaskQuantity,
@@ -91,6 +91,7 @@ extension ModelsR4.Bundle {
         if
             let medications = entry?.compactMap({ $0.resource?.get(if: Medication.self) }),
             let resource = medications.first(where: { medication in
+
                 guard let medicationId = medication.id?.value?.string else { return false }
                 return reference.contains(medicationId)
 
@@ -120,24 +121,6 @@ extension ModelsR4.MedicationDispense {
 
     var firstDosageInstruction: String? {
         dosageInstruction?.first?.text?.value?.string
-    }
-
-    var renderedDosageInstruction: String? {
-        `extension`?.first {
-            $0.url.value?.url.absoluteString
-                == "http://hl7.org/fhir/5.0/StructureDefinition/extension-MedicationDispense.renderedDosageInstruction"
-        }
-        .flatMap {
-            if let valueX = $0.value,
-               case let Extension.ValueX.markdown(markdown) = valueX {
-                return markdown.value?.string
-            }
-            return nil
-        }
-    }
-
-    var effectiveDosageInstruction: String? {
-        renderedDosageInstruction ?? firstDosageInstruction
     }
 
     var firstPerformerID: String? {

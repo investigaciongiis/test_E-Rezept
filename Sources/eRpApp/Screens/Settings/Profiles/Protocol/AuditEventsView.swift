@@ -31,6 +31,10 @@ import SwiftUI
 struct AuditEventsView: View {
     @Bindable var store: StoreOf<AuditEventsDomain>
 
+    init(store: StoreOf<AuditEventsDomain>) {
+        self.store = store
+    }
+
     enum ListState: Equatable {
         case emptyList
         case list(IdentifiedArrayOf<AuditEventsDomain.State.AuditEvent>)

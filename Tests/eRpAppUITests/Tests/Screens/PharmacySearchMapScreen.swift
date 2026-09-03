@@ -25,9 +25,14 @@ import Nimble
 import XCTest
 
 @MainActor
-struct PharmacySearchMapScreen<Previous: Screen>: Screen {
+struct PharmacySearchMapScreen<Previous>: Screen where Previous: Screen {
     let app: XCUIApplication
     let previous: Previous
+
+    init(app: XCUIApplication, previous: Previous) {
+        self.app = app
+        self.previous = previous
+    }
 
     @discardableResult
     func tapCloseMap(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) -> Previous {

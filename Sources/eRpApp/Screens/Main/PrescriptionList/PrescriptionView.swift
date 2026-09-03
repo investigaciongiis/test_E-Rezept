@@ -60,9 +60,9 @@ struct PrescriptionView: View {
                     .multilineTextAlignment(.leading)
 
                     Spacer(minLength: 8)
-                    Image(systemName: SFSymbolName.forwardDisclosureIndicator)
+                    Image(systemName: SFSymbolName.rightDisclosureIndicator)
                         .font(Font.headline.weight(.semibold))
-                        .foregroundColor(Colors.systemLabelSecondary)
+                        .foregroundColor(Color(.tertiaryLabel))
                         .padding(8)
                 }
             }

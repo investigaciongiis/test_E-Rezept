@@ -47,7 +47,7 @@ extension MainDomain {
         func checkForTaskDuplicatesThenSave(_ sharedTasks: [SharedTask],
                                             profileId: UUID?) -> Effect<MainDomain.Action> {
             let authoredOn = fhirDateFormatter.stringWithLongUTCTimeZone(from: Date())
-            let erxTaskRepository = erxTaskRepository
+            let erxTaskRepository = self.erxTaskRepository
 
             return .run { [profileId] send in
                 do {

@@ -30,13 +30,13 @@ public struct SecureFieldWithReveal: View {
                 accessibilityLabelKey: StringAsset? = nil,
                 text: Binding<String>,
                 textContentType: UITextContentType? = nil,
-                borderColor: Color? = nil,
+                backgroundColor: Color = Color(.systemBackground),
                 onCommit: @escaping () -> Void) {
         self.titleKey = titleKey
         self.accessibilityLabelKey = accessibilityLabelKey ?? titleKey
         _text = text
         self.textContentType = textContentType
-        self.borderColor = borderColor ?? Colors.systemLabelSecondary
+        self.backgroundColor = backgroundColor
         self.onCommit = onCommit
     }
 
@@ -44,7 +44,7 @@ public struct SecureFieldWithReveal: View {
     let accessibilityLabelKey: StringAsset
     @Binding var text: String
     let textContentType: UITextContentType?
-    let borderColor: Color
+    let backgroundColor: Color
     let onCommit: () -> Void
 
     @State var showPassword = false
@@ -54,9 +54,7 @@ public struct SecureFieldWithReveal: View {
             // [REQ:BSI-eRp-ePA:O.Data_10#3] `SecureFields` are used for password input.
             SecureField(text: $text) {
                 Text(titleKey)
-                    .foregroundColor(Colors.systemLabelSecondary)
             }
-            .foregroundColor(!showPassword ? Colors.systemLabel : Colors.systemBackground)
             // This suppresses the clearButton displayed in the SecureField (introduced in SceneDelegate)
             // If shown, it's overlapping with the reveal button
             .introspect(.secureField, on: .iOS(.v15, .v16, .v17, .v18, .v26)) { secureField in
@@ -64,6 +62,7 @@ public struct SecureFieldWithReveal: View {
             }
             .onSubmit(onCommit)
             .font(Font.body)
+            .foregroundColor(!showPassword ? Colors.systemLabel : self.backgroundColor)
             .accessibility(label: Text(accessibilityLabelKey))
             .textContentType(textContentType)
 
@@ -78,22 +77,11 @@ public struct SecureFieldWithReveal: View {
             }, label: {
                 Image(systemName: showPassword ? SFSymbolName.eye : SFSymbolName.eyeSlash)
             })
-            .buttonStyle(PlainButtonStyle())
-            .foregroundColor(Colors.systemLabelSecondary)
-            .accessibilityValue(showPassword ? "show" : "hide") // for UITests only
-            .accessibility(hidden: true)
+                .buttonStyle(PlainButtonStyle())
+                .foregroundColor(Color(.tertiaryLabel))
+                .accessibilityValue(showPassword ? "show" : "hide") // for UITests only
+                .accessibility(hidden: true)
         }
-        .padding()
-        .font(Font.body)
-        .background(Colors.systemBackground)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(
-                    borderColor,
-                    lineWidth: 0.5
-                )
-        )
     }
 }
 

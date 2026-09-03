@@ -25,7 +25,13 @@ import SwiftUI
 /// `LabelStyle` applying font and color for full width action buttons within `SectionContainer`s. This style is applied
 /// automatically within `SectionContainer`.
 public struct SectionContainerLabelStyle: LabelStyle {
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
+    let showSeparator: Bool
+
+    init(showSeparator: Bool) {
+        self.showSeparator = showSeparator
+    }
+
+    @Environment(\.sectionContainerIsLastElement) var isLastElement: Bool
 
     public func makeBody(configuration: Configuration) -> some View {
         HStack(alignment: .center, spacing: 16) {
@@ -39,7 +45,7 @@ public struct SectionContainerLabelStyle: LabelStyle {
                     .foregroundColor(Colors.systemLabel)
                     .padding([.bottom, .trailing, .top])
 
-                if !isLastElement {
+                if !isLastElement, showSeparator {
                     Divider()
                 }
             }
@@ -47,7 +53,6 @@ public struct SectionContainerLabelStyle: LabelStyle {
         .subTitleStyle(PlainSectionContainerSubTitleStyle())
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .padding([.leading])
-        .rootSectionContainerElement(false)
     }
 }
 
@@ -57,8 +62,15 @@ extension LabelStyle where Self == SectionContainerLabelStyle {
     ///
     /// To apply this style to a label, or to a view that contains a label, use
     /// the ``View/labelStyle(_:)`` modifier.
-    public static var plain: SectionContainerLabelStyle {
-        SectionContainerLabelStyle()
+    public static var plain: SectionContainerLabelStyle { SectionContainerLabelStyle(showSeparator: false) }
+
+    /// A label style that applies standard border artwork based on the
+    /// button's context.
+    ///
+    /// To apply this style to a label, or to a view that contains a label, use
+    /// the ``View/labelStyle(.plain(showSeparator:))`` modifier.
+    public static func plain(showSeparator: Bool = true) -> SectionContainerLabelStyle {
+        SectionContainerLabelStyle(showSeparator: showSeparator)
     }
 }
 

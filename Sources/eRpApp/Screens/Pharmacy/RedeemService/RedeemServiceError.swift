@@ -20,6 +20,7 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
+import AVS
 import CodedError
 import eRpKit
 import eRpResources
@@ -28,28 +29,32 @@ import Foundation
 
 @CodedError("024")
 enum RedeemServiceError: Swift.Error, Equatable, LocalizedError, Codable {
-    /// When redeeming a task via Fachdienst
     @ErrorCode("01")
+    /// When redeeming a task via Fachdienst
     case eRxRepository(ErxRepositoryError)
-    /// When an internal error occurs which most likely is a programming error
+    @ErrorCode("02")
+    /// When redeeming a task via AVS
+    case avs(AVSError)
     @ErrorCode("03")
+    /// When an internal error occurs which most likely is a programming error
     case internalError(InternalError)
-    /// When error conversion into `RedeemServiceError` fails
     @ErrorCode("04")
+    /// When error conversion into `RedeemServiceError` fails
     case unspecified(error: Swift.Error)
-    /// When the user has no valid token available while trying to redeem via Fachdienst
     @ErrorCode("05")
+    /// When the user has no valid token available while trying to redeem via Fachdienst
     case noTokenAvailable
-    /// When receiving an error while doing a login
     @ErrorCode("06")
+    /// When receiving an error while doing a login
     case loginHandler(error: LoginHandlerError)
-    /// When the prescription has already been redeemed
     @ErrorCode("07")
+    /// When the prescription has already been redeemed
     case prescriptionAlreadyRedeemed([Prescription])
 
     static func ==(lhs: RedeemServiceError, rhs: RedeemServiceError) -> Bool {
         switch (lhs, rhs) {
         case let (.eRxRepository(lhsError), .eRxRepository(rhsError)): return lhsError == rhsError
+        case let (.avs(lhsError), .avs(rhsError)): return lhsError == rhsError
         case let (.unspecified(error: lhsError), .unspecified(error: rhsError)):
             return lhsError.localizedDescription == rhsError.localizedDescription
         case let (.internalError(lhsError), .internalError(rhsError)): return lhsError == rhsError
@@ -65,29 +70,29 @@ enum RedeemServiceError: Swift.Error, Equatable, LocalizedError, Codable {
 
     @CodedError("025")
     enum InternalError: Swift.Error, Equatable, LocalizedError {
-        /// When the AVS endpoint for the selected redeem option is missing
         @ErrorCode("01")
+        /// When the AVS endpoint for the selected redeem option is missing
         case missingAVSEndpoint
-        /// When the required AVS certificates for redeeming via AVS are missing
         @ErrorCode("02")
+        /// When the required AVS certificates for redeeming via AVS are missing
         case missingAVSCertificate
-        /// When the Telematik-ID of the pharmacy to redeem in is missing
         @ErrorCode("03")
+        /// When the Telematik-ID of the pharmacy to redeem in is missing
         case missingTelematikId
-        /// When converting AVS Version number
         @ErrorCode("04")
+        /// When converting AVS Version number
         case conversionVersionNumber
-        /// When no order can be found to the received response
         @ErrorCode("05")
+        /// When no order can be found to the received response
         case idMissmatch
-        /// When no service can be found for the selected pharmacy
         @ErrorCode("06")
+        /// When no service can be found for the selected pharmacy
         case noService
-        /// When the status code is not in [200..<300] but the service did not return an error beforehand
         @ErrorCode("07")
+        /// When the status code is not in [200..<300] but the service did not return an error beforehand
         case unexpectedHTTPStatusCode
-        /// When persisting/extracting information from the store went wrong
         @ErrorCode("08")
+        /// When persisting/extracting information from the store went wrong
         case localStoreError(LocalStoreError)
 
         var errorDescription: String? {
@@ -103,6 +108,8 @@ enum RedeemServiceError: Swift.Error, Equatable, LocalizedError, Codable {
     var errorDescription: String? {
         switch self {
         case let .eRxRepository(error):
+            return error.localizedDescription
+        case let .avs(error):
             return error.localizedDescription
         case let .internalError(error):
             return error.localizedDescription
@@ -120,6 +127,8 @@ enum RedeemServiceError: Swift.Error, Equatable, LocalizedError, Codable {
     var recoverySuggestion: String? {
         switch self {
         case let .eRxRepository(error):
+            return error.recoverySuggestion
+        case let .avs(error):
             return error.recoverySuggestion
         case let .internalError(error):
             return error.recoverySuggestion
@@ -145,7 +154,9 @@ enum RedeemServiceError: Swift.Error, Equatable, LocalizedError, Codable {
     }
 
     static func from(_ error: Swift.Error) -> RedeemServiceError {
-        if let repositoryError = error as? ErxRepositoryError {
+        if let avsError = error as? AVSError {
+            return .avs(avsError)
+        } else if let repositoryError = error as? ErxRepositoryError {
             return .eRxRepository(repositoryError)
         } else if let internalError = error as? RedeemServiceError.InternalError {
             return .internalError(internalError)
@@ -174,6 +185,8 @@ enum RedeemServiceError: Swift.Error, Equatable, LocalizedError, Codable {
         switch self {
         case .eRxRepository:
             try container.encode("eRxRepository", forKey: .type)
+        case .avs:
+            try container.encode("avs", forKey: .type)
         case .internalError:
             try container.encode("internalError", forKey: .type)
         case .unspecified:

@@ -73,7 +73,7 @@ struct RegisteredDevicesDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = cardWall
         case cardWallCAN(CardWallCANDomain)
@@ -135,7 +135,7 @@ struct RegisteredDevicesDomain {
             case let .success(entries):
                 state.content = .loaded(
                     entries.pairingEntries
-                        .sorted { $0.creationTime > $1.creationTime }
+                        .sorted(by: { $0.creationTime > $1.creationTime })
                         .map { ($0, dateFormatter) }
                         .map(State.Entry.init)
                 )
@@ -143,6 +143,7 @@ struct RegisteredDevicesDomain {
                 state.content = .notLoaded
             }
             return .none
+
         case .loadDevices:
             let currentState = state.content[case: \State.Content.Cases.loaded] ?? []
             state.content = .loading(currentState)
@@ -153,7 +154,7 @@ struct RegisteredDevicesDomain {
         case let .response(.loadDevicesReceived(.success(entries))):
             state.content = .loaded(
                 entries.pairingEntries
-                    .sorted { $0.creationTime > $1.creationTime }
+                    .sorted(by: { $0.creationTime > $1.creationTime })
                     .map { ($0, dateFormatter) }
                     .map(State.Entry.init)
             )
@@ -348,6 +349,3 @@ extension SignedPairingData {
         )
     }
 }
-
-extension RegisteredDevicesDomain.Destination.State: Equatable {}
-extension RegisteredDevicesDomain.Destination.Action: Equatable {}

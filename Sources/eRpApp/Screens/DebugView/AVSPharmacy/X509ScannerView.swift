@@ -29,9 +29,9 @@ import SwiftUI
 
 struct X509ScannerView: View {
     @Binding var show: Bool
-    /// name read from the certificate
+    // name read from the certificate
     @Binding var name: String
-    /// Base64 DER representation of a scanned HCI encryption certificate (C.HCI.ENC)
+    // Base64 DER representation of a scanned HCI encryption certificate (C.HCI.ENC)
     @Binding var derBase64: String
 
     @State var validCertFound = false
@@ -66,7 +66,7 @@ struct X509ScannerView: View {
             }
 
             VStack(alignment: .leading) {
-                if let error {
+                if let error = error {
                     Text(error)
                         .padding()
                         .background(Color(.systemBackground))
@@ -77,7 +77,7 @@ struct X509ScannerView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Image(systemName: validCertFound ? SFSymbolName.checkmark : SFSymbolName.crossIcon)
-                            .foregroundColor(validCertFound ? Colors.secondary600 : Colors.red700)
+                            .foregroundColor(validCertFound ? Colors.secondary600 : Colors.red600)
                         Text("C.HCI.ENC")
                         Text(name)
                     }

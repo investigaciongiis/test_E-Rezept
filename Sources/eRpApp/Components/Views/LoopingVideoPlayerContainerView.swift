@@ -131,9 +131,8 @@ struct LoopingVideoPlayerContainerView: UIViewRepresentable {
 
         @objc
         func playerItemDidReachEnd(notification _: Notification) {
-            // Looping is no longer allowed due to accessibilty 🤷‍♂️
-            // player?.currentItem?.seek(to: .zero, completionHandler: nil)
-            // player?.play()
+            player?.currentItem?.seek(to: .zero, completionHandler: nil)
+            player?.play()
         }
     }
 }

@@ -29,13 +29,9 @@ struct OrdersScreen: Screen {
 
     func tapOrderDetailsForPharmacyNamed(_ name: String, fileID: String = #fileID, file: String = #filePath,
                                          line: UInt = #line) -> OrderDetailsScreen {
-        staticText(by: name, fileID: fileID, file: file, line: line).tap()
-        return OrderDetailsScreen(app: app)
-    }
-
-    func tapEUOrderDetails(fileID _: String = #fileID, file _: String = #filePath,
-                           line _: UInt = #line) -> OrderDetailsScreen {
-        app.staticTexts.matching(identifier: "EU Einlösung").firstMatch.tap()
+        let staticText = staticText(by: name, fileID: fileID, file: file, line: line)
+        expect(staticText.waitForExistence(timeout: 3)).to(beTrue())
+        staticText.tap()
         return OrderDetailsScreen(app: app)
     }
 

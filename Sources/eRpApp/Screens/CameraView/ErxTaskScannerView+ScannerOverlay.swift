@@ -55,11 +55,11 @@ extension ErxTaskScannerView {
                                     .foregroundColor(Color.primary)
                             }
                         })
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemGray5))
-                        .cornerRadius(8)
-                        .padding([.vertical])
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                            .background(Color(.systemGray5))
+                            .cornerRadius(8)
+                            .padding([.vertical])
                     }
                 }
                 .padding(.horizontal)
@@ -96,7 +96,6 @@ extension ErxTaskScannerView {
                                 Circle().foregroundColor(Colors.systemGray6)
                             )
                     })
-                    .accessibilityLabel(L10n.scnBtnImportPhoto)
                 }
                 .padding(.horizontal)
 
@@ -129,7 +128,7 @@ extension ErxTaskScannerView {
                                              set: { store.send(.response(.galleryImageReceived($0))) }))
             }
             .onAppear {
-                isImageScaled.toggle()
+                self.isImageScaled.toggle()
             }
             .onReceive(NotificationCenter.default
                 .publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -179,7 +178,7 @@ extension ErxTaskScannerView {
         }
 
         private func alertTintColor(for scanState: LoadingState<[ScannedErxTask], ScannerDomain.Error>) -> Color {
-            scanState.isValue ? Colors.secondary700 : Colors.systemLabel
+            scanState.isValue ? Colors.secondary600 : Colors.systemLabel
         }
     }
 }
@@ -221,7 +220,7 @@ extension ErxTaskScannerView.ScannerOverlay {
                 .accessibility(identifier: A11y.scanner.scnImgScanAlert)
                 .onAppear {
                     withAnimation(.spring()) {
-                        imageScale = 1.0
+                        self.imageScale = 1.0
                     }
                 }
         }
@@ -238,26 +237,26 @@ extension ErxTaskScannerView.ScannerOverlay {
         @State var previousContent: S = ""
 
         var body: some View {
-            Text(content)
+            Text(self.content)
                 .fontWeight(.bold)
                 .font(.system(size: 15))
-                .foregroundColor(Colors.secondary700)
+                .foregroundColor(Colors.secondary600)
                 .padding(5)
                 .background(Colors.systemGray6)
                 .clipShape(Circle())
                 .scaleEffect(counterScale)
-                .onReceive(Just(counterScale)) { scale in
+                .onReceive(Just(self.counterScale)) { scale in
                     if scale == 2.0 {
                         withAnimation {
-                            counterScale = 1.0
+                            self.counterScale = 1.0
                         }
                     }
                 }
-                .onReceive(Just(content)) { content in
-                    if content != previousContent {
+                .onReceive(Just(self.content)) { content in
+                    if content != self.previousContent {
                         withAnimation {
-                            previousContent = content
-                            counterScale = 2.0
+                            self.previousContent = content
+                            self.counterScale = 2.0
                         }
                     }
                 }
@@ -291,7 +290,7 @@ extension ErxTaskScannerView.ScannerOverlay {
                     Spacer()
                 }
                 .padding(5)
-                .background(Colors.secondary700)
+                .background(Colors.secondary600)
                 .cornerRadius(20)
                 .padding(20)
             }.background(Colors.systemGray6)

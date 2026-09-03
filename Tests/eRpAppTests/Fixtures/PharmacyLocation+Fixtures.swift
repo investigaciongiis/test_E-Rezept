@@ -47,16 +47,6 @@ extension PharmacyLocation {
                     openingTime: "12:00:00",
                     closingTime: "18:00:00"
                 ),
-            ],
-            physicalFeatures: [
-                .barrierFree,
-                .parking,
-                .publicTransport,
-            ],
-            specialities: [
-                .vaccination,
-                .bodyMeasurements,
-                .sterileCompounding,
             ]
         )
 
@@ -116,7 +106,7 @@ extension PharmacyLocation {
             hoursOfOperation: []
         )
 
-        /// pharmacy with specialClosing that will be closed
+        // pharmacy with specialClosing that will be closed
         static let pharmacyF = PharmacyLocation(
             id: "AdlerClosed",
             status: .active,
@@ -143,7 +133,7 @@ extension PharmacyLocation {
             )]
         )
 
-        /// pharmacy with specialClosing that will close early
+        // pharmacy with specialClosing that will close early
         static let pharmacyG = PharmacyLocation(
             id: "AdlerEarly",
             status: .active,
@@ -165,7 +155,7 @@ extension PharmacyLocation {
             )]
         )
 
-        /// pharmacy with specialClosing that is closed but will open later again
+        // pharmacy with specialClosing that is closed but will open later again
         static let pharmacyH = PharmacyLocation(
             id: "AdlerLater",
             status: .active,
@@ -187,7 +177,7 @@ extension PharmacyLocation {
             )]
         )
 
-        /// pharmacy with specialClosing already closed and emergencyServiceHours taht will later again
+        // pharmacy with specialClosing already closed and emergencyServiceHours taht will later again
         static let pharmacyI = PharmacyLocation(
             id: "EmergencyAfterAdler",
             status: .active,
@@ -217,7 +207,7 @@ extension PharmacyLocation {
                                           endDate: TestDate.createFormattedDate(.tomorrow))]
         )
 
-        /// pharmacy with emergencyServiceHours that starts early
+        // pharmacy with emergencyServiceHours that starts early
         static let pharmacyJ = PharmacyLocation(
             id: "EmergencyBeforeBird",
             status: .active,
@@ -236,7 +226,7 @@ extension PharmacyLocation {
                                           endDate: TestDate.createFormattedDate(.halfanHourAhead))]
         )
 
-        /// pharmacy with emergencyServiceHours that ends on the next day
+        // pharmacy with emergencyServiceHours that ends on the next day
         static let pharmacyK = PharmacyLocation(
             id: "NormalEmergencyAdler",
             status: .active,
@@ -277,14 +267,6 @@ extension PharmacyLocation {
                     openingTime: "08:00:00",
                     closingTime: "12:00:00"
                 ),
-            ],
-            physicalFeatures: [
-                .barrierFree,
-                .pickupAutomat,
-            ],
-            specialities: [
-                .allergyTest,
-                .travelMedicineConsultation,
             ]
         )
 

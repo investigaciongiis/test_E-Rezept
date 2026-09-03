@@ -31,31 +31,31 @@ extension CardWallReadCardDomain.State {
     @CodedError("010")
     @CasePathable
     public enum Error: Swift.Error, Equatable {
-        /// `IDPError` thrown within the `CardWallReadCardDomain`
         @ErrorCode("01")
+        /// `IDPError` thrown within the `CardWallReadCardDomain`
         case idpError(IDPError)
-        /// Possible user input errors thrown within the `CardWallReadCardDomain`
         @ErrorCode("02")
+        /// Possible user input errors thrown within the `CardWallReadCardDomain`
         case inputError(InputError)
-        /// NFC signature errors thrown within the `CardWallReadCardDomain`
         @ErrorCode("03")
+        /// NFC signature errors thrown within the `CardWallReadCardDomain`
         case signChallengeError(NFCSignatureProviderError)
-        /// Error that can occur during authentication with biometry
         @ErrorCode("04")
+        /// Error that can occur during authentication with biometry
         case biometrieError(Swift.Error)
+        @ErrorCode("05")
         /// Error when `Profile` validation with the given authentication fails.
         /// Error is produces within the `IDPError.unspecified` error before saving the IDPToken
-        @ErrorCode("05")
         case profileValidation(IDTokenValidatorError)
 
         /// User input error
         @CodedError("011")
         public enum InputError: Swift.Error {
-            /// User input for PIN is incorrect
             @ErrorCode("01")
+            /// User input for PIN is incorrect
             case missingPIN
-            /// User input for CAN is incorrect
             @ErrorCode("02")
+            /// User input for CAN is incorrect
             case missingCAN
         }
 

@@ -27,47 +27,47 @@ import Foundation
 /// The specific error types for the IDP module
 @CodedError("100")
 public enum IDPError: Swift.Error {
-    /// In case of HTTP/Connection error
     @ErrorCode("01")
+    /// In case of HTTP/Connection error
     case network(error: Swift.Error)
-    /// In case a response (or request) could not be (cryptographically) verified
     @ErrorCode("02")
+    /// In case a response (or request) could not be (cryptographically) verified
     case validation(error: Swift.Error)
-    /// When a token is being requested, but none can be found
     @ErrorCode("03")
+    /// When a token is being requested, but none can be found
     case tokenUnavailable
-    /// Other error cases
     @ErrorCode("04")
+    /// Other error cases
     case unspecified(error: Swift.Error)
-    /// Message failed to decode/parse
     @ErrorCode("05")
+    /// Message failed to decode/parse
     case decoding(error: Swift.Error)
-    /// When failed to extract a X.509 certificate from the DiscoveryDocument
     @ErrorCode("06")
+    /// When failed to extract a X.509 certificate from the DiscoveryDocument
     case noCertificateFound
-    /// When the discovery document has expired or the trust anchors could not be verified
     @ErrorCode("07")
+    /// When the discovery document has expired or the trust anchors could not be verified
     case invalidDiscoveryDocument
-    /// When the state parameter received from the server is not equal to the one sent
     @ErrorCode("08")
+    /// When the state parameter received from the server is not equal to the one sent
     case invalidStateParameter
-    /// When the nonce received from the server is not equal to the one sent
     @ErrorCode("09")
+    /// When the nonce received from the server is not equal to the one sent
     case invalidNonce
-    /// When a method/algorithm is unsupported
     @ErrorCode("10")
+    /// When a method/algorithm is unsupported
     case unsupported(String?)
-    /// When encryption fails
     @ErrorCode("11")
+    /// When encryption fails
     case encryption
-    /// When decryption fails
     @ErrorCode("12")
+    /// When decryption fails
     case decryption
-    /// Internal error
     @ErrorCode("13")
+    /// Internal error
     case `internal`(error: InternalError)
-    /// Issues related to Building or Verifying the trust store
     @ErrorCode("14")
+    /// Issues related to Building or Verifying the trust store
     case trustStore(error: Swift.Error)
 
     @ErrorCode("15")
@@ -76,20 +76,20 @@ public enum IDPError: Swift.Error {
     @ErrorCode("16")
     case invalidSignature(String)
 
-    /// Server responded with an error
     @ErrorCode("17")
+    /// Server responded with an error
     case serverError(ServerResponse)
 
-    /// Any biometrics related error
     @ErrorCode("18")
+    /// Any biometrics related error
     case biometrics(SecureEnclaveSignatureProviderError)
 
-    /// External authentication failed due to missing or invalid original request
     @ErrorCode("19")
+    /// External authentication failed due to missing or invalid original request
     case extAuthOriginalRequestMissing
 
-    /// Not implemented as the conforming instance is meant for demo purpose only
     @ErrorCode("20")
+    /// Not implemented as the conforming instance is meant for demo purpose only
     case notAvailableInDemoMode
 
     public struct ServerResponse: Codable, CustomStringConvertible, Equatable {

@@ -92,7 +92,7 @@ struct RedeemMethodsView: View {
                     HStack {
                         Spacer()
                         Button {
-                            store.send(.delegate(.euRedeemTapped(store.prescriptions)))
+                            store.send(.delegate(.euRedeemTapped))
                         } label: {
                             HStack {
                                 Text(L10n.rdmBtnRedeemEuPrsc)

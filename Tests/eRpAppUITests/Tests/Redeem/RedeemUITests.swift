@@ -25,7 +25,7 @@ import Nimble
 import XCTest
 
 @MainActor
-final class RedeemUITests: XCTestCase {
+final class RedeemUITests: XCTestCase, Sendable {
     var app: XCUIApplication!
 
     override func tearDown() async throws {
@@ -50,8 +50,7 @@ final class RedeemUITests: XCTestCase {
         _ = app.wait(for: .runningForeground, timeout: 10.0)
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-        // swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 
@@ -249,7 +248,8 @@ final class RedeemUITests: XCTestCase {
         expect(redeemScreen.editPharmacyButton().exists).to(beTrue())
 
         let prescriptions = redeemScreen.editPrescriptionButton()
-        expect(prescriptions.label).to(equal("Rezepte, Adavomilproston"))
+        expect(prescriptions.staticTexts["Adavomilproston"]).to(exist("Adavomilproston"))
+        expect(prescriptions.staticTexts["1 Rezepte"]).to(exist("1 Rezepte"))
 
         let editAdressScreen = redeemScreen
             .tapEditAddress()
@@ -278,7 +278,8 @@ final class RedeemUITests: XCTestCase {
         expect(redeemScreen.redeemButton().isEnabled).to(beTrue())
 
         let prescriptions = redeemScreen.editPrescriptionButton()
-        expect(prescriptions.label).to(equal("Rezepte, Adavomilproston"))
+        expect(prescriptions.staticTexts["Adavomilproston"]).to(exist("Adavomilproston"))
+        expect(prescriptions.staticTexts["1 Rezepte"]).to(exist("1 Rezepte"))
 
         try await redeemScreen
             .tapRedeem()
@@ -300,7 +301,8 @@ final class RedeemUITests: XCTestCase {
         expect(redeemScreen.editPharmacyButton().exists).to(beTrue())
 
         let prescriptions = redeemScreen.editPrescriptionButton()
-        expect(prescriptions.label).to(equal("Rezepte, Adavomilproston"))
+        expect(prescriptions.staticTexts["Adavomilproston"]).to(exist("Adavomilproston"))
+        expect(prescriptions.staticTexts["1 Rezepte"]).to(exist("1 Rezepte"))
 
         let editAdressScreen = redeemScreen
             .tapEditAddress()
@@ -314,7 +316,7 @@ final class RedeemUITests: XCTestCase {
     }
 
     @MainActor
-    func testRedeemChangePharmacyAndServiceOptions() {
+    func testRedeemChangePharmacyAndServiceOptions() async throws {
         let details = TabBarScreen(app: app)
             .tapPrescriptionsTab()
             .tapDetailsForPrescriptionNamed("Adavomilproston")

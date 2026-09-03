@@ -24,9 +24,14 @@ import eRpResources
 import XCTest
 
 @MainActor
-struct PrescriptionDetailsScreen<Previous: Screen>: Screen {
+struct PrescriptionDetailsScreen<Previous>: Screen where Previous: Screen {
     let app: XCUIApplication
     let previous: Previous
+
+    init(app: XCUIApplication, previous: Previous) {
+        self.app = app
+        self.previous = previous
+    }
 
     func medicationReminderCell(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) -> XCUIElement {
         button(by: A11y.prescriptionDetails.prscDtlBtnMedicationReminder, fileID: fileID, file: file, line: line)
@@ -185,36 +190,6 @@ struct PrescriptionDetailsScreen<Previous: Screen>: Screen {
             file: file,
             line: line
         )
-    }
-
-    func redeemEUButton(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) -> XCUIElement {
-        button(
-            by: A11y.prescriptionDetails.prscDtlToolbarMenuBtnRedeemEuPrsc,
-            fileID: fileID,
-            file: file,
-            line: line,
-            checkExistence: false
-        )
-    }
-
-    @discardableResult
-    func tapRedeemEU(fileID: String = #fileID, file: String = #filePath,
-                     line: UInt = #line) -> EURedeemConsentScreen {
-        button(by: A11y.prescriptionDetails.prscDtlToolbarMenuBtnRedeemEuPrsc, fileID: fileID, file: file, line: line)
-            .tap()
-        return EURedeemConsentScreen(app: app)
-    }
-
-    @discardableResult
-    func tapNavigationMenu(fileID: String = #fileID, file: String = #filePath, line: UInt = #line) -> Self {
-        button(by: A11y.prescriptionDetails.prscDtlBtnToolbarItem, fileID: fileID, file: file, line: line).tap()
-        return self
-    }
-
-    @discardableResult
-    func tapCenter(fileID _: String = #fileID, file _: String = #filePath, line _: UInt = #line) -> Self {
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        return self
     }
 
     @MainActor

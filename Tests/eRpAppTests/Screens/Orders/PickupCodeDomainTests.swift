@@ -32,15 +32,15 @@ import XCTest
 @MainActor
 final class PickupCodeDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.test
-    var matrixCodeGenerator: MatrixCodeGeneratorMock!
+    var matrixCodeGenerator: MockMatrixCodeGenerator!
 
     override func setUp() {
         super.setUp()
 
-        matrixCodeGenerator = MatrixCodeGeneratorMock()
+        matrixCodeGenerator = MockMatrixCodeGenerator()
         let uiImage = Asset.qrcode.image
         let cgImage = uiImage.cgImage!
-        matrixCodeGenerator.generateImageForContentsStringWidthIntHeightIntCGImageReturnValue = cgImage
+        matrixCodeGenerator.generateImageForWidthHeightReturnValue = cgImage
     }
 
     typealias TestStore = TestStoreOf<PickupCodeDomain>
@@ -90,7 +90,7 @@ final class PickupCodeDomainTests: XCTestCase {
             $0.pickupCodeHR = nil
             $0.pickupCodeDMC = "Data Matrix Code Content"
             $0.dmcImage = expectedImage
-            expect(self.matrixCodeGenerator.generateImageForContentsStringWidthIntHeightIntCGImageCallsCount) == 2
+            expect(self.matrixCodeGenerator.generateImageForWidthHeightCallsCount) == 2
         }
     }
 
@@ -108,7 +108,7 @@ final class PickupCodeDomainTests: XCTestCase {
             $0.pickupCodeHR = "4711"
             $0.pickupCodeDMC = "Data Matrix Code Content"
             $0.dmcImage = expectedImage
-            expect(self.matrixCodeGenerator.generateImageForContentsStringWidthIntHeightIntCGImageCallsCount) == 2
+            expect(self.matrixCodeGenerator.generateImageForWidthHeightCallsCount) == 2
         }
         await store.send(.loadMatrixCodeImage(screenSize: size))
     }

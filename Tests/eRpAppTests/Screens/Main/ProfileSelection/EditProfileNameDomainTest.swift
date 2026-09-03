@@ -32,14 +32,14 @@ import XCTest
 @MainActor
 final class EditProfileNameDomainTest: XCTestCase {
     let testScheduler = DispatchQueue.test
-    var mockUserProfileService: UserProfileServiceMock!
+    var mockUserProfileService: MockUserProfileService!
 
     typealias TestStore = TestStoreOf<EditProfileNameDomain>
 
     override func setUp() {
         super.setUp()
 
-        mockUserProfileService = UserProfileServiceMock()
+        mockUserProfileService = MockUserProfileService()
     }
 
     func testStore() -> TestStore {
@@ -64,19 +64,13 @@ final class EditProfileNameDomainTest: XCTestCase {
             )
         )
 
-        mockUserProfileService
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolUserProfileServiceErrorReturnValue =
-            Just(true)
-                .setFailureType(to: UserProfileServiceError.self)
-                .eraseToAnyPublisher()
+        mockUserProfileService.updateProfileIdMutatingReturnValue = Just(true)
+            .setFailureType(to: UserProfileServiceError.self)
+            .eraseToAnyPublisher()
 
-        expect(self.mockUserProfileService
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolUserProfileServiceErrorCalled)
-            .to(beFalse())
+        expect(self.mockUserProfileService.updateProfileIdMutatingCalled).to(beFalse())
         await sut.send(.saveEditedProfileName(name: "Crazy Niklas"))
-        expect(self.mockUserProfileService
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolUserProfileServiceErrorCalled)
-            .to(beTrue())
+        expect(self.mockUserProfileService.updateProfileIdMutatingCalled).to(beTrue())
 
         await testScheduler.run()
         await sut.receive(.saveEditedProfileNameReceived(.success(true)))
@@ -93,9 +87,7 @@ final class EditProfileNameDomainTest: XCTestCase {
         )
 
         await sut.send(.saveEditedProfileName(name: invalidName))
-        expect(self.mockUserProfileService
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolUserProfileServiceErrorCalled)
-            .to(beFalse())
+        expect(self.mockUserProfileService.updateProfileIdMutatingCalled).to(beFalse())
         await sut.receive(.delegate(.close))
     }
 }

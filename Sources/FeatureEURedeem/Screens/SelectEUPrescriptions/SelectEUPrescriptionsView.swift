@@ -21,12 +21,11 @@
 //
 
 import ComposableArchitecture
-import eRpResources
 import eRpStyleKit
 import SwiftUI
 
 public struct SelectEUPrescriptionsView: View {
-    @Bindable var store: StoreOf<SelectEUPrescriptionsDomain>
+    var store: StoreOf<SelectEUPrescriptionsDomain>
 
     public init(store: StoreOf<SelectEUPrescriptionsDomain>) {
         self.store = store
@@ -35,16 +34,13 @@ public struct SelectEUPrescriptionsView: View {
     public var body: some View {
         List {
             Section(content: {
+                selectAllPrescriptionCell
                 prescriptionCells
             }, header: {
                 patientHeader
             })
-            .headerProminence(.increased)
+                .headerProminence(.increased)
         }
-        .task {
-            await store.send(.task).finish()
-        }
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
         .navigationTitle(L10n.euredeemPrscSelectionTitle)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -55,17 +51,32 @@ public struct SelectEUPrescriptionsView: View {
                 .fill(Color.gray.opacity(0.3))
                 .frame(width: 40, height: 40)
                 .overlay(
-                    Text(String(store.profile?.displayName?.prefix(1) ?? ""))
+                    Text(String(store.patientName.prefix(1)))
                         .foregroundColor(.primary)
                 )
 
-            Text(store.profile?.displayName ?? "")
+            Text(store.patientName)
                 .font(.headline)
-                .accessibilityIdentifier(A11y.redeem.eu.prescriptionSelection.eurdmTxtPrscPatientName)
 
             Spacer()
         }
         .listRowInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
+    }
+
+    private var selectAllPrescriptionCell: some View {
+        Button {
+            store.send(.toggleSelectAll)
+        } label: {
+            HStack(alignment: .center, spacing: 16) {
+                SelectionCheckmark(isSelected: store.selectAllEnabled)
+                Text(L10n.euredeemPrscSelectionTxtSelectAll)
+                    .font(.body)
+                Spacer()
+            }
+        }
+        .padding(.vertical, 8)
+        .buttonStyle(.plain)
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
     }
 
     private var prescriptionCells: some View {
@@ -74,8 +85,8 @@ public struct SelectEUPrescriptionsView: View {
                 store.send(.togglePrescription(prescription))
             } label: {
                 HStack(alignment: .center, spacing: 16) {
-                    if prescription.irredeemableReason == nil {
-                        SelectionCheckmark(isSelected: prescription.isSetEURedeemableByPatient)
+                    if prescription.isRedeemableInEU {
+                        SelectionCheckmark(isSelected: prescription.isSelected)
                     } else {
                         Image(systemName: SFSymbolName.crossIconPlain)
                             .foregroundColor(.red)
@@ -87,13 +98,13 @@ public struct SelectEUPrescriptionsView: View {
                             .font(.body)
                             .foregroundColor(.primary)
 
-                        if prescription.isEURedeemable, let expiresOn = prescription.expiresOn {
+                        if prescription.isRedeemableInEU, let expiresOn = prescription.expiresOn {
                             Text(L10n.euredeemPrscSelectionTxtRedeemUntil(
-                                expiresOn
+                                expiresOn.formatted(date: .numeric, time: .omitted)
                             ))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        } else if let reason = prescription.irredeemableReason {
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        } else if let reason = prescription.notRedeemableReason {
                             Text(reason)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -104,8 +115,6 @@ public struct SelectEUPrescriptionsView: View {
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityAddTraits(.isToggle)
-            .accessibilityAddTraits(prescription.isSetEURedeemableByPatient ? [.isSelected] : [])
         }
     }
 }

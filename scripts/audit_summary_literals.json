@@ -4,7 +4,7 @@
     "Developer": "gematik GmbH",
     "Category": "Digital Health / Electronic Prescription",
     "Supported platforms": "iOS 17.0 or later",
-    "Version": "1.38.0",
+    "Version": "1.35.0",
     "Last update": "19/08/2026",
     "Compatible idioms": "iPhone",
     "Source": "Open source",
@@ -12,14 +12,14 @@
     "Main language": "Swift"
   },
   "actors": {
-    "Auditor": "Juan JosÃ© LÃ³pez JimÃ©nez",
+    "Auditor": "Juan José López Jiménez",
     "Requirement Engineering team": [
-      "Juan JosÃ© LÃ³pez JimÃ©nez"
+      "Juan José López Jiménez"
     ],
     "Engineering Group (EN)": [
-      "Juan JosÃ© LÃ³pez JimÃ©nez"
+      "Juan José López Jiménez"
     ]
   },
-  "header_text": "i-mSEC-AT Audit Summary â€” E-Rezept App",
-  "cover_page_text": "E-Rezept App â€” v1.38.0"
+  "header_text": "i-mSEC-AT Audit Summary — E-Rezept App",
+  "cover_page_text": "E-Rezept App — v1.35.0"
 }

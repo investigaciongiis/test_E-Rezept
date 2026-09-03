@@ -141,8 +141,7 @@ final class DiGaDetailsViewSnapshotTests: ERPSnapshotTestCase {
 
     func testDiGaDetail_DetailsView() {
         let sut = NavigationStack {
-            DiGaDetailView(store: .init(
-                initialState:
+            DiGaDetailView(store: .init(initialState:
                 .init(
                     diGaTask: .init(prescription: Prescription(erxTask: ErxTask.Fixtures.erxTaskDeviceRequest)),
                     diGaInfo: .init(diGaState: .request),
@@ -155,8 +154,7 @@ final class DiGaDetailsViewSnapshotTests: ERPSnapshotTestCase {
                                             handbookUrl: "https://gematik.de"),
                     profile: UserProfile.Dummies.profileA,
                     selectedView: .details
-                )
-            ) {
+                )) {
                 EmptyReducer()
             })
         }
@@ -244,15 +242,13 @@ final class DiGaDetailsViewSnapshotTests: ERPSnapshotTestCase {
 
     func testDiGaDetail_DiGaDetails_NoBfarmHint() {
         let sut = NavigationStack {
-            DiGaDetailView(store: .init(
-                initialState:
+            DiGaDetailView(store: .init(initialState:
                 .init(
                     diGaTask: .init(prescription: Prescription(erxTask: ErxTask.Fixtures.erxTaskDeviceRequest)),
                     diGaInfo: .init(diGaState: .request),
                     profile: UserProfile.Dummies.profileA,
                     selectedView: .details
-                )
-            ) {
+                )) {
                 EmptyReducer()
             })
         }
@@ -263,8 +259,7 @@ final class DiGaDetailsViewSnapshotTests: ERPSnapshotTestCase {
 
     func testDiGaDetail_DiGaDetails_NotAvailableHint() {
         let sut = NavigationStack {
-            DiGaDetailView(store: .init(
-                initialState:
+            DiGaDetailView(store: .init(initialState:
                 .init(
                     diGaTask: .init(prescription: Prescription(erxTask: ErxTask.Fixtures.erxTaskDeviceRequest)),
                     diGaInfo: .init(diGaState: .request),
@@ -277,8 +272,7 @@ final class DiGaDetailsViewSnapshotTests: ERPSnapshotTestCase {
                                             handbookUrl: ""),
                     profile: UserProfile.Dummies.profileA,
                     selectedView: .details
-                )
-            ) {
+                )) {
                 EmptyReducer()
             })
         }

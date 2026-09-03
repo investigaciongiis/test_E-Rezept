@@ -32,7 +32,6 @@ struct HealthCardSectionView: View {
         SectionContainer(
             header: {
                 Text(L10n.stgTxtCardSectionHeader)
-                    .accessibilityAddTraits(.isHeader)
             },
             content: {
                 Button {

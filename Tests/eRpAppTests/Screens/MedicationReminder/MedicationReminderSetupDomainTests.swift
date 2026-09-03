@@ -38,10 +38,12 @@ final class MedicationReminderSetupDomainTests: XCTestCase {
     }
 
     func testStore(
-        with state: MedicationReminderSetupDomain.State = MedicationReminderSetupDomain.State(
-            medicationSchedule: MedicationReminderSetupDomainTests.Fixtures.medicationScheduleZeroEntries,
-            destination: nil
-        )
+        with state: MedicationReminderSetupDomain.State = {
+            MedicationReminderSetupDomain.State(
+                medicationSchedule: MedicationReminderSetupDomainTests.Fixtures.medicationScheduleZeroEntries,
+                destination: nil
+            )
+        }()
     ) -> TestStore {
         TestStore(
             initialState: state
@@ -144,18 +146,15 @@ final class MedicationReminderSetupDomainTests: XCTestCase {
 
 extension MedicationReminderSetupDomainTests {
     enum Fixtures {
-        static let medicationScheduleZeroEntries: MedicationSchedule = {
-            let now = Date()
-            return MedicationSchedule(
-                id: UUID(),
-                start: now,
-                end: now.addingTimeInterval(60 * 60 * 24 * 7),
-                title: "",
-                dosageInstructions: "",
-                taskId: "123.4567.8901",
-                isActive: true,
-                entries: []
-            )
-        }()
+        static let medicationScheduleZeroEntries = MedicationSchedule(
+            id: UUID(),
+            start: MedicationReminderSetupDomainTests.now,
+            end: MedicationReminderSetupDomainTests.now.addingTimeInterval(60 * 60 * 24 * 7),
+            title: "",
+            dosageInstructions: "",
+            taskId: "123.4567.8901",
+            isActive: true,
+            entries: []
+        )
     }
 }

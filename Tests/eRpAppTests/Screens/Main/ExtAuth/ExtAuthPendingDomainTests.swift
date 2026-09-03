@@ -37,24 +37,26 @@ final class ExtAuthPendingDomainTests: XCTestCase {
 
     var idpSessionMock: IDPSessionMock!
     var extAuthRequestStorageMock: ExtAuthRequestStorageMock!
-    lazy var testProfile = Profile(name: "TestProfile")
+    lazy var testProfile = { Profile(name: "TestProfile") }()
     var mockProfileValidator: AnyPublisher<IDTokenValidator, IDTokenValidatorError>!
-    var mockProfileDataStore: ProfileDataStoreMock!
+    var mockProfileDataStore: MockProfileDataStore!
     let uiScheduler = DispatchQueue.test
     var mockUserSession: MockUserSession!
-    lazy var schedulers: Schedulers = .init(
-        uiScheduler: uiScheduler.eraseToAnyScheduler(),
-        networkScheduler: DispatchQueue.immediate.eraseToAnyScheduler(),
-        ioScheduler: DispatchQueue.immediate.eraseToAnyScheduler(),
-        computeScheduler: DispatchQueue.immediate.eraseToAnyScheduler()
-    )
+    lazy var schedulers: Schedulers = {
+        Schedulers(
+            uiScheduler: uiScheduler.eraseToAnyScheduler(),
+            networkScheduler: DispatchQueue.immediate.eraseToAnyScheduler(),
+            ioScheduler: DispatchQueue.immediate.eraseToAnyScheduler(),
+            computeScheduler: DispatchQueue.immediate.eraseToAnyScheduler()
+        )
+    }()
 
     override func setUp() {
         super.setUp()
         mockUserSession = MockUserSession()
         idpSessionMock = IDPSessionMock()
         extAuthRequestStorageMock = ExtAuthRequestStorageMock()
-        mockProfileDataStore = ProfileDataStoreMock()
+        mockProfileDataStore = MockProfileDataStore()
     }
 
     func testStore(for state: ExtAuthPendingDomain.State) -> TestStore {
@@ -65,7 +67,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         mockProfileValidator = Just(
             ProfileValidator(currentProfile: testProfile, otherProfiles: [testProfile])
         ).setFailureType(to: IDTokenValidatorError.self).eraseToAnyPublisher()
-        mockProfileDataStore.listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue = Just([testProfile])
+        mockProfileDataStore.listAllProfilesReturnValue = Just([testProfile])
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         return TestStore(initialState: state) {
@@ -110,14 +112,13 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         }
     }
 
-    func testExternalURLFiresIDPRequestHappyPath() async throws {
+    func testExternalURLFiresIDPRequestHappyPath() async {
         let sut = testStore(for: .init(extAuthState: .empty))
         let healthInsurance = KKAppDirectory.Entry(name: "KK name", identifier: "kk id")
         let session = ExtAuthChallengeSession(verifierCode: "VerifierCode",
                                               nonce: "nonce",
                                               for: healthInsurance)
-        mockProfileDataStore
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorReturnValue = Just(true)
+        mockProfileDataStore.updateProfileIdMutatingReturnValue = Just(true)
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
         extAuthRequestStorageMock.underlyingPendingExtAuthRequests = Just([session]).eraseToAnyPublisher()
@@ -127,7 +128,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         await sut.receive(.response(.pendingExtAuthRequestsReceived([session]))) { state in
             state.extAuthState = .pendingExtAuth(healthInsurance)
         }
-        let urlFixture = try XCTUnwrap(URL(string: "https://dummy.gematik.de"))
+        let urlFixture = URL(string: "https://dummy.gematik.de")!
 
         idpSessionMock.extAuthVerifyAndExchange_Publisher =
             Just(IDPSessionMock.fixtureIDPToken)
@@ -147,15 +148,14 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         }
     }
 
-    func testExternalURLFiresIDPRequestHappyPathWithState() async throws {
+    func testExternalURLFiresIDPRequestHappyPathWithState() async {
         let sut = testStore(for: .init(extAuthState: .empty))
         let healthInsurance = KKAppDirectory.Entry(name: "KK name", identifier: "kk id")
         let session = ExtAuthChallengeSession(verifierCode: "VerifierCode",
                                               nonce: "nonce",
                                               for: healthInsurance)
         extAuthRequestStorageMock.underlyingPendingExtAuthRequests = Just([session]).eraseToAnyPublisher()
-        mockProfileDataStore
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorReturnValue = Just(true)
+        mockProfileDataStore.updateProfileIdMutatingReturnValue = Just(true)
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 
@@ -164,7 +164,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         await sut.receive(.response(.pendingExtAuthRequestsReceived([session]))) { state in
             state.extAuthState = .pendingExtAuth(healthInsurance)
         }
-        let urlFixture = try XCTUnwrap(URL(string: "https://dummy.gematik.de?state=hallo"))
+        let urlFixture = URL(string: "https://dummy.gematik.de?state=hallo")!
 
         idpSessionMock.extAuthVerifyAndExchange_Publisher =
             Just(IDPSessionMock.fixtureIDPToken)
@@ -187,7 +187,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         }
     }
 
-    func testExternalURLFiresIDPRequestFailurePath() async throws {
+    func testExternalURLFiresIDPRequestFailurePath() async {
         let sut = testStore(for: .init(extAuthState: .empty))
         let healthInsurance = KKAppDirectory.Entry(name: "Gematik KK", identifier: "kk id")
         let session = ExtAuthChallengeSession(verifierCode: "VerifierCode",
@@ -200,7 +200,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         await sut.receive(.response(.pendingExtAuthRequestsReceived([session]))) { state in
             state.extAuthState = .pendingExtAuth(healthInsurance)
         }
-        let urlFixture = try XCTUnwrap(URL(string: "https://dummy.gematik.de"))
+        let urlFixture = URL(string: "https://dummy.gematik.de")!
 
         idpSessionMock.extAuthVerifyAndExchange_Publisher =
             Fail(error: IDPError.extAuthOriginalRequestMissing).eraseToAnyPublisher()
@@ -287,7 +287,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         await uiScheduler.advance(by: .seconds(2.1))
     }
 
-    func testProfileValidatorWithError() async throws {
+    func testProfileValidatorWithError() async {
         let sut = testStore(for: .init(extAuthState: .empty))
         let healthInsurance = KKAppDirectory.Entry(name: "Gematik KK", identifier: "kk id")
         let session = ExtAuthChallengeSession(verifierCode: "VerifierCode",
@@ -300,7 +300,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         await sut.receive(.response(.pendingExtAuthRequestsReceived([session]))) { state in
             state.extAuthState = .pendingExtAuth(healthInsurance)
         }
-        let urlFixture = try XCTUnwrap(URL(string: "https://dummy.gematik.de"))
+        let urlFixture = URL(string: "https://dummy.gematik.de")!
         let expectedInternalError = IDTokenValidatorError.profileNotMatchingInsuranceId("X123")
         idpSessionMock.extAuthVerifyAndExchange_Publisher = Fail(
             error: .unspecified(error: expectedInternalError)
@@ -323,14 +323,13 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         }
     }
 
-    func testSaveProfileWithError() async throws {
+    func testSaveProfileWithError() async {
         let sut = testStore(for: .init(extAuthState: .empty))
         let healthInsurance = KKAppDirectory.Entry(name: "KK name", identifier: "kk id")
         let session = ExtAuthChallengeSession(verifierCode: "VerifierCode",
                                               nonce: "nonce",
                                               for: healthInsurance)
-        mockProfileDataStore
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorReturnValue =
+        mockProfileDataStore.updateProfileIdMutatingReturnValue =
             Fail(error: LocalStoreError.notImplemented).eraseToAnyPublisher()
         extAuthRequestStorageMock.underlyingPendingExtAuthRequests = Just([session]).eraseToAnyPublisher()
 
@@ -339,7 +338,7 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         await sut.receive(.response(.pendingExtAuthRequestsReceived([session]))) { state in
             state.extAuthState = .pendingExtAuth(healthInsurance)
         }
-        let urlFixture = try XCTUnwrap(URL(string: "https://dummy.gematik.de"))
+        let urlFixture = URL(string: "https://dummy.gematik.de")!
 
         idpSessionMock.extAuthVerifyAndExchange_Publisher =
             Just(IDPSessionMock.fixtureIDPToken)
@@ -387,12 +386,10 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         mockUserSession.profileReturnValue = Just(profile).setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 
-        mockProfileDataStore
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorClosure =
-            { _, mutating in
-                mutating(&profile)
-                return Just(true).setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
-            }
+        mockProfileDataStore.updateProfileIdMutatingClosure = { _, mutating in
+            mutating(&profile)
+            return Just(true).setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
+        }
 
         await sut.send(.response(.externalLoginReceived(.success(idpToken)))) {
             $0.extAuthState = .extAuthSuccessful(
@@ -419,12 +416,10 @@ final class ExtAuthPendingDomainTests: XCTestCase {
         mockUserSession.profileReturnValue = Just(profile).setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 
-        mockProfileDataStore
-            .updateProfileIdUUIDMutatingEscapingInoutProfileVoidAnyPublisherBoolLocalStoreErrorClosure =
-            { _, mutating in
-                mutating(&profile)
-                return Just(true).setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
-            }
+        mockProfileDataStore.updateProfileIdMutatingClosure = { _, mutating in
+            mutating(&profile)
+            return Just(true).setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
+        }
 
         await sut.send(.response(.externalLoginReceived(.success(idpToken)))) {
             $0.extAuthState = .extAuthSuccessful(

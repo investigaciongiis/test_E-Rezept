@@ -21,7 +21,6 @@
 //
 import Dependencies
 @testable import eRpFeatures
-import FeatureHelpers
 import Nimble
 import SwiftUI
 import XCTest
@@ -38,7 +37,7 @@ final class DataDetectorTests: XCTestCase {
         try await super.tearDown()
     }
 
-    func testPhoneNumberDetection() throws {
+    func testPhoneNumberDetection() async throws {
         let string = """
             Please call one of the following contact numbers:
             Ärztl. Bereitschaftsdienst: +49 116 117
@@ -56,7 +55,7 @@ final class DataDetectorTests: XCTestCase {
         XCTAssertEqual(try sut.phoneNumbers(string), expected)
     }
 
-    func testDifferentFormattedPhoneNumbers() throws {
+    func testDifferentFormattedPhoneNumbers() async throws {
         let string = """
             1. Some inline text with a 03381 890 29 89 phone numer
             2. No spaces: 03089004332

@@ -44,8 +44,10 @@ public struct QuartaryButtonStyle: ButtonStyle {
             .font(.subheadline.weight(.semibold))
             .foregroundColor(foregroundColor)
             .opacity(configuration.isPressed ? 0.25 : 1)
-            .padding()
-            .background(Colors.systemBackground)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 8)
+            .background(Colors.systemBackgroundTertiary)
+            .border(Colors.separator, width: 0.5, cornerRadius: 8)
     }
 }
 
@@ -54,9 +56,7 @@ extension ButtonStyle where Self == QuartaryButtonStyle {
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View.buttonStyle(.quartary)`` modifier.
-    public static var quartary: QuartaryButtonStyle {
-        QuartaryButtonStyle()
-    }
+    public static var quartary: QuartaryButtonStyle { QuartaryButtonStyle() }
 
     /// A button style that applies fg and bg color, as well as a border.
     ///

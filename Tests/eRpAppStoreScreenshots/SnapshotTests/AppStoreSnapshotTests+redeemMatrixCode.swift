@@ -29,39 +29,22 @@ import XCTest
 
 extension AppStoreSnapshotTests {
     func redeemMatrixCode() -> some View {
-        let groupedImages: [MatrixCodeDomain.State.IdentifiedImage] = [
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: UIImage(testBundleNamed: "qrcode")!,
-                chunk: [
-                    ErxTask.Demo.erxTask1,
-                    ErxTask.Demo.erxTask2,
-                    ErxTask.Demo.erxTask3,
-                ]
-            ),
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: UIImage(testBundleNamed: "qrcode")!,
-                chunk: [
-                    ErxTask.Demo.erxTask4,
-                    ErxTask.Demo.erxTask5,
-                ]
-            ),
-        ]
-        let singleImages: [MatrixCodeDomain.State.IdentifiedImage] = ErxTask.Demo.erxTasks.map {
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: UIImage(testBundleNamed: "qrcode")!,
-                chunk: [$0]
-            )
-        }
-        return MatrixCodeView(
+        MatrixCodeView(
             store: StoreOf<MatrixCodeDomain>(
                 initialState: .init(
                     type: .erxTask,
                     erxTasks: ErxTask.Demo.erxTasks,
-                    groupedLoadingState: .value(.init(uniqueElements: groupedImages)),
-                    singleLoadingState: .value(.init(uniqueElements: singleImages))
+                    loadingState: .value(
+                        .init(
+                            uniqueElements: [
+                                MatrixCodeDomain.State.IdentifiedImage(
+                                    identifier: UUID(),
+                                    image: UIImage(testBundleNamed: "qrcode")!,
+                                    chunk: []
+                                ),
+                            ]
+                        )
+                    )
                 )
             ) {
                 EmptyReducer()

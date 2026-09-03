@@ -24,12 +24,11 @@ import Combine
 import ComposableArchitecture
 import Dependencies
 import eRpKit
-import FeatureHelpers
 import SwiftUI
 
 @Reducer
 struct MedicationDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = prescriptionDetail_medication_ingredients
         case ingredient(IngredientDomain)
@@ -126,6 +125,3 @@ extension MedicationDomain {
         static let state: MedicationDomain.State = .init(subscribed: ErxTask.Demo.medication1)
     }
 }
-
-extension MedicationDomain.Destination.State: Equatable {}
-extension MedicationDomain.Destination.Action: Equatable {}

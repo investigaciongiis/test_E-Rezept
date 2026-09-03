@@ -29,7 +29,7 @@ struct Lens<Whole, Part> {
     let set: (Part) -> (Whole) -> Whole
 }
 
-// swiftlint:disable type_name
+// swiftlint:disable opening_brace type_name
 extension Prescription {
     init(
         erxTask: ErxTask,
@@ -247,4 +247,4 @@ extension ErxDeviceRequest {
     }
 }
 
-// swiftlint:enable type_name
+// swiftlint:enable opening_brace type_name

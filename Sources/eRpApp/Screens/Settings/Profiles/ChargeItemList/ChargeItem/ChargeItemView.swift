@@ -62,26 +62,23 @@ struct ChargeItemView: View {
 
                     },
                     content: {
-                        LabeledContent {
-                            Text(dateFormatter.relativeDateAndTime(
+                        SubTitle(
+                            title: dateFormatter.relativeDateAndTime(
                                 store.chargeItem.medicationDispense?.whenHandedOver
-                            ) ?? "-")
-                        } label: {
-                            Text(L10n.stgTxtChargeItemCreator)
-                        }
+                            ) ?? "-",
+                            description: L10n.stgTxtChargeItemCreator
+                        )
 
-                        LabeledContent {
-                            Text(store.chargeItem.pharmacy?.name ?? "-")
-                        } label: {
-                            Text(L10n.stgTxtChargeItemRedeemedAt)
-                        }
+                        SubTitle(
+                            title: store.chargeItem.pharmacy?.name ?? "-",
+                            description: L10n.stgTxtChargeItemRedeemedAt
+                        )
 
-                        LabeledContent {
-                            Text(dateFormatter
-                                .relativeDateAndTime(store.chargeItem.enteredDate) ?? "-")
-                        } label: {
-                            Text(L10n.stgTxtChargeItemRedeemedOn)
-                        }
+                        SubTitle(
+                            title: dateFormatter
+                                .relativeDateAndTime(store.chargeItem.enteredDate) ?? "-",
+                            description: L10n.stgTxtChargeItemRedeemedOn
+                        )
                     }
                 )
                 .sectionContainerStyle(.inline)
@@ -124,7 +121,7 @@ struct ChargeItemView: View {
                             Text(L10n.stgBtnChargeItemAlterViaApp)
                                 .foregroundColor(Colors.primary700)
                         })
-                        .disabled(true)
+                            .disabled(true)
 
                     } label: {
                         Text(L10n.stgTxtChargeItemAlterTitle)
@@ -135,7 +132,7 @@ struct ChargeItemView: View {
                                store.send(.deleteButtonTapped)
                            }, label: {
                                Text(L10n.stgBtnChargeItemDelete)
-                                   .foregroundColor(Colors.red700)
+                                   .foregroundColor(Colors.red600)
                            })
                 } label: {
                     Label(L10n.ordDetailTxtContact, systemImage: SFSymbolName.ellipsis)

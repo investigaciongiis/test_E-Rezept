@@ -1,10 +1,10 @@
 {
-    "listAllCommunicationsAfterForProfileIdRecordings":
+    "listAllCommunicationsAfterForRecordings":
     {
         "payload": [],
         "type": "repeated"
     },
-    "listAllTasksAfterProfileIdRecordings":
+    "listAllTasksAfterRecordings":
     {
         "type": "repeated",
         "payload":
@@ -48,7 +48,7 @@
                 ]
             },
     },
-    "listDetailedTasksForProfileIdRecordings":
+    "listDetailedTasksForRecordings":
     {
         "type": "repeated",
         "payload":
@@ -145,7 +145,7 @@
                 ]
             },
     },
-    "redeemOrderProfileIdRecordings": {
+    "redeemOrderRecordings": {
         "type": "repeated",
         "payload": {
             "identifier": "identifier",

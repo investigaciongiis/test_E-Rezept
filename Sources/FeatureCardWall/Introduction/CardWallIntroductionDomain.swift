@@ -36,7 +36,7 @@ public struct CardWallIntroductionDomain { // swiftlint:disable:this type_body_l
     public init() {}
 
     /// Destination states for navigation from introduction screen
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     public enum Destination {
         // sourcery: AnalyticsScreen = cardWall_CAN
         /// Navigate to CAN input
@@ -168,7 +168,7 @@ public struct CardWallIntroductionDomain { // swiftlint:disable:this type_body_l
 
     /// The reducer body that handles state transitions and effects
     public var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -264,9 +264,14 @@ public struct CardWallIntroductionDomain { // swiftlint:disable:this type_body_l
             return Effect.run { send in
                 // [REQ:gemSpec_IDP_Sek:A_22299] Follow redirect
                 // [REQ:BSI-eRp-ePA:O.Plat_10#3] Follow redirect
+                guard await openURLHandler.canOpenURL(url) else {
+                    await send(.response(.openURL(false)))
+                    return
+                }
+
                 // [REQ:gemSpec_IDP_Sek:A_22313-01] Remember State parameter for later verification
-                let result = await openURLHandler.open(url)
-                await send(.response(.openURL(result)))
+                await openURLHandler.open(url)
+                await send(.response(.openURL(true)))
             }
         case let .response(.openURL(successful)):
             state.loading = false
@@ -305,12 +310,12 @@ public struct CardWallIntroductionDomain { // swiftlint:disable:this type_body_l
         case .destination(.presented(.contactSheet(.contactByTelephone))):
             guard let url = URL(string: "tel:+498002773777") else { return .none }
             return .run { _ in
-                _ = await openURLHandler.open(url)
+                await openURLHandler.open(url)
             }
         case .destination(.presented(.contactSheet(.contactByMail))):
             guard let url = URL(string: "mailto:app-feedback@gematik.de") else { return .none }
             return .run { _ in
-                _ = await openURLHandler.open(url)
+                await openURLHandler.open(url)
             }
         case .destination(.presented(.alert(.searchKK))):
             state.destination = .extAuth(CardWallExtAuthSelectionDomain.State(
@@ -404,6 +409,3 @@ extension CardWallIntroductionDomain {
         }
     }
 }
-
-extension CardWallIntroductionDomain.Destination.State: Equatable {}
-extension CardWallIntroductionDomain.Destination.Action: Equatable {}

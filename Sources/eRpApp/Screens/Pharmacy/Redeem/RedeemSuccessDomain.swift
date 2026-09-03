@@ -42,16 +42,14 @@ struct RedeemSuccessDomain: Reducer {
 
     @Dependency(\.reviewRequester) var reviewRequester
 
-    var body: some Reducer<State, Action> {
-        Reduce { _, action in
-            switch action {
-            case .closeButtonTapped:
-                reviewRequester.requestReview()
+    func reduce(into _: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .closeButtonTapped:
+            reviewRequester.requestReview()
 
-                return Effect.send(.delegate(.close))
-            case .delegate:
-                return .none
-            }
+            return Effect.send(.delegate(.close))
+        case .delegate:
+            return .none
         }
     }
 }

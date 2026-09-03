@@ -40,7 +40,6 @@ public struct CodeView: View {
                             Text(L10n.euredeemCodeStep2)
                                 .font(.headline)
                                 .foregroundColor(Colors.systemLabel)
-                                .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtStep2)
 
                             Spacer()
                         }
@@ -49,37 +48,28 @@ public struct CodeView: View {
                             .font(.subheadline)
                             .foregroundColor(Colors.systemLabelSecondary)
                             .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtStepDescription)
                     }
 
                     ZStack(alignment: .topTrailing) {
-                        if store.isLoading {
-                            LoadingView(store: store)
-                        } else {
-                            CodeContentView(store: store)
+                        CodeContentView(store: store)
 
-                            Button(
-                                action: {
-                                    store.send(.toggleDisplayMode)
-                                },
-                                label: {
-                                    Image(
-                                        systemName: store.displayMode == .manual ? SFSymbolName.qrCode : SFSymbolName
-                                            .textFormat123
-                                    )
-                                    .font(.subheadline.bold())
-                                    .foregroundColor(Colors.backgroundNeutral)
-                                    .frame(width: 40, height: 40)
-                                    .background(Colors.primary700)
-                                    .clipShape(Circle())
-                                    .accessibilityLabel(store.displayMode == .manual
-                                        ? L10n.euredeemCodeToggleModeQr.text
-                                        : L10n.euredeemCodeToggleModeManual.text)
-                                }
-                            )
-                            .offset(x: 6, y: -17)
-                            .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeToggleDisplayModeButton)
-                        }
+                        Button(
+                            action: {
+                                store.send(.toggleDisplayMode)
+                            },
+                            label: {
+                                Image(
+                                    systemName: store.displayMode == .manual ? SFSymbolName.qrCode : SFSymbolName
+                                        .textFormat123
+                                )
+                                .font(.subheadline.bold())
+                                .foregroundColor(Colors.backgroundNeutral)
+                                .frame(width: 40, height: 40)
+                                .background(Colors.primary700)
+                                .clipShape(Circle())
+                            }
+                        )
+                        .offset(x: 6, y: -17)
                     }
                     .padding(.top, 24)
 
@@ -94,10 +84,6 @@ public struct CodeView: View {
                 CodeActionButtons(store: store)
             }
         }
-        .task {
-            await store.send(.task).finish()
-        }
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
@@ -105,7 +91,7 @@ public struct CodeView: View {
                 }, label: {
                     Text(L10n.euredeemCodeBtnClose)
                 })
-                .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeCloseButton)
+                    .accessibility(identifier: "euredeem_code_close_button")
             }
         }
         .navigationTitle(L10n.euredeemCodeTitle)
@@ -141,48 +127,29 @@ private struct CodeActionButtons: View {
                 }
             )
             .padding()
-            .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeGenerateNewButton)
         } else {
             Button(
                 action: {
                     store.send(.delegate(.takeReceipt))
                 },
                 label: {
-                    Text(L10n.euredeemCodeTakeReceiptButton)
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Colors.primary)
-                        .cornerRadius(12)
+                    HStack {
+                        Image(systemName: SFSymbolName.camera)
+                            .font(.body)
+
+                        Text(L10n.euredeemCodeTakeReceiptButton)
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Colors.primary)
+                    .cornerRadius(12)
                 }
             )
             .padding()
-            .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTakeReceiptButton)
         }
-    }
-}
-
-struct LoadingView: View {
-    @Bindable var store: StoreOf<CodeDomain>
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ProgressView()
-                .controlSize(.extraLarge)
-                .progressViewStyle(.circular)
-                .tint(Colors.primary)
-
-            Text(L10n.euredeemCodeLoadingTxt)
-                .foregroundStyle(Colors.primary900)
-                .frame(maxWidth: .infinity)
-        }
-        .frame(minHeight: 300)
-        .padding()
-        .background(Colors.systemBackground)
-        .cornerRadius(16)
-        .shadow(color: Colors.systemGray4, radius: 3, x: 0, y: 2)
     }
 }
 
@@ -205,7 +172,7 @@ struct CodeContentView: View {
         .padding()
         .background(Colors.systemBackground)
         .cornerRadius(16)
-        .shadow(color: Colors.systemGray4, radius: 3, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.16), radius: 3, x: 0, y: 2)
         .transition(.opacity)
         .animation(.default, value: store.displayMode)
     }
@@ -218,31 +185,17 @@ struct ManualCodeView: View {
         VStack(spacing: 20) {
             // Insurance Number Section
             VStack(alignment: .leading, spacing: 8) {
-                let codeInsuranceLabel = L10n.euredeemCodeInsuranceNumberLabel.rawKey
-                    .localizedStringFor(countryCode: store.countryCode)
-                    ?? L10n.euredeemCodeInsuranceNumberLabel.text
-                let insuranceId = store.insuranceId ?? ""
                 HStack {
-                    Button {
-                        store.send(.speechButtonTapped(
-                            text: codeInsuranceLabel
-                                + insuranceId.split(separator: "").joined(separator: " ")
-                        ))
-                    } label: {
-                        Image(systemName: SFSymbolName.speakerWave2Circle)
-                            .foregroundColor(Colors.primary)
-                            .font(.title.weight(.thin))
-                            .accessibilityLabel(L10n.euredeemCodeBtnInsuranceIdVoice.text)
-                    }
-                    .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeSpeechInsuranceNumberButton)
+                    Image(systemName: SFSymbolName.speakerWave2)
+                        .foregroundColor(Colors.primary)
+                        .font(.title2)
 
-                    Text(codeInsuranceLabel)
+                    Text(L10n.euredeemCodeInsuranceNumberLabel)
                         .font(.body)
-                        .foregroundColor(Colors.primary900)
-                        .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtInsuranceNumberLabel)
+                        .foregroundColor(Colors.systemLabel)
                 }
 
-                Text(insuranceId)
+                Text(store.insuranceNumber)
                     .font(.system(.title, design: .monospaced))
                     .kerning(10)
                     .fontWeight(.bold)
@@ -251,71 +204,52 @@ struct ManualCodeView: View {
                     .frame(maxWidth: .infinity)
                     .background(Colors.systemBackgroundSecondary)
                     .cornerRadius(8)
-                    .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtInsuranceNumber)
             }
 
             // Exchange Code Section
             VStack(alignment: .leading, spacing: 8) {
-                let codeExchangeLabel = L10n.euredeemCodeExchangeCodeLabel.rawKey
-                    .localizedStringFor(countryCode: store.countryCode)
-                    ?? L10n.euredeemCodeExchangeCodeLabel.text
-                let codeForDisplay = formatCodeForDisplay(store.euAccessCode?.accessCode ?? "")
-
                 HStack {
-                    Button {
-                        store.send(.speechButtonTapped(
-                            text: codeExchangeLabel
-                                + codeForDisplay
-                        ))
-                    } label: {
-                        Image(systemName: SFSymbolName.speakerWave2Circle)
-                            .foregroundColor(Colors.primary)
-                            .font(.title.weight(.thin))
-                            .accessibilityLabel(L10n.euredeemCodeBtnAccessCodeVoice.text)
-                    }
-                    .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeSpeechExchangeCodeButton)
+                    Image(systemName: SFSymbolName.speakerWave2)
+                        .foregroundColor(Colors.primary)
+                        .font(.title2)
 
-                    Text(codeExchangeLabel)
+                    Text(L10n.euredeemCodeExchangeCodeLabel)
                         .font(.body)
-                        .foregroundColor(Colors.primary900)
-                        .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtExchangeCodeLabel)
+                        .foregroundColor(Colors.systemLabel)
                 }
 
-                Text(store.isExpired ? L10n.euredeemCodeExpiredTitle.text
-                    : codeForDisplay)
-                    .font(.system(.title, design: .monospaced).bold())
-                    .foregroundColor(store.isExpired ? Colors.red900 : Colors.systemLabel)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .padding(8)
-                    .frame(
-                        maxWidth: .infinity,
-                        minHeight: 54,
-                        maxHeight: 54,
-                        alignment: .center
-                    )
-                    .background(store.isExpired ? Colors.red100 : Colors.primary100)
-                    .cornerRadius(8)
-                    .overlay(
-                        store.isExpired ?
-                            RoundedRectangle(cornerRadius: 8)
-                            .inset(by: 0.5)
-                            .stroke(
-                                Colors.red700,
-                                style: StrokeStyle(lineWidth: 1, dash: [4, 4])
-                            )
-                            : nil
-                    )
-                    .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtExchangeCode)
+                Text(store.isExpired ? L10n.euredeemCodeExpiredTitle
+                    .text : formatCodeForDisplay(store.exchangeCode))
+                                    .font(.system(.title, design: .monospaced).bold())
+                                    .foregroundColor(store.isExpired ? Colors.red900 : Colors.systemLabel)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .padding(8)
+                                    .frame(
+                                        maxWidth: .infinity,
+                                        minHeight: 54,
+                                        maxHeight: 54,
+                                        alignment: .center
+                                    )
+                                    .background(store.isExpired ? Colors.red100 : Colors.primary100)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        store.isExpired ?
+                                            RoundedRectangle(cornerRadius: 8)
+                                            .inset(by: 0.5)
+                                            .stroke(
+                                                Colors.red700,
+                                                style: StrokeStyle(lineWidth: 1, dash: [4, 4])
+                                            )
+                                            : nil
+                                    )
             }
 
-            if store.minutesRemaining > 0, !store.isExpired {
-                Text(L10n.euredeemCodeValidityManual(String(store.minutesRemaining)))
+            if !store.isExpired {
+                Text(L10n.euredeemCodeValidityManual)
                     .font(.caption)
                     .foregroundColor(Colors.systemLabelSecondary)
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtValidityManual)
+                    .multilineTextAlignment(.center)
             }
 
             Button(
@@ -328,12 +262,11 @@ struct ManualCodeView: View {
                     } icon: {
                         Image(systemName: SFSymbolName.refresh)
                     }
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline)
                     .foregroundColor(Colors.primary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             )
-            .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeManualRefreshButton)
         }
     }
 
@@ -375,33 +308,33 @@ struct QRCodeView: View {
                 store.send(.generateQRCode(screenSize: CGSize(width: 200, height: 200)))
             }
             .frame(maxWidth: .infinity, alignment: .center)
-            .overlay {
-                if store.isExpired {
+            .overlay(
+                store.isExpired ?
                     Text(L10n.euredeemCodeExpiredTitle.text)
-                        .font(.title3.bold())
-                        .foregroundColor(Colors.red900)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
-                        .frame(height: 54)
-                        .background(Colors.red100)
-                        .cornerRadius(8)
-                        .overlay(
+                    .font(.title3.bold())
+                    .foregroundColor(Colors.red900)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 8)
+                    .frame(height: 54)
+                    .background(Colors.red100)
+                    .cornerRadius(8)
+                    .overlay(
+                        store.isExpired ?
                             RoundedRectangle(cornerRadius: 8)
-                                .inset(by: 0.5)
-                                .stroke(Colors.red700, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                        )
-                        .rotationEffect(.degrees(-27))
-                        .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtQrExpired)
-                }
-            }
+                            .inset(by: 0.5)
+                            .stroke(Colors.red700, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                            : nil
+                    )
+                    .rotationEffect(.degrees(-27))
+                    : nil
+            )
 
-            if store.minutesRemaining > 0, !store.isExpired {
-                Text(L10n.euredeemCodeQrDescription(String(store.minutesRemaining)))
+            if !store.isExpired {
+                Text(L10n.euredeemCodeQrDescription)
                     .font(.caption)
                     .foregroundColor(Colors.systemLabelSecondary)
                     .multilineTextAlignment(.center)
                     .transition(.opacity.animation(.easeInOut(duration: 0.5)))
-                    .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeTxtValidityQr)
             }
 
             Button(
@@ -414,26 +347,13 @@ struct QRCodeView: View {
                     } icon: {
                         Image(systemName: SFSymbolName.refresh)
                     }
-                    .font(.subheadline.weight(.semibold))
+                    .font(.subheadline)
                     .foregroundColor(Colors.primary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .transition(.opacity.animation(.easeInOut(duration: 0.5)))
                 }
             )
-            .accessibilityIdentifier(A11y.redeem.eu.code.eurdmCodeQrRefreshButton)
         }
-    }
-}
-
-#Preview("Loading...") {
-    NavigationStack {
-        CodeView(store: CodeDomain.Dummies.storeFor(
-            CodeDomain.State(
-                displayMode: .qrCode,
-                insuranceId: "M123456789",
-                countryCode: "De"
-            )
-        ))
     }
 }
 
@@ -448,10 +368,8 @@ struct QRCodeView: View {
         CodeView(store: CodeDomain.Dummies.storeFor(
             CodeDomain.State(
                 displayMode: .qrCode,
-                insuranceId: "M123456789",
-                euAccessCode: .init(),
-                countryCode: "De",
-                isLoading: false
+                insuranceNumber: "M123456789",
+                exchangeCode: "A1b2C3"
             )
         ))
     }
@@ -468,9 +386,11 @@ struct QRCodeView: View {
         CodeView(store: CodeDomain.Dummies.storeFor(
             CodeDomain.State(
                 displayMode: .qrCode,
-                insuranceId: "M123456789",
-                countryCode: "De",
-                isLoading: false
+                insuranceNumber: "M123456789",
+                exchangeCode: "A1b2C3",
+                qrCodeImage: nil,
+                isExpired: true,
+                expirationDate: Calendar.current.date(byAdding: .minute, value: -1, to: Date())
             )
         ))
     }

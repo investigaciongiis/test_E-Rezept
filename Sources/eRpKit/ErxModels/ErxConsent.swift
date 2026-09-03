@@ -45,10 +45,7 @@ public struct ErxConsent: Identifiable, Hashable, Codable {
     }
 
     /// Id of the consent
-    public var id: String {
-        identifier
-    }
-
+    public var id: String { identifier }
     /// Identifier of the consent
     public let identifier: String
     /// Health card insurance identifier a.k.a. kvnr (e.g: X764228533)
@@ -89,11 +86,11 @@ public struct ErxConsent: Identifiable, Hashable, Codable {
 extension ErxConsent {
     @CodedError("206")
     public enum Error: Swift.Error {
-        /// Unable to construct consent request
         @ErrorCode("01")
+        /// Unable to construct consent request
         case unableToConstructConsentRequest
-        /// Invalid ErxConsent input
         @ErrorCode("02")
+        /// Invalid ErxConsent input
         case invalidErxConsentInput(String)
     }
 }

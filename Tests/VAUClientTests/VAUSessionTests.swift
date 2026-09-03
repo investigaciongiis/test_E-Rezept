@@ -32,20 +32,18 @@ import XCTest
 final class VAUSessionTests: XCTestCase {
     func testSessionRetainsCurrentUserPseudonym() async throws {
         // given
-        let url = try XCTUnwrap(URL(string: "http://some-service.com"))
-        let request = try URLRequest(url: XCTUnwrap(URL(string: "http://www.url.com")))
+        let url = URL(string: "http://some-service.com")!
+        let request = URLRequest(url: URL(string: "http://www.url.com")!)
         let chain = PassThroughChain(request: request)
 
-        let vauAccessTokenProvider = VAUAccessTokenProviderMock()
+        let vauAccessTokenProvider = MockVAUAccessTokenProvider()
         vauAccessTokenProvider.vauBearerToken = Just("SomeAccessToken").setFailureType(to: VAUError.self)
             .eraseToAnyPublisher()
-        let mockVAUCrypto = VAUCryptoMock()
-        mockVAUCrypto.decryptDataDataStringReturnValue = ""
-        mockVAUCrypto.encryptDataReturnValue = Data()
-        let mockVAUCryptoProvider = VAUCryptoProviderMock()
-        mockVAUCryptoProvider
-            .provideForMessageStringVauCertificateVAUCertificateBearerTokenBearerTokenVAUCryptoReturnValue =
-            mockVAUCrypto
+        let mockVAUCrypto = MockVAUCrypto()
+        mockVAUCrypto.decryptDataReturnValue = ""
+        mockVAUCrypto.encryptReturnValue = Data()
+        let mockVAUCryptoProvider = MockVAUCryptoProvider()
+        mockVAUCryptoProvider.provideForVauCertificateBearerTokenReturnValue = mockVAUCrypto
         let trustStoreSession = TrustStoreSessionMock()
         trustStoreSession.vauCertificateX509ReturnValue = Self.defaultVauCertificate
 
@@ -72,12 +70,12 @@ final class VAUSessionTests: XCTestCase {
 
         // Mock first response containing a new user pseudonym for further use
         let userPseudonymHeaders1 = ["userpseudonym": "pseudo1"]
-        let response1 = try XCTUnwrap(HTTPURLResponse(
+        let response1 = HTTPURLResponse(
             url: url,
             statusCode: 200,
             httpVersion: "1/1",
             headerFields: userPseudonymHeaders1
-        ))
+        )!
         chain.response = response1
         _ = try? await interceptor.intercept(chain: chain)
         expect(currentVauEndpoints.count) == 2
@@ -85,12 +83,12 @@ final class VAUSessionTests: XCTestCase {
 
         // Mock second response containing another user pseudonym for further use
         let userPseudonymHeaders2 = ["userpseudonym": "pseudo2"]
-        let response2 = try XCTUnwrap(HTTPURLResponse(
+        let response2 = HTTPURLResponse(
             url: url,
             statusCode: 200,
             httpVersion: "1/1",
             headerFields: userPseudonymHeaders2
-        ))
+        )!
         chain.response = response2
         _ = try? await interceptor.intercept(chain: chain)
         expect(currentVauEndpoints.count) == 3

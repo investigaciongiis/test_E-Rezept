@@ -31,18 +31,16 @@ import XCTest
 
 @MainActor
 final class OnboardingDomainTests: XCTestCase {
-    let mockUserDataStore = UserDataStoreMock()
-    let mockAppSecurityManager = AppSecurityManagerMock()
+    let mockUserDataStore = MockUserDataStore()
+    let mockAppSecurityManager = MockAppSecurityManager()
     let testScheduler = DispatchQueue.test
     static let now = Date()
     typealias TestStore = TestStoreOf<OnboardingDomain>
 
     func testStore(with state: OnboardingDomain.State = OnboardingDomain.Dummies.state) -> TestStore {
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
         return TestStore(initialState: state) {
             OnboardingDomain()
         } withDependencies: { dependencies in
@@ -57,7 +55,7 @@ final class OnboardingDomainTests: XCTestCase {
 
     func testSavingAuthenticationWithCorrectPassword() async {
         let selectedOption: AppSecurityOption = .password
-        mockAppSecurityManager.savePasswordStringBoolReturnValue = true
+        mockAppSecurityManager.savePasswordReturnValue = true
         let state = RegisterPasswordDomain.State(
             passwordA: "ABC",
             passwordB: "ABC",
@@ -74,11 +72,10 @@ final class OnboardingDomainTests: XCTestCase {
         await store.receive(.showAnalytics) { state in
             state.path[id: 1] = .analytics
         }
-        expect(self.mockAppSecurityManager.savePasswordStringBoolCallsCount) == 1
-        expect(self.mockAppSecurityManager.savePasswordStringBoolReturnValue).to(beTrue())
-        expect(self.mockUserDataStore.setAppSecurityOptionAppSecurityOptionVoidReceivedAppSecurityOption) ==
-            selectedOption
-        expect(self.mockUserDataStore.setAppSecurityOptionAppSecurityOptionVoidCallsCount) == 1
+        expect(self.mockAppSecurityManager.savePasswordCallsCount) == 1
+        expect(self.mockAppSecurityManager.savePasswordReturnValue).to(beTrue())
+        expect(self.mockUserDataStore.setAppSecurityOptionReceivedAppSecurityOption) == selectedOption
+        expect(self.mockUserDataStore.setAppSecurityOptionCallsCount) == 1
     }
 
     func testSavingAuthenticationWithBiometry() async {
@@ -94,7 +91,7 @@ final class OnboardingDomainTests: XCTestCase {
         await store.receive(.showAnalytics) { state in
             state.path[id: 1] = .analytics
         }
-        expect(self.mockUserDataStore.setAppSecurityOptionAppSecurityOptionVoidCallsCount) == 1
+        expect(self.mockUserDataStore.setAppSecurityOptionCallsCount) == 1
     }
 
     func testDismissOnboarding() async {
@@ -105,11 +102,11 @@ final class OnboardingDomainTests: XCTestCase {
         await store.send(.allowTracking)
 
         await store.receive(.dismissOnboarding)
-        expect(self.mockUserDataStore.setHideOnboardingBoolVoidCallsCount) == 1
-        expect(self.mockUserDataStore.setHideOnboardingBoolVoidReceivedHideOnboarding) == true
+        expect(self.mockUserDataStore.setHideOnboardingCallsCount) == 1
+        expect(self.mockUserDataStore.setHideOnboardingReceivedHideOnboarding) == true
 
-        expect(self.mockUserDataStore.setOnboardingVersionStringVoidCalled).to(beTrue())
-        expect(self.mockUserDataStore.setOnboardingVersionStringVoidReceivedInvocations)
+        expect(self.mockUserDataStore.setOnboardingVersionCalled).to(beTrue())
+        expect(self.mockUserDataStore.setOnboardingVersionReceivedInvocations)
             .to(equal([AppVersion.current.productVersion]))
     }
 }

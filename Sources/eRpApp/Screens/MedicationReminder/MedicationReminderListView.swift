@@ -29,6 +29,10 @@ import SwiftUI
 struct MedicationReminderListView: View {
     @Bindable var store: StoreOf<MedicationReminderListDomain>
 
+    init(store: StoreOf<MedicationReminderListDomain>) {
+        self.store = store
+    }
+
     var body: some View {
         VStack {
             if store.profileMedicationReminder.isEmpty ||
@@ -40,31 +44,34 @@ struct MedicationReminderListView: View {
                     ForEach(store.profileMedicationReminder) { profileMedicationReminder in
                         if !profileMedicationReminder.medicationProfileReminderList.isEmpty {
                             Section {
-                                ForEach(
-                                    profileMedicationReminder.medicationProfileReminderList
-                                ) { medicationProfileReminderListEntry in
-                                    Button {
-                                        store
-                                            .send(.selectMedicationReminder(medicationProfileReminderListEntry))
-                                    } label: {
-                                        LabeledContent {
-                                            Text(medicationProfileReminderListEntry.isActive ?
-                                                L10n.medReminderTxtListPlanActive.text :
-                                                L10n.medReminderTxtListPlanInactive.text)
+                                ForEach(profileMedicationReminder
+                                    .medicationProfileReminderList) { medicationProfileReminderListEntry in
+                                        Button {
+                                            store
+                                                .send(.selectMedicationReminder(medicationProfileReminderListEntry))
                                         } label: {
-                                            Text(medicationProfileReminderListEntry.title)
+                                            Label(
+                                                title: {
+                                                    SubTitle(
+                                                        title: medicationProfileReminderListEntry.title,
+                                                        description: medicationProfileReminderListEntry.isActive ?
+                                                            L10n.medReminderTxtListPlanActive.text :
+                                                            L10n.medReminderTxtListPlanInactive.text
+                                                    )
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .contentShape(Rectangle())
+                                                    .accessibilityElement(children: .combine)
+                                                    .accessibilityLabel(medicationProfileReminderListEntry.title)
+                                                    .accessibilityValue(medicationProfileReminderListEntry
+                                                        .isActive ?
+                                                        L10n.medReminderTxtListPlanActive.text :
+                                                        L10n.medReminderTxtListPlanInactive.text)
+                                                },
+                                                icon: {}
+                                            )
                                         }
-                                        .labeledContentStyle(.horizontal)
-                                        .accessibilityElement(children: .combine)
-                                        .accessibilityLabel(medicationProfileReminderListEntry.title)
-                                        .accessibilityValue(medicationProfileReminderListEntry
-                                            .isActive ?
-                                            L10n.medReminderTxtListPlanActive.text :
-                                            L10n.medReminderTxtListPlanInactive.text)
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.simpleNavigation)
-                                    .accessibilityIdentifier(A11y.medicationReminderList.medReminderListCell)
+                                        .buttonStyle(.simpleNavigation)
+                                        .accessibilityIdentifier(A11y.medicationReminderList.medReminderListCell)
                                 }
                                 .onDelete { indexSet in
                                     store.send(.deleteFromProfileMedicationReminderList(
@@ -115,8 +122,6 @@ extension MedicationReminderListView {
                         .font(.headline)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .accessibilityAddTraits(.isHeader)
-
                     Text(L10n.medReminderTxtListEmptyListSubheadline)
                         .font(.subheadline)
                         .foregroundColor(Colors.systemLabelSecondary)

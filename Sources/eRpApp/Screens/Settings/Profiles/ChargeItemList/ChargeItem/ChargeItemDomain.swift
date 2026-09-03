@@ -72,7 +72,7 @@ struct ChargeItemDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         case shareSheet(ShareSheetDomain)
         case idpCardWall(IDPCardWallDomain)
@@ -100,7 +100,7 @@ struct ChargeItemDomain {
     @Dependency(\.dismiss) var dismiss
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -129,6 +129,7 @@ struct ChargeItemDomain {
             return .none
         case .routeToChargeItemList:
             return .run { [profileId = state.profileId] _ in
+
                 await dismiss()
                 await router.routeTo(.settings(.editProfile(.chargeItemListFor(profileId))))
             }
@@ -144,6 +145,7 @@ struct ChargeItemDomain {
             .map(Action.Response.deleteChargeItem)
             .map(Action.response)
             .eraseToAnyPublisher)
+
         case let .destination(.presented(.shareSheet(.delegate(.close(error))))):
             state.destination = nil
             if let shareError = error {
@@ -158,12 +160,13 @@ struct ChargeItemDomain {
             state.destination = .alert(
                 ErpAlertState(
                     for: error,
-                    title: L10n.dmcAlertTitle
-                ) {
-                    ButtonState(role: .cancel) {
-                        .init(L10n.alertBtnOk)
+                    title: L10n.dmcAlertTitle,
+                    actions: {
+                        ButtonState(role: .cancel) {
+                            .init(L10n.alertBtnOk)
+                        }
                     }
-                }
+                )
             )
             return .none
         case let .response(.deleteChargeItem(result)):
@@ -301,6 +304,3 @@ extension ErxChargeItem {
         return price
     }
 }
-
-extension ChargeItemDomain.Destination.State: Equatable {}
-extension ChargeItemDomain.Destination.Action: Equatable {}

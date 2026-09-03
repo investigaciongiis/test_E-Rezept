@@ -22,7 +22,6 @@
 
 import ComposableArchitecture
 import eRpResources
-import eRpStyleKit
 import SwiftUI
 
 struct PrescriptionListEmptyView: View {
@@ -44,29 +43,15 @@ struct PrescriptionListEmptyView: View {
             }
             .padding(.bottom)
 
-            if store.isConnected {
-                Button {
-                    store.send(.refresh)
-                } label: {
-                    Label {
-                        Text(L10n.mainBtnRefresh)
-                    } icon: {
-                        Image(systemName: SFSymbolName.refresh)
-                    }
-                }
-                .buttonStyle(.secondarySmall)
+            Button(action: {
+                store.send(.refresh)
+            }, label: {
+                Text(store.isConnected ? L10n.mainBtnRefresh : L10n.mainBtnLogin)
+            })
+                .buttonStyle(.quartary)
                 .padding(.bottom)
-                .accessibilityIdentifier(A11y.mainScreen.erxBtnRefresh)
-            } else {
-                Button {
-                    store.send(.refresh)
-                } label: {
-                    Text(L10n.mainBtnLogin)
-                }
-                .buttonStyle(.primarySmall)
-                .padding(.bottom)
-                .accessibilityIdentifier(A11y.mainScreen.erxBtnLogin)
-            }
+                .accessibilityIdentifier(store.isConnected ? A11y.mainScreen.erxBtnRefresh : A11y.mainScreen
+                    .erxBtnLogin)
 
             Text(L10n.mainEmptyTxtTitle)
                 .font(.headline.weight(.bold))
@@ -84,12 +69,8 @@ struct PrescriptionListEmptyView: View {
                     store
                         .send(.showArchivedButtonTapped)
                 } label: {
-                    Label {
-                        Text(L10n.mainBtnArchivedPresc)
-                            .font(.subheadline.weight(.semibold))
-                    } icon: {
-                        Image(systemName: SFSymbolName.archivebox)
-                    }
+                    Text(L10n.mainBtnArchivedPresc)
+                        .font(.subheadline.weight(.semibold))
                 }
                 .padding(.top, 28)
                 .accessibilityIdentifier(A11y.mainScreen.erxBtnArcPrescription)

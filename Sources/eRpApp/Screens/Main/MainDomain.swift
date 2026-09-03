@@ -40,7 +40,7 @@ import SwiftUI
 // swiftlint:disable type_body_length file_length
 @Reducer
 struct MainDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = main_createProfile
         case createProfile(CreateProfileDomain)
@@ -95,7 +95,7 @@ struct MainDomain {
     struct State: Equatable {
         @Shared(.selectedProfileId) var profileId
         @Shared(.isDemoMode) var isDemoMode
-        /// Delete this after iOS 16 deprecation
+        // Delete this after iOS 16 deprecation
         var showIOS16DeprecationBanner: Bool {
             ProcessInfo().operatingSystemVersion.majorVersion == 16
         }
@@ -151,10 +151,9 @@ struct MainDomain {
         case startCardWall
         case redeemPrescriptions(_ prescriptions: Shared<[Prescription]>)
         case redeemFromPharmacy(_ pharmacy: PharmacyLocation, option: RedeemOption)
-        case euRedeemSelection(_ prescriptions: Shared<[Prescription]>)
-        case euRedeemInstructions(_ isRedeeming: Bool, countryCode: String?)
-        case euRedeemCode(countryCode: String)
-        case euNoCountryAlert
+        case euRedeemSelection
+        case euRedeemInstructions(_ isRedeeming: Bool)
+        case euRedeemCode
         case response(Response)
 
         // Child Domain Actions
@@ -171,7 +170,7 @@ struct MainDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Path {
         // sourcery: AnalyticsScreen = redeem_methodSelection
         case redeemMethods(RedeemMethodsDomain)
@@ -199,11 +198,11 @@ struct MainDomain {
         case localStoreError(LocalStoreError)
         @ErrorCode("02")
         case userSessionError(UserSessionError)
-        /// Import of shared Task failed due to being a duplicate already existing within the app
         @ErrorCode("03")
+        /// Import of shared Task failed due to being a duplicate already existing within the app
         case importDuplicate
-        /// Saving or retrieving data failed
         @ErrorCode("04")
+        /// Saving or retrieving data failed
         case repositoryError(ErxRepositoryError)
     }
 
@@ -220,7 +219,6 @@ struct MainDomain {
     @Dependency(\.profileDataStore) var profileDataStore
     @Dependency(\.router) var router: Routing
     @Dependency(\.drawerEvaluation) var drawerEvaluation: DrawerEvaluation
-    @Dependency(\.updateChecker) var updateChecker: UpdateChecker
 
     var environment: Environment {
         .init(
@@ -249,7 +247,7 @@ struct MainDomain {
             ExtAuthPendingDomain()
         }
 
-        Reduce(core)
+        Reduce(self.core)
             .forEach(\.path, action: \.path)
             .ifLet(\.$destination, action: \.destination)
     }
@@ -296,13 +294,15 @@ struct MainDomain {
                     .eraseToAnyPublisher
             )
         case let .response(.loadDeviceSecurityViewReceived(deviceSecurityState)):
-            if let deviceSecurityState {
+            if let deviceSecurityState = deviceSecurityState {
                 state.destination = .deviceSecurity(deviceSecurityState)
             }
             return .none
         case .checkForForcedUpdates:
             // [REQ:BSI-eRp-ePA:O.Arch_10#3] The actual business logic for the update check
-            return .run { [updateChecked = state.updateChecked] send in
+            return .run(operation: { [updateChecked = state.updateChecked] send in
+                @Dependency(\.userSession.updateChecker) var updateChecker
+
                 guard !updateChecked else { return }
 
                 if await updateChecker.isUpdateAvailable() {
@@ -310,7 +310,7 @@ struct MainDomain {
                     return
                 }
                 await send(.response(.showUpdateAlertResponse(false)))
-            }
+            })
         case let .response(.showUpdateAlertResponse(show)):
             state.updateChecked = true
             if show, state.destination == nil {
@@ -352,11 +352,11 @@ struct MainDomain {
         case let .prescriptionList(action: .response(.errorReceived(error))):
             switch error {
             case .idpError(.biometrics) where error.contains(PrivateKeyContainer.Error.canceledByUser):
-                state.destination = .alert(.init(for: error, title: L10n.errSpecificI10808Title) {
+                state.destination = .alert(.init(for: error, title: L10n.errSpecificI10808Title, actions: {
                     ButtonState(role: .cancel, action: .dismiss) {
                         .init(L10n.alertBtnOk)
                     }
-                })
+                }))
             case let .idpError(.serverError(response))
                 where response.code == IDPError.Code.pairingAuthorizationFailed.rawValue:
                 state.destination = .alert(AlertStates.devicePairingInvalid())
@@ -367,14 +367,11 @@ struct MainDomain {
                 state.destination = .alert(AlertStates.loginNecessaryAlert(for: error))
             default:
                 state.destination = .alert(
-                    .init(
-                        for: error,
-                        title: nil
-                    ) {
+                    .init(for: error, actions: {
                         ButtonState(role: .cancel, action: .dismiss) {
                             .init(L10n.alertBtnOk)
                         }
-                    }
+                    })
                 )
             }
             return .none
@@ -404,7 +401,7 @@ struct MainDomain {
         case let .prescriptionList(action: .redeemButtonTapped(openPrescriptions)):
             state.destination = nil
             if openPrescriptions.filter(\.isDiGaPrescription).count >= 1,
-               !openPrescriptions.contains(where: { !$0.isDiGaPrescription }) {
+               openPrescriptions.filter({ !$0.isDiGaPrescription }).isEmpty {
                 // redeem DiGa
                 return .none
             }
@@ -433,14 +430,11 @@ struct MainDomain {
             return .none
         case let .horizontalProfileSelection(action: .response(.loadReceived(.failure(error)))):
             state.destination = .alert(
-                .init(
-                    for: error,
-                    title: nil
-                ) {
+                .init(for: error, actions: {
                     ButtonState(role: .cancel, action: .dismiss) {
                         .init(L10n.alertBtnOk)
                     }
-                }
+                })
             )
             return .none
         case .showDrawer:
@@ -507,6 +501,7 @@ struct MainDomain {
             }
         case .grantChargeItemsConsentActivate,
              .destination(.presented(.alert(.retryGrantChargeItemConsent))):
+
             state.destination = nil
             let profileId = userSession.profileId
             return .run { send in
@@ -559,11 +554,12 @@ struct MainDomain {
                 return .none
             }
             return .run { _ in
-                _ = await openURLHandler.open(url)
+                await openURLHandler.open(url)
             }
         case .destination(.presented(.alert(.consentServiceErrorAuthenticate))):
             state.destination = .cardWall(.init(isNFCReady: true, profileId: environment.userSession.profileId))
             return .none
+
         case .refreshPrescription:
             return Effect.send(.prescriptionList(action: .refresh))
         case .horizontalProfileSelection(action: .showAddProfileView):
@@ -581,14 +577,11 @@ struct MainDomain {
                 return .none
             case let .failure(error):
                 state.destination = .alert(
-                    .init(
-                        for: error,
-                        title: nil
-                    ) {
+                    .init(for: error, actions: {
                         ButtonState(role: .cancel, action: .dismiss) {
                             .init(L10n.alertBtnOk)
                         }
-                    }
+                    })
                 )
                 return .none
             }
@@ -599,14 +592,11 @@ struct MainDomain {
                 return .none
             case let .failure(error):
                 state.destination = .alert(
-                    .init(
-                        for: error,
-                        title: nil
-                    ) {
+                    .init(for: error, actions: {
                         ButtonState(role: .cancel, action: .dismiss) {
                             .init(L10n.alertBtnOk)
                         }
-                    }
+                    })
                 )
                 return .none
             }
@@ -617,14 +607,11 @@ struct MainDomain {
                 return .none
             case let .failure(error):
                 state.destination = .alert(
-                    .init(
-                        for: error,
-                        title: nil
-                    ) {
+                    .init(for: error, actions: {
                         ButtonState(role: .cancel, action: .dismiss) {
                             .init(L10n.alertBtnOk)
                         }
-                    }
+                    })
                 )
                 return .none
             }
@@ -646,9 +633,8 @@ struct MainDomain {
             case let .redeemOverview(prescriptions):
                 let prescriptions = Shared(value: prescriptions)
                 return .send(.redeemPrescriptions(prescriptions))
-            case let .euRedeemTapped(prescriptions):
-                let prescriptions = Shared(value: prescriptions)
-                return .send(.euRedeemSelection(prescriptions))
+            case .euRedeemTapped:
+                return .send(.euRedeemSelection)
             case .close:
                 guard !state.path.isEmpty else {
                     reportIssue(
@@ -666,12 +652,10 @@ struct MainDomain {
         ),
         .destination(.presented(.prescriptionDetail(action: .delegate(.euRedeemButtonTapped)))):
             state.destination = nil
-            let prescriptions = state.prescriptionListState.openPrescriptions
             return .run { send in
                 // wait for running effects to finish
                 try await schedulers.main.sleep(for: 0.05)
-                let prescriptions = Shared(value: prescriptions)
-                await send(.euRedeemSelection(prescriptions))
+                await send(.euRedeemSelection)
             }
         case let .path(.element(id: _, action: .countrySelection(.selectCountry(country)))):
             state.path.removeLast()
@@ -682,80 +666,49 @@ struct MainDomain {
         case let .path(.popFrom(id: id)):
             // Back navigation from PrescriptionSelection to EURedeemSelection
             if let path = state.path[id: id, case: \.prescriptionSelection] {
-                let prescriptions = path.prescriptions.filter(\.isSetEURedeemableByPatient)
+                let prescriptions = path.prescriptions.filter(\.isSelected)
                 guard state.path.ids.count > 1 else { return .none }
                 let previousId = state.path.ids[state.path.index(before: state.path.endIndex - 1)]
-                state.path[id: previousId, case: \.euRedeemSelection]?.$selectedPrescriptions
-                    .withLock { $0 = prescriptions }
+                state.path[id: previousId, case: \.euRedeemSelection]?.selectedPrescriptions = prescriptions
             }
             return .none
-        case let .path(.element(id: id, action: .euRedeemSelection(.delegate(delegate)))):
+        case let .path(.element(id: _, action: .euRedeemSelection(.delegate(delegate)))):
             switch delegate {
             case .selectPrescriptionsButtonTapped:
                 state.path.append(.prescriptionSelection(.init()))
                 return .none
             case .selectCountryButtonTapped:
-                state.path.append(.countrySelection(.init()))
+                state.path.append(.countrySelection(.init(countries: [])))
                 return .none
-            case let .selectInstructionButtonTapped(countryCode: code):
-                return .send(.euRedeemInstructions(false, countryCode: code))
-            case .redeemPrescriptions:
-                return .run { [path = state.path, userDataStore = self.userDataStore] send in
+            case .selectInstructionButtonTapped:
+                return .send(.euRedeemInstructions(false))
+            case .redeemButtonTapped:
+                return .run { [userDataStore = self.userDataStore] send in
                     let hideEURedeemInstructions = try await userDataStore.hideEURedeemInstructions.async()
-                    guard let code = path[id: id, case: \.euRedeemSelection]?.selectedCountry?.countryCode else {
-                        await send(.euNoCountryAlert)
-                        return
-                    }
                     if hideEURedeemInstructions {
-                        await send(.euRedeemCode(countryCode: code))
+                        await send(.euRedeemCode)
                     } else {
                         userDataStore.set(hideEURedeemInstructions: true)
-                        await send(.euRedeemInstructions(true, countryCode: code))
+                        await send(.euRedeemInstructions(true))
                     }
                 }
-            case .back:
-                state.path.pop(from: id)
-                return .none
             case .close:
                 state.path.removeAll()
                 return .none
-            case .unlockCardClose:
-                state.path.removeAll()
-                return .run { _ in
-                    await environment.router.routeTo(.settings(.unlockCard))
-                }
             }
-        case .euNoCountryAlert:
-            guard let id = state.path.ids.last
-            else { return .none }
-            state.path[id: id, case: \.euRedeemSelection]?
-                .destination = .alert(EURedeemSelectionDomain.AlertStates.noCountryCode)
+        case .euRedeemSelection:
+            state.path.append(.euRedeemSelection(.init()))
             return .none
-        case let .euRedeemSelection(prescriptions):
-            let prescriptions = Shared(value: prescriptions.wrappedValue.map { EUPrescription(erxTask: $0.erxTask) })
-            state.path.append(.euRedeemSelection(.init(
-                prescriptions: prescriptions
-            )))
+        case let .euRedeemInstructions(isRedeeming):
+            state.path.append(.instructions(.init(isRedeeming: isRedeeming)))
             return .none
-        case let .euRedeemInstructions(isRedeeming, countryCode: code):
-            state.path.append(.instructions(.init(isRedeeming: isRedeeming, countryCode: code)))
-            return .none
-        case let .euRedeemCode(countryCode):
-            state.path.append(.code(.init(countryCode: countryCode)))
+        case .euRedeemCode:
+            state.path.append(.code(.init()))
             return .none
         case let .path(.element(id: _, action: .instructions(.delegate(delegate)))):
             switch delegate {
             case .continueButtonTapped:
-                state.path.removeLast()
-                guard let id = state.path.ids.last
-                else { return .none }
-
-                guard let code = state.path[id: id, case: \.euRedeemSelection]?.selectedCountry?.countryCode else {
-                    state.path[id: id, case: \.euRedeemSelection]?
-                        .destination = .alert(EURedeemSelectionDomain.AlertStates.noCountryCode)
-                    return .none
-                }
-                return .send(.euRedeemCode(countryCode: code))
+                return .send(.euRedeemCode)
             case .close:
                 state.path.removeAll()
                 return .none
@@ -820,9 +773,8 @@ struct MainDomain {
                 state.path.removeAll()
                 return .send(.prescriptionList(action: .loadRemotePrescriptionsAndSave))
             case .changePharmacy:
-                let selectedPrescriptions = state.path.last?.redeem?.$selectedPrescriptions ?? Shared(value: [])
                 state.path.append(.pharmacy(PharmacySearchDomain.State(
-                    selectedPrescriptions: selectedPrescriptions,
+                    selectedPrescriptions: Shared(value: []),
                     inRedeemProcess: true
                 )))
             }
@@ -844,8 +796,4 @@ struct MainDomain {
     }
 }
 
-extension MainDomain.Destination.State: Equatable {}
-extension MainDomain.Destination.Action: Equatable {}
-extension MainDomain.Path.State: Equatable {}
-extension MainDomain.Path.Action: Equatable {}
 // swiftlint:enable type_body_length

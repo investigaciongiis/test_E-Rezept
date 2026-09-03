@@ -40,70 +40,64 @@ struct InsuranceDrawerView: View {
     let federalInsuredAction: () -> Void
 
     var body: some View {
-        VStack(alignment: .center, spacing: 0) {
+        VStack(alignment: .center) {
             HStack {
                 Spacer()
                 CloseButton {
                     closeDrawerAction()
                 }
             }
-            .padding(.horizontal)
 
-            ScrollView {
-                VStack(alignment: .center) {
-                    Image(decorative: Asset.Illustrations.mannkarteCircleBlue)
-                        .padding(.top, 24)
+            Image(decorative: Asset.Illustrations.mannkarteCircleBlue)
+                .padding(.top, 24)
 
-                    VStack(alignment: .center, spacing: 8) {
-                        Text(root == .main ? L10n.mainInsuranceDrawerTxtHeader : L10n.stgInsuranceDrawerTxtHeader)
-                            .fontWeight(.semibold)
-                            .accessibilityAddTraits(.isHeader)
+            VStack(alignment: .center, spacing: 8) {
+                Text(root == .main ? L10n.mainInsuranceDrawerTxtHeader : L10n.stgInsuranceDrawerTxtHeader)
+                    .fontWeight(.semibold)
 
-                        Text(root == .main ? L10n.mainInsuranceDrawerTxtFooter : L10n.stgInsuranceDrawerTxtFooter)
-                            .foregroundColor(Colors.systemLabelSecondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }.padding(.bottom, 24)
+                Text(root == .main ? L10n.mainInsuranceDrawerTxtFooter : L10n.stgInsuranceDrawerTxtFooter)
+                    .foregroundColor(Colors.systemLabelSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.padding(.bottom, 24)
 
-                    VStack(alignment: .center, spacing: 8) {
-                        Button {
-                            gkvInsuredAction()
-                        } label: {
-                            Text(L10n.wlcdBtnGkv)
-                        }
-                        .buttonStyle(.primary)
-                        .accessibility(identifier: A11y.welcomedrawer.wlcdBtnGkvUser)
-
-                        Button(action: {
-                            pkvInsuredAction()
-                        }, label: {
-                            Text(L10n.wlcdBtnPkv)
-                                .foregroundColor(Colors.primary700)
-                                .fontWeight(.semibold)
-                        })
-                        .buttonStyle(.secondary)
-                        .accessibility(identifier: A11y.welcomedrawer.wlcdBtnPkvUser)
-
-                        Button(action: {
-                            federalInsuredAction()
-                        }, label: {
-                            Label {
-                                Text(L10n.wlcdBtnFederalKv)
-                            } icon: {
-                                Image(systemName: SFSymbolName.chevronForward)
-                            }
-                            .labelStyle(.trailingIcon)
-                        })
-                        .buttonStyle(.tertiary)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
-                        .accessibility(identifier: A11y.welcomedrawer.wlcdBtnFederalkvUser)
-                    }
+            VStack(alignment: .center, spacing: 8) {
+                Button {
+                    gkvInsuredAction()
+                } label: {
+                    Text(L10n.wlcdBtnGkv)
                 }
-                .padding(.horizontal)
+                .buttonStyle(.primary)
+                .accessibility(identifier: A11y.welcomedrawer.wlcdBtnGkvUser)
+
+                Button(action: {
+                    pkvInsuredAction()
+                }, label: {
+                    Text(L10n.wlcdBtnPkv)
+                        .foregroundColor(Colors.primary700)
+                        .fontWeight(.semibold)
+                })
+                    .buttonStyle(.secondary)
+                    .accessibility(identifier: A11y.welcomedrawer.wlcdBtnPkvUser)
+
+                Button(action: {
+                    federalInsuredAction()
+                }, label: {
+                    Label {
+                        Text(L10n.wlcdBtnFederalKv)
+                    } icon: {
+                        Image(systemName: SFSymbolName.chevronForward)
+                    }
+                    .labelStyle(.trailingIcon)
+                })
+                    .buttonStyle(.tertiary)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
+                    .accessibility(identifier: A11y.welcomedrawer.wlcdBtnFederalkvUser)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8) // capsule padding
+        .padding(.horizontal)
         .background(Colors.systemBackground.ignoresSafeArea(.all, edges: .bottom))
     }
 }

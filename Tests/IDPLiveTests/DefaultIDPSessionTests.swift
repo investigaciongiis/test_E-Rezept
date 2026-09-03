@@ -89,7 +89,7 @@ final class DefaultIDPSessionTests: XCTestCase {
     var schedulers: Schedulers!
     var storage: MemStorage!
     var sut: DefaultIDPSession!
-    var extAuthRequestStorageMock: ExtAuthRequestStorageMock!
+    var extAuthRequestStorageMock: MockExtAuthRequestStorage!
 
     var initialToken: IDPToken!
     var dateProvider: TimeProvider!
@@ -101,7 +101,7 @@ final class DefaultIDPSessionTests: XCTestCase {
 
         // Date provider provides a date that should validate the DiscoveryDocument when reading from IDPStorage
         let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
 
         idpClientMock.discoveryDocument = discoveryDocument
 
@@ -123,7 +123,7 @@ final class DefaultIDPSessionTests: XCTestCase {
         trustStoreSessionMock = TrustStoreSessionMock()
         trustStoreSessionMock.validateEeCertificateX509BoolReturnValue = true
 
-        extAuthRequestStorageMock = ExtAuthRequestStorageMock()
+        extAuthRequestStorageMock = MockExtAuthRequestStorage()
 
         // 1 second before token expiration
         let dateProviderDate = issuedDate.addingTimeInterval(TimeInterval(-1))
@@ -135,13 +135,13 @@ final class DefaultIDPSessionTests: XCTestCase {
     // [REQ:gemSpec_IDP_Frontend:A_20617-01]
     // [REQ:gemSpec_IDP_Frontend:A_20623]
     // [REQ:gemSpec_IDP_Frontend:A_20512#10] Testing the implementation
-    func testLoadDiscoveryDocumentFromStorageOnInitFailesWhenTrustStoreFailsValidation() async throws {
+    @MainActor func testLoadDiscoveryDocumentFromStorageOnInitFailesWhenTrustStoreFailsValidation() async {
         let trustStoreSessionMock = TrustStoreSessionMock()
         trustStoreSessionMock.validateEeCertificateX509BoolReturnValue = false
         let idpClientMock = MockIDPClient()
         idpClientMock.discoveryDocument = nil
         let storage = MemStorage()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
         storage.set(discovery: discoveryDocument(createdOn: issuedDate))
 
         let session = DefaultIDPSession(
@@ -161,10 +161,10 @@ final class DefaultIDPSessionTests: XCTestCase {
     // [REQ:gemSpec_IDP_Frontend:A_20617-01]
     // [REQ:gemSpec_IDP_Frontend:A_20623]
     // [REQ:gemSpec_IDP_Frontend:A_20512#11] Testing the implementation
-    func testLoadDiscoveryDocumentFromRemoteOnInitFailesWhenTrustStoreFailsValidation() throws {
+    func testLoadDiscoveryDocumentFromRemoteOnInitFailesWhenTrustStoreFailsValidation() {
         trustStoreSessionMock.validateEeCertificateX509BoolReturnValue = false
         let idpClientMock = MockIDPClient()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
         idpClientMock.discoveryDocument = discoveryDocument(createdOn: issuedDate)
         let storage = MemStorage()
         storage.set(discovery: nil)
@@ -179,19 +179,19 @@ final class DefaultIDPSessionTests: XCTestCase {
         ) { issuedDate }
 
         expect(storage.discoveryDocumentState).to(beNil())
-        expect(self.trustStoreSessionMock.validateEeCertificateX509BoolCallsCount).toEventually(equal(1))
+        expect(self.trustStoreSessionMock.validateEeCertificateX509BoolCallsCount).to(equal(1))
     }
 
     // [REQ:gemSpec_IDP_Frontend:A_20617-01]
     // [REQ:gemSpec_IDP_Frontend:A_20623]
     // [REQ:gemSpec_IDP_Frontend:A_20512#12] Testing the implementation
-    func testLoadDiscoveryDocumentFromStorageOnInitFailesWhenTrustStoreThrows() throws {
+    func testLoadDiscoveryDocumentFromStorageOnInitFailesWhenTrustStoreThrows() {
         let trustStoreSessionMock = TrustStoreSessionMock()
         trustStoreSessionMock.validateEeCertificateX509BoolThrowableError = TrustStoreError.invalidOCSPResponse
         let idpClientMock = MockIDPClient()
         idpClientMock.discoveryDocument = nil
         let storage = MemStorage()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
         storage.set(discovery: discoveryDocument(createdOn: issuedDate))
 
         let sut = DefaultIDPSession(
@@ -211,11 +211,11 @@ final class DefaultIDPSessionTests: XCTestCase {
     // [REQ:gemSpec_IDP_Frontend:A_20617-01]
     // [REQ:gemSpec_IDP_Frontend:A_20623]
     // [REQ:gemSpec_IDP_Frontend:A_20512#13] Testing the implementation
-    func testLoadDiscoveryDocumentFromRemoteOnInitFailesWhenTrustStoreThrows() async throws {
+    @MainActor func testLoadDiscoveryDocumentFromRemoteOnInitFailesWhenTrustStoreThrows() async {
         let trustStoreSessionMock = TrustStoreSessionMock()
         trustStoreSessionMock.validateEeCertificateX509BoolThrowableError = TrustStoreError.invalidOCSPResponse
         let idpClientMock = MockIDPClient()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
         idpClientMock.discoveryDocument = discoveryDocument(createdOn: issuedDate)
         let storage = MemStorage()
         storage.set(discovery: nil)
@@ -228,8 +228,8 @@ final class DefaultIDPSessionTests: XCTestCase {
             extAuthRequestStorage: extAuthRequestStorageMock
         ) { issuedDate }
 
-        await expect(storage.discoveryDocumentState).toEventually(beNil())
-        await expect(trustStoreSessionMock.validateEeCertificateX509BoolCallsCount).toEventually(equal(1))
+        expect(storage.discoveryDocumentState).to(beNil())
+        expect(trustStoreSessionMock.validateEeCertificateX509BoolCallsCount).to(equal(1))
 
         _ = sut
     }
@@ -237,12 +237,12 @@ final class DefaultIDPSessionTests: XCTestCase {
     // [REQ:gemSpec_IDP_Frontend:A_20617-01]
     // [REQ:gemSpec_IDP_Frontend:A_20623]
     // [REQ:gemSpec_IDP_Frontend:A_20512#14] Testing the implementation
-    func testLoadDiscoveryDocumentFromStorageOnInit() throws {
+    func testLoadDiscoveryDocumentFromStorageOnInit() {
         let idpClientMock = MockIDPClient()
         idpClientMock.discoveryDocument = nil
         let storage = MemStorage()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate)
         storage.set(discovery: discoveryDocument)
 
         // sut: IDPSession is not stored as we test its internals
@@ -261,12 +261,12 @@ final class DefaultIDPSessionTests: XCTestCase {
     // [REQ:gemSpec_IDP_Frontend:A_20617-01]
     // [REQ:gemSpec_IDP_Frontend:A_20623]
     // [REQ:gemSpec_IDP_Frontend:A_20512#15] Testing the implementation
-    func testLoadDiscoveryDocumentFromRemoteOnInit() async throws {
+    @MainActor func testLoadDiscoveryDocumentFromRemoteOnInit() async {
         let trustStoreSessionMock = TrustStoreSessionMock()
         trustStoreSessionMock.validateEeCertificateX509BoolReturnValue = true
         let idpClientMock = MockIDPClient()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate)
         idpClientMock.discoveryDocument = discoveryDocument
         let storage = MemStorage()
         storage.set(discovery: nil)
@@ -304,7 +304,7 @@ final class DefaultIDPSessionTests: XCTestCase {
     }
 
     func testInvalidationRemovesToken() throws {
-        let currentDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-18 08:51:16.0000+0000"))
+        let currentDate = dateFormatter.date(from: "2021-03-18 08:51:16.0000+0000")!
         let token = IDPToken(
             accessToken: "access-token",
             expires: currentDate.advanced(by: 10),
@@ -340,12 +340,12 @@ final class DefaultIDPSessionTests: XCTestCase {
         })
     }
 
-    func testInvalidateStoredDocumentWhenExpired() async throws {
+    @MainActor func testInvalidateStoredDocumentWhenExpired() async throws {
         let idpClientMock = MockIDPClient()
         // Date provider provides a date that should invalidate the DiscoveryDocument when reading from IDPStorage
         // But provide a date that would validate the (same) document when coming from the IDPClient
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-18 08:51:16.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
+        let issuedDate = dateFormatter.date(from: "2021-03-18 08:51:16.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate)
         idpClientMock.discoveryDocument = discoveryDocument
         let storage = MemStorage()
         storage.set(discovery: discoveryDocument)
@@ -383,7 +383,7 @@ final class DefaultIDPSessionTests: XCTestCase {
         _ = sut
     }
 
-    func testRequestChallenge() async throws {
+    @MainActor func testRequestChallenge() async {
         let trustStoreSessionMock = TrustStoreSessionMock()
         trustStoreSessionMock.validateEeCertificateX509BoolReturnValue = true
         let idpClientMock = MockIDPClient()
@@ -392,17 +392,16 @@ final class DefaultIDPSessionTests: XCTestCase {
             .setFailureType(to: IDPError.self)
             .eraseToAnyPublisher()
         let storage = MemStorage()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:00:00.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:00:00.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate)
         storage.set(discovery: discoveryDocument)
         // must be between iat date and exp date from `challengeDocument`
-        let nowDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:56:38.0000+0000"))
+        let nowDate = dateFormatter.date(from: "2021-03-16 14:56:38.0000+0000")!
         // must be exact exp date from `challengeDocument`
-        let challengeExpirationDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:58:38.0000+0000"))
+        let challengeExpirationDate = dateFormatter.date(from: "2021-03-16 14:58:38.0000+0000")!
 
         let codeVerifier = "very-random-string"
-        let codeChallenge = try XCTUnwrap(codeVerifier.encodeBase64urlsafe()?.sha256().encodeBase64UrlSafe()?
-            .asciiString)
+        let codeChallenge = codeVerifier.encodeBase64urlsafe()!.sha256().encodeBase64UrlSafe()?.asciiString!
         var randomGeneratorCalls = 0
         var randomGeneratorParams = [Int]()
         let stateOrNonce = Data([0x1, 0x2, 0x3])
@@ -493,8 +492,8 @@ final class DefaultIDPSessionTests: XCTestCase {
 
     func testRequestChallengeInvalidSignature() throws {
         let storage = MemStorage()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:00:00.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:00:00.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate)
         storage.set(discovery: discoveryDocument)
         let idpClientMock = MockIDPClient()
         idpClientMock.requestChallenge_Publisher = Just(invalidChallenge)
@@ -514,11 +513,11 @@ final class DefaultIDPSessionTests: XCTestCase {
         expect(try self.awaitPublisher(sut.requestChallenge())).to(throwError(expectedError))
     }
 
-    func testVerifySignedChallenge() throws {
+    func testVerifySignedChallenge() {
         let idpClientMock = MockIDPClient()
         // Date provider provides a date that should validate the DiscoveryDocument when reading from IDPStorage
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 16:42:28.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
+        let issuedDate = dateFormatter.date(from: "2021-03-16 16:42:28.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate)
         idpClientMock.discoveryDocument = discoveryDocument
         let storage = MemStorage()
         storage.set(discovery: discoveryDocument)
@@ -533,10 +532,10 @@ final class DefaultIDPSessionTests: XCTestCase {
             redirect: "redirect"
         )
         idpClientMock.verify_Publisher = Just(expectedToken).setFailureType(to: IDPError.self).eraseToAnyPublisher()
-        let signedJwt = try JWT(from: XCTUnwrap(Bundle.module
-                .path(forResource: "signed-challenge-query-param", ofType: "jwt", inDirectory: "Resources/JWT.bundle")?
-                .readFileContents()))
-        let challenge = try IDPChallenge(
+        let signedJwt = try! JWT(from: Bundle.module
+            .path(forResource: "signed-challenge-query-param", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
+            .readFileContents())
+        let challenge = try! IDPChallenge(
             challenge: JWT(header: JWT.Header(), payload: IDPChallenge.Claim())
         )
         let signedChallenge = SignedChallenge(
@@ -567,7 +566,7 @@ final class DefaultIDPSessionTests: XCTestCase {
         let privateKey = try! BrainpoolP256r1.KeyExchange.generateKey()
         let nonce = try! generateSecureRandom(length: 12)
         let aesKeyData = try! Data(hex: "668D155004E1110DB6914BA40346A302312FA3F1AB647EC79FA12F96793E5205")
-        return IDPCrypto(randomGenerator: { _ in Data("UWWzuvaSG".utf8) },
+        return IDPCrypto(randomGenerator: { _ in "UWWzuvaSG".data(using: .utf8)! },
                          brainpoolKeyPairGenerator: { privateKey },
                          aesNonceGenerator: { nonce },
                          aesKey: SymmetricKey(data: aesKeyData))
@@ -587,11 +586,11 @@ final class DefaultIDPSessionTests: XCTestCase {
         return try! JSONDecoder().decode(TokenPayload.self, from: tokenData)
     }()
 
-    func testExchangeToken() throws {
+    func testExchangeToken() {
         let idpClientMock = MockIDPClient()
         // Date provider provides a date that should validate the DiscoveryDocument when reading from IDPStorage
-        var issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
+        var issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate)
         idpClientMock.discoveryDocument = discoveryDocument
         let storage = MemStorage()
         storage.set(discovery: discoveryDocument)
@@ -630,7 +629,7 @@ final class DefaultIDPSessionTests: XCTestCase {
                                     extAuthRequestStorage: extAuthRequestStorageMock,
                                     time: dateProvider,
                                     idpCrypto: cryptoBox)
-        let originalChallenge = try IDPChallenge(
+        let originalChallenge = try! IDPChallenge(
             challenge: JWT(header: JWT.Header(), payload: IDPChallenge.Claim())
         )
         let challengeSession = IDPChallengeSession(
@@ -641,6 +640,7 @@ final class DefaultIDPSessionTests: XCTestCase {
         )
         sut.exchange(token: exchangeToken, challengeSession: challengeSession)
             .test(expectations: { token in
+
                 expect(token) == expectedToken
             })
 
@@ -662,11 +662,11 @@ final class DefaultIDPSessionTests: XCTestCase {
         tokenSubscriber.cancel()
     }
 
-    func testUpdateWithSSOToken() throws {
+    func testUpdateWithSSOToken() {
         let idpClientMock = MockIDPClient()
         // Date provider provides a date that should validate the DiscoveryDocument when reading from IDPStorage
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
         idpClientMock.discoveryDocument = discoveryDocument
 
         // 1 second before token expiration
@@ -759,8 +759,8 @@ final class DefaultIDPSessionTests: XCTestCase {
     func testPair() throws {
         let idpClientMock = MockIDPClient()
         // Date provider provides a date that should validate the DiscoveryDocument when reading from IDPStorage
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
 
         idpClientMock.discoveryDocument = discoveryDocument
 
@@ -835,7 +835,7 @@ final class DefaultIDPSessionTests: XCTestCase {
             }
         )
 
-        let (_, _, resultDD) = try XCTUnwrap(idpClientMock.registerDevice_ReceivedArguments)
+        let (_, _, resultDD) = idpClientMock.registerDevice_ReceivedArguments!
 
         expect(resultDD).to(equal(discoveryDocument))
     }
@@ -843,8 +843,8 @@ final class DefaultIDPSessionTests: XCTestCase {
     func testAltVerify() throws {
         let idpClientMock = MockIDPClient()
         // Date provider provides a date that should validate the DiscoveryDocument when reading from IDPStorage
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
+        let issuedDate = dateFormatter.date(from: "2021-03-16 14:42:03.0000+0000")!
+        let discoveryDocument = self.discoveryDocument(createdOn: issuedDate.addingTimeInterval(TimeInterval(-10)))
         idpClientMock.discoveryDocument = discoveryDocument
 
         // 1 second before token expiration
@@ -893,7 +893,7 @@ final class DefaultIDPSessionTests: XCTestCase {
                 .setFailureType(to: IDPError.self)
                 .eraseToAnyPublisher()
 
-        let challenge = try IDPChallenge(
+        let challenge = try! IDPChallenge(
             challenge: JWT(header: JWT.Header(), payload: IDPChallenge.Claim())
         )
         let idpChallengeSession = IDPChallengeSession(challenge: challenge,
@@ -926,7 +926,7 @@ final class DefaultIDPSessionTests: XCTestCase {
             }
         )
 
-        let (_, resultDD) = try XCTUnwrap(idpClientMock.altVerify_ReceivedArguments)
+        let (_, resultDD) = idpClientMock.altVerify_ReceivedArguments!
 
         expect(resultDD).to(equal(discoveryDocument))
     }
@@ -943,7 +943,7 @@ final class DefaultIDPSessionTests: XCTestCase {
         )
 
         let mocked =
-            try IDPDirectoryKKApps(
+            try! IDPDirectoryKKApps(
                 jwt: "eyJhbGciOiJCUDI1NlIxIiwidHlwIjoiSldUIiwia2lkIjoicHVrX2Rpc2Nfc2lnIiwieDVjIjpbIk1JSUNzVENDQWxpZ0F3SUJBZ0lIQWJzc3FRaHFPekFLQmdncWhrak9QUVFEQWpDQmhERUxNQWtHQTFVRUJoTUNSRVV4SHpBZEJnTlZCQW9NRm1kbGJXRjBhV3NnUjIxaVNDQk9UMVF0VmtGTVNVUXhNakF3QmdOVkJBc01LVXR2YlhCdmJtVnVkR1Z1TFVOQklHUmxjaUJVWld4bGJXRjBhV3RwYm1aeVlYTjBjblZyZEhWeU1TQXdIZ1lEVlFRRERCZEhSVTB1UzA5TlVDMURRVEV3SUZSRlUxUXRUMDVNV1RBZUZ3MHlNVEF4TVRVd01EQXdNREJhRncweU5qQXhNVFV5TXpVNU5UbGFNRWt4Q3pBSkJnTlZCQVlUQWtSRk1TWXdKQVlEVlFRS0RCMW5aVzFoZEdscklGUkZVMVF0VDA1TVdTQXRJRTVQVkMxV1FVeEpSREVTTUJBR0ExVUVBd3dKU1VSUUlGTnBaeUF6TUZvd0ZBWUhLb1pJemowQ0FRWUpLeVFEQXdJSUFRRUhBMElBQklZWm53aUdBbjVRWU94NDNaOE13YVpMRDNyL2J6NkJUY1FPNXBiZXVtNnFRellENWREQ2NyaXcvVk5QUFpDUXpYUVBnNFN0V3l5NU9PcTlUb2dCRW1PamdlMHdnZW93RGdZRFZSMFBBUUgvQkFRREFnZUFNQzBHQlNza0NBTURCQ1F3SWpBZ01CNHdIREFhTUF3TUNrbEVVQzFFYVdWdWMzUXdDZ1lJS29JVUFFd0VnZ1F3SVFZRFZSMGdCQm93R0RBS0JnZ3FnaFFBVEFTQlN6QUtCZ2dxZ2hRQVRBU0JJekFmQmdOVkhTTUVHREFXZ0JRbzhQam1xY2gzekVORjI1cXUxenFEckE0UHFEQTRCZ2dyQmdFRkJRY0JBUVFzTUNvd0tBWUlLd1lCQlFVSE1BR0dIR2gwZEhBNkx5OWxhR05oTG1kbGJXRjBhV3N1WkdVdmIyTnpjQzh3SFFZRFZSME9CQllFRkM5NE05TGdXNDRsTmdvQWJrUGFvbW5MalM4L01Bd0dBMVVkRXdFQi93UUNNQUF3Q2dZSUtvWkl6ajBFQXdJRFJ3QXdSQUlnQ2c0eVpEV215QmlyZ3h6YXd6L1M4REpuUkZLdFlVL1lHTmxSYzcra0JIY0NJQnV6YmEzR3NwcVNtb1AxVndNZU5OS05hTHNnVjh2TWJESmIzMGFxYWlYMSJdfQ.eyJmZWRfaWRwX2xpc3QiOlt7ImlkcF9uYW1lIjogIkdlbWF0aWsgS0siLCJpZHBfaXNzIjogImtrQXBwSWQwMDEiLCAiaWRwX3Nla18yIjogdHJ1ZX0seyAgICAiaWRwX25hbWUiOiAiQW5kZXJlIEtLIiwgImlkcF9pc3MiOiAia2tBcHBJZDAwMiIsICJpZHBfc2VrXzIiOiB0cnVlfSx7ICAgICJpZHBfbmFtZSI6ICJBbmRlcmUgS0syIiwgImlkcF9pc3MiOiAia2tBcHBJZDAwMiIsICJpZHBfc2VrXzIiOiBmYWxzZX0seyAgICAiaWRwX25hbWUiOiAiQW5kZXJlIEtLMyIsICJpZHBfaXNzIjogImtrQXBwSWQwMDIifV19.NnAngqzLOG9aP-QIr_GvEbCdyTE9NqzR8NiEOWu8rR8FZJE136iC1Tft2mglZ0f2oTQM0JLquzKouaeui8qAgA" // swiftlint:disable:this line_length
             )
         let fixture = KKAppDirectory(
@@ -990,7 +990,7 @@ final class DefaultIDPSessionTests: XCTestCase {
         )
 
         let mocked =
-            try IDPDirectoryKKApps(
+            try! IDPDirectoryKKApps(
                 jwt: "eyJhbGciOiJCUDI1NlIxIiwidHlwIjoiSldUIiwia2lkIjoicHVrX2Rpc2Nfc2lnIiwieDVjIjpbIk1JSUNzVENDQWxpZ0F3SUJBZ0lIQWJzc3FRaHFPekFLQmdncWhrak9QUVFEQWpDQmhERUxNQWtHQTFVRUJoTUNSRVV4SHpBZEJnTlZCQW9NRm1kbGJXRjBhV3NnUjIxaVNDQk9UMVF0VmtGTVNVUXhNakF3QmdOVkJBc01LVXR2YlhCdmJtVnVkR1Z1TFVOQklHUmxjaUJVWld4bGJXRjBhV3RwYm1aeVlYTjBjblZyZEhWeU1TQXdIZ1lEVlFRRERCZEhSVTB1UzA5TlVDMURRVEV3SUZSRlUxUXRUMDVNV1RBZUZ3MHlNVEF4TVRVd01EQXdNREJhRncweU5qQXhNVFV5TXpVNU5UbGFNRWt4Q3pBSkJnTlZCQVlUQWtSRk1TWXdKQVlEVlFRS0RCMW5aVzFoZEdscklGUkZVMVF0VDA1TVdTQXRJRTVQVkMxV1FVeEpSREVTTUJBR0ExVUVBd3dKU1VSUUlGTnBaeUF6TUZvd0ZBWUhLb1pJemowQ0FRWUpLeVFEQXdJSUFRRUhBMElBQklZWm53aUdBbjVRWU94NDNaOE13YVpMRDNyL2J6NkJUY1FPNXBiZXVtNnFRellENWREQ2NyaXcvVk5QUFpDUXpYUVBnNFN0V3l5NU9PcTlUb2dCRW1PamdlMHdnZW93RGdZRFZSMFBBUUgvQkFRREFnZUFNQzBHQlNza0NBTURCQ1F3SWpBZ01CNHdIREFhTUF3TUNrbEVVQzFFYVdWdWMzUXdDZ1lJS29JVUFFd0VnZ1F3SVFZRFZSMGdCQm93R0RBS0JnZ3FnaFFBVEFTQlN6QUtCZ2dxZ2hRQVRBU0JJekFmQmdOVkhTTUVHREFXZ0JRbzhQam1xY2gzekVORjI1cXUxenFEckE0UHFEQTRCZ2dyQmdFRkJRY0JBUVFzTUNvd0tBWUlLd1lCQlFVSE1BR0dIR2gwZEhBNkx5OWxhR05oTG1kbGJXRjBhV3N1WkdVdmIyTnpjQzh3SFFZRFZSME9CQllFRkM5NE05TGdXNDRsTmdvQWJrUGFvbW5MalM4L01Bd0dBMVVkRXdFQi93UUNNQUF3Q2dZSUtvWkl6ajBFQXdJRFJ3QXdSQUlnQ2c0eVpEV215QmlyZ3h6YXd6L1M4REpuUkZLdFlVL1lHTmxSYzcra0JIY0NJQnV6YmEzR3NwcVNtb1AxVndNZU5OS05hTHNnVjh2TWJESmIzMGFxYWlYMSJdfQ.eyJra19hcHBfbGlzdCI6W3sia2tfYXBwX25hbWUiOiAiR2VtYXRpayBLSyIsImtrX2FwcF9pZCI6ICJra0FwcElkMDAxIn0seyAgICAia2tfYXBwX25hbWUiOiAiQW5kZXJlIEtLIiwgImtrX2FwcF9pZCI6ICJra0FwcElkMDAyIn1dfQ.YgsCr2Lr_OnwcSvhMQOUSKIb8wq8ueyJVM0x5_pCVfhgwVW9orQzynQ4gHNOpgdOqBlHlOjLID6YYdkZSrr" // swiftlint:disable:this line_length
             )
 
@@ -1022,9 +1022,9 @@ final class DefaultIDPSessionTests: XCTestCase {
             idpCrypto: cryptoBox // the crypto box used is the one used to encrypt the example data
         )
 
-        let fixture = try XCTUnwrap(URL(string:
+        let fixture = URL(string:
             "https://das-e-rezept-fuer-deutschland.de?state=mystate&code=testcode&kk_app_redirect_uri=kk_app_redirect_uri" // swiftlint:disable:this line_length
-        ))
+        )!
         idpClientMock.extAuthVerifyUsingReturnValue =
             Just(IDPExchangeToken(code: "code",
                                   sso: nil,
@@ -1037,12 +1037,11 @@ final class DefaultIDPSessionTests: XCTestCase {
             .setFailureType(to: IDPError.self)
             .eraseToAnyPublisher()
 
-        extAuthRequestStorageMock
-            .getExtAuthRequestForStateStringExtAuthChallengeSessionReturnValue = ExtAuthChallengeSession(
-                verifierCode: "verifier_code",
-                nonce: "5557577A7576615347",
-                for: KKAppDirectory.Entry(name: "Gematik KK", identifier: "K1234")
-            )
+        extAuthRequestStorageMock.getExtAuthRequestForReturnValue = ExtAuthChallengeSession(
+            verifierCode: "verifier_code",
+            nonce: "5557577A7576615347",
+            for: KKAppDirectory.Entry(name: "Gematik KK", identifier: "K1234")
+        )
 
         sut.extAuthVerifyAndExchange(fixture, idTokenValidator: { _ in .success(true) })
             .test(
@@ -1059,9 +1058,8 @@ final class DefaultIDPSessionTests: XCTestCase {
                     expect(response).to(equal(expected))
                 }
             )
-        expect(self.extAuthRequestStorageMock.getExtAuthRequestForStateStringExtAuthChallengeSessionCalled).to(beTrue())
-        expect(self.extAuthRequestStorageMock.getExtAuthRequestForStateStringExtAuthChallengeSessionReceivedInvocations
-            .first).to(equal("state"))
+        expect(self.extAuthRequestStorageMock.getExtAuthRequestForCalled).to(beTrue())
+        expect(self.extAuthRequestStorageMock.getExtAuthRequestForReceivedInvocations.first).to(equal("state"))
 
         expect(self.idpClientMock.exchange_Called).to(beTrue())
         expect(self.idpClientMock.exchange_ReceivedArguments).toNot(beNil())
@@ -1093,11 +1091,11 @@ final class DefaultIDPSessionTests: XCTestCase {
             idpCrypto: cryptoBox // the crypto box used is the one used to encrypt the example data
         )
 
-        let fixture = try XCTUnwrap(URL(string:
+        let fixture = URL(string:
             "https://das-e-rezept-fuer-deutschland.de/extauth?state=mystate&code=testcode&kk_app_redirect_uri=kk_app_redirect_uri" // swiftlint:disable:this line_length
-        ))
+        )!
 
-        extAuthRequestStorageMock.getExtAuthRequestForStateStringExtAuthChallengeSessionReturnValue = nil
+        extAuthRequestStorageMock.getExtAuthRequestForReturnValue = nil
 
         sut.extAuthVerifyAndExchange(fixture, idTokenValidator: { _ in .success(true) })
             .test(
@@ -1108,9 +1106,8 @@ final class DefaultIDPSessionTests: XCTestCase {
                     fail("Should not be called!")
                 }
             )
-        expect(self.extAuthRequestStorageMock.getExtAuthRequestForStateStringExtAuthChallengeSessionCalled).to(beTrue())
-        expect(self.extAuthRequestStorageMock.getExtAuthRequestForStateStringExtAuthChallengeSessionReceivedInvocations
-            .first).to(equal("state"))
+        expect(self.extAuthRequestStorageMock.getExtAuthRequestForCalled).to(beTrue())
+        expect(self.extAuthRequestStorageMock.getExtAuthRequestForReceivedInvocations.first).to(equal("state"))
     }
 
     func testExtAuthVerifyAndExchange_kkHasPkvIdentifierFlag() throws {
@@ -1124,8 +1121,8 @@ final class DefaultIDPSessionTests: XCTestCase {
             idpCrypto: cryptoBox // the crypto box used is the one used to encrypt the example data
         )
 
-        let fixture = try XCTUnwrap(URL(string:
-            "https://das-e-rezept-fuer-deutschland.de?state=mystate&code=testcode"))
+        let fixture = URL(string:
+            "https://das-e-rezept-fuer-deutschland.de?state=mystate&code=testcode")!
         idpClientMock.extAuthVerifyUsingReturnValue =
             Just(IDPExchangeToken(code: "code",
                                   sso: nil,
@@ -1138,12 +1135,11 @@ final class DefaultIDPSessionTests: XCTestCase {
             .setFailureType(to: IDPError.self)
             .eraseToAnyPublisher()
 
-        extAuthRequestStorageMock
-            .getExtAuthRequestForStateStringExtAuthChallengeSessionReturnValue = ExtAuthChallengeSession(
-                verifierCode: "verifier_code",
-                nonce: "5557577A7576615347",
-                for: KKAppDirectory.Entry(name: "Gematik KK", identifier: "K1234", pkv: true)
-            )
+        extAuthRequestStorageMock.getExtAuthRequestForReturnValue = ExtAuthChallengeSession(
+            verifierCode: "verifier_code",
+            nonce: "5557577A7576615347",
+            for: KKAppDirectory.Entry(name: "Gematik KK", identifier: "K1234", pkv: true)
+        )
 
         sut.extAuthVerifyAndExchange(fixture, idTokenValidator: { _ in .success(true) })
             .test(
@@ -1163,9 +1159,8 @@ final class DefaultIDPSessionTests: XCTestCase {
                     expect(response).to(equal(expected))
                 }
             )
-        expect(self.extAuthRequestStorageMock.getExtAuthRequestForStateStringExtAuthChallengeSessionCalled).to(beTrue())
-        expect(self.extAuthRequestStorageMock.getExtAuthRequestForStateStringExtAuthChallengeSessionReceivedInvocations
-            .first).to(equal("state"))
+        expect(self.extAuthRequestStorageMock.getExtAuthRequestForCalled).to(beTrue())
+        expect(self.extAuthRequestStorageMock.getExtAuthRequestForReceivedInvocations.first).to(equal("state"))
 
         expect(self.idpClientMock.exchange_Called).to(beTrue())
         expect(self.idpClientMock.exchange_ReceivedArguments).toNot(beNil())
@@ -1176,142 +1171,10 @@ final class DefaultIDPSessionTests: XCTestCase {
 
         expect(receivedArguments.redirectURI).to(equal("https://das-e-rezept-fuer-deutschland.de"))
     }
-
-    // MARK: - DiscoveryDocument reset on invalid challenge signature
-
-    func testRequestChallengeInvalidSignatureResetsDiscoveryDocument() throws {
-        let storage = MemStorage()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:00:00.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
-        storage.set(discovery: discoveryDocument)
-
-        // Verify the discovery document is initially set
-        expect(storage.discoveryDocumentState).toNot(beNil())
-
-        let idpClientMock = MockIDPClient()
-        idpClientMock.requestChallenge_Publisher = Just(invalidChallenge)
-            .setFailureType(to: IDPError.self).eraseToAnyPublisher()
-        idpClientMock.discoveryDocument = discoveryDocument
-
-        let sut = DefaultIDPSession(
-            client: idpClientMock,
-            storage: storage,
-            schedulers: Schedulers.immediate,
-            trustStoreSession: trustStoreSessionMock,
-            extAuthRequestStorage: extAuthRequestStorageMock,
-            time: { issuedDate }
-        )
-
-        // The challenge has an invalid signature, so requestChallenge should fail
-        let expectedError = IDPError.validation(error: JWT.Error.invalidSignature)
-        expect(try self.awaitPublisher(sut.requestChallenge())).to(throwError(expectedError))
-
-        // After the invalid signature error, the DiscoveryDocument should be reset to nil
-        // so that the next request triggers a fresh reload (certificate rollover recovery).
-        expect(storage.discoveryDocumentState).to(beNil())
-
-        // expect 1 retry to have happened
-        expect(idpClientMock.loadDiscoveryDocument_CallsCount).to(equal(1))
-    }
-
-    func testRequestChallengeInvalidSignatureRetriesSuccessfully() async throws {
-        let storage = MemStorage()
-        let issuedDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:00:00.0000+0000"))
-        let discoveryDocument = discoveryDocument(createdOn: issuedDate)
-        storage.set(discovery: discoveryDocument)
-
-        let idpClientMock = MockIDPClient()
-        // The client must have a discovery document so the retry can load a fresh one
-        idpClientMock.discoveryDocument = discoveryDocument
-
-        // First call returns invalid challenge (triggers retry), second call returns valid challenge
-        var challengeCallCount = 0
-        idpClientMock.requestChallenge_Publisher = Deferred { () -> AnyPublisher<IDPChallenge, IDPError> in
-            challengeCallCount += 1
-            if challengeCallCount <= 1 {
-                return Just(self.invalidChallenge)
-                    .setFailureType(to: IDPError.self)
-                    .eraseToAnyPublisher()
-            } else {
-                return Just(self.challengeDocument)
-                    .setFailureType(to: IDPError.self)
-                    .eraseToAnyPublisher()
-            }
-        }.eraseToAnyPublisher()
-
-        // nowDate must be between iat date and exp date from `challengeDocument`
-        let nowDate = try XCTUnwrap(dateFormatter.date(from: "2021-03-16 14:56:38.0000+0000"))
-
-        // Use a test scheduler for compute to prevent infinite recursion in requestChallenge's delay/merge
-        let timerScheduler = DispatchQueue.test
-        let schedulers = Schedulers(computeScheduler: timerScheduler.eraseToAnyScheduler())
-
-        let sut = DefaultIDPSession(
-            client: idpClientMock,
-            storage: storage,
-            schedulers: schedulers,
-            trustStoreSession: trustStoreSessionMock,
-            extAuthRequestStorage: extAuthRequestStorageMock,
-            time: { nowDate }
-        )
-
-        var receivedChallenges = [IDPChallengeSession]()
-        var receivedError: IDPError?
-        let cancellable = sut.requestChallenge()
-            .receive(on: DispatchQueue.immediate)
-            .sink(receiveCompletion: { completion in
-                if case let .failure(error) = completion {
-                    receivedError = error
-                }
-            }, receiveValue: { value in
-                receivedChallenges.append(value)
-            })
-
-        // After retry, a valid challenge session should have been received
-        await expect(receivedChallenges).toEventually(haveCount(1))
-        expect(receivedError).to(beNil())
-
-        // requestChallenge on the client should have been called twice
-        // (first with invalid signature, then with valid challenge after retry)
-        expect(challengeCallCount) == 2
-        expect(idpClientMock.requestChallenge_CallsCount) == 2
-
-        // loadDiscoveryDocument on the client should have been called once
-        // (to fetch a fresh document after the stored one was reset)
-        expect(idpClientMock.loadDiscoveryDocument_CallsCount) == 1
-
-        // After the successful retry, the discovery document should be restored in storage
-        expect(storage.discoveryDocumentState).toNot(beNil())
-
-        cancellable.cancel()
-        _ = sut
-    }
 }
 
 extension String {
     func encodeBase64urlsafe() -> Data? {
         data(using: .utf8)?.encodeBase64UrlSafe()
-    }
-}
-
-extension DiscoveryDocument: Equatable {
-    public static func ==(lhs: DiscoveryDocument, rhs: DiscoveryDocument) -> Bool {
-        lhs.createdOn == rhs.createdOn &&
-            lhs.backing == rhs.backing &&
-            lhs.discKey.derBytes == rhs.discKey.derBytes &&
-            lhs.signingCert.derBytes == rhs.signingCert.derBytes &&
-            lhs.encryptionPublicKey == rhs.encryptionPublicKey &&
-            lhs.payload == rhs.payload
-    }
-}
-
-extension BrainpoolP256r1.KeyExchange.PublicKey: @retroactive Equatable {
-    public static func ==(lhs: BrainpoolP256r1.KeyExchange.PublicKey,
-                          rhs: BrainpoolP256r1.KeyExchange.PublicKey) -> Bool {
-        guard let lhsValue = try? lhs.rawValue(),
-              let rhsValue = try? rhs.rawValue() else {
-            return false
-        }
-        return lhsValue == rhsValue
     }
 }

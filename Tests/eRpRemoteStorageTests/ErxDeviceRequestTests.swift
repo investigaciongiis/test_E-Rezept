@@ -87,6 +87,7 @@ final class ErxDeviceRequestTests: XCTestCase {
 
     private func loadJSON(_ file: String) throws -> String? {
         let jsonData = try Bundle.module.testResourceFilePath(in: "Resources/DiGa", for: file).readFileContents()
-        return String(data: jsonData, encoding: .utf8)
+        let json = String(data: jsonData, encoding: .utf8)
+        return json
     }
 }

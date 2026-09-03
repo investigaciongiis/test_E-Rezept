@@ -31,16 +31,14 @@ struct X509TrustStore {
     let rootCa: X509
     let addRoots: [X509]
 
-    /// Category B: Certificate Authority certificates
+    // Category B: Certificate Authority certificates
     let caCerts: [X509]
 
-    /// Category C: The VAU certificate
+    // Category C: The VAU certificate
     let vauCert: X509
 
-    /// Category D: IDP certificates
+    // Category D: IDP certificates
     let idpCerts: [X509]
-
-    private let validationTime: Date?
 
     init(
         trustAnchor: X509,
@@ -50,7 +48,6 @@ struct X509TrustStore {
         validationTime: Date? = nil
     ) throws {
         rootCa = trustAnchor
-        self.validationTime = validationTime
 
         // Category A:
         // Before adding an addRoot we check if it can be validated by the currently potential trust store.
@@ -85,6 +82,22 @@ struct X509TrustStore {
         idpCerts = vauAndIdpCerts.idpCerts
     }
 
+    init(trustAnchor: TrustAnchor, certList: CertList,
+         validationTime: Date? = nil) throws {
+        // Expect certificates to be DER formatted
+        let addRoots = certList.addRoots.compactMap { try? X509(der: $0) }
+        let caCerts = certList.caCerts.compactMap { try? X509(der: $0) }
+        let eeCerts = certList.eeCerts.compactMap { try? X509(der: $0) }
+
+        try self.init(
+            trustAnchor: trustAnchor.certificate,
+            addRoots: addRoots,
+            caCerts: caCerts,
+            eeCerts: eeCerts,
+            validationTime: validationTime
+        )
+    }
+
     init(
         trustAnchor: TrustAnchor,
         pkiCertificates: PKICertificates,
@@ -107,9 +120,16 @@ struct X509TrustStore {
         )
     }
 
+    var certList: CertList {
+        let addRoots = self.addRoots.compactMap(\.derBytes)
+        let caCerts = self.caCerts.compactMap(\.derBytes)
+        let eeCerts = ([vauCert] + idpCerts).compactMap(\.derBytes)
+        return CertList(addRoots: addRoots, caCerts: caCerts, eeCerts: eeCerts)
+    }
+
     var pkiCertificates: PKICertificates {
-        let addRoots = addRoots.compactMap(\.derBytes)
-        let caCerts = caCerts.compactMap(\.derBytes)
+        let addRoots = self.addRoots.compactMap(\.derBytes)
+        let caCerts = self.caCerts.compactMap(\.derBytes)
         return PKICertificates(addRoots: addRoots, caCerts: caCerts)
     }
 
@@ -216,7 +236,7 @@ extension X509TrustStore {
     private func basicVerifyFilter(ocspResponses: [OCSPResponse]) -> [OCSPResponse] {
         ocspResponses.filter { ocspResponse in
             if let ocspResponseSigner = try? ocspResponse.getSigner(),
-               self.validate(certificate: ocspResponseSigner, validationTime: validationTime) {
+               self.validate(certificate: ocspResponseSigner) {
                 return true
             }
             return false
@@ -231,7 +251,7 @@ extension X509TrustStore {
     }
 }
 
-/// Helping functions to filter proper certificates before adding them to the trust store
+// Helping functions to filter proper certificates before adding them to the trust store
 extension X509TrustStore {
     private static let rcaRegex =
         try! NSRegularExpression(pattern: "CN=GEM\\.RCA\\d+") // swiftlint:disable:this force_try

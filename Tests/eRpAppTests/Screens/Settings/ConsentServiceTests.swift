@@ -34,12 +34,12 @@ import XCTest
 final class ConsentServiceTests: XCTestCase {
     let testScheduler = DispatchQueue.test
     var schedulers: Schedulers!
-    var mockUserSessionProvider: UserSessionProviderMock!
+    var mockUserSessionProvider: MockUserSessionProvider!
     var mockUserSession: MockUserSession!
-    var mockLoginHandler: LoginHandlerMock!
+    var mockLoginHandler: MockLoginHandler!
 
     override func invokeTest() {
-        mockUserSessionProvider = UserSessionProviderMock()
+        mockUserSessionProvider = MockUserSessionProvider()
 
         withDependencies { dependencies in
             dependencies.userSessionProvider = mockUserSessionProvider
@@ -53,23 +53,22 @@ final class ConsentServiceTests: XCTestCase {
 
         schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
         mockUserSession = MockUserSession()
-        mockLoginHandler = LoginHandlerMock()
+        mockLoginHandler = MockLoginHandler()
 
         mockUserSession.idpSessionLoginHandler = mockLoginHandler
-        mockUserSessionProvider.userSessionForUuidUUIDUserSessionReturnValue = mockUserSession
+        mockUserSessionProvider.userSessionForReturnValue = mockUserSession
     }
 
     func testGrantConsent_happyPath() async throws {
         // given
-        let sut = ConsentService.defaultValue
+        let sut = ConsentService.liveValue
 
-        mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(.success(true))
-            .eraseToAnyPublisher()
+        mockLoginHandler.isAuthenticatedReturnValue = Just(.success(true)).eraseToAnyPublisher()
         mockUserSession.profileReturnValue = Just(Self.Fixtures.profileForChargeItemsConsentService)
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         try await withDependencies { dependencies in
-            dependencies.erxTaskRepository.grantConsent = { _, _ in
+            dependencies.erxTaskRepository.grantConsent = { _ in
                 Self.Fixtures.validChargeItemsServiceConsent
             }
         } operation: {
@@ -78,22 +77,21 @@ final class ConsentServiceTests: XCTestCase {
 
             // then
             expect(result) == ConsentService.GrantResult.success
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCalled) == true
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCallsCount) == 1
+            expect(self.mockLoginHandler.isAuthenticatedCalled) == true
+            expect(self.mockLoginHandler.isAuthenticatedCallsCount) == 1
         }
     }
 
     func testGrantConsent_unexpectedResponse() async {
         // given
-        let sut = ConsentService.defaultValue
+        let sut = ConsentService.liveValue
 
-        mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(.success(true))
-            .eraseToAnyPublisher()
+        mockLoginHandler.isAuthenticatedReturnValue = Just(.success(true)).eraseToAnyPublisher()
         mockUserSession.profileReturnValue = Just(Self.Fixtures.profileForChargeItemsConsentService)
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         await withDependencies { dependencies in
-            dependencies.erxTaskRepository.grantConsent = { _, _ in nil }
+            dependencies.erxTaskRepository.grantConsent = { _ in nil }
         } operation: {
             // when
             var runSuccess = false
@@ -111,44 +109,42 @@ final class ConsentServiceTests: XCTestCase {
 
             // then
             expect(runSuccess) == true
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCalled) == true
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCallsCount) == 1
+            expect(self.mockLoginHandler.isAuthenticatedCalled) == true
+            expect(self.mockLoginHandler.isAuthenticatedCallsCount) == 1
         }
     }
 
     func testRevokeConsent_happyPath() async throws {
         // given
-        let sut = ConsentService.defaultValue
+        let sut = ConsentService.liveValue
 
-        mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(.success(true))
-            .eraseToAnyPublisher()
+        mockLoginHandler.isAuthenticatedReturnValue = Just(.success(true)).eraseToAnyPublisher()
         mockUserSession.profileReturnValue = Just(Self.Fixtures.profileForChargeItemsConsentService)
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         try await withDependencies { dependencies in
-            dependencies.erxTaskRepository.revokeConsent = { _, _ in }
+            dependencies.erxTaskRepository.revokeConsent = { _ in }
         } operation: {
             // when
             let result = try await sut.revokeConsent(.chargcons, Self.testProfileId)
 
             // then
             expect(result) == ConsentService.RevokeResult.success
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCalled) == true
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCallsCount) == 1
+            expect(self.mockLoginHandler.isAuthenticatedCalled) == true
+            expect(self.mockLoginHandler.isAuthenticatedCallsCount) == 1
         }
     }
 
     func testRevokeConsent_unexpectedResponse() async {
         // given
-        let sut = ConsentService.defaultValue
+        let sut = ConsentService.liveValue
 
-        mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(.success(true))
-            .eraseToAnyPublisher()
+        mockLoginHandler.isAuthenticatedReturnValue = Just(.success(true)).eraseToAnyPublisher()
         mockUserSession.profileReturnValue = Just(Self.Fixtures.profileForChargeItemsConsentService)
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         await withDependencies { dependencies in
-            dependencies.erxTaskRepository.revokeConsent = { _, _ in
+            dependencies.erxTaskRepository.revokeConsent = { _ in
                 throw ConsentService.Error.unexpectedRevokeConsentResponse
             }
         } operation: {
@@ -163,8 +159,8 @@ final class ConsentServiceTests: XCTestCase {
 
             // then
             expect(runSuccess) == true
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCalled) == true
-            expect(self.mockLoginHandler.isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverCallsCount) == 1
+            expect(self.mockLoginHandler.isAuthenticatedCalled) == true
+            expect(self.mockLoginHandler.isAuthenticatedCallsCount) == 1
         }
     }
 }
@@ -186,7 +182,7 @@ extension ConsentServiceTests {
 
         static let validChargeItemsServiceConsent: ErxConsent = {
             let kvnr = "X114428530"
-            return ErxConsent(
+            let chargeItemsConsent = ErxConsent(
                 identifier: "\(ErxConsent.Category.chargcons.rawValue)-\(kvnr)",
                 insuranceId: kvnr,
                 timestamp: FHIRDateFormatter.shared.string(from: Date(), format: .yearMonthDay),
@@ -194,6 +190,7 @@ extension ConsentServiceTests {
                 category: .chargcons,
                 policyRule: .optIn
             )
+            return chargeItemsConsent
         }()
     }
 }

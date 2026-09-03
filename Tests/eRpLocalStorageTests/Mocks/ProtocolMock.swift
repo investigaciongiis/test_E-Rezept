@@ -26,9 +26,12 @@ import eRpKit
 import eRpLocalStorage
 import Foundation
 
-// swiftformat:disable emptyExtensions
+// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
+
 // sourcery:begin: AutoMockable
+// sourcery:end
+
+// sourcery:begin: ProtocolMock
 extension CoreDataControllerFactory {}
 extension UserDataStore {}
 // sourcery:end
-// swiftformat:enable emptyExtensions

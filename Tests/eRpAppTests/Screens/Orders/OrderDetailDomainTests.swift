@@ -36,14 +36,14 @@ import XCTest
 @MainActor
 final class OrderDetailDomainTests: XCTestCase {
     let schedulers = Schedulers(uiScheduler: DispatchQueue.immediate.eraseToAnyScheduler())
-    let mockUserDataStore = UserDataStoreMock()
+    let mockUserDataStore = MockUserDataStore()
     typealias TestStore = TestStoreOf<OrderDetailDomain>
 
     private func testStore(
         for order: Order = .init(orderId: "765432", communications: [], chargeItems: []),
         withDependencies prepareDependencies: (inout DependencyValues) -> Void = { _ in }
     ) -> TestStore {
-        TestStore(initialState: OrderDetailDomain.State(communicationMessage: Shared(value: .order(order)))) {
+        TestStore(initialState: OrderDetailDomain.State(communicationMessage: .order(order))) {
             OrderDetailDomain()
         } withDependencies: { dependencies in
             dependencies.schedulers = schedulers
@@ -122,11 +122,7 @@ final class OrderDetailDomainTests: XCTestCase {
             await store.send(.loadAndShowPharmacy)
 
             await store.receive(.response(.loadAndShowPharmacyReceived(.success(remotePharmacy)))) { state in
-                state.$communicationMessage.withLock {
-                    $0.updateOrder {
-                        Order.lens.pharmacy.set(remotePharmacy)($0)
-                    }
-                }
+                state.order = Order.lens.pharmacy.set(remotePharmacy)(order)
                 state.destination = .pharmacyDetail(.init(
                     prescriptions: Shared(value: []),
                     selectedPrescriptions: Shared(value: []),
@@ -159,11 +155,7 @@ final class OrderDetailDomainTests: XCTestCase {
             await store.send(.loadAndShowPharmacy)
 
             await store.receive(.response(.loadAndShowPharmacyReceived(.failure(.remote(.notFound))))) { state in
-                state.$communicationMessage.withLock {
-                    $0.updateOrder {
-                        Order.lens.pharmacy.set(nil)($0)
-                    }
-                }
+                state.order = Order.lens.pharmacy.set(nil)(order)
                 state.destination = .alert(.init(for: PharmacyRepositoryError.remote(.notFound)))
             }
         }
@@ -185,7 +177,6 @@ final class OrderDetailDomainTests: XCTestCase {
         ) { dependencies in
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
-                return true
             }
         }
 
@@ -213,7 +204,6 @@ final class OrderDetailDomainTests: XCTestCase {
         ) { dependencies in
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
-                return true
             }
         }
 
@@ -248,6 +238,7 @@ final class OrderDetailDomainTests: XCTestCase {
         let store = testStore(for: input)
 
         await store.send(.showPickupCode(dmcCode: "DMC-4711-and-more", hrCode: "4711")) {
+            $0.order = input
             $0.destination = .pickupCode(
                 .init(
                     pickupCodeHR: "4711",
@@ -257,12 +248,13 @@ final class OrderDetailDomainTests: XCTestCase {
             )
         }
         await store.send(.resetNavigation) {
+            $0.order = input
             $0.destination = nil
         }
     }
 
     @available(iOS 18.0, *)
-    func testSelectingValidUrl() async throws {
+    func testSelectingValidUrl() async {
         let openedURL = Mutex<URL?>(nil)
 
         let orderId = "12343-1236-432"
@@ -272,12 +264,11 @@ final class OrderDetailDomainTests: XCTestCase {
         ) { dependencies in
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
-                return true
             }
             dependencies.openURLHandler.canOpenURL = { _ in true }
         }
 
-        let expectedUrl = try XCTUnwrap(URL(string: "https://www.das-e-rezept-fuer-deutschland.de"))
+        let expectedUrl = URL(string: "https://www.das-e-rezept-fuer-deutschland.de")!
         await store.send(.showOpenUrlSheet(url: expectedUrl)) { state in
             state.openUrlSheetUrl = expectedUrl
         }
@@ -287,14 +278,14 @@ final class OrderDetailDomainTests: XCTestCase {
         expect(openedURL.withLock { $0 }).to(equal(expectedUrl))
     }
 
-    func testSelectingInvalidUrl() async throws {
+    func testSelectingInvalidUrl() async {
         let orderId = "12343-1236-432"
-        let expectedUrl = try XCTUnwrap(URL(string: "www.invalid-url.de"))
+        let expectedUrl = URL(string: "www.invalid-url.de")!
         let input = IdentifiedArrayOf(uniqueElements: [OrderDetailDomainTests.communicationShipmentInvalidUrl])
         let store = testStore(
             for: .init(orderId: orderId, communications: input, chargeItems: [])
         ) { dependencies in
-            dependencies.openURLHandler.open = { _ in false }
+            dependencies.openURLHandler.canOpenURL = { _ in false }
         }
 
         await store.send(.showOpenUrlSheet(url: expectedUrl)) { state in
@@ -327,9 +318,7 @@ final class OrderDetailDomainTests: XCTestCase {
         let input = IdentifiedArrayOf(uniqueElements: [OrderDetailDomainTests.communicationWithWrongPayload])
         let store = TestStore(
             initialState: OrderDetailDomain
-                .State(communicationMessage: Shared(value: .order(.init(orderId: orderId,
-                                                                        communications: input,
-                                                                        chargeItems: []))))
+                .State(communicationMessage: .order(.init(orderId: orderId, communications: input, chargeItems: [])))
         ) {
             OrderDetailDomain(deviceInfo: deviceInfo)
         } withDependencies: { dependencies in
@@ -345,7 +334,6 @@ final class OrderDetailDomainTests: XCTestCase {
             dependencies.openURLHandler.canOpenURL = { _ in true }
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
-                return true
             }
         }
         await store.send(.openMail(message: "wrong payload format"))
@@ -362,7 +350,7 @@ final class OrderDetailDomainTests: XCTestCase {
 
         let store = TestStore(
             initialState: OrderDetailDomain
-                .State(communicationMessage: Shared(value: .internalCommunication(.init(messages: [message]))))
+                .State(communicationMessage: .internalCommunication(.init(messages: [message])))
         ) {
             OrderDetailDomain()
         } withDependencies: {
@@ -374,8 +362,8 @@ final class OrderDetailDomainTests: XCTestCase {
         }
 
         await store.send(.didDisplayTimelineEntries)
-        expect(self.mockUserDataStore.markInternalCommunicationAsReadMessageIdStringVoidCalled).to(beTrue())
-        expect(self.mockUserDataStore.markInternalCommunicationAsReadMessageIdStringVoidCallsCount) == 1
+        expect(self.mockUserDataStore.markInternalCommunicationAsReadMessageIdCalled).to(beTrue())
+        expect(self.mockUserDataStore.markInternalCommunicationAsReadMessageIdCallsCount) == 1
     }
 
     func testChipTextUpdateSoloDispReq() async {
@@ -393,6 +381,7 @@ final class OrderDetailDomainTests: XCTestCase {
 
         await store.send(.tasksReceived([tasks])) {
             $0.erxTasks = IdentifiedArrayOf(uniqueElements: [tasks].sorted())
+            $0.timelineEntries = expectedTimelineEntire
         }
     }
 
@@ -411,6 +400,7 @@ final class OrderDetailDomainTests: XCTestCase {
 
         await store.send(.tasksReceived(tasks)) {
             $0.erxTasks = IdentifiedArrayOf(uniqueElements: tasks.sorted())
+            $0.timelineEntries = expectedTimelineEntire
         }
     }
 
@@ -428,6 +418,7 @@ final class OrderDetailDomainTests: XCTestCase {
 
         await store.send(.tasksReceived([tasks])) {
             $0.erxTasks = IdentifiedArrayOf(uniqueElements: [tasks].sorted())
+            $0.timelineEntries = expectedTimelineEntire
         }
     }
 
@@ -445,6 +436,7 @@ final class OrderDetailDomainTests: XCTestCase {
 
         await store.send(.tasksReceived(tasks)) {
             $0.erxTasks = IdentifiedArrayOf(uniqueElements: tasks.sorted())
+            $0.timelineEntries = expectedTimelineEntire
         }
     }
 
@@ -461,6 +453,7 @@ final class OrderDetailDomainTests: XCTestCase {
 
         await store.send(.tasksReceived(tasks)) {
             $0.erxTasks = IdentifiedArrayOf(uniqueElements: tasks.sorted())
+            $0.timelineEntries = expectedTimelineEntire
         }
     }
 }

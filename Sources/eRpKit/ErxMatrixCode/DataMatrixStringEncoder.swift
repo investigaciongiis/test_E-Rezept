@@ -41,10 +41,10 @@ public protocol DataMatrixStringEncoder {
 /// Errors corersponding to `DataMatrixStringEncode`
 @CodedError("202")
 public enum DefaultDataMatrixStringEncoderError: Swift.Error {
-    /// Generic error while encoding the string.
     @ErrorCode("01")
+    /// Generic error while encoding the string.
     case stringEncoding(String)
-    /// Access code is missing
     @ErrorCode("02")
+    /// Access code is missing
     case missingAccessCode
 }

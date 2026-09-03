@@ -26,6 +26,8 @@ import Foundation
 import IdentifiedCollections
 
 struct DemoInternalCommunicationProtocol: InternalCommunicationProtocol {
+    init() {}
+
     func load() async throws -> IdentifiedArray<String, InternalCommunication> {
         var internalMessages: IdentifiedArray<String, InternalCommunication> = IdentifiedArray()
         internalMessages.append(.init(messages: []))

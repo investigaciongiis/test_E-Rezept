@@ -35,7 +35,7 @@ public struct CardWallPINView: View {
     public var body: some View {
         VStack(alignment: .leading) {
             // [REQ:BSI-eRp-ePA:O.Purp_2#3,O.Data_6#4] PIN is used for eGK Connection
-            PINView(store: store)
+            PINView(store: store).padding()
 
             Spacer()
 
@@ -95,75 +95,71 @@ public struct CardWallPINView: View {
 
         var body: some View {
             ScrollView(.vertical, showsIndicators: true) {
-                VStack {
-                    if store.wrongPinEntered {
-                        WorngPINEnteredWarningView().padding()
-                    }
+                if store.wrongPinEntered {
+                    WorngPINEnteredWarningView().padding()
+                }
 
-                    VStack(alignment: .leading) {
-                        Text(L10n.cdwTxtPinSubtitle)
-                            .foregroundColor(Colors.systemLabel)
-                            .font(.title)
-                            .bold()
-                            .accessibility(identifier: A11y.cardWall.pinInput.cdwTxtPinSubtitle)
-                            .padding(.bottom, 16)
-                            .accessibilityAddTraits(.isHeader)
+                VStack(alignment: .leading) {
+                    Text(L10n.cdwTxtPinSubtitle)
+                        .foregroundColor(Colors.systemLabel)
+                        .font(.title)
+                        .bold()
+                        .accessibility(identifier: A11y.cardWall.pinInput.cdwTxtPinSubtitle)
+                        .padding(.bottom, 16)
 
-                        Text(L10n.cdwTxtPinDescription)
-                            .foregroundColor(Colors.systemLabel)
-                            .font(.title3)
-                            .accessibility(identifier: A11y.cardWall.pinInput.cdwBtnPinNoPin)
-                    }
+                    Text(L10n.cdwTxtPinDescription)
+                        .foregroundColor(Colors.systemLabel)
+                        .font(.title3)
+                        .accessibility(identifier: A11y.cardWall.pinInput.cdwBtnPinNoPin)
+                }
 
-                    Button {
-                        store.send(.egkButtonTapped)
-                    } label: {
-                        Label(L10n.cdwBtnPinNoPin, systemImage: SFSymbolName.arrowForward)
-                    }
-                    .buttonStyle(.tertiary)
-                    .labelStyle(.trailingIcon)
-                    .fullScreenCover(item: $store
-                        .scope(state: \.destination?.egk, action: \.destination.egk)) { store in
-                            NavigationStack {
-                                OrderHealthCardListView(store: store)
-                            }
-                            .tint(Colors.primary700)
-                            .navigationViewStyle(StackNavigationViewStyle())
-                    }
-                    .padding([.bottom, .top], 6)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-
-                    PINFieldView(store: store) {
-                        store.send(
-                            .advance(.none),
-                            animation: Animation.default
-                        )
-                    }.padding([.top, .bottom])
-
-                    if !store.showWarning {
-                        Text(L10n.cdwTxtPinHint)
-                            .font(.footnote)
-                            .foregroundColor(Colors.systemLabelSecondary)
-                            .accessibility(identifier: A11y.cardWall.pinInput.cdwTxtPinHint)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                    } else {
-                        // PIN count out-of-bounds warn message // todo styling
-                        HStack(spacing: 4) {
-                            Image(systemName: SFSymbolName.exclamationMark)
-                                .foregroundColor(Colors.alertNegativ)
-                                .font(.footnote)
-
-                            Text(store.warningMessage)
-                                .font(.footnote)
-                                .foregroundColor(Colors.alertNegativ)
-                                .accessibility(identifier: A11y.cardWall.pinInput.cdwTxtPinWarning)
-
-                            Spacer()
+                Button {
+                    store.send(.egkButtonTapped)
+                } label: {
+                    Label(L10n.cdwBtnPinNoPin, systemImage: SFSymbolName.arrowForward)
+                }
+                .buttonStyle(.tertiary)
+                .labelStyle(.trailingIcon)
+                .fullScreenCover(item: $store
+                    .scope(state: \.destination?.egk, action: \.destination.egk)) { store in
+                        NavigationStack {
+                            OrderHealthCardListView(store: store)
                         }
+                        .tint(Colors.primary700)
+                        .navigationViewStyle(StackNavigationViewStyle())
+                }
+                .padding([.bottom, .top], 6)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+                PINFieldView(store: store) {
+                    store.send(
+                        .advance(.none),
+                        animation: Animation.default
+                    )
+                }.padding([.top, .bottom])
+
+                if !store.showWarning {
+                    Text(L10n.cdwTxtPinHint)
+                        .font(.footnote)
+                        .foregroundColor(Colors.systemLabelSecondary)
+                        .accessibility(identifier: A11y.cardWall.pinInput.cdwTxtPinHint)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                } else {
+                    // PIN count out-of-bounds warn message // todo styling
+                    HStack(spacing: 4) {
+                        Image(systemName: SFSymbolName.exclamationMark)
+                            .foregroundColor(Colors.alertNegativ)
+                            .font(.footnote)
+
+                        Text(store.warningMessage)
+                            .font(.footnote)
+                            .foregroundColor(Colors.alertNegativ)
+                            .accessibility(identifier: A11y.cardWall.pinInput.cdwTxtPinWarning)
+
+                        Spacer()
                     }
                 }
-                .padding()
             }
         }
     }
@@ -185,11 +181,16 @@ public struct CardWallPINView: View {
                     titleKey: L10n.cdwEdtPinInput,
                     accessibilityLabelKey: L10n.cdwTxtPinInputLabel,
                     text: $store.pin.sending(\.update),
-                    textContentType: .password
+                    textContentType: .password,
+                    backgroundColor: Colors.systemGray5
                 ) {}
                     .textContentType(.oneTimeCode)
                     .multilineTextAlignment(.leading)
                     .keyboardType(.numberPad)
+                    .padding()
+                    .font(Font.title3)
+                    .background(Colors.systemGray5)
+                    .cornerRadius(8)
                     .focused($focused)
                     .accessibility(identifier: A11y.cardWall.pinInput.cdwEdtPinInput)
             }

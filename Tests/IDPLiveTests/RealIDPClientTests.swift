@@ -71,26 +71,20 @@ final class RealIDPClientTests: XCTestCase {
         return documentPath
     }
 
-    func testLoadDiscoveryDocument() {
+    func testLoadDiscoveryDocument() throws {
         var counter = 0
-        stub(
-            condition: isAbsoluteURLString(config.discoveryURL.absoluteString) && isMethodGET() &&
-                !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            return fixture(filePath: self.documentPath, headers: ["Content-Type": "application/json"])
+        stub(condition: isAbsoluteURLString(config.discoveryURL.absoluteString) && isMethodGET() &&
+            !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                return fixture(filePath: self.documentPath, headers: ["Content-Type": "application/json"])
         }
 
-        stub(
-            condition: isPath("/ipdSig/jwk.json") && isMethodGET()
-        ) { _ in
+        stub(condition: isPath("/ipdSig/jwk.json") && isMethodGET()) { _ in
             counter += 1
             return fixture(filePath: self.jwkPath, headers: ["Content-Type": "application/json"])
         }
 
-        stub(
-            condition: isPath("/idpEnc/jwk.json") && isMethodGET()
-        ) { _ in
+        stub(condition: isPath("/idpEnc/jwk.json") && isMethodGET()) { _ in
             counter += 1
             return fixture(filePath: self.jwkPath, headers: ["Content-Type": "application/json"])
         }
@@ -114,12 +108,10 @@ final class RealIDPClientTests: XCTestCase {
         }
 
         var counter = 0
-        stub(
-            condition: isAbsoluteURLString(config.discoveryURL.absoluteString) && isMethodGET() &&
-                !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            return fixture(filePath: jwksPath, headers: ["Content-Type": "application/json"])
+        stub(condition: isAbsoluteURLString(config.discoveryURL.absoluteString) && isMethodGET() &&
+            !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                return fixture(filePath: jwksPath, headers: ["Content-Type": "application/json"])
         }
 
         RealIDPClient(
@@ -133,17 +125,15 @@ final class RealIDPClientTests: XCTestCase {
         expect(counter) == 1
     }
 
-    func testLoadDiscoveryDocumentNetworkError() {
+    func testLoadDiscoveryDocumentNetworkError() throws {
         var counter = 0
         let notConnectedError = NSError(domain: NSURLErrorDomain, code: URLError.notConnectedToInternet.rawValue)
-        stub(
-            condition: isAbsoluteURLString(config.discoveryURL.absoluteString) && isMethodGET() &&
-                !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            let response = HTTPStubsResponse(error: notConnectedError)
-            response.requestTime = 0.0
-            return response
+        stub(condition: isAbsoluteURLString(config.discoveryURL.absoluteString) && isMethodGET() &&
+            !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                let response = HTTPStubsResponse(error: notConnectedError)
+                response.requestTime = 0.0
+                return response
         }
 
         RealIDPClient(
@@ -171,7 +161,7 @@ final class RealIDPClientTests: XCTestCase {
         return try! DiscoveryDocument(jwt: jwt, encryptPuks: jwk, signingPuks: jwk)
     }
 
-    func testRequestChallenge() throws {
+    func testRequestChallenge() {
         let codeChallenge = "1234567890abcdefghijklmnop"
         let state = "D1FC3A1F5303B169C51D85ACFD1DA845F8A33447A1A549636B6B5456C6AF"
         let nonce = "01379FF7F0754551CFA484FF19061EB61E847EF72D9886BA0180C8DD4F11"
@@ -183,25 +173,23 @@ final class RealIDPClientTests: XCTestCase {
 
         var counter = 0
         let authenticationEndpoint = localDiscoveryDocument.authentication.url
-        stub(
-            condition: isHost("localhost")
-                && isPath(authenticationEndpoint.path)
-                && isMethodGET()
-                && hasHeaderNamed("Accept", value: "application/json")
-                && containsQueryParams([
-                    "client_id": config.clientId,
-                    "code_challenge": codeChallenge,
-                    "code_challenge_method": "S256",
-                    "state": state,
-                    "redirect_uri": config.redirectURI.absoluteString,
-                ])
-                && !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            return fixture(filePath: challengePath, headers: ["Content-Type": "application/json"])
+        stub(condition: isHost("localhost")
+            && isPath(authenticationEndpoint.path)
+            && isMethodGET()
+            && hasHeaderNamed("Accept", value: "application/json")
+            && containsQueryParams([
+                "client_id": config.clientId,
+                "code_challenge": codeChallenge,
+                "code_challenge_method": "S256",
+                "state": state,
+                "redirect_uri": config.redirectURI.absoluteString,
+            ])
+            && !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                return fixture(filePath: challengePath, headers: ["Content-Type": "application/json"])
         }
 
-        let expectedChallenge = try IDPChallenge(
+        let expectedChallenge = try! IDPChallenge(
             challenge: JWT(
                 from: "eyJhbGciOiJCUDI1NlIxIiwiZXhwIjoxNjE1OTA2NzE4LCJ0eXAiOiJKV1QiLCJraWQiOiJpZHBTaWcifQ.eyJpc3MiOiJodHRwczovL2lkcC56ZW50cmFsLmlkcC5zcGxpdGRucy50aS1kaWVuc3RlLmRlIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJzbmMiOiJraFd5MmpaTlZoK1FOUlFMbmlPQkhORjZjR0Y1SUJrcmFZU1ZNdDhaT0tZPSIsImNvZGVfY2hhbGxlbmdlX21ldGhvZCI6IlMyNTYiLCJ0b2tlbl90eXBlIjoiY2hhbGxlbmdlIiwiY2xpZW50X2lkIjoiZVJlemVwdEFwcCIsInNjb3BlIjoiZS1yZXplcHQgb3BlbmlkIiwic3RhdGUiOiIzSXhCcjNKb2htZmxMcTFHIiwicmVkaXJlY3RfdXJpIjoiaHR0cDovL3JlZGlyZWN0LmdlbWF0aWsuZGUvZXJlemVwdCIsImV4cCI6MTYxNTkwNjcxOCwiaWF0IjoxNjE1OTA2NTM4LCJjb2RlX2NoYWxsZW5nZSI6IjdObnFpWG0tenM5RFNabHRPRnMwYXdabDlmU1hFU2wwc0lhTnVqWmF0N0EiLCJqdGkiOiI1OWIzNzRlZDg3MmIzNDJkIn0.BJyePEkKU-RUs37f2GVvHOt-MDnwW40JmO5IsPj1uzgApqnC97Ei_ev99-gjiRRkt2_QsOsz9d6XBRAPRBzT6w" // swiftlint:disable:this line_length
             ),
@@ -236,32 +224,32 @@ final class RealIDPClientTests: XCTestCase {
         expect(counter) == 1
     }
 
-    func testSendVerify() throws {
-        let signedChallengeResponse = try JWT(from: XCTUnwrap(Bundle.module
-                .path(forResource: "signed-challenge-query-param", ofType: "jwt", inDirectory: "Resources/JWT.bundle")?
-                .readFileContents()))
-
-        let exchangeString = try XCTUnwrap(exchangeToken.asciiString)
-        let ssoToken = try XCTUnwrap(try Bundle.module
-            .path(forResource: "sso-token", ofType: "jwt", inDirectory: "Resources/JWT.bundle")?
+    func testSendVerify() {
+        let signedChallengeResponse = try! JWT(from: Bundle.module
+            .path(forResource: "signed-challenge-query-param", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
             .readFileContents())
-        let ssoString = try XCTUnwrap(ssoToken.asciiString)
 
-        let privateKey = try BrainpoolP256r1.KeyExchange.generateKey()
-        let nonce = try generateSecureRandom(length: 12)
+        let exchangeString = exchangeToken.asciiString!
+        let ssoToken = try! Bundle.module
+            .path(forResource: "sso-token", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
+            .readFileContents()
+        let ssoString = ssoToken.asciiString!
+
+        let privateKey = try! BrainpoolP256r1.KeyExchange.generateKey()
+        let nonce = try! generateSecureRandom(length: 12)
         let cryptoBox = IDPCrypto(randomGenerator: { _ in Data(base64Encoded: "random")! },
                                   brainpoolKeyPairGenerator: { privateKey },
                                   aesNonceGenerator: { nonce },
                                   aesKey: SymmetricKey(data: Data()))
 
-        let header = try JWE.Header(algorithm: JWE.EncryptionContext.Algorithm
+        let header = try! JWE.Header(algorithm: JWE.Algorithm
             .ecdh_es(.bpp256r1(localDiscoveryDocument.encryptionPublicKey,
                                keyPairGenerator: cryptoBox.brainpoolKeyPairGenerator)),
             encryption: .a256gcm,
             contentType: "NJWT")
 
         let signedChallengePayload = NestedJWT(njwt: signedChallengeResponse.serialize())
-        let jwePayload = try JSONEncoder().encode(signedChallengePayload)
+        let jwePayload = try! JSONEncoder().encode(signedChallengePayload)
         guard let jwe = try? JWE(
             header: header,
             payload: jwePayload,
@@ -271,37 +259,35 @@ final class RealIDPClientTests: XCTestCase {
             return
         }
 
-        let encodedJwe = try XCTUnwrap(jwe.encoded().utf8string)
-        let encodedJWEBody = Data("signed_challenge=\(encodedJwe)".utf8)
+        let encodedJwe = jwe.encoded().utf8string!
+        let encodedJWEBody = "signed_challenge=\(encodedJwe)".data(using: .utf8)!
 
         let state = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc"
 
         var counter = 0
         let authenticationEndpoint = localDiscoveryDocument.authentication.url
 
-        stub(
-            condition: isHost("localhost")
-                && isPath(authenticationEndpoint.path)
-                && isMethodPOST()
-                && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
-                && hasBody(encodedJWEBody)
-                && !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            let response = HTTPStubsResponse()
-            let location = "http://localhost:9999/token?code=\(exchangeString)&ssotoken=\(ssoString)&state=\(state)"
-            response.statusCode = 302
-            response.httpHeaders = [
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache",
-                "Location": location,
-                "Content-Length": "0",
-            ]
-            return response
+        stub(condition: isHost("localhost")
+            && isPath(authenticationEndpoint.path)
+            && isMethodPOST()
+            && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
+            && hasBody(encodedJWEBody)
+            && !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                let response = HTTPStubsResponse()
+                let location = "http://localhost:9999/token?code=\(exchangeString)&ssotoken=\(ssoString)&state=\(state)"
+                response.statusCode = 302
+                response.httpHeaders = [
+                    "Cache-Control": "no-store",
+                    "Pragma": "no-cache",
+                    "Location": location,
+                    "Content-Length": "0",
+                ]
+                return response
         }
 
-        let expectedToken = try IDPExchangeToken(
-            code: XCTUnwrap(exchangeToken.asciiString),
+        let expectedToken = IDPExchangeToken(
+            code: exchangeToken.asciiString!,
             sso: ssoToken.asciiString,
             state: state,
             redirect: "http://redirect.com/path?query=something&extra=5"
@@ -333,19 +319,21 @@ final class RealIDPClientTests: XCTestCase {
                                   aesNonceGenerator: { nonce },
                                   aesKey: SymmetricKey(data: Data()))
 
-        let header = try! JWE.Header(algorithm: JWE.EncryptionContext.Algorithm
+        let header = try! JWE.Header(algorithm: JWE.Algorithm
             .ecdh_es(.bpp256r1(localDiscoveryDocument.encryptionPublicKey,
                                keyPairGenerator: cryptoBox.brainpoolKeyPairGenerator)),
             encryption: .a256gcm,
             contentType: "NJWT")
 
-        let jwePayload = Data("<dummy_jwe_payload>".utf8)
+        let jwePayload = "<dummy_jwe_payload>".data(using: .utf8)!
 
-        return try JWE(
+        let jwe = try JWE(
             header: header,
             payload: jwePayload,
             nonceGenerator: cryptoBox.aesNonceGenerator
         )
+
+        return jwe
     }
 
     let dummyIdpToken = IDPToken(accessToken: "accesToken", expires: Date(), idToken: "idToken", redirect: "redirect")
@@ -358,28 +346,26 @@ final class RealIDPClientTests: XCTestCase {
         )
 
         let jwe = try dummyJwe()
-        let encodedJwe = try XCTUnwrap(jwe.encoded().utf8string)
-        let encodedJWEBody = Data("encrypted_registration_data=\(encodedJwe)".utf8)
+        let encodedJwe = jwe.encoded().utf8string!
+        let encodedJWEBody = "encrypted_registration_data=\(encodedJwe)".data(using: .utf8)!
 
         var counter = 0
         let endpoint = localDiscoveryDocument.pairing.url
 
-        stub(
-            condition: isHost("localhost")
-                && isPath(endpoint.path)
-                && isMethodPOST()
-                && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
-                && hasBody(encodedJWEBody)
-                && hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            return HTTPStubsResponse(data: try! JSONEncoder().encode(expected),
-                                     statusCode: 200,
-                                     headers: [
-                                         "Cache-Control": "no-store",
-                                         "Pragma": "no-cache",
-                                         "Content-Length": "0",
-                                     ])
+        stub(condition: isHost("localhost")
+            && isPath(endpoint.path)
+            && isMethodPOST()
+            && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
+            && hasBody(encodedJWEBody)
+            && hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                return HTTPStubsResponse(data: try! JSONEncoder().encode(expected),
+                                         statusCode: 200,
+                                         headers: [
+                                             "Cache-Control": "no-store",
+                                             "Pragma": "no-cache",
+                                             "Content-Length": "0",
+                                         ])
         }
 
         RealIDPClient(
@@ -409,28 +395,26 @@ final class RealIDPClientTests: XCTestCase {
         )
 
         let jwe = try dummyJwe()
-        let encodedJwe = try XCTUnwrap(jwe.encoded().utf8string)
-        let encodedJWEBody = Data("encrypted_registration_data=\(encodedJwe)".utf8)
+        let encodedJwe = jwe.encoded().utf8string!
+        let encodedJWEBody = "encrypted_registration_data=\(encodedJwe)".data(using: .utf8)!
 
         var counter = 0
         let endpoint = localDiscoveryDocument.pairing.url
 
-        stub(
-            condition: isHost("localhost")
-                && isPath(endpoint.path)
-                && isMethodPOST()
-                && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
-                && hasBody(encodedJWEBody)
-                && hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            return HTTPStubsResponse(data: try! JSONEncoder().encode(responseError),
-                                     statusCode: 400,
-                                     headers: [
-                                         "Cache-Control": "no-store",
-                                         "Pragma": "no-cache",
-                                         "Content-Length": "0",
-                                     ])
+        stub(condition: isHost("localhost")
+            && isPath(endpoint.path)
+            && isMethodPOST()
+            && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
+            && hasBody(encodedJWEBody)
+            && hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                return HTTPStubsResponse(data: try! JSONEncoder().encode(responseError),
+                                         statusCode: 400,
+                                         headers: [
+                                             "Cache-Control": "no-store",
+                                             "Pragma": "no-cache",
+                                             "Content-Length": "0",
+                                         ])
         }
 
         RealIDPClient(
@@ -451,44 +435,42 @@ final class RealIDPClientTests: XCTestCase {
     }
 
     func testSendAltVerifySucceeds() throws {
-        let exchangeString = try XCTUnwrap(exchangeToken.asciiString)
-        let ssoToken = try XCTUnwrap(try Bundle.module
-            .path(forResource: "sso-token", ofType: "jwt", inDirectory: "Resources/JWT.bundle")?
-            .readFileContents())
-        let ssoString = try XCTUnwrap(ssoToken.asciiString)
+        let exchangeString = exchangeToken.asciiString!
+        let ssoToken = try! Bundle.module
+            .path(forResource: "sso-token", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
+            .readFileContents()
+        let ssoString = ssoToken.asciiString!
 
         let jwe = try dummyJwe()
-        let encodedJwe = try XCTUnwrap(jwe.encoded().utf8string)
-        let encodedJWEBody = Data("encrypted_signed_authentication_data=\(encodedJwe)".utf8)
+        let encodedJwe = jwe.encoded().utf8string!
+        let encodedJWEBody = "encrypted_signed_authentication_data=\(encodedJwe)".data(using: .utf8)!
 
         let state = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc"
 
         var counter = 0
         let authenticationEndpoint = localDiscoveryDocument.authenticationPaired.url
 
-        stub(
-            condition: isHost("localhost")
-                && isPath(authenticationEndpoint.path)
-                && isMethodPOST()
-                && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
-                && hasBody(encodedJWEBody)
-                && !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
-            let response = HTTPStubsResponse()
-            let location = "http://localhost:9999/token?code=\(exchangeString)&ssotoken=\(ssoString)&state=\(state)"
-            response.statusCode = 302
-            response.httpHeaders = [
-                "Cache-Control": "no-store",
-                "Pragma": "no-cache",
-                "Location": location,
-                "Content-Length": "0",
-            ]
-            return response
+        stub(condition: isHost("localhost")
+            && isPath(authenticationEndpoint.path)
+            && isMethodPOST()
+            && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
+            && hasBody(encodedJWEBody)
+            && !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
+                let response = HTTPStubsResponse()
+                let location = "http://localhost:9999/token?code=\(exchangeString)&ssotoken=\(ssoString)&state=\(state)"
+                response.statusCode = 302
+                response.httpHeaders = [
+                    "Cache-Control": "no-store",
+                    "Pragma": "no-cache",
+                    "Location": location,
+                    "Content-Length": "0",
+                ]
+                return response
         }
 
-        let expectedToken = try IDPExchangeToken(
-            code: XCTUnwrap(exchangeToken.asciiString),
+        let expectedToken = IDPExchangeToken(
+            code: exchangeToken.asciiString!,
             sso: ssoToken.asciiString,
             state: state,
             redirect: "http://redirect.com/path?query=something&extra=5"
@@ -516,8 +498,8 @@ final class RealIDPClientTests: XCTestCase {
 
     func testSendAltVerifyReturnsError() throws {
         let jwe = try dummyJwe()
-        let encodedJwe = try XCTUnwrap(jwe.encoded().utf8string)
-        let encodedJWEBody = Data("encrypted_signed_authentication_data=\(encodedJwe)".utf8)
+        let encodedJwe = jwe.encoded().utf8string!
+        let encodedJWEBody = "encrypted_signed_authentication_data=\(encodedJwe)".data(using: .utf8)!
 
         var counter = 0
         let authenticationEndpoint = localDiscoveryDocument.authenticationPaired.url
@@ -530,23 +512,21 @@ final class RealIDPClientTests: XCTestCase {
             code: "code"
         )
 
-        stub(
-            condition: isHost("localhost")
-                && isPath(authenticationEndpoint.path)
-                && isMethodPOST()
-                && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
-                && hasBody(encodedJWEBody)
-                && !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
+        stub(condition: isHost("localhost")
+            && isPath(authenticationEndpoint.path)
+            && isMethodPOST()
+            && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
+            && hasBody(encodedJWEBody)
+            && !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
 
-            return HTTPStubsResponse(data: try! JSONEncoder().encode(responseError),
-                                     statusCode: 400,
-                                     headers: [
-                                         "Cache-Control": "no-store",
-                                         "Pragma": "no-cache",
-                                         "Content-Length": "0",
-                                     ])
+                return HTTPStubsResponse(data: try! JSONEncoder().encode(responseError),
+                                         statusCode: 400,
+                                         headers: [
+                                             "Cache-Control": "no-store",
+                                             "Pragma": "no-cache",
+                                             "Content-Length": "0",
+                                         ])
         }
 
         RealIDPClient(
@@ -573,13 +553,17 @@ final class RealIDPClientTests: XCTestCase {
         challenge: JWT(header: JWT.Header(), payload: IDPChallenge.Claim())
     )
 
-    let ssoToken: String = try! String(data: Bundle.module
-        .path(forResource: "sso-token", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
-        .readFileContents(), encoding: .nonLossyASCII)!
+    let ssoToken: String = {
+        try! String(data: Bundle.module
+            .path(forResource: "sso-token", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
+            .readFileContents(), encoding: .nonLossyASCII)!
+    }()
 
-    let exchangeToken: Data = try! Bundle.module
-        .path(forResource: "exchange-code", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
-        .readFileContents()
+    let exchangeToken: Data = {
+        try! Bundle.module
+            .path(forResource: "exchange-code", ofType: "jwt", inDirectory: "Resources/JWT.bundle")!
+            .readFileContents()
+    }()
 
     var ssoRequestStubCondition: HTTPStubsTestBlock {
         let ssoEndpoint = localDiscoveryDocument.sso.url
@@ -591,7 +575,7 @@ final class RealIDPClientTests: XCTestCase {
             && !hasHeaderNamed("Authorization")
     }
 
-    func testSSORefreshHappyPath() throws {
+    func testSSORefreshHappyPath() {
         // given
         // a valid exchangeToken
         // a valid ssoToken
@@ -599,8 +583,8 @@ final class RealIDPClientTests: XCTestCase {
 
         let state = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc"
 
-        let expectedToken = try IDPExchangeToken(
-            code: XCTUnwrap(exchangeToken.asciiString),
+        let expectedToken = IDPExchangeToken(
+            code: exchangeToken.asciiString!,
             sso: ssoToken,
             state: state,
             redirect: "redirect"
@@ -660,7 +644,7 @@ final class RealIDPClientTests: XCTestCase {
         let privateKey = try! BrainpoolP256r1.KeyExchange.generateKey()
         let nonce = try! generateSecureRandom(length: 12)
         let aesKeyData = try! Data(hex: "668D155004E1110DB6914BA40346A302312FA3F1AB647EC79FA12F96793E5205")
-        return IDPCrypto(randomGenerator: { _ in Data("UWWzuvaSG".utf8) },
+        return IDPCrypto(randomGenerator: { _ in "UWWzuvaSG".data(using: .utf8)! },
                          brainpoolKeyPairGenerator: { privateKey },
                          aesNonceGenerator: { nonce },
                          aesKey: SymmetricKey(data: aesKeyData))
@@ -671,9 +655,8 @@ final class RealIDPClientTests: XCTestCase {
         let keyVerifierEncoded = try! JSONEncoder().encode(keyVerifier)
 
         let header = try! JWE.Header(
-            algorithm: JWE.EncryptionContext.Algorithm.ecdh_es(.bpp256r1(localDiscoveryDocument.encryptionPublicKey,
-                                                                         keyPairGenerator: cryptoBox
-                                                                             .brainpoolKeyPairGenerator)),
+            algorithm: JWE.Algorithm.ecdh_es(.bpp256r1(localDiscoveryDocument.encryptionPublicKey,
+                                                       keyPairGenerator: cryptoBox.brainpoolKeyPairGenerator)),
             encryption: .a256gcm,
             contentType: "JWT"
         )
@@ -683,10 +666,10 @@ final class RealIDPClientTests: XCTestCase {
                         nonceGenerator: cryptoBox.aesNonceGenerator)
     }
 
-    func testExchange() throws {
+    func testExchange() {
         let verifier = "123456789&=^"
         let keyVerifier = encryptedKeyVerifier(for: verifier)
-        let keyVerifierString = try XCTUnwrap(keyVerifier.encoded().utf8string)
+        let keyVerifierString = keyVerifier.encoded().utf8string!
         let exchangeTokenDummy = IDPExchangeToken(
             code: "exchange-code!",
             sso: nil,
@@ -702,35 +685,31 @@ final class RealIDPClientTests: XCTestCase {
             "client_id": config.clientId,
         ]
 
-        let httpBodyData = Data(
-            parameters
-                .sorted(by: { $0.0 > $1.0 })
-                .map { key, value -> String in
-                    let escapedValue = value.urlPercentEscapedString()
-                    return "\(key)=\(escapedValue ?? value)"
-                }
-                .joined(separator: "&")
-                .utf8
-        )
+        let httpBodyData = parameters
+            .sorted(by: { $0.0 > $1.0 })
+            .map { key, value -> String in
+                let escapedValue = value.urlPercentEscapedString()
+                return "\(key)=\(escapedValue ?? value)"
+            }
+            .joined(separator: "&")
+            .data(using: .utf8)!
 
-        let idpTokenResponsePath = try XCTUnwrap(Bundle.module
-            .path(forResource: "idp_token_encrypted", ofType: "json", inDirectory: "Resources/JWT.bundle"))
-        let expectedTokenData = try idpTokenResponsePath.readFileContents()
-        let expectedToken = try JSONDecoder().decode(TokenPayload.self, from: expectedTokenData)
+        let idpTokenResponsePath = Bundle.module
+            .path(forResource: "idp_token_encrypted", ofType: "json", inDirectory: "Resources/JWT.bundle")!
+        let expectedTokenData = try! idpTokenResponsePath.readFileContents()
+        let expectedToken = try! JSONDecoder().decode(TokenPayload.self, from: expectedTokenData)
 
         var counter = 0
         let tokenEndpoint = localDiscoveryDocument.token.url
-        stub(
-            condition: isHost("localhost")
-                && isPath(tokenEndpoint.path)
-                && isMethodPOST()
-                && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
-                && hasBody(httpBodyData)
-                && !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
+        stub(condition: isHost("localhost")
+            && isPath(tokenEndpoint.path)
+            && isMethodPOST()
+            && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
+            && hasBody(httpBodyData)
+            && !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
 
-            return fixture(filePath: idpTokenResponsePath, headers: ["Content-Type": "application/json"])
+                return fixture(filePath: idpTokenResponsePath, headers: ["Content-Type": "application/json"])
         }
 
         RealIDPClient(
@@ -748,10 +727,10 @@ final class RealIDPClientTests: XCTestCase {
         expect(counter) == 1
     }
 
-    func testExchangeWithCustomRedirectURI() throws {
+    func testExchangeWithCustomRedirectURI() {
         let verifier = "123456789&=^"
         let keyVerifier = encryptedKeyVerifier(for: verifier)
-        let keyVerifierString = try XCTUnwrap(keyVerifier.encoded().utf8string)
+        let keyVerifierString = keyVerifier.encoded().utf8string!
         let exchangeTokenDummy = IDPExchangeToken(
             code: "exchange-code!",
             sso: nil,
@@ -767,35 +746,31 @@ final class RealIDPClientTests: XCTestCase {
             "client_id": config.clientId,
         ]
 
-        let httpBodyData = Data(
-            parameters
-                .sorted(by: { $0.0 > $1.0 })
-                .map { key, value -> String in
-                    let escapedValue = value.urlPercentEscapedString()
-                    return "\(key)=\(escapedValue ?? value)"
-                }
-                .joined(separator: "&")
-                .utf8
-        )
+        let httpBodyData = parameters
+            .sorted(by: { $0.0 > $1.0 })
+            .map { key, value -> String in
+                let escapedValue = value.urlPercentEscapedString()
+                return "\(key)=\(escapedValue ?? value)"
+            }
+            .joined(separator: "&")
+            .data(using: .utf8)!
 
-        let idpTokenResponsePath = try XCTUnwrap(Bundle.module
-            .path(forResource: "idp_token_encrypted", ofType: "json", inDirectory: "Resources/JWT.bundle"))
-        let expectedTokenData = try idpTokenResponsePath.readFileContents()
-        let expectedToken = try JSONDecoder().decode(TokenPayload.self, from: expectedTokenData)
+        let idpTokenResponsePath = Bundle.module
+            .path(forResource: "idp_token_encrypted", ofType: "json", inDirectory: "Resources/JWT.bundle")!
+        let expectedTokenData = try! idpTokenResponsePath.readFileContents()
+        let expectedToken = try! JSONDecoder().decode(TokenPayload.self, from: expectedTokenData)
 
         var counter = 0
         let tokenEndpoint = localDiscoveryDocument.token.url
-        stub(
-            condition: isHost("localhost")
-                && isPath(tokenEndpoint.path)
-                && isMethodPOST()
-                && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
-                && hasBody(httpBodyData)
-                && !hasHeaderNamed("Authorization")
-        ) { _ in
-            counter += 1
+        stub(condition: isHost("localhost")
+            && isPath(tokenEndpoint.path)
+            && isMethodPOST()
+            && hasHeaderNamed("Content-Type", value: "application/x-www-form-urlencoded")
+            && hasBody(httpBodyData)
+            && !hasHeaderNamed("Authorization")) { _ in
+                counter += 1
 
-            return fixture(filePath: idpTokenResponsePath, headers: ["Content-Type": "application/json"])
+                return fixture(filePath: idpTokenResponsePath, headers: ["Content-Type": "application/json"])
         }
 
         RealIDPClient(
@@ -814,21 +789,18 @@ final class RealIDPClientTests: XCTestCase {
     }
 
     func testLoadDirectoryKKApps() throws {
-        let loadDirectoryKKAppsResponse = Data(
-            "eyJhbGciOiJCUDI1NlIxIiwidHlwIjoiSldUIiwia2lkIjoicHVrX2Rpc2Nfc2lnIiwieDVjIjpbIk1JSUNzVENDQWxpZ0F3SUJBZ0lIQWJzc3FRaHFPekFLQmdncWhrak9QUVFEQWpDQmhERUxNQWtHQTFVRUJoTUNSRVV4SHpBZEJnTlZCQW9NRm1kbGJXRjBhV3NnUjIxaVNDQk9UMVF0VmtGTVNVUXhNakF3QmdOVkJBc01LVXR2YlhCdmJtVnVkR1Z1TFVOQklHUmxjaUJVWld4bGJXRjBhV3RwYm1aeVlYTjBjblZyZEhWeU1TQXdIZ1lEVlFRRERCZEhSVTB1UzA5TlVDMURRVEV3SUZSRlUxUXRUMDVNV1RBZUZ3MHlNVEF4TVRVd01EQXdNREJhRncweU5qQXhNVFV5TXpVNU5UbGFNRWt4Q3pBSkJnTlZCQVlUQWtSRk1TWXdKQVlEVlFRS0RCMW5aVzFoZEdscklGUkZVMVF0VDA1TVdTQXRJRTVQVkMxV1FVeEpSREVTTUJBR0ExVUVBd3dKU1VSUUlGTnBaeUF6TUZvd0ZBWUhLb1pJemowQ0FRWUpLeVFEQXdJSUFRRUhBMElBQklZWm53aUdBbjVRWU94NDNaOE13YVpMRDNyL2J6NkJUY1FPNXBiZXVtNnFRellENWREQ2NyaXcvVk5QUFpDUXpYUVBnNFN0V3l5NU9PcTlUb2dCRW1PamdlMHdnZW93RGdZRFZSMFBBUUgvQkFRREFnZUFNQzBHQlNza0NBTURCQ1F3SWpBZ01CNHdIREFhTUF3TUNrbEVVQzFFYVdWdWMzUXdDZ1lJS29JVUFFd0VnZ1F3SVFZRFZSMGdCQm93R0RBS0JnZ3FnaFFBVEFTQlN6QUtCZ2dxZ2hRQVRBU0JJekFmQmdOVkhTTUVHREFXZ0JRbzhQam1xY2gzekVORjI1cXUxenFEckE0UHFEQTRCZ2dyQmdFRkJRY0JBUVFzTUNvd0tBWUlLd1lCQlFVSE1BR0dIR2gwZEhBNkx5OWxhR05oTG1kbGJXRjBhV3N1WkdVdmIyTnpjQzh3SFFZRFZSME9CQllFRkM5NE05TGdXNDRsTmdvQWJrUGFvbW5MalM4L01Bd0dBMVVkRXdFQi93UUNNQUF3Q2dZSUtvWkl6ajBFQXdJRFJ3QXdSQUlnQ2c0eVpEV215QmlyZ3h6YXd6L1M4REpuUkZLdFlVL1lHTmxSYzcra0JIY0NJQnV6YmEzR3NwcVNtb1AxVndNZU5OS05hTHNnVjh2TWJESmIzMGFxYWlYMSJdfQ.eyJmZWRfaWRwX2xpc3QiOlt7ImlkcF9uYW1lIjogIkdlbWF0aWsgS0siLCJpZHBfaXNzIjogImtrQXBwSWQwMDEiLCAiaWRwX3Nla18yIjogdHJ1ZX0seyAgICAiaWRwX25hbWUiOiAiQW5kZXJlIEtLIiwgImlkcF9pc3MiOiAia2tBcHBJZDAwMiIsICJpZHBfc2VrXzIiOiB0cnVlfSx7ICAgICJpZHBfbmFtZSI6ICJBbmRlcmUgS0syIiwgImlkcF9pc3MiOiAia2tBcHBJZDAwMiIsICJpZHBfc2VrXzIiOiBmYWxzZX0seyAgICAiaWRwX25hbWUiOiAiQW5kZXJlIEtLMyIsICJpZHBfaXNzIjogImtrQXBwSWQwMDIifV19.NnAngqzLOG9aP-QIr_GvEbCdyTE9NqzR8NiEOWu8rR8FZJE136iC1Tft2mglZ0f2oTQM0JLquzKouaeui8qAgA"
-                .utf8 // swiftlint:disable:previous line_length
-        )
+        let loadDirectoryKKAppsResponse =
+            "eyJhbGciOiJCUDI1NlIxIiwidHlwIjoiSldUIiwia2lkIjoicHVrX2Rpc2Nfc2lnIiwieDVjIjpbIk1JSUNzVENDQWxpZ0F3SUJBZ0lIQWJzc3FRaHFPekFLQmdncWhrak9QUVFEQWpDQmhERUxNQWtHQTFVRUJoTUNSRVV4SHpBZEJnTlZCQW9NRm1kbGJXRjBhV3NnUjIxaVNDQk9UMVF0VmtGTVNVUXhNakF3QmdOVkJBc01LVXR2YlhCdmJtVnVkR1Z1TFVOQklHUmxjaUJVWld4bGJXRjBhV3RwYm1aeVlYTjBjblZyZEhWeU1TQXdIZ1lEVlFRRERCZEhSVTB1UzA5TlVDMURRVEV3SUZSRlUxUXRUMDVNV1RBZUZ3MHlNVEF4TVRVd01EQXdNREJhRncweU5qQXhNVFV5TXpVNU5UbGFNRWt4Q3pBSkJnTlZCQVlUQWtSRk1TWXdKQVlEVlFRS0RCMW5aVzFoZEdscklGUkZVMVF0VDA1TVdTQXRJRTVQVkMxV1FVeEpSREVTTUJBR0ExVUVBd3dKU1VSUUlGTnBaeUF6TUZvd0ZBWUhLb1pJemowQ0FRWUpLeVFEQXdJSUFRRUhBMElBQklZWm53aUdBbjVRWU94NDNaOE13YVpMRDNyL2J6NkJUY1FPNXBiZXVtNnFRellENWREQ2NyaXcvVk5QUFpDUXpYUVBnNFN0V3l5NU9PcTlUb2dCRW1PamdlMHdnZW93RGdZRFZSMFBBUUgvQkFRREFnZUFNQzBHQlNza0NBTURCQ1F3SWpBZ01CNHdIREFhTUF3TUNrbEVVQzFFYVdWdWMzUXdDZ1lJS29JVUFFd0VnZ1F3SVFZRFZSMGdCQm93R0RBS0JnZ3FnaFFBVEFTQlN6QUtCZ2dxZ2hRQVRBU0JJekFmQmdOVkhTTUVHREFXZ0JRbzhQam1xY2gzekVORjI1cXUxenFEckE0UHFEQTRCZ2dyQmdFRkJRY0JBUVFzTUNvd0tBWUlLd1lCQlFVSE1BR0dIR2gwZEhBNkx5OWxhR05oTG1kbGJXRjBhV3N1WkdVdmIyTnpjQzh3SFFZRFZSME9CQllFRkM5NE05TGdXNDRsTmdvQWJrUGFvbW5MalM4L01Bd0dBMVVkRXdFQi93UUNNQUF3Q2dZSUtvWkl6ajBFQXdJRFJ3QXdSQUlnQ2c0eVpEV215QmlyZ3h6YXd6L1M4REpuUkZLdFlVL1lHTmxSYzcra0JIY0NJQnV6YmEzR3NwcVNtb1AxVndNZU5OS05hTHNnVjh2TWJESmIzMGFxYWlYMSJdfQ.eyJmZWRfaWRwX2xpc3QiOlt7ImlkcF9uYW1lIjogIkdlbWF0aWsgS0siLCJpZHBfaXNzIjogImtrQXBwSWQwMDEiLCAiaWRwX3Nla18yIjogdHJ1ZX0seyAgICAiaWRwX25hbWUiOiAiQW5kZXJlIEtLIiwgImlkcF9pc3MiOiAia2tBcHBJZDAwMiIsICJpZHBfc2VrXzIiOiB0cnVlfSx7ICAgICJpZHBfbmFtZSI6ICJBbmRlcmUgS0syIiwgImlkcF9pc3MiOiAia2tBcHBJZDAwMiIsICJpZHBfc2VrXzIiOiBmYWxzZX0seyAgICAiaWRwX25hbWUiOiAiQW5kZXJlIEtLMyIsICJpZHBfaXNzIjogImtrQXBwSWQwMDIifV19.NnAngqzLOG9aP-QIr_GvEbCdyTE9NqzR8NiEOWu8rR8FZJE136iC1Tft2mglZ0f2oTQM0JLquzKouaeui8qAgA" // swiftlint:disable:this line_length
+            .data(using: .utf8)!
         let responseJWT = try JWT(from: loadDirectoryKKAppsResponse)
 
         var counter = 0
-        let endpoint = try XCTUnwrap(localDiscoveryDocument.directoryKKAppsgId?.url)
-        stub(
-            condition: isHost("localhost")
-                && isPath(endpoint.path)
-                && isMethodGET()
-        ) { _ in
-            counter += 1
-            return HTTPStubsResponse(data: loadDirectoryKKAppsResponse, statusCode: 200, headers: nil)
+        let endpoint = localDiscoveryDocument.directoryKKAppsgId!.url
+        stub(condition: isHost("localhost")
+            && isPath(endpoint.path)
+            && isMethodGET()) { _ in
+                counter += 1
+                return HTTPStubsResponse(data: loadDirectoryKKAppsResponse, statusCode: 200, headers: nil)
         }
         let fixture = [
             KKAppDirectory.Entry(name: "Gematik KK", identifier: "kkAppId001"),
@@ -852,7 +824,7 @@ final class RealIDPClientTests: XCTestCase {
     }
 
     func testStartExtAuthGID() throws {
-        let urlFixture = try XCTUnwrap(URL(string: "http://localhost/redirect"))
+        let urlFixture = URL(string: "http://localhost/redirect")!
         let idpExtAuth = IDPExtAuth(kkAppId: "kk_app_id",
                                     state: "state",
                                     codeChallenge: "code_challenge",
@@ -870,19 +842,17 @@ final class RealIDPClientTests: XCTestCase {
 
         var requestURL: URL?
         var counter = 0
-        let endpoint = try XCTUnwrap(localDiscoveryDocument.federationAuth?.url)
-        stub(
-            condition: isHost("localhost")
-                && isPath(endpoint.path)
-                && isMethodGET()
-        ) { request in
-            requestURL = request.url
-            counter += 1
-            return HTTPStubsResponse(
-                data: Data(),
-                statusCode: 302,
-                headers: ["Location": urlFixture.absoluteString]
-            )
+        let endpoint = localDiscoveryDocument.federationAuth!.url
+        stub(condition: isHost("localhost")
+            && isPath(endpoint.path)
+            && isMethodGET()) { request in
+                requestURL = request.url
+                counter += 1
+                return HTTPStubsResponse(
+                    data: Data(),
+                    statusCode: 302,
+                    headers: ["Location": urlFixture.absoluteString]
+                )
         }
 
         var result: URL?
@@ -897,16 +867,16 @@ final class RealIDPClientTests: XCTestCase {
         })
 
         expect(result).toNot(beNil())
-        expect(try XCTUnwrap(result)).to(equal(urlFixture))
+        expect(result!).to(equal(urlFixture))
         expect(requestURL).toNot(beNil())
-        expect(try XCTUnwrap(requestURL)).to(containsParameters(parameters))
+        expect(requestURL!).to(containsParameters(parameters))
     }
 
     func testStartExtAuthGIDErrorViaRedirect() throws {
         let urlFixture =
-            try XCTUnwrap(URL(
+            URL(
                 string: "http://localhost/redirect?state=0A8436B61AB022CC84AD394D60AFAA68&error=invalid_request&gematik_code=7014&gematik_timestamp=1702630135&gematik_uuid=42ac5d7d-4c50-4d76-b551-45feb6f25bd4&gematik_error_text=some+error+text" // swiftlint:disable:this line_length
-            ))
+            )!
         let errorFixture = IDPError.serverError(
             .init(
                 error: "invalid_request",
@@ -933,19 +903,17 @@ final class RealIDPClientTests: XCTestCase {
 
         var requestURL: URL?
         var counter = 0
-        let endpoint = try XCTUnwrap(localDiscoveryDocument.federationAuth?.url)
-        stub(
-            condition: isHost("localhost")
-                && isPath(endpoint.path)
-                && isMethodGET()
-        ) { request in
-            requestURL = request.url
-            counter += 1
-            return HTTPStubsResponse(
-                data: Data(),
-                statusCode: 302,
-                headers: ["Location": urlFixture.absoluteString]
-            )
+        let endpoint = localDiscoveryDocument.federationAuth!.url
+        stub(condition: isHost("localhost")
+            && isPath(endpoint.path)
+            && isMethodGET()) { request in
+                requestURL = request.url
+                counter += 1
+                return HTTPStubsResponse(
+                    data: Data(),
+                    statusCode: 302,
+                    headers: ["Location": urlFixture.absoluteString]
+                )
         }
 
         var result: IDPError?
@@ -967,6 +935,6 @@ final class RealIDPClientTests: XCTestCase {
         expect(result).toNot(beNil())
         expect(result).to(equal(errorFixture))
         expect(requestURL).toNot(beNil())
-        expect(try XCTUnwrap(requestURL)).to(containsParameters(parameters))
+        expect(requestURL!).to(containsParameters(parameters))
     }
 }

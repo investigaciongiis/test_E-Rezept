@@ -57,17 +57,18 @@ final class FHIRClientTests: XCTestCase {
         super.tearDown()
     }
 
-    func testFHIRClientWithHTTPError() throws {
+    func testFHIRClientWithHTTPError() {
         let mockOperation = MockFHIRClientOperation(relativeUrlString: "/path/to/operation")
         let expectedError = URLError(.notConnectedToInternet)
         var counter = 0
-        try stub(condition: isHost(host)
-            && isPath(XCTUnwrap(mockOperation.relativeUrlString))
+        stub(condition: isHost(host)
+            && isPath(mockOperation.relativeUrlString!)
             && isMethodGET()
-            && hasHeaderNamed(XCTUnwrap(mockOperation.httpHeaders.first?.key),
-                              value: XCTUnwrap(mockOperation.httpHeaders.first?.value))) { _ in
-            counter += 1
-            return HTTPStubsResponse(error: expectedError)
+            && hasHeaderNamed(mockOperation.httpHeaders.first!.key,
+                              value: mockOperation.httpHeaders.first!.value)) { _ in
+                counter += 1
+                let response = HTTPStubsResponse(error: expectedError)
+                return response
         }
 
         sut.execute(operation: mockOperation)
@@ -94,20 +95,20 @@ final class FHIRClientTests: XCTestCase {
             })
     }
 
-    func testFHIRClientWithSuccess() throws {
+    func testFHIRClientWithSuccess() {
         let mockOperation = MockFHIRClientOperation(relativeUrlString: "/path/to/operation")
         let url = resourceUrl(for: "emptyResponse", type: "json")
         var counter = 0
 
-        try stub(condition: isHost(host)
-            && isPath(XCTUnwrap(mockOperation.relativeUrlString))
+        stub(condition: isHost(host)
+            && isPath(mockOperation.relativeUrlString!)
             && isMethodGET()
-            && hasHeaderNamed(XCTUnwrap(mockOperation.httpHeaders.first?.key),
-                              value: XCTUnwrap(mockOperation.httpHeaders.first?.value))) { _ in
-            counter += 1
-            return fixture(filePath: url.path,
-                           status: Int32(HTTPStatusCode.ok.rawValue),
-                           headers: ["Content-Type": "application/json"])
+            && hasHeaderNamed(mockOperation.httpHeaders.first!.key,
+                              value: mockOperation.httpHeaders.first!.value)) { _ in
+                counter += 1
+                return fixture(filePath: url.path,
+                               status: Int32(HTTPStatusCode.ok.rawValue),
+                               headers: ["Content-Type": "application/json"])
         }
 
         sut.execute(operation: mockOperation)
@@ -120,25 +121,25 @@ final class FHIRClientTests: XCTestCase {
             })
     }
 
-    func testFHIRClientWithOperationOutcomeResponse() throws {
+    func testFHIRClientWithOperationOutcomeResponse() {
         let mockOperation = MockFHIRClientOperation(relativeUrlString: "/path/to/operation")
         let url = resourceUrl(for: "errorFHIRResponse", type: "json")
 
-        let responseData = try Data(contentsOf: url)
-        let outcome = try JSONDecoder().decode(ModelsR4.OperationOutcome.self, from: responseData)
+        let responseData = try! Data(contentsOf: url)
+        let outcome = try! JSONDecoder().decode(ModelsR4.OperationOutcome.self, from: responseData)
         let urlError = URLError(.init(rawValue: HTTPStatusCode.badRequest.rawValue))
         let expectedError = FHIRClient.Error
             .http(.init(httpClientError: .httpError(urlError), operationOutcome: outcome))
         var counter = 0
-        try stub(condition: isHost(host)
-            && isPath(XCTUnwrap(mockOperation.relativeUrlString))
+        stub(condition: isHost(host)
+            && isPath(mockOperation.relativeUrlString!)
             && isMethodGET()
-            && hasHeaderNamed(XCTUnwrap(mockOperation.httpHeaders.first?.key),
-                              value: XCTUnwrap(mockOperation.httpHeaders.first?.value))) { _ in
-            counter += 1
-            return fixture(filePath: url.path,
-                           status: Int32(HTTPStatusCode.badRequest.rawValue),
-                           headers: ["Content-Type": "application/json"])
+            && hasHeaderNamed(mockOperation.httpHeaders.first!.key,
+                              value: mockOperation.httpHeaders.first!.value)) { _ in
+                counter += 1
+                return fixture(filePath: url.path,
+                               status: Int32(HTTPStatusCode.badRequest.rawValue),
+                               headers: ["Content-Type": "application/json"])
         }
 
         sut.execute(operation: mockOperation)

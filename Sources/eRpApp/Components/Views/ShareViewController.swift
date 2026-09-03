@@ -27,6 +27,10 @@ import SwiftUI
 struct ShareViewController: UIViewControllerRepresentable {
     @Bindable var store: StoreOf<ShareSheetDomain>
 
+    init(store: StoreOf<ShareSheetDomain>) {
+        self.store = store
+    }
+
     func makeUIViewController(
         context _: UIViewControllerRepresentableContext<ShareViewController>
     ) -> UIActivityViewController {
@@ -38,7 +42,7 @@ struct ShareViewController: UIViewControllerRepresentable {
         activityViewController.completionWithItemsHandler = { _, success, _, error in
             if success {
                 store.send(.delegate(.close(nil)))
-            } else if let error {
+            } else if let error = error {
                 store.send(.delegate(.close(.shareFailure(error.localizedDescription))))
             } else {
                 store.send(.delegate(.close(nil)))

@@ -44,7 +44,7 @@ public enum HealthcareServiceFHIROperation<Value, Handler: FHIRResponseHandler> 
     case fetchInsurance(ikNumber: String, accessToken: String?, handler: Handler)
     /// Get all organizations related to DiGa
     case fetchAllInsurances(accessToken: String?, handler: Handler)
-    /// Get all available EU countires
+    ///
     case fetchEuCountries(accessToken: String?, handler: Handler)
 }
 
@@ -67,23 +67,24 @@ extension HealthcareServiceFHIROperation: FHIRClientOperation {
         case let .searchPharmacies(searchTerm, position, filter, _, _):
             queryItems.append(URLQueryItem(name: "_count", value: "100"))
 
-            // Sanitize search term for special search characters (double quote)
+            // Sanitize search term for special search characters (double quote, dot)
             let sanatizedSearchTerm = searchTerm.isEmpty ? nil : searchTerm
                 .replacingOccurrences(of: "\"", with: "", options: .literal)
+                .replacingOccurrences(of: ".", with: "", options: .literal)
 
-            if let position {
+            if let position = position {
                 // Use nearPharmacy operation for radius search sorted by distance
                 // Per FHIR_VZD_HOWTO_Search.adoc section 5.1: uses "text" parameter (not "_text")
                 queryItems.append(URLQueryItem(name: "_query", value: "nearPharmacy"))
                 queryItems.append(URLQueryItem(name: "longitude", value: "\(position.longitude)"))
                 queryItems.append(URLQueryItem(name: "latitude", value: "\(position.latitude)"))
                 queryItems.append(URLQueryItem(name: "distance", value: "100"))
-                if let sanatizedSearchTerm {
+                if let sanatizedSearchTerm = sanatizedSearchTerm {
                     queryItems.append(URLQueryItem(name: "text", value: sanatizedSearchTerm))
                 }
             } else {
                 // Standard FHIR search without location uses "_text" parameter
-                if let sanatizedSearchTerm {
+                if let sanatizedSearchTerm = sanatizedSearchTerm {
                     queryItems.append(URLQueryItem(name: "_text", value: sanatizedSearchTerm))
                 }
                 queryItems.append(URLQueryItem(name: "_include", value: "HealthcareService:organization"))
@@ -155,7 +156,7 @@ extension HealthcareServiceFHIROperation: FHIRClientOperation {
         return urlComps?.string
     }
 
-    /// Note: Only .json for now
+    // Note: Only .json for now
     public var httpHeaders: [String: String] {
         var headers: [String: String] = [:]
         headers["Accept"] = acceptFormat.httpHeaderValue

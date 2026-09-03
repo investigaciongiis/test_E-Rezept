@@ -30,7 +30,7 @@ import UIKit
 
 @Reducer
 struct OrdersDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = orders_detail
         case orderDetail(OrderDetailDomain)
@@ -42,16 +42,14 @@ struct OrdersDomain {
     @ObservableState
     struct State: Equatable {
         var isLoading = false
-        @Shared var communicationMessage: IdentifiedArrayOf<CommunicationMessage>
+        var communicationMessage: IdentifiedArrayOf<CommunicationMessage> = []
         @Presents var destination: Destination.State?
-        @Shared(.selectedProfileId) var profileId
     }
 
     enum Action: Equatable {
         case task
         case loadOrders
         case loadMessages
-        case loadEuOrders
         case didSelect(String)
 
         case resetNavigation
@@ -61,7 +59,6 @@ struct OrdersDomain {
 
         enum Response: Equatable {
             case ordersReceived(Result<IdentifiedArrayOf<Order>, DefaultOrdersRepository.Error>)
-            case euOrdersReceived(Result<IdentifiedArrayOf<EuOrder>, DefaultOrdersRepository.Error>)
             case internalCommunicationReceived(Result<IdentifiedArrayOf<InternalCommunication>,
                 InternalCommunicationError>)
         }
@@ -72,7 +69,7 @@ struct OrdersDomain {
     @Dependency(\.internalCommunicationProtocol) var internalCommunicationProtocol: InternalCommunicationProtocol
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -83,8 +80,7 @@ struct OrdersDomain {
             state.isLoading = true
             return .merge(
                 .send(.loadOrders),
-                .send(.loadMessages),
-                .send(.loadEuOrders)
+                .send(.loadMessages)
             )
         case .loadOrders:
             return .run { send in
@@ -105,45 +101,16 @@ struct OrdersDomain {
                             .asInternalCommunicationError()))))
                 }
             }
-        case .loadEuOrders:
-            return .run { [profileId = state.profileId] send in
-                for try await euOrders in ordersRepository.loadEuOrders(profileId: profileId) {
-                    await send(.response(.euOrdersReceived(.success(euOrders))))
-                }
-            }
-            catch: { error, send in
-                await send(.response(.euOrdersReceived(.failure(error.asOrdersError()))))
-            }
-        case let .response(.euOrdersReceived(result)):
-            switch result {
-            case let .success(orders):
-                for order in orders {
-                    _ = state.$communicationMessage.withLock { messages in
-                        messages.updateOrAppend(CommunicationMessage.euOrder(order))
-                    }
-                }
-                let sortedMessages: [CommunicationMessage] = state.communicationMessage.elements.sorted {
-                    $0.lastUpdated > $1.lastUpdated
-                }
-                state.$communicationMessage.withLock { $0 = IdentifiedArray(uniqueElements: sortedMessages) }
-            case let .failure(error):
-                state.destination = .alert(.init(for: error))
-                return .none
-            }
-            state.isLoading = false
-            return .none
         case let .response(.ordersReceived(result)):
             switch result {
             case let .success(orders):
                 for order in orders {
-                    _ = state.$communicationMessage.withLock { messages in
-                        messages.updateOrAppend(CommunicationMessage.order(order))
-                    }
+                    state.communicationMessage.updateOrAppend(CommunicationMessage.order(order))
                 }
                 let sortedMessages: [CommunicationMessage] = state.communicationMessage.elements.sorted {
                     $0.lastUpdated > $1.lastUpdated
                 }
-                state.$communicationMessage.withLock { $0 = IdentifiedArray(uniqueElements: sortedMessages) }
+                state.communicationMessage = IdentifiedArray(uniqueElements: sortedMessages)
             case let .failure(error):
                 state.destination = .alert(.init(for: error))
                 return .none
@@ -154,28 +121,22 @@ struct OrdersDomain {
             switch result {
             case let .success(messages):
                 for message in messages {
-                    _ = state.$communicationMessage.withLock { messages in
-                        messages.updateOrAppend(CommunicationMessage.internalCommunication(message))
-                    }
+                    state.communicationMessage.updateOrAppend(CommunicationMessage.internalCommunication(message))
                 }
                 let sortedMessages: [CommunicationMessage] = state.communicationMessage.elements.sorted {
                     $0.lastUpdated > $1.lastUpdated
                 }
-                state.$communicationMessage.withLock { $0 = IdentifiedArray(uniqueElements: sortedMessages) }
+                state.communicationMessage = IdentifiedArray(uniqueElements: sortedMessages)
             case let .failure(error):
                 state.destination = .alert(.init(for: error))
             }
             state.isLoading = false
             return .none
         case let .didSelect(messageId):
-            if let message = Shared(state.$communicationMessage[id: messageId]) {
+            if let message = state.communicationMessage[id: messageId] {
                 state.destination = .orderDetail(.init(communicationMessage: message))
             }
             return .none
-        case .destination(
-            .presented(.orderDetail(.destination(.presented(.euAccessCode(.response(.codeRefreshed(.success)))))))
-        ), .destination(.presented(.orderDetail(.response(.euAccessCodeDeletedReceived(.success))))):
-            return .send(.loadEuOrders)
         case .resetNavigation,
              .destination(.presented(.orderDetail(.delegate(.close)))):
             state.destination = nil
@@ -189,8 +150,8 @@ struct OrdersDomain {
 extension OrdersDomain {
     enum Dummies {
         static let state =
-            State(communicationMessage: Shared(value: [CommunicationMessage.order(Order.Dummies.orderCommunications1),
-                                                       CommunicationMessage.order(Order.Dummies.orderCommunications2)]))
+            State(communicationMessage: [CommunicationMessage.order(Order.Dummies.orderCommunications1),
+                                         CommunicationMessage.order(Order.Dummies.orderCommunications2)])
 
         static let store = StoreOf<OrdersDomain>(
             initialState: state
@@ -207,6 +168,3 @@ extension OrdersDomain {
         }
     }
 }
-
-extension OrdersDomain.Destination.State: Equatable {}
-extension OrdersDomain.Destination.Action: Equatable {}

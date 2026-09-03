@@ -30,7 +30,7 @@ import Foundation
 
 @Reducer
 struct AuditEventsDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = cardWall
         case cardWall(CardWallIntroductionDomain)
@@ -99,7 +99,7 @@ struct AuditEventsDomain {
     var currentLanguageCode = Locale.current.language.languageCode?.identifier ?? "de"
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -196,7 +196,7 @@ struct AuditEventsDomain {
     }
 }
 
-extension Collection<ErxAuditEvent> {
+extension Collection where Element == ErxAuditEvent {
     func asAuditEventStates(
         dateFormatter: DateFormatter,
         fhirDateFormatter: FHIRDateFormatter
@@ -247,6 +247,3 @@ extension AuditEventsDomain {
         }
     }
 }
-
-extension AuditEventsDomain.Destination.State: Equatable {}
-extension AuditEventsDomain.Destination.Action: Equatable {}

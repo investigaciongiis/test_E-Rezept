@@ -27,7 +27,6 @@ import FeatureEURedeem
 import SwiftUI
 
 extension PrescriptionDetailView {
-    // swiftlint:disable:next type_body_length
     struct Navigations: View {
         @Bindable var store: StoreOf<PrescriptionDetailDomain>
 
@@ -46,7 +45,7 @@ extension PrescriptionDetailView {
                 .smallSheet($store
                     .scope(state: \.destination?.emergencyServiceFeeInfo,
                            action: \.destination.emergencyServiceFeeInfo)) { _ in
-                    EmergencyServiceFeeDrawerView(store: store)
+                        EmergencyServiceFeeDrawerView(store: store)
                 }
                 .accessibility(hidden: true)
 
@@ -55,16 +54,7 @@ extension PrescriptionDetailView {
                 .smallSheet($store
                     .scope(state: \.destination?.selfPayerInfo,
                            action: \.destination.selfPayerInfo)) { _ in
-                    SelDrawerView(store: store)
-                }
-                .accessibility(hidden: true)
-
-            Rectangle()
-                .frame(width: 0, height: 0, alignment: .center)
-                .smallSheet($store
-                    .scope(state: \.destination?.tPrescriptionInfo,
-                           action: \.destination.tPrescriptionInfo)) { _ in
-                    TPrescriptionDrawerView(store: store)
+                        SelDrawerView(store: store)
                 }
                 .accessibility(hidden: true)
 
@@ -140,16 +130,6 @@ extension PrescriptionDetailView {
                 }
                 .accessibility(hidden: true)
 
-            // TeratogenicInfoView
-            Rectangle()
-                .frame(width: 0, height: 0, alignment: .center)
-                .navigationDestination(
-                    item: $store.scope(state: \.destination?.teratogenicInfo, action: \.destination.teratogenicInfo)
-                ) { store in
-                    PrescriptionDetailView.TeratogenicInfoView(store: store)
-                }
-                .accessibility(hidden: true)
-
             // MedicationView
             Rectangle()
                 .frame(width: 0, height: 0, alignment: .center)
@@ -201,7 +181,7 @@ extension PrescriptionDetailView {
             @Bindable var store: StoreOf<CoPaymentDomain>
 
             var body: some View {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 0) {
                         Spacer()
 
@@ -209,23 +189,17 @@ extension PrescriptionDetailView {
                             store.send(.delegate(.close))
                         }
                     }
-                    .padding([.top, .horizontal])
 
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(store.title)
-                                .font(.headline)
-                                .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerCoPaymentInfoTitle)
+                    Text(store.title)
+                        .font(.headline)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerCoPaymentInfoTitle)
 
-                            Text(store.description)
-                                .foregroundColor(Colors.systemLabelSecondary)
-                                .accessibilityIdentifier(A11y.prescriptionDetails
-                                    .prscDtlDrawerCoPaymentInfoDescription)
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                    }
+                    Text(store.description)
+                        .foregroundColor(Colors.systemLabelSecondary)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerCoPaymentInfoDescription)
+                    Spacer()
                 }
+                .padding()
                 .frame(maxWidth: .infinity)
                 .background(Colors.systemBackground.ignoresSafeArea())
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerCoPaymentInfo)
@@ -236,7 +210,7 @@ extension PrescriptionDetailView {
             let store: StoreOf<PrescriptionDetailDomain>
 
             var body: some View {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 0) {
                         Spacer()
 
@@ -244,22 +218,18 @@ extension PrescriptionDetailView {
                             store.send(.setNavigation(tag: .none))
                         }
                     }
-                    .padding([.top, .horizontal])
 
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(L10n.prscDtlDrEmergencyServiceFeeInfoTitle)
-                                .font(.headline)
-                                .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerTitle)
+                    Text(L10n.prscDtlDrEmergencyServiceFeeInfoTitle)
+                        .font(.headline)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerTitle)
 
-                            Text(L10n.prscDtlDrEmergencyServiceFeeInfoDescription)
-                                .foregroundColor(Colors.systemLabelSecondary)
-                                .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerDescription)
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                    }
+                    Text(L10n.prscDtlDrEmergencyServiceFeeInfoDescription)
+                        .foregroundColor(Colors.systemLabelSecondary)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerDescription)
+
+                    Spacer()
                 }
+                .padding()
                 .frame(maxWidth: .infinity)
                 .background(Colors.systemBackground.ignoresSafeArea())
                 .accessibilityElement(children: .contain)
@@ -271,7 +241,7 @@ extension PrescriptionDetailView {
             let store: StoreOf<PrescriptionDetailDomain>
 
             var body: some View {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 0) {
                         Spacer()
 
@@ -279,55 +249,18 @@ extension PrescriptionDetailView {
                             store.send(.setNavigation(tag: .none))
                         }
                     }
-                    .padding([.top, .horizontal])
 
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(L10n.prscDtlDrawerSelfPayerInfoHeader)
-                                .font(.headline)
+                    Text(L10n.prscDtlDrawerSelfPayerInfoHeader)
+                        .font(.headline)
 
-                            Text(L10n.prscDtlDrawerSelfPayerInfoMessage)
-                                .foregroundColor(Colors.systemLabelSecondary)
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                    }
+                    Text(L10n.prscDtlDrawerSelfPayerInfoMessage)
+                        .foregroundColor(Colors.systemLabelSecondary)
+                    Spacer()
                 }
+                .padding()
                 .frame(maxWidth: .infinity)
                 .background(Colors.systemBackground.ignoresSafeArea())
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerSelfPayerInfo)
-            }
-        }
-
-        struct TPrescriptionDrawerView: View {
-            let store: StoreOf<PrescriptionDetailDomain>
-
-            var body: some View {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 0) {
-                        Spacer()
-
-                        CloseButton {
-                            store.send(.setNavigation(tag: .none))
-                        }
-                    }
-                    .padding([.top, .horizontal])
-
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(L10n.prscDtlDrawerTprescriptionInfoHeader)
-                                .font(.headline)
-
-                            Text(L10n.prscDtlDrawerTprescriptionInfoMessage)
-                                .foregroundColor(Colors.systemLabelSecondary)
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .background(Colors.systemBackground.ignoresSafeArea())
-                .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerTPrescriptionInfo)
             }
         }
 
@@ -335,7 +268,7 @@ extension PrescriptionDetailView {
             @Bindable var store: StoreOf<PrescriptionDosageInstructionsDomain>
 
             var body: some View {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 0) {
                         Spacer()
 
@@ -343,24 +276,18 @@ extension PrescriptionDetailView {
                             store.send(.delegate(.close))
                         }
                     }
-                    .padding([.top, .horizontal])
 
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(store.title)
-                                .font(.headline)
-                                .accessibilityIdentifier(A11y.prescriptionDetails
-                                    .prscDtlDrawerDosageInstructionsInfoTitle)
+                    Text(store.title)
+                        .font(.headline)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlDrawerDosageInstructionsInfoTitle)
 
-                            Text(store.description)
-                                .foregroundColor(Colors.systemLabelSecondary)
-                                .accessibilityIdentifier(A11y.prescriptionDetails
-                                    .prscDtlDrawerDosageInstructionsInfoDescription)
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom)
-                    }
+                    Text(store.description)
+                        .foregroundColor(Colors.systemLabelSecondary)
+                        .accessibilityIdentifier(A11y.prescriptionDetails
+                            .prscDtlDrawerDosageInstructionsInfoDescription)
+                    Spacer()
                 }
+                .padding()
                 .frame(maxWidth: .infinity)
                 .background(Colors.systemBackground.ignoresSafeArea())
                 .accessibilityElement(children: .contain)

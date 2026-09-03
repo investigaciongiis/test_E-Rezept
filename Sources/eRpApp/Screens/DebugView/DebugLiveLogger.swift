@@ -100,9 +100,9 @@ class DebugLiveLogger {
         } else {
             // If a Request already exists with same information, but with a `response`, just keep it and throw the new
             // one away
-            guard !requests.contains(where: { item in
+            guard requests.first(where: { item in
                 item.request == request && item.sentAt == sentAt
-            }) else {
+            }) == nil else {
                 return
             }
         }
@@ -218,7 +218,7 @@ extension DebugLiveLogger {
 
             share += "\n# RESPONSE:\n\n"
 
-            if let response {
+            if let response = response {
                 share += "STATUS: \(response.status.rawValue)\n"
 
                 let fields = response.response.allHeaderFields

@@ -134,6 +134,12 @@ struct PaddedKeyValuePairStyle: KeyValuePairStyle {
 }
 
 public struct SeparatedKeyValuePairStyle: KeyValuePairStyle {
+    let showSeparator: Bool
+
+    init(showSeparator: Bool) {
+        self.showSeparator = showSeparator
+    }
+
     public func makeBody(configuration: KeyValuePairConfiguration) -> some View {
         HStack {
             configuration.key
@@ -144,12 +150,11 @@ public struct SeparatedKeyValuePairStyle: KeyValuePairStyle {
                 .font(.body)
                 .foregroundColor(Colors.systemLabelSecondary)
         }
-        .bottomDividerIfNeeded()
+        .bottomDivider(showSeparator: showSeparator)
         .padding(.leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(configuration.key)
         .accessibilityValue(configuration.value)
-        .rootSectionContainerElement(false)
     }
 }
 
@@ -172,7 +177,7 @@ public struct PlainKeyValuePairStyle: KeyValuePairStyle {
 
 extension View {
     /// Sets a `KeyValuePairStyle` for this and the children views.
-    public func keyValuePairStyle(_ style: some KeyValuePairStyle) -> some View {
+    public func keyValuePairStyle<Style: KeyValuePairStyle>(_ style: Style) -> some View {
         environment(\.keyValuePairStyle, AnyKeyValuePairStyle(style: style))
     }
 }
@@ -197,7 +202,7 @@ private struct ConcreteTypeErased<Base: KeyValuePairStyle>: TypeErasedBox {
 struct AnyKeyValuePairStyle: KeyValuePairStyle {
     typealias Body = AnyView
     private let box: TypeErasedBox
-    init(style value: some KeyValuePairStyle) {
+    init<T: KeyValuePairStyle>(style value: T) {
         box = ConcreteTypeErased(baseProto: value)
     }
 
@@ -232,9 +237,7 @@ extension KeyValuePairStyle where Self == SeparatedNoPaddingKeyValuePairStyle {
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View/buttonStyle(_:)`` modifier.
-    public static var noPadding: SeparatedNoPaddingKeyValuePairStyle {
-        SeparatedNoPaddingKeyValuePairStyle()
-    }
+    public static var noPadding: SeparatedNoPaddingKeyValuePairStyle { SeparatedNoPaddingKeyValuePairStyle() }
 }
 
 public struct SeparatedNoPaddingKeyValuePairStyle: KeyValuePairStyle {

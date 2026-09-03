@@ -38,16 +38,16 @@ class PharmacySearchMapDomainTests: XCTestCase {
 
     var searchHistoryMock: SearchHistoryMock!
     var mockUserSession: MockUserSession!
-    var mockRedeemService: RedeemServiceMock!
-    var mockPrescriptionRepository: PrescriptionRepositoryMock!
+    var mockRedeemService: MockRedeemService!
+    var mockPrescriptionRepository: MockPrescriptionRepository!
 
     override func setUp() {
         super.setUp()
 
         searchHistoryMock = SearchHistoryMock()
         mockUserSession = MockUserSession()
-        mockRedeemService = RedeemServiceMock()
-        mockPrescriptionRepository = PrescriptionRepositoryMock()
+        mockRedeemService = MockRedeemService()
+        mockPrescriptionRepository = MockPrescriptionRepository()
     }
 
     override func tearDownWithError() throws {
@@ -64,6 +64,9 @@ class PharmacySearchMapDomainTests: XCTestCase {
             dependencies.userSession = mockUserSession
             dependencies.hapticFeedbackGenerator.success = {}
             dependencies.prescriptionRepository = mockPrescriptionRepository
+            dependencies.redeemOrderService.redeemViaAVS = { @Sendable [mockRedeemService] orders, _ in
+                try await mockRedeemService?.redeem(orders, profileId: UUID()).async() ?? []
+            }
             dependencies.redeemOrderService.redeemViaErxTaskRepository = { @Sendable [mockRedeemService] orders, _ in
                 try await mockRedeemService?.redeem(orders, profileId: UUID()).async() ?? []
             }
@@ -407,11 +410,9 @@ class PharmacySearchMapDomainTests: XCTestCase {
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 
-        mockPrescriptionRepository
-            .loadLocalForProfileIdUUIDAnyPublisherPrescriptionPrescriptionRepositoryErrorReturnValue =
-            Just(inputTask)
-                .setFailureType(to: PrescriptionRepositoryError.self)
-                .eraseToAnyPublisher()
+        mockPrescriptionRepository.loadLocalForReturnValue = Just(inputTask)
+            .setFailureType(to: PrescriptionRepositoryError.self)
+            .eraseToAnyPublisher()
         let expected: Result<[Prescription], PrescriptionRepositoryError> = .success(inputTask)
         await withDependencies {
             $0.pharmacyRepository.updateFromRemote = { _ in newPharmacy.pharmacyLocation }
@@ -682,9 +683,9 @@ class PharmacySearchMapDomainTests: XCTestCase {
 
 extension PharmacySearchMapDomainTests {
     /// Test-Data values for `PharmacyLocation`
-    enum TestData {
+    public enum TestData {
         /// Test-Date for opening/closing state
-        static var openHoursTestReferenceDate: Date? {
+        public static var openHoursTestReferenceDate: Date? {
             // Current dummy-time is set to 10:00am on 16th (WED) June 2021...
             var dateComponents = DateComponents()
             dateComponents.year = 2021
@@ -698,7 +699,7 @@ extension PharmacySearchMapDomainTests {
         }
 
         /// Test-Data PharmacyDomain.State
-        static let stateWithNoLocation =
+        public static let stateWithNoLocation =
             PharmacySearchMapDomain.State(
                 selectedPrescriptions: Shared(value: []),
                 inRedeemProcess: false,
@@ -737,37 +738,37 @@ extension PharmacySearchMapDomainTests {
         }
 
         /// Test location
-        static let testLocation = Location(
+        public static let testLocation = Location(
             rawValue: CLLocation(latitude: 49.5270345, longitude: 8.4668786)
         )
         /// Test Maplocation
-        static let testMapLocation = MKCoordinateRegion(
+        public static let testMapLocation = MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 49.2470345, longitude: 8.8668786),
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         )
         /// Test-Data address
-        static let address1 = PharmacyLocation.Address(
+        public static let address1 = PharmacyLocation.Address(
             street: "Hinter der Bahn",
             houseNumber: "6",
             zip: "12345",
             city: "Buxtehude"
         )
         /// Test-Data address
-        static let address2 = PharmacyLocation.Address(
+        public static let address2 = PharmacyLocation.Address(
             street: "Meisenweg",
             houseNumber: "23",
             zip: "54321",
             city: "Linsengericht"
         )
         /// Test-Data telecom
-        static let telecom = PharmacyLocation.Telecom(
+        public static let telecom = PharmacyLocation.Telecom(
             phone: "555-Schuh",
             fax: "555-123456",
             email: "info@gematik.de",
             web: "http://www.gematik.de"
         )
         /// Test-Data Pharmacy 1
-        static let pharmacy1 = PharmacyLocation(
+        public static let pharmacy1 = PharmacyLocation(
             id: "1",
             status: .active,
             telematikID: "3-06.2.ycl.123",
@@ -789,7 +790,7 @@ extension PharmacySearchMapDomainTests {
             ]
         )
         /// Test-Data Pharmacy 2
-        static let pharmacy2 = PharmacyLocation(
+        public static let pharmacy2 = PharmacyLocation(
             id: "2",
             status: .inactive,
             telematikID: "3-09.2.S.10.124",
@@ -807,7 +808,7 @@ extension PharmacySearchMapDomainTests {
             ]
         )
         /// Test-Data Pharmacy 3
-        static let pharmacy3 = PharmacyLocation(
+        public static let pharmacy3 = PharmacyLocation(
             id: "3",
             status: .active,
             telematikID: "3-09.2.sdf.125",
@@ -819,7 +820,7 @@ extension PharmacySearchMapDomainTests {
             hoursOfOperation: []
         )
         /// Test-Data Pharmacy 4
-        static let pharmacy4 = PharmacyLocation(
+        public static let pharmacy4 = PharmacyLocation(
             id: "4",
             status: .inactive,
             telematikID: "3-09.2.dfs.126",
@@ -838,14 +839,14 @@ extension PharmacySearchMapDomainTests {
         )
 
         /// Test-Data arry of pharmacies
-        static let pharmacies = [
+        public static let pharmacies = [
             pharmacy1,
             pharmacy2,
             pharmacy3,
             pharmacy4,
         ]
         /// Test-Data array of pharmacies with a location
-        static let pharmaciesWithLocations = [
+        public static let pharmaciesWithLocations = [
             pharmacy1,
         ]
     }

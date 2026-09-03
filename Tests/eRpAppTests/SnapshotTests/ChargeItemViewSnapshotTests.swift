@@ -30,8 +30,10 @@ import XCTest
 
 final class ChargeItemViewSnapshotTests: ERPSnapshotTestCase {
     func store(
-        with state: ChargeItemDomain.State = .init(profileId: DummyUserProfileService.dummyProfile.id,
-                                                   chargeItem: ErxChargeItem.Dummies.dummy)
+        with state: ChargeItemDomain.State = {
+            .init(profileId: DummyUserProfileService.dummyProfile.id,
+                  chargeItem: ErxChargeItem.Dummies.dummy)
+        }()
     ) -> StoreOf<ChargeItemDomain> {
         Store(initialState: state, reducer: EmptyReducer.init)
     }
@@ -62,7 +64,7 @@ final class ChargeItemViewSnapshotTests: ERPSnapshotTestCase {
                 initialState: .init(
                     type: .erxChargeItem,
                     erxChargeItem: ErxChargeItem.Dummies.dummy,
-                    groupedLoadingState: .value(.init(uniqueElements: [
+                    loadingState: .value(.init(uniqueElements: [
                         MatrixCodeDomain.State.IdentifiedImage(
                             identifier: UUID(),
                             image: Asset.qrcode.image,

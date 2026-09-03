@@ -56,7 +56,7 @@ struct HealthCardPasswordCanDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = healthCardPassword_puk
         case puk(HealthCardPasswordPukDomain)
@@ -69,7 +69,7 @@ struct HealthCardPasswordCanDomain {
     @Dependency(\.hapticFeedbackGenerator) var hapticFeedback
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -85,6 +85,7 @@ struct HealthCardPasswordCanDomain {
         case .successfulScan:
             hapticFeedback.success()
             return .none
+
         case .advance:
             switch state.mode {
             case .forgotPin,
@@ -129,6 +130,3 @@ extension HealthCardPasswordCanDomain {
         }
     }
 }
-
-extension HealthCardPasswordCanDomain.Destination.State: Equatable {}
-extension HealthCardPasswordCanDomain.Destination.Action: Equatable {}

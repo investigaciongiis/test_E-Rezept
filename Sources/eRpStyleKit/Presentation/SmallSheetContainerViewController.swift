@@ -31,7 +31,7 @@ class SmallSheetContainerViewController: UIViewController {
     weak var bottomAnchor: NSLayoutConstraint?
     weak var heightAnchor: NSLayoutConstraint?
 
-    /// Retained by ViewController hierarchy
+    // Retained by ViewController hierarchy
     weak var contentViewController: UIViewController?
 
     init(dismissBackgroundTap: @escaping () -> Void, contentVC: UIViewController) {
@@ -59,7 +59,7 @@ class SmallSheetContainerViewController: UIViewController {
 
     @objc
     func panGesture(_ gesture: UIPanGestureRecognizer) {
-        guard let bottomAnchor else {
+        guard let bottomAnchor = bottomAnchor else {
             return
         }
 
@@ -121,7 +121,7 @@ class SmallSheetContainerViewController: UIViewController {
         panGestureRecognizer.maximumNumberOfTouches = 1
         view.addGestureRecognizer(panGestureRecognizer)
 
-        if let contentViewController {
+        if let contentViewController = contentViewController {
             view.addSubview(fillingFooter)
             view.addSubview(contentViewController.view)
 
@@ -164,7 +164,7 @@ class SmallSheetContainerViewController: UIViewController {
         dismiss()
     }
 
-    /// Calculate content size
+    // Calculate content size
     var contentSize: CGSize? {
         var size = contentViewController?.view.sizeThatFits(CGSize(width: view.bounds.width, height: 0))
 
@@ -200,16 +200,6 @@ class SmallSheetContainerViewController: UIViewController {
         notificationCenter.removeObserver(self)
     }
 
-    private var maxContentHeight: CGFloat {
-        let screenHeight = view.window?.bounds.height ?? UIScreen.main.bounds.height
-        let topInset = view.window?.safeAreaInsets.top ?? 0
-        return screenHeight - topInset
-    }
-
-    private func clampedHeight(_ height: CGFloat) -> CGFloat {
-        min(height, maxContentHeight)
-    }
-
     override func preferredContentSizeDidChange(forChildContentContainer container: UIContentContainer) {
         super.preferredContentSizeDidChange(forChildContentContainer: container)
 
@@ -220,7 +210,7 @@ class SmallSheetContainerViewController: UIViewController {
                 options: [.beginFromCurrentState, .curveEaseOut]
             ) {
                 if let height = self.contentViewController?.preferredContentSize.height {
-                    self.heightAnchor?.constant = self.clampedHeight(height)
+                    self.heightAnchor?.constant = height
                 }
                 self.fillingFooter.backgroundColor = self.contentViewController?.view.subviews.first?
                     .backgroundColor ?? .systemBackground
@@ -230,7 +220,7 @@ class SmallSheetContainerViewController: UIViewController {
             }
         } else {
             if let height = contentViewController?.preferredContentSize.height {
-                heightAnchor?.constant = clampedHeight(height)
+                heightAnchor?.constant = height
             }
             fillingFooter.backgroundColor = contentViewController?.view.subviews.first?
                 .backgroundColor ?? .systemBackground

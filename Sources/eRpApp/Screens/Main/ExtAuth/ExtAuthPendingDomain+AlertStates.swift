@@ -53,13 +53,15 @@ extension ExtAuthPendingDomain {
         )
     }
 
-    static var saveProfileAlert: ErpAlertState<Destination.Alert> = ErpAlertState(
-        title: { TextState(L10n.cdwTxtExtauthAlertTitleSaveProfile) },
-        actions: {
-            ButtonState(role: .cancel, action: .send(.cancelAllPendingRequests)) {
-                TextState(L10n.cdwBtnExtauthAlertSaveProfile)
-            }
-        },
-        message: { TextState(L10n.cdwTxtExtauthAlertMessageSaveProfile) }
-    )
+    static var saveProfileAlert: ErpAlertState<Destination.Alert> = {
+        ErpAlertState(
+            title: { TextState(L10n.cdwTxtExtauthAlertTitleSaveProfile) },
+            actions: {
+                ButtonState(role: .cancel, action: .send(.cancelAllPendingRequests)) {
+                    TextState(L10n.cdwBtnExtauthAlertSaveProfile)
+                }
+            },
+            message: { TextState(L10n.cdwTxtExtauthAlertMessageSaveProfile) }
+        )
+    }()
 }

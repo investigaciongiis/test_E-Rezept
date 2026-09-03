@@ -29,22 +29,52 @@ import SwiftUI
 struct PharmacyContactView: View {
     @Bindable var store: StoreOf<PharmacyContactDomain>
 
+    init(store: StoreOf<PharmacyContactDomain>) {
+        self.store = store
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                SingleElementSectionContainer(header: {
-                    Text(L10n.phaContactTitleContact)
-                }, content: {
-                    LabeledContent(L10n.phaContactTxtPhone) {
-                        TextField(L10n.phaContactPlaceholder, text: $store.contactInfo.phone)
-                            .accessibility(identifier: A11y.pharmacyContact.phaContactAddressPhone)
-                            .introspect(.textField, on: .iOS(.v17, .v18, .v26)) { textField in
-                                textField.clearButtonMode = .whileEditing
-                            }
-                    }
-                    .textContentType(.telephoneNumber)
-                    .keyboardType(.phonePad)
-                })
+                if store.serviceOption?.isAVS == true {
+                    SectionContainer(header: {
+                        Text(L10n.phaContactTitleContact)
+                    }, content: {
+                        LabeledContent(L10n.phaContactTxtPhone) {
+                            TextField(L10n.phaContactPlaceholder, text: $store.contactInfo.phone)
+                                .introspect(.textField, on: .iOS(.v17, .v18, .v26)) { textField in
+                                    textField.clearButtonMode = .whileEditing
+                                }
+                        }
+                        .accessibility(identifier: A11y.pharmacyContact.phaContactAddressPhone)
+                        .textContentType(.telephoneNumber)
+                        .keyboardType(.phonePad)
+
+                        LabeledContent(L10n.phaContactTxtMail) {
+                            TextField(L10n.phaContactPlaceholder, text: $store.contactInfo.mail)
+                                .accessibility(identifier: A11y.pharmacyContact.phaContactAddressMail)
+                                .introspect(.textField, on: .iOS(.v17, .v18, .v26)) { textField in
+                                    textField.clearButtonMode = .whileEditing
+                                }
+                        }
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                    })
+                } else {
+                    SingleElementSectionContainer(header: {
+                        Text(L10n.phaContactTitleContact)
+                    }, content: {
+                        LabeledContent(L10n.phaContactTxtPhone) {
+                            TextField(L10n.phaContactPlaceholder, text: $store.contactInfo.phone)
+                                .accessibility(identifier: A11y.pharmacyContact.phaContactAddressPhone)
+                                .introspect(.textField, on: .iOS(.v17, .v18, .v26)) { textField in
+                                    textField.clearButtonMode = .whileEditing
+                                }
+                        }
+                        .textContentType(.telephoneNumber)
+                        .keyboardType(.phonePad)
+                    })
+                }
 
                 SectionContainer(header: {
                     Text(L10n.phaContactTitleAddress)

@@ -89,11 +89,11 @@ struct OnboardingAnalyticsView: View {
                     .padding(.horizontal, 64)
                     .padding(.vertical)
             })
-            .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnAllow)
-            .font(Font.body.weight(.semibold))
-            .foregroundColor(Colors.systemColorWhite)
-            .background(Colors.primary700)
-            .cornerRadius(16)
+                .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnAllow)
+                .font(Font.body.weight(.semibold))
+                .foregroundColor(Colors.systemColorWhite)
+                .background(Colors.primary700)
+                .cornerRadius(16)
 
             // [REQ:BSI-eRp-ePA:O.Purp_3#4] Button denies tracking
             Button(action: {
@@ -103,11 +103,11 @@ struct OnboardingAnalyticsView: View {
                     .padding(.horizontal, 71)
                     .padding(.vertical)
             })
-            .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnDeny)
-            .font(Font.body.weight(.semibold))
-            .foregroundColor(Colors.systemColorWhite)
-            .background(Colors.primary700)
-            .cornerRadius(16)
+                .accessibility(identifier: A18n.onboarding.analytics.onbAnaBtnDeny)
+                .font(Font.body.weight(.semibold))
+                .foregroundColor(Colors.systemColorWhite)
+                .background(Colors.primary700)
+                .cornerRadius(16)
         }
         .padding()
     }
@@ -116,6 +116,7 @@ struct OnboardingAnalyticsView: View {
 extension OnboardingAnalyticsView {
     struct TitleView: View {
         var action: () -> Void
+        @State var calculatedHeight = CGFloat(1)
 
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
@@ -131,11 +132,13 @@ extension OnboardingAnalyticsView {
 
                 UIKitTextView(
                     attributedString: attributedSubtitle,
+                    calculatedHeight: $calculatedHeight,
                     font: .preferredFont(forTextStyle: .subheadline),
                     foregroundColor: .secondaryLabel
                 ) { _ in
                     action()
                 }
+                .frame(height: calculatedHeight)
                 .accessibilityElement(children: .contain)
                 .accessibility(identifier: A11y.onboarding.analytics.onbAnaTxtSubtitle)
                 .padding(.top, 8)

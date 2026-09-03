@@ -50,7 +50,7 @@ public struct EURedeemView: View {
 
 #Preview("EURedeemView") {
     EURedeemView(store: Store(initialState: EURedeemDomain.State(selection: .init(
-        prescriptions: Shared(value: EURedeemSelectionDomain.Dummies.prescriptions)
+        prescriptions: EURedeemSelectionDomain.Dummies.prescriptions
     ))) {
         EURedeemDomain()
     })

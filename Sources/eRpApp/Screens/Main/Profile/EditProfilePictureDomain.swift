@@ -32,7 +32,7 @@ import SwiftUI
 struct EditProfilePictureDomain {
     typealias Store = StoreOf<Self>
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
@@ -172,24 +172,26 @@ struct EditProfilePictureDomain {
         }
     }
 
-    static var importAlert: ErpAlertState<EditProfilePictureDomain.Destination.Alert> = .init(
-        title: L10n.eppTxtAlertHeaderProfile,
-        actions: {
-            ButtonState(action: .photoPicker) {
-                .init(L10n.eppBtnAlertLibrary)
-            }
-            ButtonState(action: .cameraPicker) {
-                .init(L10n.eppBtnAlertCamera)
-            }
-            ButtonState(action: .memojiPicker) {
-                .init(L10n.eppBtnAlertEmoji)
-            }
-            ButtonState(role: .cancel, action: .none) {
-                .init(L10n.eppBtnAlertAbort)
-            }
-        },
-        message: L10n.eppTxtAlertSubheaderChoose
-    )
+    static var importAlert: ErpAlertState<EditProfilePictureDomain.Destination.Alert> = {
+        .init(
+            title: L10n.eppTxtAlertHeaderProfile,
+            actions: {
+                ButtonState(action: .photoPicker) {
+                    .init(L10n.eppBtnAlertLibrary)
+                }
+                ButtonState(action: .cameraPicker) {
+                    .init(L10n.eppBtnAlertCamera)
+                }
+                ButtonState(action: .memojiPicker) {
+                    .init(L10n.eppBtnAlertEmoji)
+                }
+                ButtonState(role: .cancel, action: .none) {
+                    .init(L10n.eppBtnAlertAbort)
+                }
+            },
+            message: L10n.eppTxtAlertSubheaderChoose
+        )
+    }()
 }
 
 extension EditProfilePictureDomain {
@@ -226,6 +228,3 @@ extension EditProfilePictureDomain {
         }
     }
 }
-
-extension EditProfilePictureDomain.Destination.State: Equatable {}
-extension EditProfilePictureDomain.Destination.Action: Equatable {}

@@ -120,8 +120,10 @@ struct ConfigParser {
 
     private func parseLine(_ line: String) -> (String, String)? {
         // Comment or empty line
-        if line.starts(with: "#") ||
-            line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty {
+        if
+            line.starts(with: "#") ||
+            line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty
+        {
             return nil
         }
 

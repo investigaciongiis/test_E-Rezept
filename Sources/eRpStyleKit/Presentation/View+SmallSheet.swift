@@ -26,10 +26,10 @@ extension View {
     /// Presents a sheet when a binding to a Boolean value that you provide is true. The size of the sheet is
     /// dynamically updated. If you use view component without intrinsic content size (such as `NavigationView` or
     /// `List`), you need to add a `.frame(height:)` modifier to your displayed content.
-    public func smallSheet(
+    public func smallSheet<Content: View>(
         isPresented: Binding<Bool>,
         onDismiss: @escaping () -> Void = {},
-        @ViewBuilder content: () -> some View
+        @ViewBuilder content: () -> Content
     ) -> some View {
         modifier(
             SmallSheetPresentationControllerModifier(
@@ -43,9 +43,9 @@ extension View {
     /// Presents a sheet when a binding to an item value that you provide is set. The size of the sheet is
     /// dynamically updated. If you use view component without intrinsic content size (such as `NavigationView` or
     /// `List`), you need to add a `.frame(height:)` modifier to your displayed content.
-    public func smallSheet<Item>(
+    public func smallSheet<Item, Content: View>(
         _ item: Binding<Item?>,
-        @ViewBuilder content: (Item) -> some View
+        @ViewBuilder content: (Item) -> Content
     ) -> some View {
         modifier(
             SmallSheetPresentationControllerModifier(
@@ -91,12 +91,6 @@ struct SmallSheetPresentationControllerModifier<SheetContent: View>: ViewModifie
             .background(
                 SmallSheetPresentationController(isPresented: $isPresented, onDismiss: onDismiss) { sheetContent }
             )
-            .onDisappear {
-                if isPresented {
-                    isPresented = false
-                    onDismiss()
-                }
-            }
     }
 }
 

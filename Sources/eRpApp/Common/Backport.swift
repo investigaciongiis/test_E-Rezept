@@ -29,9 +29,7 @@ struct Backport<Content> {
 }
 
 extension View {
-    var backport: Backport<Self> {
-        Backport(content: self)
-    }
+    var backport: Backport<Self> { Backport(content: self) }
 }
 
 // Backport of NavigationLink with Bindings

@@ -25,10 +25,7 @@ import SwiftUI
 
 struct OnboardingLegalInfoCheckmarkView: View {
     @ScaledMetric var iconSize: CGFloat = 24
-    var maxIconSize: CGFloat {
-        24 * 3
-    }
-
+    var maxIconSize: CGFloat { 24 * 3 }
     @Binding<Bool> var isAccepted: Bool
 
     var body: some View {

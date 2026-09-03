@@ -35,12 +35,12 @@ struct Tile: View {
     var body: some View {
         HStack(spacing: 16) {
             HStack(alignment: .top, spacing: 0) {
-                if let iconSystemName {
+                if let iconSystemName = iconSystemName {
                     Image(systemName: iconSystemName)
                         .frame(minWidth: 24, minHeight: 24)
                         .foregroundColor(isDisabled ? Colors.systemLabelSecondary : Colors.primary500)
                         .font(Font.title3.bold())
-                } else if let iconName {
+                } else if let iconName = iconName {
                     Image(iconName)
                         .frame(minWidth: 24, minHeight: 24)
                         .foregroundColor(isDisabled ? Colors.systemLabelSecondary : Colors.primary500)
@@ -51,7 +51,7 @@ struct Tile: View {
                     Text(title, bundle: .module)
                         .font(Font.subheadline.weight(.semibold))
                         .foregroundColor(isDisabled ? Colors.systemLabelSecondary : Colors.systemLabel)
-                    if let description {
+                    if let description = description {
                         Text(description, bundle: .module)
                             .font(Font.subheadline)
                             .foregroundColor(Colors.systemLabelSecondary)
@@ -65,7 +65,7 @@ struct Tile: View {
 
             Image(systemName: discloseIcon)
                 .frame(minWidth: 24, minHeight: 24)
-                .foregroundColor(Colors.systemLabelSecondary)
+                .foregroundColor(Color(.tertiaryLabel))
                 .font(Font.title3)
         }
         .padding()

@@ -116,17 +116,12 @@ struct PrescriptionListView<StickyHeader: View>: View {
                     Button {
                         store.send(.showArchivedButtonTapped)
                     } label: {
-                        Label {
-                            Text(L10n.mainBtnArchivedPresc)
-                                .font(.subheadline.weight(.semibold))
-                        } icon: {
-                            Image(systemName: SFSymbolName.archivebox)
-                        }
+                        Text(L10n.mainBtnArchivedPresc)
+                            .font(.subheadline.weight(.semibold))
                     }
                     .accessibilityIdentifier(A11y.mainScreen.erxBtnArcPrescription)
                     .padding(.top, 28)
                     .padding(.bottom)
-                    .buttonStyle(.quartary)
                 }
             }
         }
@@ -160,7 +155,7 @@ struct PrescriptionListView<StickyHeader: View>: View {
                         Text(L10n.mainBtnLogin)
                     }
                 }
-                .buttonStyle(.secondarySmall)
+                .buttonStyle(.quartary)
                 .accessibilityIdentifier(store.isConnected ? A11y.mainScreen.erxBtnRefresh : A11y.mainScreen
                     .erxBtnLogin)
             }

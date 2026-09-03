@@ -27,7 +27,7 @@ import Nimble
 import XCTest
 
 @MainActor
-final class PharmacySearchMapUITests: XCTestCase {
+final class PharmacySearchMapUITests: XCTestCase, Sendable {
     var app: XCUIApplication!
 
     override func tearDown() async throws {
@@ -336,8 +336,7 @@ final class PharmacySearchMapUITests: XCTestCase {
 
         expect(file: file, line: line) {
             // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-            // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-            // swiftlint:disable:this line_length
+            // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
             self.app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
 
             return self.locationDialogInterruptAnswered

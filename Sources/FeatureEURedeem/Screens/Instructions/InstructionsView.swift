@@ -21,7 +21,6 @@
 //
 
 import ComposableArchitecture
-import eRpResources
 import eRpStyleKit
 import SwiftUI
 
@@ -33,142 +32,92 @@ public struct InstructionsView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Header section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(L10n.euredeemInstructionsTitle)
-                            .font(.title.bold())
-                            .foregroundColor(Colors.systemLabel)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsTitle)
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Header section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L10n.euredeemInstructionsTitle)
+                                .font(.title.bold())
+                                .foregroundColor(Colors.systemLabel)
 
-                        UIKitTextView(
-                            attributedString: attributedSubtitle,
-                            font: .preferredFont(forTextStyle: .body),
-                            foregroundColor: .label
-                        ) { _ in }
-                            .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsSubtitle)
-                    }
+                            Button(L10n.euredeemInstructionsSubtitle) {
+                                // Handle website link tap
+                            }
+                            .foregroundColor(Colors.systemGray2)
+                            .buttonStyle(.plain)
+                            .font(.body)
+                        }
 
-                    // Instructions steps
-                    VStack(alignment: .leading, spacing: 16) {
-                        InstructionStepView(
-                            stepNumber: L10n.euredeemInstructionsStep1Title,
-                            description: L10n.euredeemInstructionsStep1Description(
-                                stringFor(
-                                    rawKey: L10n.euredeemInstructionsStep1RegionalDescription.rawKey,
-                                    countryCode: store.countryCode
-                                ) ?? L10n.euredeemInstructionsStep1RegionalDescription.text
+                        // Instructions steps
+                        VStack(alignment: .leading, spacing: 16) {
+                            InstructionStepView(
+                                stepNumber: L10n.euredeemInstructionsStep1Title,
+                                description: L10n.euredeemInstructionsStep1Description
                             )
-                        )
-                        .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsStep1Title)
 
-                        InstructionStepView(
-                            stepNumber: L10n.euredeemInstructionsStep2Title,
-                            description: L10n.euredeemInstructionsStep2Description
-                        )
-                        .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsStep2Title)
-
-                        InstructionStepView(
-                            stepNumber: L10n.euredeemInstructionsStep3Title,
-                            description: L10n.euredeemInstructionsStep3Description
-                        )
-                        .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsStep3Title)
-
-                        InstructionStepView(
-                            stepNumber: L10n.euredeemInstructionsStep4Title,
-                            description: L10n.euredeemInstructionsStep4Description(
-                                stringFor(
-                                    rawKey: L10n.euredeemInstructionsStep4RegionalDescription.rawKey,
-                                    countryCode: store.countryCode
-                                ) ?? L10n.euredeemInstructionsStep4RegionalDescription.text
+                            InstructionStepView(
+                                stepNumber: L10n.euredeemInstructionsStep2Title,
+                                description: L10n.euredeemInstructionsStep2Description
                             )
-                        )
-                        .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsStep4Title)
 
-                        InstructionStepView(
-                            stepNumber: L10n.euredeemInstructionsStep5Title,
-                            description: L10n.euredeemInstructionsStep5Description
-                        )
-                        .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsStep5Title)
+                            InstructionStepView(
+                                stepNumber: L10n.euredeemInstructionsStep3Title,
+                                description: L10n.euredeemInstructionsStep3Description
+                            )
+
+                            InstructionStepView(
+                                stepNumber: L10n.euredeemInstructionsStep4Title,
+                                description: L10n.euredeemInstructionsStep4Description
+                            )
+
+                            InstructionStepView(
+                                stepNumber: L10n.euredeemInstructionsStep5Title,
+                                description: L10n.euredeemInstructionsStep5Description
+                            )
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-            }
 
-            if store.isRedeeming {
-                // Bottom section with button and disclaimer
-                VStack(spacing: 10) {
-                    GreyDivider()
+                if store.isRedeeming {
+                    // Bottom section with button and disclaimer
+                    VStack(spacing: 8) {
+                        GreyDivider()
 
-                    Text(L10n.euredeemInstructionsDisclaimer)
-                        .font(.caption)
-                        .foregroundColor(Colors.systemLabelSecondary)
-                        .multilineTextAlignment(.center)
+                        Button(L10n.euredeemInstructionsGenerateCodeButton) {
+                            // Handle generate code action
+                            store.send(.delegate(.continueButtonTapped))
+                        }
+                        .buttonStyle(eRpStyleKit.PrimaryButtonStyle(enabled: true, destructive: false))
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
-                        .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmTxtInstructionsDisclaimer)
 
-                    Button(L10n.euredeemInstructionsGenerateCodeButton) {
-                        // Handle generate code action
-                        store.send(.delegate(.continueButtonTapped))
+                        Text(L10n.euredeemInstructionsDisclaimer)
+                            .font(.caption)
+                            .foregroundColor(Colors.systemGray2)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
                     }
-                    .buttonStyle(eRpStyleKit.PrimaryButtonStyle(enabled: true, destructive: false))
-                    .accessibilityIdentifier(A11y.redeem.eu.instructions.eurdmBtnInstructionsGenerateCode)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
                 }
             }
-        }
-        .background(Colors.systemBackground)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    store.send(.delegate(.close))
-                }, label: {
-                    Text(L10n.euredeemInstructionsBtnClose)
-                })
-                .accessibility(identifier: A11y.redeem.eu.instructions.eurdmBtnInstructionsClose)
+            .background(Colors.systemBackground)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        store.send(.delegate(.close))
+                    }, label: {
+                        Text(L10n.euredeemInstructionsBtnClose)
+                    })
+                        .accessibility(identifier: "euredeem_instructions_close_button")
+                }
             }
+            .navigationTitle(L10n.euredeemInstructionsNavigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .navigationTitle(L10n.euredeemInstructionsNavigationTitle)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var attributedSubtitle: AttributedString {
-        let text = L10n.euredeemInstructionsSubtitleWith(L10n.euredeemInstructionsLink.text).text
-        return (try? AttributedString(markdown: text)) ?? AttributedString(text)
-    }
-}
-
-extension InstructionsView {
-    /// Localizes a raw key for a specific country code if supported, otherwise returns nil
-    private func stringFor(rawKey: String, countryCode: String?) -> String? {
-        guard let bundlePath = Bundle.resourceBundle.path(
-            forResource: findPrimaryLocale(for: countryCode),
-            ofType: "lproj"
-        ),
-            let bundle = Bundle(path: bundlePath)
-        else { return nil }
-        return String(format: NSLocalizedString(rawKey, bundle: bundle, comment: ""), arguments: [])
-    }
-
-    /// Finds the closest local for a given country code in all app supported localizations,
-    /// otherwise returns default (en-GB)
-    private func findPrimaryLocale(for countryCode: String?) -> String {
-        let defaultLocal = "en-GB"
-        guard let countryCode else { return defaultLocal }
-        let bestMatch = Bundle.main.localizations.first { identifier in
-            let locale = Locale(identifier: identifier)
-            let isLanguageMatch = locale.language.languageCode?.identifier.lowercased() == countryCode.lowercased()
-            let isRegionMatch = locale.region?.identifier.uppercased() == countryCode.uppercased()
-
-            return isLanguageMatch || isRegionMatch
-        }
-        return bestMatch ?? defaultLocal
     }
 }
 
@@ -184,7 +133,7 @@ struct InstructionStepView: View {
 
             Text(description)
                 .font(.body)
-                .foregroundColor(Colors.systemLabelSecondary)
+                .foregroundColor(Colors.systemGray2)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -194,7 +143,7 @@ struct InstructionStepView: View {
     NavigationStack {
         InstructionsView(
             store: StoreOf<InstructionsDomain>(
-                initialState: InstructionsDomain.State(isRedeeming: true, countryCode: "DE")
+                initialState: InstructionsDomain.State()
             ) {
                 InstructionsDomain()
             }

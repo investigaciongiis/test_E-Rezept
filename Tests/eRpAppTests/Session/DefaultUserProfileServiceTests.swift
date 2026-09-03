@@ -31,16 +31,16 @@ final class DefaultUserProfileServiceTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        mockProfileDataStore = ProfileDataStoreMock()
-        mockProfileOnlineChecker = ProfileOnlineCheckerMock()
+        mockProfileDataStore = MockProfileDataStore()
+        mockProfileOnlineChecker = MockProfileOnlineChecker()
         mockUserSession = MockUserSession()
-        mockUserSessionProvider = UserSessionProviderMock()
+        mockUserSessionProvider = MockUserSessionProvider()
     }
 
-    var mockProfileDataStore: ProfileDataStoreMock!
-    var mockProfileOnlineChecker: ProfileOnlineCheckerMock!
+    var mockProfileDataStore: MockProfileDataStore!
+    var mockProfileOnlineChecker: MockProfileOnlineChecker!
     var mockUserSession: MockUserSession!
-    var mockUserSessionProvider: UserSessionProviderMock!
+    var mockUserSessionProvider: MockUserSessionProvider!
 
     func testUserProfilesPublisher_ActivityIndicator() {
         // given
@@ -51,7 +51,7 @@ final class DefaultUserProfileServiceTests: XCTestCase {
             userSessionProvider: mockUserSessionProvider
         )
 
-        mockProfileOnlineChecker.tokenForProfileProfileAnyPublisherIDPTokenNeverClosure = { profile in
+        mockProfileOnlineChecker.tokenForClosure = { profile in
             switch profile.id {
             case UserProfile.Fixtures.olafOffline.profile.id:
                 return Just(nil).eraseToAnyPublisher()
@@ -62,7 +62,7 @@ final class DefaultUserProfileServiceTests: XCTestCase {
             }
         }
 
-        mockProfileDataStore.listAllProfilesAnyPublisherProfileLocalStoreErrorReturnValue = Just(
+        mockProfileDataStore.listAllProfilesReturnValue = Just(
             [
                 UserProfile.Fixtures.olafOffline.profile,
                 UserProfile.Fixtures.theo.profile,
@@ -72,18 +72,18 @@ final class DefaultUserProfileServiceTests: XCTestCase {
         .eraseToAnyPublisher()
 
         let theoIsActivePublisher = CurrentValueSubject<Bool, Never>(false)
-        let theoActivityIndicatingMockPublishing = ActivityIndicatingMock()
-        theoActivityIndicatingMockPublishing.isActive = theoIsActivePublisher.eraseToAnyPublisher()
+        let theoMockActivityIndicatingPublishing = MockActivityIndicating()
+        theoMockActivityIndicatingPublishing.isActive = theoIsActivePublisher.eraseToAnyPublisher()
         let theoMockUserSession = MockUserSession()
-        theoMockUserSession.activityIndicating = theoActivityIndicatingMockPublishing
+        theoMockUserSession.activityIndicating = theoMockActivityIndicatingPublishing
 
         let olafIsActivePublisher = CurrentValueSubject<Bool, Never>(false)
-        let olafActivityIndicatingMockPublishing = ActivityIndicatingMock()
-        olafActivityIndicatingMockPublishing.isActive = olafIsActivePublisher.eraseToAnyPublisher()
+        let olafMockActivityIndicatingPublishing = MockActivityIndicating()
+        olafMockActivityIndicatingPublishing.isActive = olafIsActivePublisher.eraseToAnyPublisher()
         let olafMockUserSession = MockUserSession()
-        olafMockUserSession.activityIndicating = olafActivityIndicatingMockPublishing
+        olafMockUserSession.activityIndicating = olafMockActivityIndicatingPublishing
 
-        mockUserSessionProvider.userSessionForUuidUUIDUserSessionClosure = { uuid in
+        mockUserSessionProvider.userSessionForClosure = { uuid in
             switch uuid {
             case UserProfile.Fixtures.olafOffline.profile.id:
                 return olafMockUserSession
@@ -144,7 +144,7 @@ final class DefaultUserProfileServiceTests: XCTestCase {
             userSessionProvider: mockUserSessionProvider
         )
 
-        mockProfileOnlineChecker.tokenForProfileProfileAnyPublisherIDPTokenNeverClosure = { profile in
+        mockProfileOnlineChecker.tokenForClosure = { profile in
             switch profile.id {
             case UserProfile.Fixtures.theo.profile.id:
                 return Just(IDPToken.Fixtures.valid).eraseToAnyPublisher()
@@ -158,12 +158,12 @@ final class DefaultUserProfileServiceTests: XCTestCase {
             .eraseToAnyPublisher()
 
         let theoIsActivePublisher = CurrentValueSubject<Bool, Never>(false)
-        let theoActivityIndicatingMockPublishing = ActivityIndicatingMock()
-        theoActivityIndicatingMockPublishing.isActive = theoIsActivePublisher.eraseToAnyPublisher()
+        let theoMockActivityIndicatingPublishing = MockActivityIndicating()
+        theoMockActivityIndicatingPublishing.isActive = theoIsActivePublisher.eraseToAnyPublisher()
         let theoMockUserSession = MockUserSession()
-        theoMockUserSession.activityIndicating = theoActivityIndicatingMockPublishing
+        theoMockUserSession.activityIndicating = theoMockActivityIndicatingPublishing
 
-        mockUserSessionProvider.userSessionForUuidUUIDUserSessionClosure = { uuid in
+        mockUserSessionProvider.userSessionForClosure = { uuid in
             switch uuid {
             case UserProfile.Fixtures.theo.profile.id:
                 return theoMockUserSession
@@ -248,13 +248,13 @@ extension UserProfile {
     }
 }
 
-extension [UserProfile] {
+extension Array where Element == UserProfile {
     func simplify() -> [UserProfileSimplify] {
         map { $0.simplify() }
     }
 }
 
-extension [[UserProfile]] {
+extension Array where Element == [UserProfile] {
     func simplify() -> [[UserProfileSimplify]] {
         map { $0.simplify() }
     }

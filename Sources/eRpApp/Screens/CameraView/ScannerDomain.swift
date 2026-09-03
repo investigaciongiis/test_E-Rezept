@@ -88,7 +88,7 @@ struct ScannerDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = scanner_imageGallery
         case imageGallery(ImageGallery)
@@ -212,14 +212,14 @@ struct ScannerDomain {
             case let .response(.galleryImageReceived(image)):
                 guard let image else { return .none }
                 return .run { send in
-                    try await send(.analyse(scanOutput: barcodeDetection.detectImage(image)))
+                    await send(.analyse(scanOutput: try await barcodeDetection.detectImage(image)))
                 }
             case let .response(.documentFileReceived(.success(result))):
                 guard let documentURL = result.first else {
                     return .none
                 }
                 return .run { send in
-                    try await send(.analyse(scanOutput: barcodeDetection.detectDocument(documentURL)))
+                    await send(.analyse(scanOutput: try await barcodeDetection.detectDocument(documentURL)))
                 }
             case .response(.documentFileReceived(.failure)):
                 return .none
@@ -233,43 +233,49 @@ struct ScannerDomain {
         .ifLet(\.$destination, action: \.destination)
     }
 
-    static let closeAlertState: AlertState<Destination.Alert> = AlertState {
-        TextState(L10n.camTxtWarnCancelTitle)
-    } actions: {
-        ButtonState(role: .destructive, action: .send(.closeAlertCancel)) {
-            TextState(L10n.camTxtWarnContinue)
-        }
-        ButtonState(role: .cancel, action: .send(.none)) {
-            TextState(L10n.camTxtWarnCancel)
-        }
-    }
-
-    static let savingAlertState: AlertState<Destination.Alert> = AlertState {
-        TextState(L10n.alertErrorTitle)
-    } actions: {
-        ButtonState(role: .cancel, action: .send(.none)) {
-            TextState(L10n.alertBtnOk)
-        }
-    } message: {
-        TextState(L10n.scnMsgSavingError)
-    }
-
-    static let confirmationDialogState: ConfirmationDialogState<Destination.Sheet> = ConfirmationDialogState(
-        titleVisibility: .visible,
-        title: {
-            TextState(L10n.camTxtGallerySheetTitle)
-        }, actions: {
-            ButtonState(action: .send(.openImageGallery)) {
-                TextState(L10n.camBtnGallerySheetPicture)
-            }
-            ButtonState(action: .send(.openDocumentImporter)) {
-                TextState(L10n.camBtnGallerySheetDocument)
+    static let closeAlertState: AlertState<Destination.Alert> = {
+        AlertState {
+            TextState(L10n.camTxtWarnCancelTitle)
+        } actions: {
+            ButtonState(role: .destructive, action: .send(.closeAlertCancel)) {
+                TextState(L10n.camTxtWarnContinue)
             }
             ButtonState(role: .cancel, action: .send(.none)) {
-                TextState(L10n.camBtnGallerySheetCancel)
+                TextState(L10n.camTxtWarnCancel)
             }
         }
-    )
+    }()
+
+    static let savingAlertState: AlertState<Destination.Alert> = {
+        AlertState {
+            TextState(L10n.alertErrorTitle)
+        } actions: {
+            ButtonState(role: .cancel, action: .send(.none)) {
+                TextState(L10n.alertBtnOk)
+            }
+        } message: {
+            TextState(L10n.scnMsgSavingError)
+        }
+    }()
+
+    static let confirmationDialogState: ConfirmationDialogState<Destination.Sheet> = {
+        ConfirmationDialogState(
+            titleVisibility: .visible,
+            title: {
+                TextState(L10n.camTxtGallerySheetTitle)
+            }, actions: {
+                ButtonState(action: .send(.openImageGallery)) {
+                    TextState(L10n.camBtnGallerySheetPicture)
+                }
+                ButtonState(action: .send(.openDocumentImporter)) {
+                    TextState(L10n.camBtnGallerySheetDocument)
+                }
+                ButtonState(role: .cancel, action: .send(.none)) {
+                    TextState(L10n.camBtnGallerySheetCancel)
+                }
+            }
+        )
+    }()
 }
 
 extension ScannerDomain {
@@ -304,7 +310,7 @@ extension ScannerDomain {
     }
 }
 
-extension Sequence<ScannedErxTask> {
+extension Sequence where Element == ScannedErxTask {
     func asErxTasks(status: ErxTask.Status, with authoredOn: String) -> [ErxTask] {
         var prescriptionCount = 1
         var tasks = [ErxTask]()
@@ -340,6 +346,3 @@ extension ScannerDomain {
         static let state = State()
     }
 }
-
-extension ScannerDomain.Destination.State: Equatable {}
-extension ScannerDomain.Destination.Action: Equatable {}

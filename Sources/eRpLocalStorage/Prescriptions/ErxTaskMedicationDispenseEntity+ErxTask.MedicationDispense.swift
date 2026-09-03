@@ -52,7 +52,7 @@ extension ErxTaskMedicationDispenseEntity {
 
 extension ErxMedicationDispense {
     init?(entity: ErxTaskMedicationDispenseEntity?) {
-        guard let entity,
+        guard let entity = entity,
               let taskId = entity.taskId,
               let identifier = entity.identifier else {
             return nil

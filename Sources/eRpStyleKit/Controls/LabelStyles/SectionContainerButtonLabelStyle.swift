@@ -24,20 +24,15 @@ import SwiftUI
 
 /// `LabelStyle` applying font and color for full width action buttons within `SectionContainer`s.
 public struct SectionContainerButtonLabelStyle: LabelStyle {
-    public func makeBody(configuration: Configuration) -> some View {
-        SectionContainerButtonLabelBody(configuration: configuration)
+    let showSeparator: Bool
+
+    public init(showSeparator: Bool) {
+        self.showSeparator = showSeparator
     }
-}
 
-private struct SectionContainerButtonLabelBody: View {
-    let configuration: LabelStyleConfiguration
-
-    @Environment(\.sectionContainerElementInformation.isRootElement) var isRootElement
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
-    @Environment(\.sectionContainerElementInformation) var sectionContainerElementInformation
     @Environment(\.isEnabled) var isEnabled: Bool
 
-    var body: some View {
+    public func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 16) {
             configuration.icon
                 .frame(width: 22, height: 22, alignment: .center)
@@ -47,7 +42,7 @@ private struct SectionContainerButtonLabelBody: View {
                     .padding([.bottom, .trailing, .top])
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                if !isLastElement, isRootElement {
+                if showSeparator {
                     Divider()
                 }
             }
@@ -57,12 +52,6 @@ private struct SectionContainerButtonLabelBody: View {
         .padding(.leading)
         .frame(maxWidth: .infinity, alignment: .leading)
         .subTitleStyle(PlainSectionContainerSubTitleStyle())
-        .sectionContainerElementInformation(
-            sectionContainerElementInformation
-                .disableNavigationLink()
-                .disableRoot()
-        )
-        .rootSectionContainerElement(false)
     }
 }
 
@@ -72,7 +61,7 @@ struct SectionContainerButtonLabelStyle_Preview: PreviewProvider {
             VStack(alignment: .leading, spacing: 8) {
                 SectionContainer {
                     Label("Manual usage", systemImage: SFSymbolName.ant)
-                        .labelStyle(SectionContainerButtonLabelStyle())
+                        .labelStyle(SectionContainerButtonLabelStyle(showSeparator: true))
 
                     Button(action: {}, label: {
                         Label("Automatic usage usage within a button", systemImage: SFSymbolName.ant)
@@ -81,7 +70,7 @@ struct SectionContainerButtonLabelStyle_Preview: PreviewProvider {
                     Button(action: {}, label: {
                         Label("Automatic usage usage within a button", systemImage: SFSymbolName.ant)
                     })
-                    .disabled(true)
+                        .disabled(true)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

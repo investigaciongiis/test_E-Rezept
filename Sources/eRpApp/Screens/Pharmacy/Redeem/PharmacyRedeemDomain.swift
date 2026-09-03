@@ -21,6 +21,7 @@
 //
 
 import AsyncHelpers
+import AVS
 import Combine
 import ComposableArchitecture
 import eRpKit
@@ -40,7 +41,7 @@ import SwiftUI
 // swiftlint:disable type_body_length file_length
 @Reducer
 struct PharmacyRedeemDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = redeem_success
         case redeemSuccess(RedeemSuccessDomain)
@@ -119,24 +120,12 @@ struct PharmacyRedeemDomain {
             hasCompleteContactData
                 && !selectedPrescriptions.isEmpty
                 && serviceOptionState.selectedOption != nil
-                && !showTPrescriptionShipmentWarning
-        }
-
-        var showTPrescriptionShipmentInfo: Bool {
-            selectedPrescriptions.containsTPrescription() && serviceOptionState.availableOptions.contains(.shipment)
-        }
-
-        var showTPrescriptionShipmentWarning: Bool {
-            selectedPrescriptions.containsTPrescription() && serviceOptionState.selectedOption == .shipment
         }
 
         var accessibilityDisabledReason: String {
             let noPrescription = !selectedPrescriptions.isEmpty ? nil : L10n.phaRedeemTxtNoSelectedPrescription.text
             let missingContactData = hasCompleteContactData ? nil : L10n.phaRedeemTxtMissingContactData.text
-            let tPrescriptionShippingWarning = showTPrescriptionShipmentWarning ? L10n.phaRedeemTxtTprescriptionWarning
-                .text : nil
-            return [noPrescription, missingContactData, tPrescriptionShippingWarning].compactMap { $0 }
-                .joined(separator: ",")
+            return [noPrescription, missingContactData].compactMap { $0 }.joined(separator: ",")
         }
     }
 
@@ -189,7 +178,7 @@ struct PharmacyRedeemDomain {
         Scope(state: \State.serviceOptionState, action: \.serviceOption) {
             ServiceOptionDomain()
         }
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -251,16 +240,10 @@ struct PharmacyRedeemDomain {
             if provider.deliveryService.hasService {
                 options.insert(.delivery)
             }
-            var validOptions = options
             if provider.shipmentService.hasService {
-                if state.selectedPrescriptions.filter(\.isShipmentAvailable).count
-                    == state.selectedPrescriptions.count {
-                    validOptions.insert(.shipment)
-                }
                 options.insert(.shipment)
             }
             state.serviceOptionState.availableOptions = options
-            state.serviceOptionState.validOptions = validOptions
 
             guard let redeemOption = state.serviceOptionState.selectedOption
             else { return .none }
@@ -300,25 +283,28 @@ struct PharmacyRedeemDomain {
             return .run { [
                 orderRequests = state.orders,
                 serviceOption = state.serviceOption,
-                profileId = state.profileId
+                profileId = state.profileId,
             ] send in
-                // swiftlint:enable closure_parameter_position
-                do {
-                    switch serviceOption {
-                    case .erxTaskRepository, .erxTaskRepositoryAvailable:
-                        let orderResponses = try await redeemOrderService
-                            .redeemViaErxTaskRepository(orderRequests, profileId)
-                        await send(.redeemReceived(.success(orderResponses)))
-                    case .noService, .none:
-                        break
-                    }
-                } catch RedeemServiceError.noTokenAvailable,
-                    RedeemOrderServiceError.redeem(.noTokenAvailable) {
-                    await send(.showCardWall)
-                } catch let RedeemOrderServiceError.redeem(error),
-                            let error as RedeemServiceError {
-                    await send(.redeemReceived(.failure(error)))
+            // swiftlint:enable closure_parameter_position
+            do {
+                switch serviceOption {
+                case .avs:
+                    let orderResponses = try await redeemOrderService.redeemViaAVS(orderRequests, profileId)
+                    await send(.redeemReceived(.success(orderResponses)))
+                case .erxTaskRepository, .erxTaskRepositoryAvailable:
+                    let orderResponses = try await redeemOrderService
+                        .redeemViaErxTaskRepository(orderRequests, profileId)
+                    await send(.redeemReceived(.success(orderResponses)))
+                case .noService, .none:
+                    break
                 }
+            } catch RedeemServiceError.noTokenAvailable,
+                RedeemOrderServiceError.redeem(.noTokenAvailable) {
+                await send(.showCardWall)
+            } catch let RedeemOrderServiceError.redeem(error),
+                        let error as RedeemServiceError {
+                await send(.redeemReceived(.failure(error)))
+            }
             }
         case let .redeemReceived(.success(orderResponses)):
             guard let redeemOption = state.serviceOptionState.selectedOption,
@@ -347,26 +333,23 @@ struct PharmacyRedeemDomain {
                 }
 
                 if state.selectedPrescriptions.isEmpty {
-                    state.destination = .alert(ErpAlertState<Destination.Alert>(
-                        for: error,
-                        title: nil
-                    ) {
+                    state.destination = .alert(ErpAlertState<Destination.Alert>(for: error, actions: {
                         ButtonState(action: .send(.closeRedeem)) {
                             TextState(L10n.phaRedeemBtnPrescriptionAlreadyRedeemedAlertDismiss)
                         }
                         ButtonState(role: .cancel) {
                             TextState(L10n.amgBtnAlertCancel)
                         }
-                    })
+                    }))
                 } else {
-                    state.destination = .alert(ErpAlertState(for: error, title: nil) {
+                    state.destination = .alert(ErpAlertState(for: error, actions: {
                         ButtonState(action: .send(.retryRedeem)) {
                             TextState(L10n.phaRedeemBtnPrescriptionAlreadyRedeemedAlertProceedWithout)
                         }
                         ButtonState(role: .cancel) {
                             TextState(L10n.amgBtnAlertCancel)
                         }
-                    })
+                    }))
                 }
             } else {
                 state.destination = .alert(.init(for: error))
@@ -412,10 +395,7 @@ struct PharmacyRedeemDomain {
             state.destination = .prescriptionSelection(PharmacyPrescriptionSelectionDomain
                 .State(prescriptions: state.$prescriptions,
                        selectedPrescriptions: state.$selectedPrescriptions,
-                       profile: state.profile,
-                       // T-Prescription Warning within the subscreen is only visible if shipment is an option
-                       selectedOption: state.serviceOptionState.availableOptions.contains(.shipment) ? state
-                           .serviceOptionState.selectedOption : nil))
+                       profile: state.profile))
             return .none
         case .resetNavigation:
             state.destination = nil
@@ -505,7 +485,7 @@ extension PharmacyRedeemDomain {
 
 extension ErxPatient {
     func shipmentInfo(with identifier: UUID = UUID()) -> ShipmentInfo {
-        guard let address else {
+        guard let address = address else {
             return ShipmentInfo(name: name)
         }
         var street: String?
@@ -626,6 +606,4 @@ extension PharmacyRedeemDomain {
     }
 }
 
-extension PharmacyRedeemDomain.Destination.State: Equatable {}
-extension PharmacyRedeemDomain.Destination.Action: Equatable {}
 // swiftlint:enable type_body_length file_length

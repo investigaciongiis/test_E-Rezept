@@ -32,17 +32,17 @@ import Nimble
 import XCTest
 
 final class DefaultPrescriptionRepositoryTests: XCTestCase {
-    var loginHandler: LoginHandlerMock!
+    var loginHandler: MockLoginHandler!
 
     override func setUp() {
         super.setUp()
 
-        loginHandler = LoginHandlerMock()
+        loginHandler = MockLoginHandler()
     }
 
     func testLoadLocal() {
         let sut = DefaultPrescriptionRepository(
-            loginHandler: LoginHandlerMock()
+            loginHandler: MockLoginHandler()
         )
 
         withDependencies {
@@ -74,9 +74,7 @@ final class DefaultPrescriptionRepositoryTests: XCTestCase {
             loginHandler: loginHandler
         )
 
-        loginHandler
-            .isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(LoginResult.success(true))
-            .eraseToAnyPublisher()
+        loginHandler.isAuthenticatedReturnValue = Just(LoginResult.success(true)).eraseToAnyPublisher()
 
         withDependencies { dependencies in
             dependencies.erxTaskRepository.loadRemoteAllTasks = { _, _ in
@@ -109,9 +107,7 @@ final class DefaultPrescriptionRepositoryTests: XCTestCase {
             loginHandler: loginHandler
         )
 
-        loginHandler
-            .isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(LoginResult.success(false))
-            .eraseToAnyPublisher()
+        loginHandler.isAuthenticatedReturnValue = Just(LoginResult.success(false)).eraseToAnyPublisher()
 
         withDependencies { dependencies in
             dependencies.erxTaskRepository.loadRemoteAllTasks = { _, _ in
@@ -139,9 +135,7 @@ final class DefaultPrescriptionRepositoryTests: XCTestCase {
                 loginHandler: loginHandler
             )
 
-            loginHandler
-                .isAuthenticatedAnyPublisherResultBoolLoginHandlerErrorNeverReturnValue = Just(LoginResult
-                    .success(true)).eraseToAnyPublisher()
+            loginHandler.isAuthenticatedReturnValue = Just(LoginResult.success(true)).eraseToAnyPublisher()
 
             var isActiveResult: [Bool] = []
             // when

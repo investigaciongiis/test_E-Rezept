@@ -34,7 +34,7 @@ extension AlertState {
         let resultTitle: () -> TextState
         let resultDescription: () -> TextState
 
-        if let title {
+        if let title = title {
             resultTitle = title
             resultDescription = { TextState(error.descriptionAndSuggestionWithErrorList) }
         } else {
@@ -139,13 +139,11 @@ public enum ErpAlertState<Action: Equatable>: Equatable {
         message: StringAsset? = nil
     ) {
         if let message {
-            self = .info(
-                .init(
-                    title: { TextState(title) },
-                    actions: actions,
-                    message: { TextState(message) } // swiftlint:disable:this trailing_closure
-                )
-            )
+            self = .info(.init(
+                title: { TextState(title) },
+                actions: actions,
+                message: { TextState(message) }
+            ))
         } else {
             self = .info(.init(
                 title: {
@@ -182,5 +180,26 @@ public enum ErpAlertState<Action: Equatable>: Equatable {
                 alertState: alertState.map { $0.map { pullback($0) } }
             )
         }
+    }
+}
+
+import SwiftUI
+
+extension View {
+    /// Displays an alert when then store's state becomes non-`nil`, and dismisses it when it becomes
+    /// `nil`.
+    ///
+    /// - Parameters:
+    ///   - store: A store that is focused on ``PresentationState`` and ``PresentationAction`` for an
+    ///     alert.
+    ///   - toDestinationState: A transformation to extract alert state from the presentation state.
+    ///   - fromDestinationAction: A transformation to embed alert actions into the presentation
+    ///     action.
+    @ViewBuilder public func alert<State, Action, ButtonAction>(
+        _ store: Store<PresentationState<State>, PresentationAction<Action>>,
+        state toDestinationState: @escaping (State) -> ErpAlertState<ButtonAction>?,
+        action fromDestinationAction: @escaping (ButtonAction) -> Action
+    ) -> some View {
+        alert(store: store, state: { toDestinationState($0)?.alert }, action: fromDestinationAction)
     }
 }

@@ -31,7 +31,7 @@ public struct OrderHealthCardDomain {
     /// Initializes a new OrderHealthCardDomain
     public init() {}
     /// Destination states for navigation from order screen
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     public enum Destination {
         // sourcery: AnalyticsScreen = contactInsuranceCompany_selectReason
         /// Navigate to service inquiry
@@ -62,9 +62,7 @@ public struct OrderHealthCardDomain {
         case pin
         case healthCardAndPin
 
-        public var id: Int {
-            rawValue
-        }
+        public var id: Int { rawValue }
     }
 
     /// Actions that can be performed in the order domain
@@ -88,7 +86,7 @@ public struct OrderHealthCardDomain {
     public var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -244,6 +242,3 @@ extension OrderHealthCardDomain {
         }
     }
 }
-
-extension OrderHealthCardDomain.Destination.State: Equatable {}
-extension OrderHealthCardDomain.Destination.Action: Equatable {}

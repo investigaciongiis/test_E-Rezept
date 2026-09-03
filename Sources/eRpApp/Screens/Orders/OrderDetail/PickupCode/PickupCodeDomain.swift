@@ -57,7 +57,7 @@ struct PickupCodeDomain {
     @Dependency(\.matrixCodeGenerator) var matrixCodeGenerator: MatrixCodeGenerator
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
     }
 
     private func core(state: inout State, action: Action) -> Effect<Action> {

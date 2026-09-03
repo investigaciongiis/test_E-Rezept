@@ -47,9 +47,7 @@ public struct SearchBar: View {
         HStack {
             TextField(text: $searchText) {
                 Text(prompt)
-                    .foregroundColor(Colors.systemLabelSecondary)
             }
-            .foregroundColor(Colors.systemLabel)
             .onSubmit(onSubmit)
             .submitLabel(.go)
             .padding(7)
@@ -74,7 +72,7 @@ public struct SearchBar: View {
                     // X button
                     if isEditing, !searchText.isEmpty {
                         Button(
-                            action: { searchText = "" },
+                            action: { self.searchText = "" },
                             label: {
                                 Image(systemName: SFSymbolName.xmarkCircleFill)
                                     .foregroundColor(Colors.systemGray)
@@ -94,8 +92,8 @@ public struct SearchBar: View {
                 Button(
                     action: {
                         withAnimation {
-                            isEditing = false
-                            searchText = ""
+                            self.isEditing = false
+                            self.searchText = ""
                         }
                         isEditing = false
                     },

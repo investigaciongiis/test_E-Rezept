@@ -31,7 +31,6 @@ struct PharmacyPrescriptionSelectionDomain {
     struct State: Equatable {
         @Shared var prescriptions: [Prescription]
         @Shared var selectedPrescriptions: [Prescription]
-        var selectedOption: RedeemOption?
 
         // copy to enable discarding the changes
         var selectedPrescriptionsCopy: [Prescription]
@@ -41,14 +40,12 @@ struct PharmacyPrescriptionSelectionDomain {
         init(
             prescriptions: Shared<[Prescription]>,
             selectedPrescriptions: Shared<[Prescription]>,
-            profile: Profile? = nil,
-            selectedOption: RedeemOption?
+            profile: Profile? = nil
         ) {
             _prescriptions = prescriptions
             _selectedPrescriptions = selectedPrescriptions
             selectedPrescriptionsCopy = selectedPrescriptions.wrappedValue
             self.profile = profile
-            self.selectedOption = selectedOption
         }
 
         var allPrescriptionsSelected: Bool {
@@ -77,49 +74,47 @@ struct PharmacyPrescriptionSelectionDomain {
     @Dependency(\.prescriptionRepository) var prescriptionRepository: PrescriptionRepository
     @Dependency(\.schedulers) var schedulers
 
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .updateRedeemablePrescriptions:
-                return .publisher(
-                    prescriptionRepository.loadLocal(for: state.profileId)
-                        .first()
-                        .receive(on: schedulers.main.animation())
-                        .catchToPublisher()
-                        .map { Action.response(.loadLocalPrescriptionsReceived($0)) }
-                        .eraseToAnyPublisher
-                )
-            case let .didSelect(taskID):
-                if let prescriptions = state.prescriptions.first(where: { $0.id == taskID }) {
-                    if let index = state.selectedPrescriptionsCopy.firstIndex(where: { $0.id == taskID }) {
-                        state.selectedPrescriptionsCopy.remove(at: index)
-                    } else {
-                        state.selectedPrescriptionsCopy.append(prescriptions)
-                    }
-                }
-                return .none
-            case .selectAllPrescriptionsButtonTapped:
-                if state.allPrescriptionsSelected {
-                    // Deselect all selected prescriptions
-                    state.selectedPrescriptionsCopy.removeAll()
+    func reduce(into state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .updateRedeemablePrescriptions:
+            return .publisher(
+                prescriptionRepository.loadLocal(for: state.profileId)
+                    .first()
+                    .receive(on: schedulers.main.animation())
+                    .catchToPublisher()
+                    .map { Action.response(.loadLocalPrescriptionsReceived($0)) }
+                    .eraseToAnyPublisher
+            )
+        case let .didSelect(taskID):
+            if let prescriptions = state.prescriptions.first(where: { $0.id == taskID }) {
+                if let index = state.selectedPrescriptionsCopy.firstIndex(where: { $0.id == taskID }) {
+                    state.selectedPrescriptionsCopy.remove(at: index)
                 } else {
-                    // Add prescriptions to selection that are not already selected
-                    let prescriptionsToSelect = state.prescriptions.filter { prescription in
-                        !state.selectedPrescriptionsCopy.contains { $0.id == prescription.id }
-                    }
-                    state.selectedPrescriptionsCopy.append(contentsOf: prescriptionsToSelect)
+                    state.selectedPrescriptionsCopy.append(prescriptions)
                 }
-                return .none
-            case let .response(.loadLocalPrescriptionsReceived(.success(prescriptions))):
-                state.$prescriptions.withLock { $0 = prescriptions.filter(\.isPharmacyRedeemable) }
-                return .none
-            case .response(.loadLocalPrescriptionsReceived(.failure)):
-                return .none
-            case let .saveSelection(prescriptions):
-                state.$selectedPrescriptions.withLock { $0 = prescriptions }
-                return .run { _ in
-                    await dismiss()
+            }
+            return .none
+        case .selectAllPrescriptionsButtonTapped:
+            if state.allPrescriptionsSelected {
+                // Deselect all selected prescriptions
+                state.selectedPrescriptionsCopy.removeAll()
+            } else {
+                // Add prescriptions to selection that are not already selected
+                let prescriptionsToSelect = state.prescriptions.filter { prescription in
+                    !state.selectedPrescriptionsCopy.contains(where: { $0.id == prescription.id })
                 }
+                state.selectedPrescriptionsCopy.append(contentsOf: prescriptionsToSelect)
+            }
+            return .none
+        case let .response(.loadLocalPrescriptionsReceived(.success(prescriptions))):
+            state.$prescriptions.withLock { $0 = prescriptions.filter(\.isPharmacyRedeemable) }
+            return .none
+        case .response(.loadLocalPrescriptionsReceived(.failure)):
+            return .none
+        case let .saveSelection(prescriptions):
+            state.$selectedPrescriptions.withLock { $0 = prescriptions }
+            return .run { _ in
+                await dismiss()
             }
         }
     }
@@ -130,8 +125,7 @@ extension PharmacyPrescriptionSelectionDomain {
         static let state = State(
             prescriptions: Shared(value: [Prescription.Dummies.prescriptionReady]),
             selectedPrescriptions: Shared(value: []),
-            profile: Profile(name: "Marta Maquise"),
-            selectedOption: nil
+            profile: Profile(name: "Marta Maquise")
         )
 
         static let store = Store(

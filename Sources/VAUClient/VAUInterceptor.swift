@@ -61,12 +61,12 @@ public class VAUInterceptor: Interceptor {
         do {
             // Prepare outer request (encrypt original request and embed it into a new one)
             // [REQ:gemSpec_Krypt:A_20161-01#3] Encapsulate "real" HTTPRequest into VAU envelop
-            (vauCrypto, vauRequest) = try await VAUInterceptor.processToVauRequest(
+            (vauCrypto, vauRequest) = try VAUInterceptor.processToVauRequest(
                 urlRequest: request,
                 vauCryptoProvider: vauCryptoProvider,
-                vauEndPoint: vauEndPoint,
-                bearerToken: vauBearerToken,
-                vauCertificate: vauCertificate
+                vauEndPoint: try await vauEndPoint,
+                bearerToken: try await vauBearerToken,
+                vauCertificate: try await vauCertificate
             )
         } catch {
             throw HTTPClientError.vauError(error)
@@ -140,11 +140,10 @@ extension VAUInterceptor {
 
 extension Publisher where Output == HTTPResponse, Failure == HTTPClientError {
     func handleUserPseudonym(vauEndpointHandler: VAUEndpointHandler) -> AnyPublisher<HTTPResponse, HTTPClientError> {
-        handleEvents(
+        handleEvents( // swiftlint:disable:this trailing_closure
             receiveOutput: { httpResponse in
                 vauEndpointHandler.didReceiveUserPseudonym(in: httpResponse)
-            },
-            receiveRequest: nil
+            }
         )
         .eraseToAnyPublisher()
     }
@@ -174,6 +173,7 @@ extension VAUInterceptor {
         }
         let extracted = httpResponse.data
         let decrypted = try vauCrypto.decrypt(data: extracted)
-        return try decrypted.decodeToHTTPResponse(url: originalUrl)
+        let decoded = try decrypted.decodeToHTTPResponse(url: originalUrl)
+        return decoded
     }
 }

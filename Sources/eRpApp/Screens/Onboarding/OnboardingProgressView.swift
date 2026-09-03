@@ -28,9 +28,7 @@ enum ProgressIndicator: CaseIterable, Equatable, Identifiable {
     case second
     case third
 
-    var id: Self {
-        self
-    }
+    var id: Self { self }
 
     var name: String {
         switch self {

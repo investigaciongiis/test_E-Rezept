@@ -22,6 +22,7 @@
 
 import Combine
 import IDP
+import OpenSSL
 
 public class DummySecureEnclaveSignatureProvider: SecureEnclaveSignatureProvider {
     public init() {}
@@ -32,7 +33,7 @@ public class DummySecureEnclaveSignatureProvider: SecureEnclaveSignatureProvider
         throw SecureEnclaveSignatureProviderError.packagingAuthCertificate
     }
 
-    public func signPairingSession(_: PairingSession, with _: JWTSigner, certificate _: IDPX509)
+    public func signPairingSession(_: PairingSession, with _: JWTSigner, certificate _: X509)
         -> AnyPublisher<RegistrationData, SecureEnclaveSignatureProviderError> {
         Fail(error: SecureEnclaveSignatureProviderError.packagingAuthCertificate).eraseToAnyPublisher()
     }

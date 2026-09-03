@@ -23,9 +23,12 @@
 
 import eRpKit
 
-// swiftformat:disable emptyExtensions
+// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
+
 // sourcery:begin: AutoMockable
+// sourcery:end
+
+// sourcery:begin: ProtocolMock
 extension ErxLocalDataStore {}
 extension ErxRemoteDataStore {}
 // sourcery:end
-// swiftformat:enable emptyExtensions

@@ -20,7 +20,6 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
-import eRpResources
 import eRpStyleKit
 import SwiftUI
 import SwiftUIIntrospect
@@ -33,9 +32,7 @@ struct PharmacyFilterBar<FilterType: Identifiable>: View {
     var elements: [Filter]
 
     struct Filter: Identifiable {
-        var id: FilterType.ID {
-            element.id
-        }
+        var id: FilterType.ID { element.id }
 
         let element: FilterType
         let key: LocalizedStringKey
@@ -46,41 +43,34 @@ struct PharmacyFilterBar<FilterType: Identifiable>: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack {
                 Button(action: openFiltersAction) {
-                    HStack(spacing: 4) {
-                        Image(systemName: SFSymbolName.filter)
-                            .font(.footnote)
-
+                    Label(title: {
                         Text(L10n.phaSearchBtnFilterTitle)
-                            .font(.subheadline)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .foregroundColor(Colors.systemLabelSecondary)
-                    .background(Colors.systemBackground)
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Colors.systemLabelSecondary, lineWidth: 1)
-                    )
+                    }, icon: {
+                        Image(systemName: SFSymbolName.filter)
+                    })
+                        .padding(EdgeInsets(top: 7, leading: 8, bottom: 7, trailing: 8))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(Colors.primary)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
                 }
                 .accessibility(identifier: A11y.pharmacySearch.phaFilterOpenFilter)
 
-                ForEach(elements) { element in
-                    FilterChip(
-                        title: element.key,
-                        style: .dismissible
-                    ) {
-                        removeFilter(element)
+                if elements.isEmpty {
+                    Spacer()
+                } else {
+                    ForEach(elements) { element in
+                        FilterElement(key: element.key,
+                                      pressedAction: openFiltersAction) {
+                            removeFilter(element)
+                        }
+                        .accessibility(identifier: element.accessibilityIdentifier)
                     }
-                    .accessibility(identifier: element.accessibilityIdentifier)
+                    .accessibilityElement(children: .contain)
+                    .accessibility(identifier: A11y.pharmacySearch.phaFilterFilterList)
                 }
-                .accessibilityElement(children: .contain)
-                .accessibility(identifier: A11y.pharmacySearch.phaFilterFilterList)
             }
-            .padding(8)
-            .background(Colors.systemBackground)
-            .clipShape(Capsule())
-            .padding(.horizontal)
+            .padding(.vertical, 8)
         }
         .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18, .v26)) { scrollView in
             scrollView.clipsToBounds = false
@@ -88,18 +78,30 @@ struct PharmacyFilterBar<FilterType: Identifiable>: View {
         }
         .accessibility(identifier: A11y.pharmacySearch.phaFilterBar)
         .tint(Colors.primary)
-        .preventSnapshotClipping()
     }
-}
 
-extension View {
-    /// This is a workaround to prevent the filter bar from being clipped when it is placed in a scroll view.
-    func preventSnapshotClipping() -> some View {
-        #if DEBUG
-        offset(x: 0, y: 1)
-        #else
-        return self
-        #endif
+    struct FilterElement: View {
+        let key: LocalizedStringKey
+        let pressedAction: () -> Void
+        let closeButtonAction: () -> Void
+
+        var body: some View {
+            HStack {
+                Button(action: pressedAction) {
+                    Text(key, bundle: .module)
+                }
+
+                Button(action: closeButtonAction) {
+                    Image(systemName: SFSymbolName.crossIconFill)
+                }
+                .foregroundColor(Colors.systemLabelSecondary)
+            }
+            .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+            .foregroundColor(Colors.systemLabel)
+            .font(.subheadline)
+        }
     }
 }
 

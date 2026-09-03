@@ -23,17 +23,6 @@
 import eRpKit
 import Foundation
 import ModelsR4
-import Sharing
-
-extension SharedReaderKey
-    where Self == AppStorageKey<Bool>.Default {
-    /// A key to determine whether the app should use the 1.5 workflow for sending communications. This is intended for
-    /// usage on test systems that already implement workflow 1.5 whereas production systems still use 1.4. As soon as
-    /// production uses workflow 1.5, this key should be removed.
-    public static var useWorkflow16ForSending: Self {
-        Self[.appStorage("use_workflow_1_5_for_sending_communications"), default: false]
-    }
-}
 
 extension ErxTaskOrder {
     func asCommunicationResource(
@@ -52,14 +41,11 @@ extension ErxTaskOrder {
     }
 
     private func createFHIRCommunication() throws -> Communication {
-        @Shared(.useWorkflow16ForSending) var useWorkflow16: Bool
-
-        // Use this from 01.07.2026
-        // return try createFHIRCommunication(version: .v1_6_1)
-        return try createFHIRCommunication(version: useWorkflow16 ? .v1_6_1 : .v1_5_2)
+        try createFHIRCommunication1_5()
     }
 
-    private func createFHIRCommunication(version: Workflow.Version) throws -> Communication {
+    private func createFHIRCommunication1_5() throws -> Communication {
+        let version = Workflow.Version.v1_5_2
         guard let communicationDispReq = Workflow.Key.communicationDispReq[version]?
             .asFHIRCanonicalPrimitive(for: version.majorMinor) else {
             throw ErxTaskOrder.Error.unableToConstructCommunicationRequest
@@ -68,7 +54,7 @@ extension ErxTaskOrder {
         let reference = Reference(reference: taskIdAndAccessCode.asFHIRStringPrimitive())
         let payloadString = payload?.asJsonString().asFHIRStringPrimitive()
         var payload: [CommunicationPayload]? // swiftlint:disable:this discouraged_optional_collection
-        if let payloadString {
+        if let payloadString = payloadString {
             payload = [CommunicationPayload(content: .string(payloadString))]
         }
         let telematikUri = Workflow.Key.telematikIdKeys[version]?.asFHIRURIPrimitive()

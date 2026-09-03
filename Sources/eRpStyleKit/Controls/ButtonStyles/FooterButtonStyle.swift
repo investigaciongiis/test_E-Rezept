@@ -40,9 +40,7 @@ extension ButtonStyle where Self == FooterButtonStyle {
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View.buttonStyle(.footer)`` modifier.
-    public static var footer: FooterButtonStyle {
-        FooterButtonStyle()
-    }
+    public static var footer: FooterButtonStyle { FooterButtonStyle() }
 }
 
 // swiftlint:disable:next type_name

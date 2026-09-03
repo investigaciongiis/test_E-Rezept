@@ -26,8 +26,8 @@ import ModelsR4
 
 extension ModelsR4.Bundle {
     func parseErxAuditEventsContainer() throws -> PagedContent<[ErxAuditEvent]> {
-        try PagedContent(content: parseErxAuditEvents(),
-                         next: parseNext())
+        PagedContent(content: try parseErxAuditEvents(),
+                     next: parseNext())
     }
 
     func parseNext() -> URL? {

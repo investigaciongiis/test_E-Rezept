@@ -65,7 +65,7 @@ class ChangeableUserSessionContainer: UsersSessionContainer {
                 .combineLatest(userStore.configuration)
                 .dropFirst()
                 .compactMap { uuid, config in
-                    guard let uuid else {
+                    guard let uuid = uuid else {
                         return nil
                     }
                     return (uuid, config)

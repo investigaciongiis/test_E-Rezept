@@ -115,8 +115,9 @@ struct RegisterAuthenticationDomain {
                 hapticFeedback.success()
                 return .run { [timeout = state.timeout] send in
                     try await schedulers.main.sleep(for: timeout)
-                    await send(.delegate(.nextPage), animation: .default)
+                    await send(.delegate(.nextPage))
                 }
+                .animation()
             }
             return .none
         case .delegate(.showRegisterPassword):

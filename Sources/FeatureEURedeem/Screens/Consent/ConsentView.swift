@@ -21,7 +21,6 @@
 //
 
 import ComposableArchitecture
-import eRpResources
 import eRpStyleKit
 import SwiftUI
 
@@ -33,95 +32,66 @@ public struct ConsentView: View {
     }
 
     public var body: some View {
-        VStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Content
+        ZStack {
+            Color.white.ignoresSafeArea()
+            VStack(spacing: 0) {
+                // Content
+                VStack(alignment: .leading, spacing: 24) {
+                    Text(L10n.euredeemConsentTitle)
+                        .font(.title.weight(.bold))
+                        .foregroundColor(Colors.systemLabel)
+                        .padding(.bottom, 8)
+                        .accessibilityIdentifier("eu_consent_title")
+
                     VStack(alignment: .leading, spacing: 24) {
-                        Text(L10n.euredeemConsentTitle)
-                            .font(.title.weight(.bold))
-                            .foregroundColor(Colors.systemLabel)
-                            .padding(.bottom, 8)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityIdentifier(A11y.redeem.eu.consent.eurdmTxtConsentTitle)
+                        Text(L10n.euredeemConsentDescription1)
+                            .font(.subheadline)
+                            .foregroundColor(Colors.systemLabelSecondary)
+                            .accessibilityIdentifier("eu_consent_description_1")
 
-                        VStack(alignment: .leading, spacing: 24) {
-                            Text(L10n.euredeemConsentDescription1)
-                                .font(.subheadline)
-                                .foregroundColor(Colors.systemLabelSecondary)
-                                .accessibilityIdentifier(A11y.redeem.eu.consent.eurdmTxtConsentDescription1)
-
-                            Text(L10n.euredeemConsentDescription2)
-                                .font(.subheadline)
-                                .foregroundColor(Colors.systemLabelSecondary)
-                                .accessibilityIdentifier(A11y.redeem.eu.consent.eurdmTxtConsentDescription2)
-                        }
+                        Text(L10n.euredeemConsentDescription2)
+                            .font(.subheadline)
+                            .foregroundColor(Colors.systemLabelSecondary)
+                            .accessibilityIdentifier("eu_consent_description_2")
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 32)
                 }
-            }
-
-            // Info text
-            let infoText = {
-                switch store.consentType {
-                case .granted:
-                    return L10n.euredeemConsentInfoTextGranted
-                case .notGranted:
-                    return L10n.euredeemConsentInfoTextNotGranted
-                case .unknown:
-                    return L10n.euredeemConsentInfoText
-                }
-            }()
-
-            Text(infoText)
-                .font(.subheadline)
-                .foregroundColor(Colors.systemLabelSecondary)
-                .multilineTextAlignment(.center)
                 .padding(.horizontal)
+                .padding(.top, 32)
+
+                Spacer()
+
+                // Info text
+                Text(L10n.euredeemConsentInfoText)
+                    .font(.subheadline)
+                    .foregroundColor(Colors.systemLabelSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .padding(.bottom, 24)
+                    .accessibilityIdentifier("eu_consent_info_text")
+
+                // Buttons
+                VStack(spacing: 8) {
+                    Button(
+                        action: { store.send(.accept) },
+                        label: {
+                            Text(L10n.euredeemConsentAcceptButton)
+                        }
+                    )
+                    .buttonStyle(.primaryHugging)
+                    .accessibilityIdentifier("eu_consent_accept_button")
+
+                    Button(
+                        action: { store.send(.decline) },
+                        label: {
+                            Text(L10n.euredeemConsentDeclineButton)
+                        }
+                    )
+                    .buttonStyle(.primaryHugging)
+                    .accessibilityIdentifier("eu_consent_decline_button")
+                }
                 .padding(.bottom, 24)
-                .accessibilityIdentifier(A11y.redeem.eu.consent.eurdmTxtConsentInfo)
-
-            // Buttons
-            VStack(spacing: 8) {
-                Button(
-                    action: { store.send(.accept) },
-                    label: {
-                        Text(L10n.euredeemConsentAcceptButton)
-                    }
-                )
-                .buttonStyle(.primary(
-                    isEnabled: store.consentType != .granted,
-                    width: .wideHugging
-                ))
-                .disabled(store.consentType == .granted)
-                .accessibilityIdentifier(A11y.redeem.eu.consent.eurdmBtnConsentAccept)
-
-                Button(
-                    action: { store.send(.decline) },
-                    label: {
-                        Text(L10n.euredeemConsentDeclineButton)
-                    }
-                )
-                .buttonStyle(.primary(
-                    isEnabled: store.consentType != .notGranted,
-                    width: .wideHugging
-                ))
-                .disabled(store.consentType == .notGranted)
-                .accessibilityIdentifier(A11y.redeem.eu.consent.eurdmBtnConsentDecline)
             }
-            .padding(.bottom, 24)
         }
-        .navigationBarItems(
-            trailing: Button {
-                store.send(.delegate(.close))
-            } label: {
-                Text(L10n.navCancel)
-            }
-            .accessibility(identifier: A11y.redeem.eu.consent.eurdmBtnConsentAbort)
-            .accessibility(label: Text(L10n.euredeemConsentAbortButton))
-        )
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
     }
 }
 

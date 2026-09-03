@@ -30,7 +30,7 @@ import HTTPClient
 struct DebugLogsDomain {
     enum Token: CaseIterable, Hashable {}
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         case share(ShareSheetDomain)
         case logDetail(DebugLogDomain)
@@ -49,9 +49,7 @@ struct DebugLogsDomain {
         var filter: String = ""
 
         enum Sort: String, Equatable, CaseIterable, Identifiable {
-            var id: Sort {
-                self
-            }
+            var id: Sort { self }
 
             case byNameAsc = "by name ↑"
             case byNameDesc = "by name ↓"
@@ -75,7 +73,7 @@ struct DebugLogsDomain {
         mutating func updateLogs(from store: DebugLiveLogger) {
             var logs = store.requests
 
-            let filter = filter.lowercased()
+            let filter = self.filter.lowercased()
 
             if filter.lengthOfBytes(using: .utf8) > 0 {
                 logs = logs.filter { $0.requestUrl.lowercased().contains(filter) }
@@ -129,7 +127,7 @@ struct DebugLogsDomain {
 
     var body: some ReducerOf<DebugLogsDomain> {
         BindingReducer()
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 }
@@ -159,7 +157,7 @@ extension DebugLogsDomain {
             var request = URLRequest(url: URL(string: "http://google.com")!)
             request.setValue("12345", forHTTPHeaderField: "X-api-key")
             let response: HTTPResponse = (
-                data: Data("abcdef".utf8),
+                data: "abcdef".data(using: .utf8)!,
                 response: HTTPURLResponse(
                     url: URL(string: "http://google.com")!,
                     statusCode: 200,
@@ -181,7 +179,7 @@ extension DebugLogsDomain {
             var request = URLRequest(url: URL(string: "http://google.com")!)
             request.setValue("12345", forHTTPHeaderField: "X-api-key")
             let response: HTTPResponse = (
-                data: Data("abcdef".utf8),
+                data: "abcdef".data(using: .utf8)!,
                 response: HTTPURLResponse(
                     url: URL(string: "http://google.com")!,
                     statusCode: HTTPStatusCode.found.rawValue,
@@ -203,7 +201,7 @@ extension DebugLogsDomain {
             var request = URLRequest(url: URL(string: "http://google.com")!)
             request.setValue("12345", forHTTPHeaderField: "X-api-key")
             let response: HTTPResponse = (
-                data: Data("abcdef".utf8),
+                data: "abcdef".data(using: .utf8)!,
                 response: HTTPURLResponse(
                     url: URL(string: "http://google.com")!,
                     statusCode: HTTPStatusCode.forbidden.rawValue,
@@ -251,8 +249,4 @@ extension DebugLogsDomain {
         // swiftlint:enable force_unwrapping
     }
 }
-
-extension DebugLogsDomain.Destination.State: Equatable {}
-extension DebugLogsDomain.Destination.Action: Equatable {}
-
 #endif

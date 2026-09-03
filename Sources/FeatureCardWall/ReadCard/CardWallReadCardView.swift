@@ -41,7 +41,6 @@ public struct CardWallReadCardView: View {
                     .padding(.bottom, 8)
                     .padding(.top, 48)
                     .padding(.horizontal)
-                    .accessibilityAddTraits(.isHeader)
 
                 Text(L10n.cdwTxtRcSubheadline)
                     .font(.subheadline)
@@ -94,14 +93,14 @@ public struct CardWallReadCardView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
                 })
-                .fullScreenCover(item: $store
-                    .scope(state: \.destination?.help, action: \.destination.help)) { store in
-                        NavigationStack {
-                            ReadCardHelpView(store: store)
-                        }
-                        .tint(Colors.primary700)
-                        .navigationViewStyle(StackNavigationViewStyle())
-                }
+                    .fullScreenCover(item: $store
+                        .scope(state: \.destination?.help, action: \.destination.help)) { store in
+                            NavigationStack {
+                                ReadCardHelpView(store: store)
+                            }
+                            .tint(Colors.primary700)
+                            .navigationViewStyle(StackNavigationViewStyle())
+                    }
             }
         }
         .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))

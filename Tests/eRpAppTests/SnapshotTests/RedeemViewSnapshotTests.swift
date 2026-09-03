@@ -43,14 +43,7 @@ final class RedeemViewSnapshotTests: ERPSnapshotTestCase {
                 initialState: .init(
                     type: .erxTask,
                     erxTasks: [ErxTask.Demo.erxTask1],
-                    groupedLoadingState: .value(.init(uniqueElements: [
-                        MatrixCodeDomain.State.IdentifiedImage(
-                            identifier: UUID(),
-                            image: Asset.qrcode.image,
-                            chunk: [ErxTask.Demo.erxTask1]
-                        ),
-                    ])),
-                    singleLoadingState: .value(.init(uniqueElements: [
+                    loadingState: .value(.init(uniqueElements: [
                         MatrixCodeDomain.State.IdentifiedImage(
                             identifier: UUID(),
                             image: Asset.qrcode.image,
@@ -73,14 +66,7 @@ final class RedeemViewSnapshotTests: ERPSnapshotTestCase {
                 initialState: .init(
                     type: .erxTask,
                     erxTasks: [ErxTask.Demo.erxTask1],
-                    groupedLoadingState: .value(.init(uniqueElements: [
-                        MatrixCodeDomain.State.IdentifiedImage(
-                            identifier: UUID(),
-                            image: Asset.qrcode.image,
-                            chunk: [ErxTask.Demo.erxTask1]
-                        ),
-                    ])),
-                    singleLoadingState: .value(.init(uniqueElements: [
+                    loadingState: .value(.init(uniqueElements: [
                         MatrixCodeDomain.State.IdentifiedImage(
                             identifier: UUID(),
                             image: Asset.qrcode.image,
@@ -99,84 +85,30 @@ final class RedeemViewSnapshotTests: ERPSnapshotTestCase {
     }
 
     func testRedeemMatrixCodeMultiplePrescriptionsViewSnapshot() {
-        let groupedImages: [MatrixCodeDomain.State.IdentifiedImage] = [
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [
-                    ErxTask.Demo.erxTask1,
-                    ErxTask.Demo.erxTask2,
-                    ErxTask.Demo.erxTask3,
-                ]
-            ),
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [
-                    ErxTask.Demo.erxTask4,
-                    ErxTask.Demo.erxTask5,
-                ]
-            ),
-        ]
-        let singleImages: [MatrixCodeDomain.State.IdentifiedImage] = ErxTask.Demo.erxTasks.map {
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [$0]
-            )
-        }
         let sut = MatrixCodeView(
             store: StoreOf<MatrixCodeDomain>(
                 initialState: .init(
                     type: .erxTask,
                     erxTasks: ErxTask.Demo.erxTasks,
-                    groupedLoadingState: .value(.init(uniqueElements: groupedImages)),
-                    singleLoadingState: .value(.init(uniqueElements: singleImages))
-                )
-            ) {
-                EmptyReducer()
-            }
-        )
-
-        // View takes current device Size into account, other devices would record wrong representations
-        assertSnapshots(of: sut, as: snapshotModiCurrentDevice())
-    }
-
-    func testRedeemMatrixCodeMultiplePrescriptionsSingleModeViewSnapshot() {
-        let groupedImages: [MatrixCodeDomain.State.IdentifiedImage] = [
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [
-                    ErxTask.Demo.erxTask1,
-                    ErxTask.Demo.erxTask2,
-                    ErxTask.Demo.erxTask3,
-                ]
-            ),
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [
-                    ErxTask.Demo.erxTask4,
-                    ErxTask.Demo.erxTask5,
-                ]
-            ),
-        ]
-        let singleImages: [MatrixCodeDomain.State.IdentifiedImage] = ErxTask.Demo.erxTasks.map {
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [$0]
-            )
-        }
-        let sut = MatrixCodeView(
-            store: StoreOf<MatrixCodeDomain>(
-                initialState: .init(
-                    type: .erxTask,
-                    erxTasks: ErxTask.Demo.erxTasks,
-                    groupedLoadingState: .value(.init(uniqueElements: groupedImages)),
-                    singleLoadingState: .value(.init(uniqueElements: singleImages)),
-                    displayMode: .single
+                    loadingState: .value(.init(uniqueElements: [
+                        MatrixCodeDomain.State.IdentifiedImage(
+                            identifier: UUID(),
+                            image: Asset.qrcode.image,
+                            chunk: [
+                                ErxTask.Demo.erxTask1,
+                                ErxTask.Demo.erxTask2,
+                                ErxTask.Demo.erxTask3,
+                            ]
+                        ),
+                        MatrixCodeDomain.State.IdentifiedImage(
+                            identifier: UUID(),
+                            image: Asset.qrcode.image,
+                            chunk: [
+                                ErxTask.Demo.erxTask4,
+                                ErxTask.Demo.erxTask5,
+                            ]
+                        ),
+                    ]))
                 )
             ) {
                 EmptyReducer()
@@ -193,14 +125,7 @@ final class RedeemViewSnapshotTests: ERPSnapshotTestCase {
                 initialState: .init(
                     type: .erxTask,
                     erxTasks: [ErxTask.Demo.erxTaskSelfPayer],
-                    groupedLoadingState: .value(.init(uniqueElements: [
-                        MatrixCodeDomain.State.IdentifiedImage(
-                            identifier: UUID(),
-                            image: Asset.qrcode.image,
-                            chunk: [ErxTask.Demo.erxTaskSelfPayer]
-                        ),
-                    ])),
-                    singleLoadingState: .value(.init(uniqueElements: [
+                    loadingState: .value(.init(uniqueElements: [
                         MatrixCodeDomain.State.IdentifiedImage(
                             identifier: UUID(),
                             image: Asset.qrcode.image,
@@ -218,45 +143,30 @@ final class RedeemViewSnapshotTests: ERPSnapshotTestCase {
     }
 
     func testRedeemMatrixCodeMultiple_SelfPayerPrescriptionsWarning() {
-        let groupedImages: [MatrixCodeDomain.State.IdentifiedImage] = [
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [
-                    ErxTask.Demo.erxTaskSelfPayer,
-                    ErxTask.Demo.erxTaskSelfPayer,
-                    ErxTask.Demo.erxTaskSelfPayer,
-                ]
-            ),
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [
-                    ErxTask.Demo.erxTaskSelfPayer,
-                    ErxTask.Demo.erxTaskSelfPayer,
-                ]
-            ),
-        ]
-        let singleImages: [MatrixCodeDomain.State.IdentifiedImage] = [
-            ErxTask.Demo.erxTaskSelfPayer,
-            ErxTask.Demo.erxTaskSelfPayer,
-            ErxTask.Demo.erxTaskSelfPayer,
-            ErxTask.Demo.erxTaskSelfPayer,
-            ErxTask.Demo.erxTaskSelfPayer,
-        ].map {
-            MatrixCodeDomain.State.IdentifiedImage(
-                identifier: UUID(),
-                image: Asset.qrcode.image,
-                chunk: [$0]
-            )
-        }
         let sut = MatrixCodeView(
             store: StoreOf<MatrixCodeDomain>(
                 initialState: .init(
                     type: .erxTask,
                     erxTasks: ErxTask.Demo.erxTasks,
-                    groupedLoadingState: .value(.init(uniqueElements: groupedImages)),
-                    singleLoadingState: .value(.init(uniqueElements: singleImages))
+                    loadingState: .value(.init(uniqueElements: [
+                        MatrixCodeDomain.State.IdentifiedImage(
+                            identifier: UUID(),
+                            image: Asset.qrcode.image,
+                            chunk: [
+                                ErxTask.Demo.erxTaskSelfPayer,
+                                ErxTask.Demo.erxTaskSelfPayer,
+                                ErxTask.Demo.erxTaskSelfPayer,
+                            ]
+                        ),
+                        MatrixCodeDomain.State.IdentifiedImage(
+                            identifier: UUID(),
+                            image: Asset.qrcode.image,
+                            chunk: [
+                                ErxTask.Demo.erxTaskSelfPayer,
+                                ErxTask.Demo.erxTaskSelfPayer,
+                            ]
+                        ),
+                    ]))
                 )
             ) {
                 EmptyReducer()

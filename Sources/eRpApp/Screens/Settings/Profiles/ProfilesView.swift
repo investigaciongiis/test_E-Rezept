@@ -33,7 +33,6 @@ struct ProfilesView: View {
             header: {
                 Label(title: {
                     Text(L10n.stgTxtHeaderProfiles)
-                        .accessibilityAddTraits(.isHeader)
                 }, icon: {})
                     .accessibility(identifier: A11y.settings.profiles.stgTxtHeaderProfiles)
             }, content: {
@@ -43,8 +42,8 @@ struct ProfilesView: View {
                     }, label: {
                         SingleProfileView(profile: profile, selectedProfileId: store.selectedProfileId)
                     })
-                    .buttonStyle(.navigation)
-                    .accessibility(identifier: A11y.settings.profiles.stgBtnProfile)
+                        .buttonStyle(.navigation)
+                        .accessibility(identifier: A11y.settings.profiles.stgBtnProfile)
                 }
 
                 .accessibilityElement(children: .contain)
@@ -55,8 +54,8 @@ struct ProfilesView: View {
                 }, label: {
                     Label(L10n.stgBtnAddProfile, systemImage: SFSymbolName.plus)
                 })
-                .buttonStyle(.simple)
-                .accessibility(identifier: A11y.settings.profiles.stgBtnNewProfile)
+                    .buttonStyle(.simple(showSeparator: false))
+                    .accessibility(identifier: A11y.settings.profiles.stgBtnNewProfile)
             }
         )
         .task {
@@ -110,6 +109,6 @@ struct ProfilesView_PreviewProvider: PreviewProvider {
         ) {
             EmptyReducer()
         })
-        .background(Color(.secondarySystemBackground).ignoresSafeArea())
+            .background(Color(.secondarySystemBackground).ignoresSafeArea())
     }
 }

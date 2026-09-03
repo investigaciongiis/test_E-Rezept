@@ -34,7 +34,7 @@ struct PharmacyPrescriptionSelectionView: View {
     var body: some View {
         VStack {
             ScrollView {
-                SingleElementSectionContainer(header: {
+                SectionContainer(header: {
                     if let profile = store.profile {
                         HStack(spacing: 16) {
                             ProfilePictureView(profile: profile)
@@ -64,17 +64,17 @@ struct PharmacyPrescriptionSelectionView: View {
                         store.allPrescriptionsSelected ? L10n
                             .sectionTxtIsActiveValue.text : L10n.sectionTxtIsInactiveValue.text
                     )
-                    .modifier(SectionContainerCellModifier(last: store.prescriptions.isEmpty))
 
                     ForEach(Array(store.prescriptions.enumerated()), id: \.element) { index, prescription in
                         Button(
                             action: { store.send(.didSelect(prescription.id)) },
                             label: {
                                 TitleWithSubtitleCellView(
-                                    prescription: prescription,
-                                    isSelected: store.selectedPrescriptionsCopy.contains(prescription),
-                                    selectedOption: store.selectedOption
+                                    title: prescription.title,
+                                    subtitle: prescription.statusMessage,
+                                    isSelected: store.selectedPrescriptionsCopy.contains(prescription)
                                 )
+                                .multilineTextAlignment(.leading)
                             }
                         )
                         .accessibilityElement(children: .combine)
@@ -82,8 +82,7 @@ struct PharmacyPrescriptionSelectionView: View {
                             store.selectedPrescriptionsCopy.contains(prescription) ? L10n
                                 .sectionTxtIsActiveValue.text : L10n.sectionTxtIsInactiveValue.text
                         )
-                        .modifier(SectionContainerCellModifier(last: index == store.prescriptions.count - 1))
-                        .buttonStyle(.simple)
+                        .buttonStyle(.simple(showSeparator: index != store.prescriptions.count - 1))
                     }
                 })
             }
@@ -101,38 +100,21 @@ struct PharmacyPrescriptionSelectionView: View {
                 }, label: {
                     Text(L10n.phaRedeemTxtSelectedPrescriptionSave)
                 })
-                .accessibility(identifier: A11y.pharmacyPrescriptionList.phaPrescriptionListBtnSave)
+                    .accessibility(identifier: A11y.pharmacyPrescriptionList.phaPrescriptionListBtnSave)
             }
         }
     }
 
     private struct TitleWithSubtitleCellView: View {
-        var prescription: Prescription
-        var title: String {
-            prescription.title
-        }
-
-        var subtitle: String {
-            prescription.statusMessage
-        }
-
+        var title: String
+        var subtitle: String
         var isSelected: Bool
         var imageName: String = SFSymbolName.circle
         var selectedImageName: String = SFSymbolName.checkmarkCircleFill
-        var selectedOption: RedeemOption?
 
         var body: some View {
             Label {
-                VStack(alignment: .leading) {
-                    SubTitle(title: title, description: subtitle)
-                        .multilineTextAlignment(.leading)
-
-                    if let selectedOption, prescription.isTPrescription {
-                        Text(L10n.phaRedeemTxtPrescriptionSelectionTPrescriptionSubtitle)
-                            .font(.subheadline)
-                            .foregroundColor(selectedOption == .shipment ? Colors.yellow800 : Colors.primary)
-                    }
-                }
+                SubTitle(title: title, description: subtitle)
             } icon: {
                 isSelected ? Image(systemName: selectedImageName) : Image(systemName: imageName)
             }

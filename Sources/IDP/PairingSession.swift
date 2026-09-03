@@ -21,6 +21,7 @@
 //
 
 import Foundation
+import OpenSSL
 
 /// Represents a Biometrics PairingSession that may be reset when registration of a biometric key failed.
 public class PairingSession {
@@ -28,6 +29,8 @@ public class PairingSession {
     public let tempKeyIdentifier: Data
     /// Device information containing details about the device being paired
     public let deviceInformation: RegistrationData.DeviceInformation
+    /// The X509 certificate associated with the pairing session
+    public var certificate: X509?
 
     /// Initializes a new PairingSession with the given parameters
     /// - Parameters:

@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 //
 //  Copyright (Change Date see Readme), gematik GmbH
 //
@@ -27,7 +26,6 @@ import ComposableArchitecture
 import eRpKit
 import eRpResources
 import ErxTaskRepository
-import FeatureEURedeem
 import FeatureHelpers
 import FHIRVZD
 import MapKit
@@ -35,9 +33,9 @@ import Pharmacy
 import Settings
 import SwiftUI
 
-@Reducer // swiftlint:disable:next type_body_length
+@Reducer
 struct OrderDetailDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = orders_pickupCode
         case pickupCode(PickupCodeDomain)
@@ -51,10 +49,6 @@ struct OrderDetailDomain {
         // sourcery: AnalyticsScreen = alert
         case alert(ErpAlertState<Alert>)
 
-        case euRevoke
-
-        case euAccessCode(CodeDomain)
-
         enum Alert: Equatable {
             case openMail(message: String)
         }
@@ -62,25 +56,22 @@ struct OrderDetailDomain {
 
     @ObservableState
     struct State: Equatable {
-        var isDeleted = false
+        var order: Order?
         var erxTasks: IdentifiedArrayOf<ErxTask> = []
         var openUrlSheetUrl: URL?
-        @Shared var communicationMessage: CommunicationMessage
-
-        var timelineEntries: [TimelineEntry] {
-            communicationMessage.timelineEntries.updateChipTexts(with: erxTasks.elements)
-        }
-
+        var communicationMessage: CommunicationMessage
+        var timelineEntries: [TimelineEntry]
         @Presents var destination: Destination.State?
-        @Shared(.selectedProfileId) var profileId
 
-        init(communicationMessage: Shared<CommunicationMessage>,
+        init(communicationMessage: CommunicationMessage,
              erxTasks: IdentifiedArrayOf<ErxTask> = [],
              openUrlSheetUrl: URL? = nil,
              destination: Destination.State? = nil) {
-            _communicationMessage = communicationMessage
+            self.communicationMessage = communicationMessage
             self.erxTasks = erxTasks
             self.openUrlSheetUrl = openUrlSheetUrl
+            order = communicationMessage.order
+            timelineEntries = communicationMessage.timelineEntries.sorted { $0.lastUpdated > $1.lastUpdated }
             self.destination = destination
         }
     }
@@ -94,9 +85,7 @@ struct OrderDetailDomain {
         case didSelectMedication(ErxTask)
 
         case showPickupCode(dmcCode: String?, hrCode: String?)
-        case showRevokeSheet
-        case showEuAccessCode
-        case euRevokePermission
+
         case loadAndShowPharmacy
         case showChargeItem(ErxChargeItem)
         case showOpenUrlSheet(url: URL?)
@@ -107,13 +96,12 @@ struct OrderDetailDomain {
         case openPhoneAppWith(url: URL)
         case openMailApp
         case delegate(Delegate)
-        case nothing
+
         case resetNavigation
         case destination(PresentationAction<Destination.Action>)
         case response(Response)
 
         enum Response: Equatable {
-            case euAccessCodeDeletedReceived(Result<Bool, EuRedeemServiceError>)
             case loadAndShowPharmacyReceived(Result<PharmacyLocation, PharmacyRepositoryError>)
             case showAlert(ErpAlertState<Destination.Alert>)
         }
@@ -131,13 +119,13 @@ struct OrderDetailDomain {
     @Dependency(\.openURLHandler) var openURLHandler
     @Dependency(\.dateProvider) var date: () -> Date
     @Dependency(\.currentAppVersion) var version: AppVersion
+    @Dependency(\.userSession) var userSession: UserSession
     @Dependency(\.fhirDateFormatter) var fhirDateFormatter: FHIRDateFormatter
     @Dependency(\.uiDateFormatter) var uiDateFormatter: UIDateFormatter
     @Dependency(\.userDataStore) var userDataStore: UserDataStore
-    @Dependency(\.euRedeemService) var euRedeemService: EuRedeemService
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -159,20 +147,14 @@ struct OrderDetailDomain {
             )
             return .none
         case .didDisplayTimelineEntries:
-            if let euOrder = state.communicationMessage.euOrder {
-                return .run { [euComms = euOrder.communications.elements] _ in
-                    try await setReadState(for: euComms)
-                }
-            }
-
-            if let order = state.communicationMessage.order {
+            if let order = state.order {
                 return .run { [comms = order.communications.elements, chargeItems = order.chargeItems.elements] _ in
-                    try await setReadState(for: comms)
-                    try await setReadState(for: chargeItems)
+                    try await self.setReadState(for: comms)
+                    try await self.setReadState(for: chargeItems)
                 }
             }
 
-            let internalMessages = state.communicationMessage.timelineEntries.compactMap { entry in
+            let internalMessages = state.timelineEntries.compactMap { entry in
                 if case let .internalCommunication(message) = entry {
                     return message
                 }
@@ -183,17 +165,13 @@ struct OrderDetailDomain {
                 .filter { !$0.isRead }
                 .map(\.id)
 
-            for messageId in readMessageIDs {
+            readMessageIDs.forEach { messageId in
                 userDataStore.markInternalCommunicationAsRead(messageId: messageId)
             }
 
             return .none
         case .loadTasks:
-            if let euOrder = state.communicationMessage.euOrder {
-                state.erxTasks = IdentifiedArray(uniqueElements: euOrder.erxTasks.sorted())
-                return .none
-            }
-            guard let order = state.communicationMessage.order else { return .none }
+            guard let order = state.order else { return .none }
             let taskIds = Set(order.communications.map(\.taskId))
             guard !taskIds.isEmpty else {
                 return .none
@@ -201,23 +179,20 @@ struct OrderDetailDomain {
             return loadTasks(taskIds)
         case let .tasksReceived(tasks):
             state.erxTasks = IdentifiedArray(uniqueElements: tasks.sorted())
+            state.timelineEntries = state.timelineEntries.updateChipTexts(with: tasks)
             return .none
         case let .showPickupCode(dmcCode: dmcCode, hrCode: hrCode):
             state.destination = .pickupCode(
-                .init(
-                    pharmacyName: state.communicationMessage.order?.pharmacy?.name,
-                    pickupCodeHR: hrCode,
-                    pickupCodeDMC: dmcCode
-                )
+                .init(pharmacyName: state.order?.pharmacy?.name, pickupCodeHR: hrCode, pickupCodeDMC: dmcCode)
             )
             return .none
         case let .showChargeItem(chargeItem):
             state.destination = .chargeItem(
-                .init(profileId: state.profileId, chargeItem: chargeItem, showRouteToChargeItemListButton: true)
+                .init(profileId: userSession.profileId, chargeItem: chargeItem, showRouteToChargeItemListButton: true)
             )
             return .none
         case .loadAndShowPharmacy:
-            guard let pharmacy = state.communicationMessage.order?.pharmacy else { return .none }
+            guard let pharmacy = state.order?.pharmacy else { return .none }
             return .run { [pharmacy = pharmacy] send in
                 do {
                     let remotePharamcy = try await pharmacyRepository.updateFromRemote(pharmacy.telematikID)
@@ -229,12 +204,8 @@ struct OrderDetailDomain {
         case let .response(.loadAndShowPharmacyReceived(result)):
             switch result {
             case let .success(pharmacy):
-                guard state.communicationMessage.order != nil else { return .none }
-                state.$communicationMessage.withLock {
-                    $0.updateOrder {
-                        Order.lens.pharmacy.set(pharmacy)($0)
-                    }
-                }
+                guard let order = state.order else { return .none }
+                state.order = Order.lens.pharmacy.set(pharmacy)(order)
 
                 state.destination = .pharmacyDetail(
                     PharmacyDetailDomain.State(
@@ -250,14 +221,9 @@ struct OrderDetailDomain {
                 )
             case let .failure(error):
                 state.destination = .alert(.init(for: error))
-                if let pharmacy = state.communicationMessage.order?.pharmacy,
+                if let pharmacy = state.order?.pharmacy, let order = state.order,
                    PharmacyRepositoryError.remote(.notFound) == error {
-                    state.$communicationMessage.withLock {
-                        $0.updateOrder {
-                            Order.lens.pharmacy.set(nil)($0)
-                        }
-                    }
-
+                    state.order = Order.lens.pharmacy.set(nil)(order)
                     return .run { _ in
                         _ = try await pharmacyRepository.delete(pharmacy: pharmacy)
                     }
@@ -269,17 +235,19 @@ struct OrderDetailDomain {
             return .none
         case let .openUrl(url: url):
             return .run { send in
-                guard let url else { return }
-
-                if await !openURLHandler.open(url) {
+                guard let url = url else { return }
+                guard await openURLHandler.canOpenURL(url) else {
                     await send(.response(.showAlert(Self.openUrlAlertState(for: url))))
+                    return
                 }
+
+                await openURLHandler.open(url)
             }
         case let .openMail(message),
              let .destination(.presented(.alert(.openMail(message)))):
             state.destination = nil
             return .run { send in
-                guard let url = Self.createEmailUrl(
+                if let url = Self.createEmailUrl(
                     to: L10n.ordDetailTxtEmailSupport.text,
                     subject: L10n.ordDetailTxtMailSubject.text,
                     body: Self.eMailBody(
@@ -288,12 +256,9 @@ struct OrderDetailDomain {
                         deviceInfo: deviceInfo,
                         version: version.productVersion.description
                     )
-                ) else {
-                    await send(.response(.showAlert(Self.openMailAlertState)))
-                    return
-                }
-                let isOpenURLSuccessfull = await openURLHandler.open(url)
-                if !isOpenURLSuccessfull {
+                ), await openURLHandler.canOpenURL(url) {
+                    await openURLHandler.open(url)
+                } else {
                     await send(.response(.showAlert(Self.openMailAlertState)))
                 }
             }
@@ -301,7 +266,7 @@ struct OrderDetailDomain {
             state.openUrlSheetUrl = url
             return .none
         case .openMapApp:
-            guard let pharmacy = state.communicationMessage.order?.pharmacy,
+            guard let pharmacy = state.order?.pharmacy,
                   let longitude = pharmacy.position?.longitude?.doubleValue,
                   let latitude = pharmacy.position?.latitude?.doubleValue else {
                 return .none
@@ -313,56 +278,25 @@ struct OrderDetailDomain {
             mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
             return .none
         case .openPhoneApp:
-            guard let phone = state.communicationMessage.order?.pharmacy?.telecom?.phone,
+            guard let phone = state.order?.pharmacy?.telecom?.phone,
                   let url = URL(phoneNumber: phone) else {
                 return .none
             }
             return .run { _ in
-                _ = await openURLHandler.open(url)
+                await openURLHandler.open(url)
             }
         case let .openPhoneAppWith(url: url):
             return .run { _ in
-                _ = await openURLHandler.open(url)
+                await openURLHandler.open(url)
             }
         case .openMailApp:
-            guard let email = state.communicationMessage.order?.pharmacy?.telecom?.email,
+            guard let email = state.order?.pharmacy?.telecom?.email,
                   let url = Self.createEmailUrl(to: email) else {
                 return .none
             }
             return .run { _ in
-                _ = await openURLHandler.open(url)
+                await openURLHandler.open(url)
             }
-        case .showRevokeSheet:
-            state.destination = .euRevoke
-            return .none
-        case .showEuAccessCode:
-            guard let euAccessCode = state.communicationMessage.euOrder?.euAccessCode,
-                  let countryCode = state.communicationMessage.euOrder?.euAccessCode?.countryCode else {
-                return .none
-            }
-            state.destination = .euAccessCode(.init(euAccessCode: euAccessCode,
-                                                    countryCode: countryCode,
-                                                    isLoading: false))
-            return .none
-        case .euRevokePermission:
-            return .run { [profileId = state.profileId] send in
-                do {
-                    try await euRedeemService.deleteEuAccessCode(
-                        profileId: profileId
-                    )
-                    await send(.response(.euAccessCodeDeletedReceived(.success(true))))
-                } catch let error as EuRedeemServiceError {
-                    await send(.response(.euAccessCodeDeletedReceived(.failure(error))))
-                }
-            }
-        case let .response(.euAccessCodeDeletedReceived(result)):
-            switch result {
-            case .success:
-                state.isDeleted = true
-            case let .failure(error):
-                state.destination = .alert(.init(for: error))
-            }
-            return .none
         case .resetNavigation,
              .destination(.presented(.pharmacyDetail(.delegate(.close)))),
              .destination(.presented(.pickupCode(action: .delegate(.close)))),
@@ -370,8 +304,7 @@ struct OrderDetailDomain {
             state.destination = nil
             return .none
         case .destination,
-             .delegate,
-             .nothing:
+             .delegate:
             return .none
         }
     }
@@ -416,33 +349,9 @@ extension OrderDetailDomain {
         guard !readChargeItems.isEmpty else { return }
         try await erxTaskRepository.saveChargeItems(readChargeItems.map(\.sparseChargeItem), nil)
     }
-
-    func setReadState(for euCommunications: [EuCommunication]) async throws {
-        let readEuCommunications = euCommunications.filter { !$0.isRead }
-            .map { euCommunication -> EuCommunication in
-                var readEuCommunication = euCommunication
-                readEuCommunication.isRead = true
-                return readEuCommunication
-            }
-        guard !readEuCommunications.isEmpty else { return }
-        try await erxTaskRepository.saveEuCommunication(readEuCommunications, nil)
-    }
 }
 
-extension CommunicationMessage {
-    mutating func updateOrder(
-        _ transform: (Order) -> Order
-    ) {
-        switch self {
-        case let .order(order):
-            self = .order(transform(order))
-        default:
-            break
-        }
-    }
-}
-
-extension [TimelineEntry] {
+extension Array where Element == TimelineEntry {
     func updateChipTexts(with tasks: [ErxTask]) -> [TimelineEntry] {
         map { entry in
             switch entry {
@@ -467,8 +376,7 @@ extension [TimelineEntry] {
                 }
                 return TimelineEntry.reply(communication, chipTexts: chipTexts)
             case .chargeItem,
-                 .internalCommunication,
-                 .euEntry:
+                 .internalCommunication:
                 return entry
             }
         }
@@ -521,11 +429,11 @@ extension OrderDetailDomain {
         var urlString = URLComponents(string: "mailto:\(email)")
         var queryItems = [URLQueryItem]()
 
-        if let subject {
+        if let subject = subject {
             queryItems.append(URLQueryItem(name: "subject", value: subject))
         }
 
-        if let body {
+        if let body = body {
             queryItems.append(URLQueryItem(name: "body", value: body))
         }
 
@@ -534,15 +442,17 @@ extension OrderDetailDomain {
         return urlString?.url
     }
 
-    static var openMailAlertState: ErpAlertState<Destination.Alert> = .init(
-        title: L10n.ordDetailTxtOpenMailErrorTitle,
-        actions: {
-            ButtonState(role: .cancel) {
-                .init(L10n.alertBtnClose)
-            }
-        },
-        message: L10n.ordDetailTxtOpenMailError
-    )
+    static var openMailAlertState: ErpAlertState<Destination.Alert> = {
+        .init(
+            title: L10n.ordDetailTxtOpenMailErrorTitle,
+            actions: {
+                ButtonState(role: .cancel) {
+                    .init(L10n.alertBtnClose)
+                }
+            },
+            message: L10n.ordDetailTxtOpenMailError
+        )
+    }()
 
     static func openUrlAlertState(for url: URL) -> ErpAlertState<Destination.Alert> {
         .init(
@@ -563,12 +473,12 @@ extension OrderDetailDomain {
 extension OrderDetailDomain {
     enum Dummies {
         static let state = State(
-            communicationMessage: Shared(value: CommunicationMessage.order(Order.Dummies.orderCommunications1)),
+            communicationMessage: CommunicationMessage.order(Order.Dummies.orderCommunications1),
             erxTasks: [ErxTask.Demo.erxTask1, ErxTask.Demo.erxTask13]
         )
 
         static let store = StoreOf<OrderDetailDomain>(initialState: state) {
-            EmptyReducer()
+            OrderDetailDomain()
         }
 
         static func storeFor(_ state: State) -> StoreOf<OrderDetailDomain> {
@@ -578,6 +488,3 @@ extension OrderDetailDomain {
         }
     }
 }
-
-extension OrderDetailDomain.Destination.State: Equatable {}
-extension OrderDetailDomain.Destination.Action: Equatable {}

@@ -28,6 +28,10 @@ import XCTest
 struct OrderDetailsScreen: Screen {
     let app: XCUIApplication
 
+    init(app: XCUIApplication) {
+        self.app = app
+    }
+
     func tapOpenPharmacyDetails(fileID: String = #fileID, file: String = #filePath,
                                 line: UInt = #line) -> PharmacyDetailsScreen {
         container(by: A11y.orderDetail.message.msgTxtTitle, fileID: fileID, file: file, line: line)
@@ -85,54 +89,6 @@ struct OrderDetailsScreen: Screen {
                 line: line,
                 checkExistence: false
             )
-        }
-
-        func showAccessCodeButton(fileID: String = #fileID, file: String = #file, line: UInt = #line) -> XCUIElement {
-            elements(
-                query: container.buttons,
-                identifier: A11y.orderDetail.list.ordDetailBtnRefreshCode,
-                fileID: fileID,
-                file: file,
-                line: line,
-                checkExistence: false
-            )
-        }
-
-        @discardableResult
-        func tapShowAccessCode(fileID _: String = #fileID, file _: String = #file,
-                               line _: UInt = #line) -> EURedeemCodeScreen {
-            showAccessCodeButton().tap()
-            return EURedeemCodeScreen(app: app)
-        }
-
-        func revokeAccessCodeButton(fileID: String = #fileID, file: String = #file, line: UInt = #line) -> XCUIElement {
-            elements(
-                query: container.buttons,
-                identifier: A11y.orderDetail.list.ordDetailBtnRevokeAccessCode,
-                fileID: fileID,
-                file: file,
-                line: line,
-                checkExistence: false
-            )
-        }
-
-        func accessCodeRevokedIndicator(fileID: String = #fileID, file: String = #file,
-                                        line: UInt = #line) -> XCUIElement {
-            elements(
-                query: container.buttons,
-                identifier: A11y.orderDetail.list.ordDetailBtnAccessCodeRevoked,
-                fileID: fileID,
-                file: file,
-                line: line,
-                checkExistence: false
-            )
-        }
-
-        @discardableResult
-        func tapRevokeAccessCode(fileID _: String = #fileID, file _: String = #file,
-                                 line _: UInt = #line) -> EuRevokeScreen {
-            revokeAccessCodeButton().tap()
-            return EuRevokeScreen(app: app)
         }
 
         func chipTexts(fileID _: String = #fileID, file _: String = #file, line _: UInt = #line) -> [XCUIElement] {

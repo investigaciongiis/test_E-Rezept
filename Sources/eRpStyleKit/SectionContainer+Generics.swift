@@ -24,7 +24,8 @@
 
 import SwiftUI
 
-public extension SectionContainer where Header == EmptyView {
+public
+extension SectionContainer where Header == EmptyView {
     init<Content0: View, Content1: View>(
         @ViewBuilder footer: @escaping () -> Footer,
         @ViewBuilder content: @escaping ()
@@ -486,7 +487,8 @@ public extension SectionContainer where Header == EmptyView {
     }
 }
 
-public extension SectionContainer where Footer == EmptyView {
+public
+extension SectionContainer where Footer == EmptyView {
     init<Content0: View, Content1: View>(
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder content: @escaping ()
@@ -791,7 +793,8 @@ public extension SectionContainer where Footer == EmptyView {
     }
 }
 
-public extension SectionContainer where Header == EmptyView, Footer == EmptyView {
+public
+extension SectionContainer where Header == EmptyView, Footer == EmptyView {
     init<Content0: View, Content1: View>(
         @ViewBuilder content: @escaping ()
             -> TupleView<(Content0, Content1)>

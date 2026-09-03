@@ -32,25 +32,22 @@ extension PrescriptionDetailView {
         var body: some View {
             ScrollView(.vertical) {
                 SectionContainer {
-                    LabeledContent {
-                        Text(store.accidentInfo.localizedReason)
-                    } label: {
-                        Text(L10n.prscDtlTxtAccidentReason)
-                    }
+                    SubTitle(
+                        title: store.accidentInfo.localizedReason,
+                        description: L10n.prscDtlTxtAccidentReason
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlAccidentReason)
 
-                    LabeledContent {
-                        Text(store.accidentInfo.date ?? L10n.prscFdTxtNa.text)
-                    } label: {
-                        Text(L10n.prscFdTxtAccidentDate)
-                    }
+                    SubTitle(
+                        title: store.accidentInfo.date ?? L10n.prscFdTxtNa.text,
+                        description: L10n.prscFdTxtAccidentDate
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlAccidentDate)
 
-                    LabeledContent {
-                        Text(store.accidentInfo.workPlaceIdentifier ?? L10n.prscFdTxtNa.text)
-                    } label: {
-                        Text(L10n.prscFdTxtAccidentId)
-                    }
+                    SubTitle(
+                        title: store.accidentInfo.workPlaceIdentifier ?? L10n.prscFdTxtNa.text,
+                        description: L10n.prscFdTxtAccidentId
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlAccidentId)
 
                 }.sectionContainerStyle(.inline)

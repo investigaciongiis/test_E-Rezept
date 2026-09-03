@@ -22,7 +22,6 @@
 
 import ComposableArchitecture
 import eRpKit
-import eRpResources
 import eRpStyleKit
 import SwiftUI
 
@@ -35,113 +34,61 @@ public struct CountrySelectionView: View {
 
     public var body: some View {
         VStack {
-            if store.countries.isEmpty, !store.isCountryLoading {
-                VStack(spacing: 8) {
-                    Image(decorative: Asset.EUReedem.euLogo)
-                        .padding(.bottom, 28)
-                        .padding(.top, 86)
-                    Text(L10n.euredeemCountryEmptyTitle)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.white)
-                        .accessibilityIdentifier(A11y.redeem.eu.countrySelection.eurdmTxtCountryEmptyTitle)
-                    Text(L10n.euredeemCountryEmptySubtitle)
-                        .font(.subheadline)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Color.white)
-                        .accessibilityIdentifier(A11y.redeem.eu.countrySelection.eurdmTxtCountryEmptySubtitle)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.euredeemCountrySelectionTitle)
+                    .font(.title3.bold())
+                Text(L10n.euredeemCountrySelectionSubtitle)
+                    .font(.subheadline)
+                    .padding(.bottom, 8)
 
+                SearchBar(
+                    searchText: $store.searchText,
+                    prompt: L10n.euredeemCountrySelectionSearchPrompt.text
+                ) {
+                    store.send(.serachList)
+                }
+                .padding(.top, 24)
+
+                HStack {
                     Spacer()
-                }
-                .padding(.top, 32)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(red: 0, green: 0.2, blue: 0.6)) // #003399
-            } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.euredeemCountrySelectionTitle)
-                        .font(.title3.bold())
-                        .foregroundStyle(Colors.systemLabel)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityIdentifier(A11y.redeem.eu.countrySelection.eurdmTxtCountryTitle)
-                    Text(L10n.euredeemCountrySelectionSubtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(Colors.systemLabelSecondary)
-                        .padding(.bottom, 8)
-                        .accessibilityIdentifier(A11y.redeem.eu.countrySelection.eurdmTxtCountrySubtitle)
-
-                    SearchBar(
-                        searchText: $store.searchText,
-                        prompt: L10n.euredeemCountrySelectionSearchPrompt.text
-                    ) {}
-                        .padding(.top, 24)
-
-                    HStack {
-                        Spacer()
-                        Button {
-                            store.send(.toggleLocation)
-                        } label: {
-                            HStack {
-                                Image(systemName: store.locationFilterIsEnabled
-                                    ? SFSymbolName.cross
-                                    : SFSymbolName.scope)
-                                Text(store.locationFilterIsEnabled
-                                    ? L10n.euredeemCountrySelectionBtnNoLocation
-                                    : L10n.euredeemCountrySelectionBtnLocation)
-                            }
-                            .font(.subheadline.weight(.semibold))
+                    Button {
+                        store.send(.toggleLocation)
+                    } label: {
+                        HStack {
+                            Image(systemName: SFSymbolName.scope)
+                            Text(L10n.euredeemCountrySelectionBtnLocation)
                         }
-                        .accessibilityIdentifier(A11y.redeem.eu.countrySelection.eurdmBtnCountryLocation)
-                        .padding(.bottom)
+                        .font(.subheadline.weight(.semibold))
                     }
-                }
-                .padding(.horizontal)
-
-                if store.locationFilterIsEnabled, store.filteredCountries.isEmpty {
-                    VStack {
-                        Spacer()
-                        Text(store.currentRegion?.locationSearchEmpty
-                            ?? L10n.euredeemCountrySelectionTxtLocationEmpty.text)
-                            .font(.subheadline)
-                            .foregroundStyle(Colors.systemLabelSecondary)
-                            .multilineTextAlignment(.center)
-                            .accessibilityIdentifier(
-                                A11y.redeem.eu.countrySelection.eurdmTxtCountryLocationEmpty
-                            )
-                        Spacer()
-                    }
-                    .padding(.horizontal, 24)
-                } else {
-                    List {
-                        ForEach(store.filteredCountries) { country in
-                            Button {
-                                store.send(.selectCountry(country))
-                            } label: {
-                                HStack {
-                                    Text(country.flag)
-                                        .font(.title)
-                                        .foregroundStyle(Colors.systemLabel)
-                                        .accessibilityHidden(true)
-                                    Text(country.displayName ?? country.name)
-                                }
-                                .alignmentGuide(.listRowSeparatorLeading) { $0[.listRowSeparatorLeading] + 40 }
-                            }
-                        }
-                    }
-                    .listStyle(PlainListStyle())
+                    .padding(.bottom)
                 }
             }
+            .padding(.horizontal)
+
+            List {
+                ForEach(store.countries) { country in
+                    Button {
+                        store.send(.selectCountry(country))
+                    } label: {
+                        HStack {
+                            Text(country.flag)
+                                .font(.title)
+                            Text(country.name)
+                        }
+                        .alignmentGuide(.listRowSeparatorLeading) { $0[.listRowSeparatorLeading] + 40 }
+                    }
+                }
+            }
+            .listStyle(PlainListStyle())
         }
-        .alert($store.scope(state: \.destination?.alert?.alert, action: \.destination.alert))
         .task {
             store.send(.loadAllCountries)
-        }
-        .task {
-            await store.send(.task).finish()
         }
         .background(Color(uiColor: .systemBackground))
     }
 }
 
-#Preview("Countries") {
+#Preview {
     CountrySelectionView(
         store: .init(initialState: CountrySelectionDomain.State(
             countries: [
@@ -153,14 +100,4 @@ public struct CountrySelectionView: View {
             CountrySelectionDomain()
         }
     )
-}
-
-#Preview("No Countries") {
-    NavigationStack {
-        CountrySelectionView(
-            store: .init(initialState: CountrySelectionDomain.State()) {
-                CountrySelectionDomain()
-            }
-        )
-    }
 }

@@ -43,9 +43,7 @@
                     "types":
                     [],
                     "status": "active",
-                    "name": "ZoTI_01_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_01_TEST-ONLY"
                 },
                 {
                     "id": "6bb05538-5924-4be3-98ff-7475d27aee4f",
@@ -88,9 +86,7 @@
                         "outpharm"
                     ],
                     "status": "active",
-                    "name": "ZoTI_05_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_05_TEST-ONLY"
                 },
                 {
                     "id": "6bb06538-5924-4be3-98ff-7475d27aee4f",
@@ -133,9 +129,7 @@
                         "delivery"
                     ],
                     "status": "active",
-                    "name": "ZoTI_06_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_06_TEST-ONLY"
                 },
                 {
                     "id": "6bb07538-5924-4be3-98ff-7475d27aee4f",
@@ -188,9 +182,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_07_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_07_TEST-ONLY"
                 },
                 {
                     "id": "6bb12538-5924-4be3-98ff-7475d27aee4f",
@@ -246,9 +238,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_12_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_12_TEST-ONLY"
                 },
                 {
                     "id": "6bb20538-5924-4be3-98ff-7475d27aee4f",
@@ -311,9 +301,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_20_TEST-ONLY",
-                    "physicalFeatures": ["parkmoeglichkeit", "oepnv", "barrierefrei", "abholautomat"],
-                    "specialities": ["50", "60", "70", "80", "90", "100", "impfung", "koerperwerte", "allergietest", "reisemedizin-beratung"]
+                    "name": "ZoTI_20_TEST-ONLY"
                 }
             ]
     },

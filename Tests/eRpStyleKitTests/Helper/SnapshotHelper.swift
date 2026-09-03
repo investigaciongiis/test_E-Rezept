@@ -30,7 +30,7 @@ private let defaultPrecision: Float = 1
 private let defaultPerceptualPrecision: Float = 1
 
 extension XCTestCase {
-    func snapshotModi<T: SwiftUI.View>() -> [String: Snapshotting<T, UIImage>] {
+    func snapshotModi<T>() -> [String: Snapshotting<T, UIImage>] where T: SwiftUI.View {
         [
             "light": .image(
                 precision: defaultPrecision,
@@ -87,7 +87,7 @@ struct OffsetPreview: View {
     }
 
     var body: some View {
-        Snapshot(snapshotting) {
+        Snapshot(self.snapshotting) {
             NavigationStack {
                 Text("*")
                     .navigationTitle("⚕︎ Redeem")
@@ -97,7 +97,7 @@ struct OffsetPreview: View {
     }
 }
 
-struct Snapshot<Content: View>: View {
+struct Snapshot<Content>: View where Content: View {
     private let content: () -> Content
     @State private var image: Image?
     private let snapshotting: Snapshotting<AnyView, UIImage>
@@ -111,14 +111,14 @@ struct Snapshot<Content: View>: View {
 
     var body: some View {
         ZStack {
-            image?
+            self.image?
                 .resizable()
                 .aspectRatio(contentMode: .fit)
         }
         .onAppear {
-            snapshotting
-                .snapshot(AnyView(content()))
-                .run { image = Image(uiImage: $0) }
+            self.snapshotting
+                .snapshot(AnyView(self.content()))
+                .run { self.image = Image(uiImage: $0) }
         }
     }
 }
@@ -141,19 +141,24 @@ extension ViewImageConfig {
 
 extension UITraitCollection {
     static func iPhone14(_ orientation: ViewImageConfig.Orientation) -> UITraitCollection {
+        let base: [UITraitCollection] = [
+            .init(forceTouchCapability: .available),
+            .init(layoutDirection: .leftToRight),
+            .init(preferredContentSizeCategory: .medium),
+            .init(userInterfaceIdiom: .phone),
+        ]
+
         switch orientation {
         case .landscape:
-            return UITraitCollection { mutableTraits in
-                mutableTraits.userInterfaceIdiom = .phone
-                mutableTraits.horizontalSizeClass = .regular
-                mutableTraits.verticalSizeClass = .compact
-            }
+            return .init(traitsFrom: base + [
+                .init(horizontalSizeClass: .regular),
+                .init(verticalSizeClass: .compact),
+            ])
         case .portrait:
-            return UITraitCollection { mutableTraits in
-                mutableTraits.userInterfaceIdiom = .phone
-                mutableTraits.horizontalSizeClass = .compact
-                mutableTraits.verticalSizeClass = .regular
-            }
+            return .init(traitsFrom: base + [
+                .init(horizontalSizeClass: .compact),
+                .init(verticalSizeClass: .regular),
+            ])
         }
     }
 }

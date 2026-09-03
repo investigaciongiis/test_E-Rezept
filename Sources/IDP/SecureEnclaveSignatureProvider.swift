@@ -23,6 +23,7 @@
 import CodedError
 import Combine
 import Foundation
+import OpenSSL
 
 @CodedError("109")
 public enum SecureEnclaveSignatureProviderError: Swift.Error {
@@ -71,7 +72,7 @@ public protocol SecureEnclaveSignatureProvider {
     ///   - pairingSession: `PairingSession` instance that is used to identify the biometric key.
     ///   - signer: The `JWTSigner` that is used to authenticate the key that is paired. Usually this is a eGK.
     ///   - certificate: Certificate of the signer that is used to sign the `PairingData`.
-    func signPairingSession(_ pairingSession: PairingSession, with signer: JWTSigner, certificate: IDPX509)
+    func signPairingSession(_ pairingSession: PairingSession, with signer: JWTSigner, certificate: X509)
         -> AnyPublisher<RegistrationData, SecureEnclaveSignatureProviderError>
 
     /// Cancels the signing session and delete all temporary data, such as `PrK_SE_AUT` and `PuK_SE_AUT`.

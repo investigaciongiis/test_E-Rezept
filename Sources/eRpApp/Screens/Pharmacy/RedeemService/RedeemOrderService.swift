@@ -32,6 +32,8 @@ import Pharmacy
 @DependencyClient
 struct RedeemOrderService {
     var redeemOptionProvider: @Sendable (_ pharmacy: PharmacyLocation) async throws -> RedeemOptionProvider
+    var redeemViaAVS: @Sendable (_ orders: [OrderRequest], _ profileId: UUID) async throws
+        -> IdentifiedArrayOf<OrderResponse>
     var redeemViaErxTaskRepository: @Sendable (_ orders: [OrderRequest], _ profileId: UUID) async throws
         -> IdentifiedArrayOf<OrderResponse>
     var redeemViaErxTaskRepositoryDiGa: @Sendable (_ orders: [OrderDiGaRequest], _ profileId: UUID) async throws
@@ -42,6 +44,7 @@ extension RedeemOrderService: DependencyKey {
     static let liveValue: Self = {
         @Dependency(\.userSession) var userSession: UserSession
         @Dependency(\.pharmacyRepository) var pharmacyRepository: PharmacyRepository
+        @Dependency(\.avsRedeemService) var avsRedeemService
         @Dependency(\.erxTaskRepositoryRedeemService) var erxTaskRepositoryRedeemService
 
         return Self(
@@ -53,6 +56,10 @@ extension RedeemOrderService: DependencyKey {
                     wasAuthenticatedBefore: profile.isLinkedToInsuranceId,
                     pharmacy: pharmacy
                 )
+            },
+            redeemViaAVS: { orders, profileId in
+                try await avsRedeemService().redeem(orders, profileId: profileId)
+                    .async(\RedeemOrderServiceError.Cases.redeem)
             },
             redeemViaErxTaskRepository: { orders, profileId in
                 try await erxTaskRepositoryRedeemService().redeem(orders, profileId: profileId)

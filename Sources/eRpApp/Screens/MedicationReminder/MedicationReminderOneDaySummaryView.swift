@@ -30,55 +30,57 @@ import SwiftUI
 struct MedicationReminderOneDaySummaryView: View {
     @Bindable var store: StoreOf<MedicationReminderOneDaySummaryDomain>
 
+    @ScaledMetric var headerPlusBottomPlusSomeHeight = 320 // use this for limiting the ScrollView's height
+
+    init(store: StoreOf<MedicationReminderOneDaySummaryDomain>) {
+        self.store = store
+    }
+
     @Dependency(\.uiDateFormatter) var dateFormatter
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 40) {
             HeaderView { store.send(.closeButtonTapped) }
-                .padding(.bottom, 32)
 
-            ScrollView {
-                VStack(spacing: 20) {
-                    if store.medicationSchedules.isEmpty {
-                        EmptyMedicationEvent()
-                            .padding(.horizontal)
-                    } else {
-                        VStack(spacing: 0) {
-                            ForEach(store.medicationSchedules) { (schedule: MedicationSchedule) in
-                                VStack(spacing: 8) {
-                                    Text(schedule.title)
-                                        .font(.headline)
-                                        .fontWeight(.bold)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+            if store.medicationSchedules.isEmpty {
+                EmptyMedicationEvent()
+                    .padding(.horizontal)
+            } else {
+                ScrollView {
+                    VStack(spacing: 40) {
+                        ForEach(store.medicationSchedules) { (schedule: MedicationSchedule) in
+                            VStack(spacing: 8) {
+                                Text(schedule.title)
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                                    ForEach(schedule.entries) { (entry: MedicationSchedule.Entry) in
-                                        let formattedHourMinute =
-                                            "\(entry.hourComponent.padWithLeadingZero):" +
-                                            "\(entry.minuteComponent.padWithLeadingZero)"
-                                        let dayTime = MedicationEvent.Daytime.from(hourComponent: entry.hourComponent)
-                                        MedicationEvent(
-                                            daytime: dayTime,
-                                            text: "\(formattedHourMinute) \(entry.amount) \(entry.dosageForm)"
-                                        )
-                                    }
+                                ForEach(schedule.entries) { (entry: MedicationSchedule.Entry) in
+                                    let formattedHourMinute =
+                                        "\(entry.hourComponent.padWithLeadingZero):" +
+                                        "\(entry.minuteComponent.padWithLeadingZero)"
+                                    let dayTime = MedicationEvent.Daytime.from(hourComponent: entry.hourComponent)
+                                    MedicationEvent(
+                                        daytime: dayTime,
+                                        text: "\(formattedHourMinute) \(entry.amount) \(entry.dosageForm)"
+                                    )
                                 }
                             }
-                            .padding(.bottom, 40)
                         }
-                        .padding(.horizontal)
                     }
-
-                    Button {
-                        store.send(.goToMedicationReminderListButtonTapped)
-                    } label: {
-                        Text(L10n.medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundColor(Colors.primary700)
-                    .accessibilityIdentifier(A11y.medicationReminder
-                        .medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
+                    .padding(.horizontal)
                 }
+                .frame(maxHeight: UIScreen.main.bounds.size.height - self.headerPlusBottomPlusSomeHeight)
             }
+
+            Button {
+                store.send(.goToMedicationReminderListButtonTapped)
+            } label: {
+                Text(L10n.medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
+                    .fontWeight(.semibold)
+            }
+            .foregroundColor(Colors.primary700)
+            .accessibilityIdentifier(A11y.medicationReminder.medReminderBtnOneDaySummaryGoToRemindersOverviewButton)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Colors.systemBackground.ignoresSafeArea())
@@ -99,9 +101,7 @@ struct MedicationReminderOneDaySummaryView: View {
                         CloseButton(action: closeButtonAction)
                             .accessibilityIdentifier(A11y.medicationReminder.medReminderBtnOneDaySummaryCloseButton)
                     }
-                    .padding(.horizontal)
                 }
-                .padding(.vertical, 8)
 
                 Text(L10n.medReminderTxtOneDaySummaryTitle)
                     .font(.title3)
@@ -199,9 +199,9 @@ struct MedicationReminderOneDaySummaryView: View {
             HStack(spacing: 8) {
                 Image(SFSymbolName
                     .alarm)
-                    .font(.largeTitle)
-                    .foregroundColor(Colors.primary700)
-                    .padding([.top, .bottom, .leading])
+                                    .font(.largeTitle)
+                                    .foregroundColor(Colors.primary700)
+                                    .padding([.top, .bottom, .leading])
 
                 VStack(alignment: .leading) {
                     Text(L10n.medReminderTxtOneDaySummaryEmptyEventTitle)

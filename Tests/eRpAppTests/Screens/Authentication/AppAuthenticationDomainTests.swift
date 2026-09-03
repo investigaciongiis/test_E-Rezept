@@ -43,22 +43,20 @@ final class AppAuthenticationDomainTests: XCTestCase {
         }
     }
 
-    var appSecurityPasswordManager: AppSecurityManagerMock!
-    var userDataStore: UserDataStoreMock!
+    var appSecurityPasswordManager: MockAppSecurityManager!
+    var userDataStore: MockUserDataStore!
 
     override func setUp() {
         super.setUp()
 
-        appSecurityPasswordManager = AppSecurityManagerMock()
-        userDataStore = UserDataStoreMock()
+        appSecurityPasswordManager = MockAppSecurityManager()
+        userDataStore = MockUserDataStore()
     }
 
     private func testStore(for authenticationOption: AppSecurityOption) -> TestStore {
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
         return TestStore(initialState: AppAuthenticationDomain.State()) {
             AppAuthenticationDomain {}
         } withDependencies: { dependencies in
@@ -116,11 +114,9 @@ final class AppAuthenticationDomainTests: XCTestCase {
             didCompleteAuthenticationCalledCount > 0
         }
 
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
 
         let store = TestStore(
             initialState: AppAuthenticationDomain.State(
@@ -132,7 +128,7 @@ final class AppAuthenticationDomainTests: XCTestCase {
         ) {
             AppAuthenticationDomain { didCompleteAuthenticationCalledCount += 1 }
         } withDependencies: { dependencies in
-            dependencies.userDataStore = UserDataStoreMock()
+            dependencies.userDataStore = MockUserDataStore()
             dependencies.schedulers = Schedulers(
                 uiScheduler: testScheduler.eraseToAnyScheduler()
             )
@@ -179,11 +175,9 @@ final class AppAuthenticationDomainTests: XCTestCase {
             didCompleteAuthenticationCalledCount > 0
         }
 
-        let mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        let mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
 
         let store = TestStore(
             initialState: AppAuthenticationDomain.State(
@@ -192,7 +186,7 @@ final class AppAuthenticationDomainTests: XCTestCase {
         ) {
             AppAuthenticationDomain { didCompleteAuthenticationCalledCount += 1 }
         } withDependencies: { dependencies in
-            dependencies.userDataStore = UserDataStoreMock()
+            dependencies.userDataStore = MockUserDataStore()
             dependencies.schedulers = Schedulers(
                 uiScheduler: testScheduler.eraseToAnyScheduler()
             )

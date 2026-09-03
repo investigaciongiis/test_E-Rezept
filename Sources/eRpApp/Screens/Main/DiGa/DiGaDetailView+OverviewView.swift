@@ -23,7 +23,6 @@
 import ComposableArchitecture
 import eRpKit
 import eRpStyleKit
-import FeatureHelpers
 import SwiftUI
 
 extension DiGaDetailView {

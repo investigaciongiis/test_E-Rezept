@@ -111,51 +111,7 @@ extension PharmacySearchDomain {
             pharmacies: pharmaciesLocationViewModel,
             pharmacyFilterOptions: Shared(value: []),
             searchState: .startView(loading: false)
-        )
-        static let stateStartViewWithFavorites = State(
-            selectedPrescriptions: Shared(value: []),
-            inRedeemProcess: false,
-            searchText: "",
-            pharmacies: [],
-            localPharmacies: PharmacyLocation.Dummies.pharmacies
-                .prefix(2)
-                .map { pharmacy in
-                    var copy = pharmacy
-                    copy.isFavorite = true
-                    return PharmacyLocationViewModel(
-                        pharmacy: copy,
-                        referenceDate: openHoursReferenceDate
-                    )
-                },
-            pharmacyFilterOptions: Shared(value: []),
-            searchState: .startView(loading: false)
-        )
-        static let stateStartViewWithRecentlyUsed = State(
-            selectedPrescriptions: Shared(value: []),
-            inRedeemProcess: false,
-            searchText: "",
-            pharmacies: [],
-            localPharmacies: PharmacyLocation.Dummies.pharmacies
-                .prefix(5)
-                .map { pharmacy in
-                    var copy = pharmacy
-                    copy.lastUsed = Date()
-                    return PharmacyLocationViewModel(
-                        pharmacy: copy,
-                        referenceDate: openHoursReferenceDate
-                    )
-                },
-            pharmacyFilterOptions: Shared(value: []),
-            searchState: .startView(loading: false)
-        )
-        static let stateStartViewLoading = State(
-            selectedPrescriptions: Shared(value: []),
-            inRedeemProcess: false,
-            searchText: "",
-            pharmacies: [],
-            localPharmacies: pharmaciesLocationViewModel,
-            pharmacyFilterOptions: Shared(value: []),
-            searchState: .startView(loading: true)
+            // .searchResultOk(pharmaciesLocationViewModel)
         )
         static var openHoursReferenceDate: Date? {
             // Current dummy-time is set to 10:00am on 16th (WED) June 2021...

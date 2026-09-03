@@ -56,7 +56,7 @@ extension CardWallReadCardDomain {
 
         static var tagConnectionLostCount = 0
         static func tagConnectionLost(_ error: CoreNFCError) -> ErpAlertState<Action> {
-            tagConnectionLostCount += 1
+            Self.tagConnectionLostCount += 1
             if tagConnectionLostCount <= 3 {
                 return .init(for: error, actions: {
                     ButtonState(action: .openHelpView) {

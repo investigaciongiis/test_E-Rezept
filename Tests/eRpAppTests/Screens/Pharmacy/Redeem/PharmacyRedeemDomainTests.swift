@@ -33,9 +33,9 @@ import XCTest
 @MainActor
 class PharmacyRedeemDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.immediate
-    var mockShipmentInfoDataStore: ShipmentInfoDataStoreMock!
+    var mockShipmentInfoDataStore: MockShipmentInfoDataStore!
     var mockUserSession: MockUserSession!
-    var mockRedeemService: RedeemServiceMock!
+    var mockRedeemService: MockRedeemService!
     var mockRedeemValidator: MockRedeemInputValidator!
 
     typealias TestStore = TestStoreOf<PharmacyRedeemDomain>
@@ -44,8 +44,8 @@ class PharmacyRedeemDomainTests: XCTestCase {
     override func setUp() {
         super.setUp()
         mockUserSession = MockUserSession()
-        mockShipmentInfoDataStore = ShipmentInfoDataStoreMock()
-        mockRedeemService = RedeemServiceMock()
+        mockShipmentInfoDataStore = MockShipmentInfoDataStore()
+        mockRedeemService = MockRedeemService()
         mockRedeemValidator = MockRedeemInputValidator()
     }
 
@@ -65,6 +65,9 @@ class PharmacyRedeemDomainTests: XCTestCase {
             dependencies.redeemInputValidator = mockRedeemValidator
             dependencies.redeemService = mockRedeemService
             dependencies.serviceLocator = ServiceLocator()
+            dependencies.redeemOrderService.redeemViaAVS = { @Sendable [mockRedeemService] orders, _ in
+                try await mockRedeemService?.redeem(orders, profileId: UUID()).async() ?? []
+            }
             dependencies.redeemOrderService.redeemViaErxTaskRepository = { @Sendable [mockRedeemService] orders, _ in
                 try await mockRedeemService?.redeem(orders, profileId: UUID()).async() ?? []
             }
@@ -84,7 +87,9 @@ class PharmacyRedeemDomainTests: XCTestCase {
             position: nil,
             address: nil,
             telecom: nil,
-            hoursOfOperation: []
+            hoursOfOperation: [],
+            avsEndpoints: PharmacyLocation.AVSEndpoints(onPremiseUrl: "http://onpremise.de"),
+            avsCertificates: []
         )
     }
 
@@ -112,10 +117,8 @@ class PharmacyRedeemDomainTests: XCTestCase {
         mockShipmentInfoDataStore.selectedShipmentInfo = Just(expectedShipmentInfo)
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
         mockUserSession.isLoggedIn = false
-        mockRedeemService
-            .redeemOrdersOrderRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderResponseRedeemServiceErrorReturnValue =
-            Fail(error: RedeemServiceError.noTokenAvailable)
-                .eraseToAnyPublisher()
+        mockRedeemService.redeemProfileIdReturnValue = Fail(error: RedeemServiceError.noTokenAvailable)
+            .eraseToAnyPublisher()
 
         await sut.send(.registerSelectedShipmentInfoListener)
         await sut.receive(.selectedShipmentInfoReceived(.success(expectedShipmentInfo))) {
@@ -176,17 +179,15 @@ class PharmacyRedeemDomainTests: XCTestCase {
                 .eraseToAnyPublisher()
 
             var expectedOrderResponses = IdentifiedArrayOf<OrderResponse>()
-            mockRedeemService
-                .redeemOrdersOrderRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderResponseRedeemServiceErrorClosure =
-                { orders, _ in
-                    let orderResponses = orders.map { order in
-                        OrderResponse(requested: order, result: .success(true))
-                    }
-                    expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
-                    return Just(expectedOrderResponses)
-                        .setFailureType(to: RedeemServiceError.self)
-                        .eraseToAnyPublisher()
+            mockRedeemService.redeemProfileIdClosure = { orders, _ in
+                let orderResponses = orders.map { order in
+                    OrderResponse(requested: order, result: .success(true))
                 }
+                expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
+                return Just(expectedOrderResponses)
+                    .setFailureType(to: RedeemServiceError.self)
+                    .eraseToAnyPublisher()
+            }
 
             await sut.send(.task)
             await sut.receive(.registerSelectedShipmentInfoListener)
@@ -204,7 +205,6 @@ class PharmacyRedeemDomainTests: XCTestCase {
                                                                             pharmacy: pharmacy))) {
                     $0.serviceOption = .erxTaskRepositoryAvailable
                     $0.serviceOptionState.availableOptions = [.onPremise]
-                    $0.serviceOptionState.validOptions = [.onPremise]
                     $0.hasCompleteContactData = true
                 }
 
@@ -225,6 +225,11 @@ class PharmacyRedeemDomainTests: XCTestCase {
                     expect(response?.requested.redeemType) == initialState.serviceOptionState.selectedOption
                     expect(response?.requested.accessCode) == task.accessCode
                     expect(response?.requested.telematikId) == self.pharmacy.telematikID
+                    expect(response?.requested.endpoint) == self.pharmacy.avsEndpoints?.url(
+                        for: initialState.serviceOptionState.selectedOption,
+                        transactionId: "",
+                        telematikId: self.pharmacy.telematikID
+                    )
                 }
             }
 //            expect(self.mockPharmacyRepository.savePharmaciesCallsCount) == 1
@@ -257,20 +262,18 @@ class PharmacyRedeemDomainTests: XCTestCase {
 
             let expectedError = RedeemServiceError.eRxRepository(.remote(.notImplemented))
             var expectedOrderResponses = IdentifiedArrayOf<OrderResponse>()
-            mockRedeemService
-                .redeemOrdersOrderRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderResponseRedeemServiceErrorClosure =
-                { orders, _ in
-                    var orderResponses = orders.map { order in
-                        OrderResponse(requested: order, result: .success(true))
-                    }
-                    // let one of the response be failing
-                    orderResponses[0] = OrderResponse(requested: orderResponses[0].requested,
-                                                      result: .failure(expectedError))
-                    expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
-                    return Just(expectedOrderResponses)
-                        .setFailureType(to: RedeemServiceError.self)
-                        .eraseToAnyPublisher()
+            mockRedeemService.redeemProfileIdClosure = { orders, _ in
+                var orderResponses = orders.map { order in
+                    OrderResponse(requested: order, result: .success(true))
                 }
+                // let one of the response be failing
+                orderResponses[0] = OrderResponse(requested: orderResponses[0].requested,
+                                                  result: .failure(expectedError))
+                expectedOrderResponses = IdentifiedArrayOf(uniqueElements: orderResponses)
+                return Just(expectedOrderResponses)
+                    .setFailureType(to: RedeemServiceError.self)
+                    .eraseToAnyPublisher()
+            }
 
             // when redeeming
             await sut.send(.redeem) { $0.redeemInProgress = true }
@@ -309,9 +312,7 @@ class PharmacyRedeemDomainTests: XCTestCase {
                 .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
             mockUserSession.isLoggedIn = true
             let expectedError = RedeemServiceError.internalError(.missingTelematikId)
-            mockRedeemService
-                .redeemOrdersOrderRequestProfileIdUUIDAnyPublisherIdentifiedArrayOfOrderResponseRedeemServiceErrorReturnValue =
-                Fail(error: expectedError).eraseToAnyPublisher()
+            mockRedeemService.redeemProfileIdReturnValue = Fail(error: expectedError).eraseToAnyPublisher()
 
             // when redeeming
             await sut.send(.redeem) { $0.redeemInProgress = true }
@@ -387,7 +388,7 @@ class PharmacyRedeemDomainTests: XCTestCase {
         }
     }
 
-    func testGeneratingShipmentInfoFromErxTask() {
+    func testGeneratingShipmentInfoFromErxTask() async {
         let erxTask = ErxTask.Fixtures.erxTask1
         let identifier = UUID()
 
@@ -405,11 +406,11 @@ class PharmacyRedeemDomainTests: XCTestCase {
 
     func testRedeemNoPrescriptionsSelected() async {
         var inputTasks: [Prescription]!
-        withDependencies { dependencies in
+        withDependencies({ dependencies in
             dependencies.date = .constant(Date())
-        } operation: {
+        }, operation: {
             inputTasks = Prescription.Fixtures.prescriptions
-        }
+        })
 
         let sut = testStore(
             for: PharmacyRedeemDomain.State(
@@ -424,8 +425,7 @@ class PharmacyRedeemDomainTests: XCTestCase {
         )
         let selectionPrescriptionState = PharmacyPrescriptionSelectionDomain.State(
             prescriptions: sut.state.$prescriptions,
-            selectedPrescriptions: sut.state.$selectedPrescriptions,
-            selectedOption: nil
+            selectedPrescriptions: sut.state.$selectedPrescriptions
         )
 
         await sut.send(.showPrescriptionSelection) { sut in
@@ -447,11 +447,13 @@ class PharmacyRedeemDomainTests: XCTestCase {
 }
 
 extension OrderRequest {
-    static var fixture: OrderRequest = .init(
-        redeemType: .shipment,
-        flowType: "160",
-        taskID: "task_id_0",
-        accessCode: "access_code_0",
-        telematikId: "k123456789"
-    )
+    static var fixture: OrderRequest = {
+        OrderRequest(
+            redeemType: .shipment,
+            flowType: "160",
+            taskID: "task_id_0",
+            accessCode: "access_code_0",
+            telematikId: "k123456789"
+        )
+    }()
 }

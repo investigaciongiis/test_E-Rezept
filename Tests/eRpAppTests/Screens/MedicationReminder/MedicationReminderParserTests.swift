@@ -26,7 +26,7 @@ import XCTest
 
 @MainActor
 final class MedicationReminderParserTests: XCTestCase {
-    func testParseDosagePatternABC() {
+    func testParseDosagePatternABC() async {
         let test1 = MedicationReminderParser.parseFromDosageInstructions("1-0-0")
         XCTAssertEqual(
             test1,
@@ -96,7 +96,7 @@ final class MedicationReminderParserTests: XCTestCase {
         )
     }
 
-    func testParseDosagePatternABCD() {
+    func testParseDosagePatternABCD() async {
         let test1 = MedicationReminderParser.parseFromDosageInstructions("1-0-0-0")
         XCTAssertEqual(
             test1,
@@ -170,7 +170,7 @@ final class MedicationReminderParserTests: XCTestCase {
         )
     }
 
-    func testParseDosageFailure() {
+    func testParseDosageFailure() async {
         let test1 = MedicationReminderParser.parseFromDosageInstructions("E-0-0")
         expect(test1) == []
 

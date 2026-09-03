@@ -34,7 +34,6 @@ struct SettingsContactInfoView: View {
     var body: some View {
         SectionContainer(header: {
             Label(title: { Text(L10n.stgTxtHeaderContactInfo) }, icon: {})
-                .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(A11y.settings.contact.stgConHeaderContact)
         }, footer: {
             Label(title: {
@@ -52,9 +51,8 @@ struct SettingsContactInfoView: View {
             }, label: {
                 Label(L10n.stgConTextSurvey, systemImage: SFSymbolName.chartBarAxis)
             })
-            .accessibilityLabel(L10n.stgConLblSurvey)
-            .accessibility(identifier: A11y.settings.contact.stgConTxtSurvey)
-            .buttonStyle(.navigation)
+                .accessibility(identifier: A11y.settings.contact.stgConTxtSurvey)
+                .buttonStyle(.navigation)
 
             if showDiGaBadge {
                 Button(action: {
@@ -76,9 +74,8 @@ struct SettingsContactInfoView: View {
                     }
 
                 })
-                .accessibilityLabel(L10n.stgConLblDigaSurvey)
-                .accessibility(identifier: A11y.settings.contact.stgConTxtDigaSurvey)
-                .buttonStyle(.navigation)
+                    .accessibility(identifier: A11y.settings.contact.stgConTxtDigaSurvey)
+                    .buttonStyle(.navigation)
             }
 
             Button(action: {
@@ -90,9 +87,8 @@ struct SettingsContactInfoView: View {
             }, label: {
                 Label(L10n.stgConTextMail, systemImage: SFSymbolName.textBubble)
             })
-            .accessibilityLabel(L10n.stgConLblMail)
-            .accessibility(identifier: A11y.settings.contact.stgConTxtMail)
-            .buttonStyle(.navigation)
+                .accessibility(identifier: A11y.settings.contact.stgConTxtMail)
+                .buttonStyle(.navigation)
 
             Button(action: {
                 let phoneNumberformatted = "tel://" + L10n.stgConHotlineContact.text
@@ -101,8 +97,8 @@ struct SettingsContactInfoView: View {
             }, label: {
                 Label(L10n.stgConTextContactHotline, systemImage: SFSymbolName.phone)
             })
-            .accessibility(identifier: A11y.settings.contact.stgConHotlineContact)
-            .buttonStyle(.navigation)
+                .accessibility(identifier: A11y.settings.contact.stgConHotlineContact)
+                .buttonStyle(.navigation)
         })
     }
 

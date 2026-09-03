@@ -47,13 +47,24 @@ struct MedicationReminderSetupView: View {
                 Button {
                     store.send(.showDosageInstructionsInfo)
                 } label: {
-                    LabeledContent {
-                        Text(store.medicationSchedule.dosageInstructions)
-                    } label: {
-                        Text(L10n.medReminderTxtDosageInstructionSubtitle)
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(store.medicationSchedule.dosageInstructions)
+                                .foregroundColor(Colors.systemLabel)
+                            Text(L10n.medReminderTxtDosageInstructionSubtitle)
+                                .font(.subheadline)
+                                .foregroundColor(Colors.systemLabelSecondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: SFSymbolName.info)
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(Colors.primary)
                     }
-                    .labeledContentStyle(.vertical(icon: SFSymbolName.info))
+                    .contentShape(Rectangle()) // iOS15 workaround to fix button tap area
                 }
+                .buttonStyle(.plain) // iOS15 workaround to fix button embedded in forms
                 .accessibilityIdentifier(A11y.medicationReminder.medReminderBtnDosageInstruction)
             } header: {
                 VStack(spacing: 16) {
@@ -84,7 +95,7 @@ struct MedicationReminderSetupView: View {
                             Text(store.repetitionValue)
                                 .foregroundColor(Colors.systemLabelSecondary)
                             Image(systemName: SFSymbolName.chevronForward)
-                                .foregroundColor(Colors.systemLabelSecondary)
+                                .foregroundColor(Color(.tertiaryLabel))
                                 .font(.body.weight(.semibold))
                         }
                         .contentShape(Rectangle()) // iOS15 workaround to fix button tap area
@@ -186,11 +197,11 @@ struct MedicationReminderSetupView: View {
         }
         .environment(\.editMode, .constant(.active))
         .listStyle(.insetGrouped)
-        .bind($store.focus, to: $focus)
+        .bind($store.focus, to: self.$focus)
         .smallSheet($store
             .scope(state: \.destination?.dosageInstructionsInfo,
                    action: \.destination.dosageInstructionsInfo)) { store in
-            DosageInstructionsDrawerView(store: store)
+                DosageInstructionsDrawerView(store: store)
         }
         .navigationDestination(
             item: $store.scope(
@@ -222,31 +233,24 @@ extension MedicationReminderSetupView {
         @Bindable var store: StoreOf<DosageInstructionsDomain>
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 0) {
                     Spacer()
                     CloseButton {
                         store.send(.delegate(.close))
                     }
                 }
-                .padding([.top, .horizontal])
+                Text(store.title)
+                    .font(.headline)
+                    .accessibilityIdentifier(A11y.medicationReminder.medReminderDrawerDosageInstructionInfoTitle)
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(store.title)
-                            .font(.headline)
-                            .accessibilityIdentifier(A11y.medicationReminder
-                                .medReminderDrawerDosageInstructionInfoTitle)
-
-                        Text(store.description)
-                            .foregroundColor(Colors.systemLabelSecondary)
-                            .accessibilityIdentifier(A11y.medicationReminder
-                                .medReminderDrawerDosageInstructionInfoDescription)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                }
+                Text(store.description)
+                    .foregroundColor(Colors.systemLabelSecondary)
+                    .accessibilityIdentifier(A11y.medicationReminder
+                        .medReminderDrawerDosageInstructionInfoDescription)
+                Spacer()
             }
+            .padding()
             .frame(maxWidth: .infinity)
             .background(Colors.systemBackground.ignoresSafeArea())
             .accessibilityElement(children: .contain)

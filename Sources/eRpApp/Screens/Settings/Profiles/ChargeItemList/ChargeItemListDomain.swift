@@ -89,7 +89,7 @@ struct ChargeItemListDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = cardWall
         case idpCardWall(CardWallIntroductionDomain)
@@ -306,6 +306,7 @@ struct ChargeItemListDomain {
                 return .none
             case .consentNotGranted, // not required for local response
                  .notAuthenticated:
+
                 return .none
             }
         case let .response(.fetchChargeItemsRemote(result)):
@@ -379,6 +380,7 @@ struct ChargeItemListDomain {
                 state.destination = .alert(AlertStates.authenticateErrorFor(error: error))
                 return .none
             }
+
         case .grantConsent:
             state.grantConsentState = .loading
             return .publisher(
@@ -431,6 +433,7 @@ struct ChargeItemListDomain {
                 }
                 return .none
             }
+
         case .revokeConsent:
             return .publisher(
                 chargeItemsService.revokeChargeItemsConsent(for: state.profileId)
@@ -500,6 +503,4 @@ extension ChargeItemListDomain {
     }
 }
 
-extension ChargeItemListDomain.Destination.State: Equatable {}
-extension ChargeItemListDomain.Destination.Action: Equatable {}
 // swiftlint:enable type_body_length

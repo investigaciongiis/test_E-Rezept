@@ -246,7 +246,7 @@ extension String {
     /// - Returns: Returns the data matrix code content without concatenation symbols upfront.
     func dropGS1Prefix() -> String {
         guard let prefix = String(data: Data([0x1D]), encoding: .utf8),
-              hasPrefix(prefix) else { return self }
+              self.hasPrefix(prefix) else { return self }
         return String(dropFirst(prefix.count))
     }
 }

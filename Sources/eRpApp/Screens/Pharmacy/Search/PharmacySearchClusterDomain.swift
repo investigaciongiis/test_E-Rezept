@@ -45,7 +45,7 @@ struct PharmacySearchClusterDomain {
     @Dependency(\.dismiss) var dismiss
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
     }
 
     func core(into _: inout State, action: Action) -> Effect<Action> {

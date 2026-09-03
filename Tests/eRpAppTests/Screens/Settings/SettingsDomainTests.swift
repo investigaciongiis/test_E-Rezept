@@ -29,8 +29,8 @@ import XCTest
 
 @MainActor
 final class SettingsDomainTests: XCTestCase {
-    var mockTracker = DummyTracker()
-    let mockUserSessionContainer = UsersSessionContainerMock()
+    var mockTracker = MockTracker()
+    let mockUserSessionContainer = MockUsersSessionContainer()
     let scheduler = DispatchQueue.immediate.eraseToAnyScheduler()
     typealias TestStore = TestStoreOf<SettingsDomain>
 
@@ -43,7 +43,7 @@ final class SettingsDomainTests: XCTestCase {
         } withDependencies: { dependencies in
             dependencies.changeableUserSessionContainer = mockUserSessionContainer
             dependencies.tracker = mockTracker
-            dependencies.router = RoutingMock()
+            dependencies.router = MockRouting()
 
             prepareDependencies(&dependencies)
         }
@@ -86,7 +86,6 @@ final class SettingsDomainTests: XCTestCase {
             dependencies.openURLHandler.canOpenURL = { _ in true }
             dependencies.openURLHandler.open = { url in
                 openedURL.withLock { $0 = url }
-                return true
             }
         }
 

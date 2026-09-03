@@ -36,8 +36,8 @@ extension PrescriptionDetailView {
                     }, label: {
                         Text(L10n.prscDtlBtnPkvInvoice)
                     })
-                    .buttonStyle(.primaryHuggingNarrowly)
-                    .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPkvInvoice)
+                        .buttonStyle(.primaryHuggingNarrowly)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPkvInvoice)
                 } else {
                     switch store.chargeItemConsentState {
                     case .granted:
@@ -48,8 +48,7 @@ extension PrescriptionDetailView {
                     case .notGranted:
                         HintView<PrescriptionDetailDomain.Action>(
                             hint: Hints.activateInvoice,
-                            textAction: { store.send(.showGrantConsentAlert) },
-                            closeAction: nil
+                            textAction: { store.send(.showGrantConsentAlert) }
                         )
                         .border(Colors.primary300, width: 0.5, cornerRadius: 16)
                     case .notAuthenticated:
@@ -69,7 +68,6 @@ extension PrescriptionDetailView {
             message: L10n.prscDtlTxtPkvHintActivateMsg,
             actionText: L10n.prscDtlBtnPkvHintActivate,
             actionImageName: SFSymbolName.arrowRight,
-            actionStyle: .rightAligned,
             image: AccessibilityImage(
                 asset: Asset.Prescriptions.Details.refreshLamp,
                 accessibilityName: A11y.prescriptionDetails.prscDtlImgHintPkvActivate

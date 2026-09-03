@@ -21,6 +21,7 @@
 //
 
 import Foundation
+import OpenSSL
 
 /// Types conforming should be able to verify a signature
 public protocol JWTSignatureVerifier {

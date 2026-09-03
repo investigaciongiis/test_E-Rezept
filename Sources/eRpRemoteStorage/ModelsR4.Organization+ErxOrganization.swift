@@ -65,7 +65,7 @@ extension ModelsR4.Organization {
         }
 
         if let line = address.line?.first?.value?.string {
-            if let postalCodeAndCity {
+            if let postalCodeAndCity = postalCodeAndCity {
                 return line + postalCodeAndCity
             }
         }

@@ -34,11 +34,11 @@ final class MedicationReminderListDomainTests: XCTestCase {
     typealias TestStore = TestStoreOf<MedicationReminderListDomain>
 
     let mainQueue = DispatchQueue.immediate
-    var mockUserProfileService: UserProfileServiceMock!
+    var mockUserProfileService: MockUserProfileService!
 
     override func setUp() {
         super.setUp()
-        mockUserProfileService = UserProfileServiceMock()
+        mockUserProfileService = MockUserProfileService()
     }
 
     func testLoadMedicationSchedule() async {
@@ -107,7 +107,7 @@ final class MedicationReminderListDomainTests: XCTestCase {
             }
     }
 
-    func testLoadProfiles() async throws {
+    func testLoadProfiles() async {
         let sut = TestStore(initialState: .init()) {
             MedicationReminderListDomain()
         } withDependencies: { dependencies in
@@ -122,8 +122,7 @@ final class MedicationReminderListDomainTests: XCTestCase {
             UserProfile.Fixtures.olafOffline,
         ]
 
-        mockUserProfileService
-            .userProfilesPublisherAnyPublisherUserProfileUserProfileServiceErrorReturnValue = Just(expectedProfiles)
+        mockUserProfileService.userProfilesPublisherReturnValue = Just(expectedProfiles)
             .setFailureType(to: UserProfileServiceError.self)
             .eraseToAnyPublisher()
 
@@ -133,14 +132,14 @@ final class MedicationReminderListDomainTests: XCTestCase {
 
         await sut.receive(.loadProfileMedicationReminder(expectedProfiles))
 
-        try await sut.receive(.profileMedicationReminderReceived([], XCTUnwrap(expectedProfiles.first))) { state in
+        await sut.receive(.profileMedicationReminderReceived([], expectedProfiles.first!)) { state in
             state.profileMedicationReminder = [MedicationReminderListDomain.ProfileMedicationReminder(
                 profile: expectedProfiles.first!,
                 medicationProfileReminderList: []
             )]
         }
 
-        try await sut.receive(.profileMedicationReminderReceived([], XCTUnwrap(expectedProfiles.last))) { state in
+        await sut.receive(.profileMedicationReminderReceived([], expectedProfiles.last!)) { state in
             state.profileMedicationReminder = [MedicationReminderListDomain.ProfileMedicationReminder(
                 profile: expectedProfiles.first!,
                 medicationProfileReminderList: []

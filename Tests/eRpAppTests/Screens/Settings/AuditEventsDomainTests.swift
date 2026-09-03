@@ -31,7 +31,7 @@ import XCTest
 
 @MainActor
 final class AuditEventsDomainTests: XCTestCase {
-    let mockAuditEventsService = AuditEventsServiceMock()
+    let mockAuditEventsService = MockAuditEventsService()
     let fhirDateFormatter = FHIRDateFormatter.shared
     let uiDateFormatter = UIDateFormatter(fhirDateFormatter: FHIRDateFormatter.shared)
 
@@ -56,10 +56,8 @@ final class AuditEventsDomainTests: XCTestCase {
     func testLoadingEmptyAuditEventList() async {
         let sut = testStore()
         let expectedResponse = PagedContent(content: [ErxAuditEvent](), next: nil)
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(expectedResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Just(expectedResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
 
         await sut.send(.task)
         await sut.receive(.response(.taskReceived(.success(expectedResponse)))) {
@@ -70,9 +68,7 @@ final class AuditEventsDomainTests: XCTestCase {
     func testLoadingAuditEventWhenNotLoggedIn() async {
         let sut = testStore()
         let expectedResponse = AuditEventsServiceError.missingAuthentication
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Fail(error: expectedResponse).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Fail(error: expectedResponse).eraseToAnyPublisher()
 
         await sut.send(.task)
         await sut.receive(.response(.taskReceived(.failure(expectedResponse)))) {
@@ -90,10 +86,8 @@ final class AuditEventsDomainTests: XCTestCase {
 
         // emulate login and close card wall
         let expectedResponse = PagedContent(content: ErxAuditEvent.Fixtures.auditEvents, next: nil)
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(expectedResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Just(expectedResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
         await sut.send(.destination(.presented(.cardWall(.delegate(.close))))) {
             $0.destination = nil
         }
@@ -116,10 +110,8 @@ final class AuditEventsDomainTests: XCTestCase {
             content: ErxAuditEvent.Fixtures.auditEvents,
             next: URL(string: "https://next.link")
         )
-        mockAuditEventsService
-            .loadAuditEventsForProfileIdUUIDLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(firstResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadAuditEventsForLocaleReturnValue = Just(firstResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
         let secondPageResponse = PagedContent(
             content: [ErxAuditEvent(identifier: "105",
                                     locale: "de",
@@ -127,10 +119,8 @@ final class AuditEventsDomainTests: XCTestCase {
                                     timestamp: "2021-04-11T12:45:34.123473321+00:00",
                                     taskId: "7390f983-1e67-11b2-8555-63bf44e43fb8")], next: nil
         )
-        mockAuditEventsService
-            .loadNextAuditEventsForProfileIdUUIDUrlURLLocaleStringAnyPublisherPagedContentErxAuditEventAuditEventsServiceErrorReturnValue =
-            Just(secondPageResponse)
-                .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
+        mockAuditEventsService.loadNextAuditEventsForUrlLocaleReturnValue = Just(secondPageResponse)
+            .setFailureType(to: AuditEventsServiceError.self).eraseToAnyPublisher()
 
         await sut.send(.task)
         await sut.receive(.response(.taskReceived(.success(firstResponse)))) { state in

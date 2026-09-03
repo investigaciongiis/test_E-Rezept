@@ -65,7 +65,7 @@ public struct ProfileImageView: View {
     public var body: some View {
         ZStack {
             Group {
-                if let userImageData, !userImageData.isEmpty {
+                if let userImageData = userImageData, !userImageData.isEmpty {
                     Image(uiImage: UIImage(data: userImageData) ?? UIImage())
                         .resizable()
                         .scaledToFill()
@@ -88,7 +88,7 @@ public struct ProfileImageView: View {
         let statusColor: Color?
 
         var body: some View {
-            if let statusColor {
+            if let statusColor = statusColor {
                 Circle()
                     .fill(Color(.systemBackground))
                     .frame(width: 12, height: 12)
@@ -108,7 +108,7 @@ struct ProfileImageView_Preview: PreviewProvider {
             ProfileImageView(
                 userImageData: nil,
                 image: ProfilePicture.none,
-                backgroundColor: Colors.secondary700,
+                backgroundColor: Color.green,
                 statusColor: Color.red,
                 borderColor: Color.blue,
                 size: .large

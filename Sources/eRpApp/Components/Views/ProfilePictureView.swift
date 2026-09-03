@@ -94,7 +94,7 @@ struct ProfilePictureView: View {
         case .none, .never:
             return nil
         case .connected:
-            return Text(L10n.mainTxtLoggedInState).foregroundColor(Colors.secondary700)
+            return Text(L10n.mainTxtLoggedInState).foregroundColor(Colors.secondary600)
         case .disconnected:
             return Text(L10n.mainTxtLoggedOutState).foregroundColor(Colors.systemGray)
         }
@@ -107,7 +107,7 @@ struct ProfilePictureView: View {
                     action()
                 } label: {
                     Group {
-                        if let userImageData, !userImageData.isEmpty {
+                        if let userImageData = userImageData, !userImageData.isEmpty {
                             Image(uiImage: UIImage(data: userImageData) ?? UIImage())
                                 .resizable()
                                 .scaledToFill()
@@ -143,7 +143,7 @@ struct ProfilePictureView: View {
                     connectionStatusImage
                         .font(.system(size: style.statusImageSize).weight(.bold))
                         .frame(width: style.statusSize, height: style.statusSize, alignment: .center)
-                        .foregroundColor(isConnected ? Colors.secondary700 : Colors.systemGray)
+                        .foregroundColor(isConnected ? Colors.secondary600 : Colors.systemGray)
                         .background(Circle().fill(isConnected ? Colors.secondary200 : Colors.secondary))
                         .border(Colors.systemBackground, width: 4, cornerRadius: 999)
                         .accessibilityIdentifier(A11y.mainScreen.erxImgProfileStatus)

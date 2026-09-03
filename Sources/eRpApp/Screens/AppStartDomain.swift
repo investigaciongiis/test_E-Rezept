@@ -23,7 +23,6 @@
 import Combine
 import ComposableArchitecture
 import eRpKit
-import FeatureCommunication
 import FeatureHelpers
 import IDP
 import SwiftUI
@@ -32,7 +31,7 @@ import SwiftUI
 struct AppStartDomain {
     typealias Store = StoreOf<Self>
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         case loading
         case onboarding(OnboardingDomain)
@@ -77,8 +76,7 @@ struct AppStartDomain {
                                 inRedeemProcess: false
                             )
                         ),
-                        orders: OrdersDomain.State(communicationMessage: Shared(value: [])),
-                        messages: MessageThreadListDomain.State(),
+                        orders: OrdersDomain.State(),
                         settings: .init(),
                         unreadOrderMessageCount: 0,
                         unreadInternalCommunicationCount: 0
@@ -94,6 +92,7 @@ struct AppStartDomain {
                         .map(AppStartDomain.Action.refreshOnboardingStateReceived)
                         .eraseToAnyPublisher
                 )
+
             case let .refreshOnboardingStateReceived(version):
                 if let version {
                     state.destination = .onboarding(OnboardingDomain.State(version: version))
@@ -110,8 +109,7 @@ struct AppStartDomain {
                                 inRedeemProcess: false
                             )
                         ),
-                        orders: OrdersDomain.State(communicationMessage: Shared(value: [])),
-                        messages: MessageThreadListDomain.State(),
+                        orders: OrdersDomain.State(),
                         settings: .init(),
                         unreadOrderMessageCount: 0,
                         unreadInternalCommunicationCount: 0
@@ -185,6 +183,7 @@ struct AppStartDomain {
                     await send(.destination(.app(.setNavigation(.settings))))
                 }
             }
+
         case .scanner:
             return .run { send in
                 // reset destination of settings tab
@@ -291,6 +290,3 @@ struct AppStartDomain {
         }
     }
 }
-
-extension AppStartDomain.Destination.State: Equatable {}
-extension AppStartDomain.Destination.Action: Equatable {}

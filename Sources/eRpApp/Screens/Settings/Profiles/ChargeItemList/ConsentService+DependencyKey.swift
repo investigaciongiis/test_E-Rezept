@@ -28,33 +28,9 @@ import DependenciesMacros
 import eRpKit
 import ErxTaskRepository
 import Foundation
-import Sharing
 
 extension ConsentService: DependencyKey {
-    public static var liveValue: ConsentService = .init { category, profileId in
-        @Shared(.isDemoMode) var demoMode
-        if demoMode {
-            return .granted
-        } else {
-            return try await Self.defaultValue.checkForConsent(category: category, profileID: profileId)
-        }
-    } grantConsent: { category, profileId in
-        @Shared(.isDemoMode) var demoMode
-        if demoMode {
-            return .success
-        } else {
-            return try await Self.defaultValue.grantConsent(category: category, profileID: profileId)
-        }
-    } revokeConsent: { category, profileId in
-        @Shared(.isDemoMode) var demoMode
-        if demoMode {
-            return .success
-        } else {
-            return try await Self.defaultValue.revokeConsent(category: category, profileID: profileId)
-        }
-    }
-
-    public static var defaultValue: ConsentService = {
+    public static var liveValue: ConsentService = {
         @Dependency(\.userSessionProvider) var userSessionProvider
         @Dependency(\.erxTaskRepository) var erxTaskRepository
 
@@ -73,7 +49,7 @@ extension ConsentService: DependencyKey {
                     // At this point, we expect the profile to be associated with an insuranceId
                     throw Error.unexpected
                 }
-                let receivedErxConsents = try await erxTaskRepository.fetchConsents(profileId)
+                let receivedErxConsents = try await erxTaskRepository.fetchConsents()
                 let isValidChargeItemsConsentResult = Self.checkForValidChargeItemsConsent(
                     expecting: category,
                     receivedErxConsents,
@@ -109,7 +85,7 @@ extension ConsentService: DependencyKey {
                 let chargeItemsConsent = Self.createChargeItemsConsent(category: category, insuranceId: insuranceId)
                 let receivedConsent: ErxConsent?
                 do {
-                    receivedConsent = try await erxTaskRepository.grantConsent(chargeItemsConsent, profileId)
+                    receivedConsent = try await erxTaskRepository.grantConsent(chargeItemsConsent)
                 } catch let error as ErxRepositoryError {
                     // we handle the URL return code 409 (conflict) especially as it's not a serious outcome
                     if case let .remote(.fhirClient(.http(fhirClientHttpError))) = error,
@@ -143,7 +119,7 @@ extension ConsentService: DependencyKey {
             switch isAuthenticatedResult {
             case .success(true):
                 do {
-                    try await erxTaskRepository.revokeConsent(category, profileId)
+                    try await erxTaskRepository.revokeConsent(category)
                     return .success
                 } catch let error as ErxRepositoryError {
                     // we handle the URL return code 409 (conflict) especially as it's not a serious outcome

@@ -48,7 +48,7 @@ final class CardWallPINDomainTests: XCTestCase {
         super.setUp()
     }
 
-    func testStateHelper_enteredPINNotNumeric() {
+    func testStateHelper_enteredPINNotNumeric() async {
         let sut = CardWallPINDomain.State(profileId: UUID(), pin: "123456a", transition: .push)
 
         expect(sut.enteredPINNotNumeric).to(beTrue())
@@ -57,7 +57,7 @@ final class CardWallPINDomainTests: XCTestCase {
         expect(sut.enteredPINValid).to(beFalse())
     }
 
-    func testStateHelper_enteredPINTooShort() {
+    func testStateHelper_enteredPINTooShort() async {
         let sut = CardWallPINDomain.State(profileId: UUID(), pin: "123", transition: .push)
 
         expect(sut.enteredPINNotNumeric).to(beFalse())
@@ -74,7 +74,7 @@ final class CardWallPINDomainTests: XCTestCase {
         expect(sut2.enteredPINValid).to(beFalse())
     }
 
-    func testStateHelper_enteredPINTooLong() {
+    func testStateHelper_enteredPINTooLong() async {
         let sut = CardWallPINDomain.State(profileId: UUID(), pin: "123456789", transition: .push)
 
         expect(sut.enteredPINNotNumeric).to(beFalse())
@@ -83,7 +83,7 @@ final class CardWallPINDomainTests: XCTestCase {
         expect(sut.enteredPINValid).to(beFalse())
     }
 
-    func testStateHelper_enteredPINValid() {
+    func testStateHelper_enteredPINValid() async {
         let sut = CardWallPINDomain.State(profileId: UUID(), pin: "123456", transition: .push)
 
         expect(sut.enteredPINNotNumeric).to(beFalse())

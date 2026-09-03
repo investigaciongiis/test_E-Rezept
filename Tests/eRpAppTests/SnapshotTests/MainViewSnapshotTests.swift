@@ -87,11 +87,11 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
         let sut = MainView(store: store(for: MainDomain.State(
             prescriptionListState: PrescriptionListDomain.State(
                 prescriptions: [],
-                profile: UserProfile.Fixtures.profileA
+                profile: UserProfile.Dummies.profileA
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.State(
-                profiles: [UserProfile.Fixtures.profileA],
-                selectedProfileId: UserProfile.Fixtures.profileA.id
+                profiles: [UserProfile.Dummies.profileA],
+                selectedProfileId: UserProfile.Dummies.profileA.id
             )
         )))
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
@@ -105,11 +105,11 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
         let sut = MainView(store: store(for: MainDomain.State(
             prescriptionListState: PrescriptionListDomain.State(
                 prescriptions: [prescription],
-                profile: UserProfile.Fixtures.profileA
+                profile: UserProfile.Dummies.profileA
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
         )))
-        .frame(width: 320, height: 700)
+            .frame(width: 320, height: 700)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
@@ -123,7 +123,7 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
         )))
-        .frame(width: 320, height: 700)
+            .frame(width: 320, height: 700)
         assertSnapshots(of: sut, as: snapshotModi())
     }
 
@@ -131,7 +131,7 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
         let sut = MainView(store: store(for: MainDomain.State(
             prescriptionListState: PrescriptionListDomain.State(
                 prescriptions: Prescription.Dummies.prescriptionsScanned,
-                profile: UserProfile.Fixtures.profileA
+                profile: UserProfile.Dummies.profileA
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
         )))
@@ -145,11 +145,11 @@ final class MainViewSnapshotTests: ERPSnapshotTestCase {
         let sut = MainView(store: store(for: MainDomain.State(
             prescriptionListState: PrescriptionListDomain.State(
                 prescriptions: prescriptions,
-                profile: UserProfile.Fixtures.profileA
+                profile: UserProfile.Dummies.profileA
             ),
             horizontalProfileSelectionState: HorizontalProfileSelectionDomain.Dummies.state
         )))
-        .frame(width: 320, height: 2000)
+            .frame(width: 320, height: 2000)
 
         assertSnapshots(of: sut, as: snapshotModi())
     }

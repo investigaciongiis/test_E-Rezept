@@ -39,7 +39,7 @@ struct OnboardingDomain {
         var path = StackState<Path.State>()
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Path {
         case legalInfo
         case registerAuth(RegisterAuthenticationDomain)
@@ -65,7 +65,7 @@ struct OnboardingDomain {
     }
 
     enum Version: String, Equatable {
-        /// Add new versions to refresh onboarding
+        // Add new versions to refresh onboarding
         case none
 
         init?(rawVersion: String?) {
@@ -75,9 +75,7 @@ struct OnboardingDomain {
             case let .some(version):
                 if let knownVersion = Self(rawValue: version) {
                     self = knownVersion
-                } else {
-                    return nil
-                }
+                } else { return nil }
             }
         }
     }
@@ -187,6 +185,3 @@ extension OnboardingDomain {
         }
     }
 }
-
-extension OnboardingDomain.Path.State: Equatable {}
-extension OnboardingDomain.Path.Action: Equatable {}

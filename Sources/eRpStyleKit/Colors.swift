@@ -37,7 +37,7 @@ public enum Colors {
     public static let alertNegativ = red600
     public static let alertPositiv = secondary600
 
-    public static let starYellow = Colors.yellow500
+    public static let starYellow = Color.yellow
 
     public static let opaqueSeparator = Color(UIColor.opaqueSeparator)
     public static let separator = Color(UIColor.separator)
@@ -47,7 +47,7 @@ public enum Colors {
 extension Colors {
     public static let gifBackground = Color(.gifBackground)
     public static let tabViewToolBarBackground: Color = Asset.Colors.tabViewToolBarBackground.swiftUIColor
-    /// disabled
+    // disabled
     public static let disabled: Color = Asset.Colors.disabled.swiftUIColor
     // primary == blue
     public static let primary900 = Color(.primary900)

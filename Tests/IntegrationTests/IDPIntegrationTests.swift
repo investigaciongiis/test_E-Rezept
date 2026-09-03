@@ -129,7 +129,7 @@ final class IDPIntegrationTests: XCTestCase {
 
         // invalid sso refresh
 
-        var elements = try XCTUnwrap(token.ssoToken?.split(separator: Character("."), omittingEmptySubsequences: false))
+        var elements = token.ssoToken!.split(separator: Character("."), omittingEmptySubsequences: false)
         elements[0] = "eyJlbmMiOiJBMjU2R0NNIiwiY3R5IjoiTkpXVCIsImV4cCI6MTYxODQ5MjE0MSwiYWxnIjoiZGlyIiwia2lkIjoiMDAwMSJ9"
 
         let newSSOToken: String = elements.joined(separator: ".")
@@ -184,11 +184,8 @@ final class IDPIntegrationTests: XCTestCase {
     }
 
     func testBiometrieFlow() throws {
-        let keyIdentifier = try generateSecureRandom(length: 32)
-        let keyTag = try XCTUnwrap(try String(
-            data: XCTUnwrap(keyIdentifier.encodeBase64UrlSafeIntTest()),
-            encoding: .utf8
-        ))
+        let keyIdentifier = try! generateSecureRandom(length: 32)
+        let keyTag = String(data: keyIdentifier.encodeBase64UrlSafeIntTest()!, encoding: .utf8)!
         let privateKeyContainer: PrivateKeyContainer
 
         do {
@@ -288,7 +285,7 @@ final class IDPIntegrationTests: XCTestCase {
             privateKeyContainer
         }
 
-        let pairingSession = try secureEnclaveSignatureProvider.createPairingSession()
+        let pairingSession = try! secureEnclaveSignatureProvider.createPairingSession()
 
         secureEnclaveSignatureProvider.signPairingSession(pairingSession, with: signer, certificate: cert)
             .mapError { $0.asIDPError() }
@@ -412,7 +409,7 @@ final class IDPIntegrationTests: XCTestCase {
                       success = true
 
                       Swift.print("DEVICES: ")
-                      for entry in devices.pairingEntries {
+                      devices.pairingEntries.forEach { entry in
                           Swift.print("Device: ", entry.name, entry.pairingEntryVersion)
                       }
                   },
@@ -479,7 +476,7 @@ final class IDPIntegrationTests: XCTestCase {
         expect(success) == true
         expect(selectedEntry).toNot(beNil())
 
-        guard let selectedEntry else {
+        guard let selectedEntry = selectedEntry else {
             return
         }
 
@@ -493,6 +490,7 @@ final class IDPIntegrationTests: XCTestCase {
             .test(
                 timeout: 100,
                 expectations: { list in
+
                     // MARK: - Step 2: Authentication Request Response
 
                     success = true
@@ -502,7 +500,7 @@ final class IDPIntegrationTests: XCTestCase {
                     .eraseToAnyScheduler()
             )
 
-        expect(redirectURL).toNot(beNil())
+        expect(selectedEntry).toNot(beNil())
 
         // MARK: - Step 3: Universal Link - mocked by calling Step 4 - 7 within this test
 
@@ -576,10 +574,7 @@ class Brainpool256r1Signer: JWTSigner {
     let x5c: X509
     let key: BrainpoolP256r1.Verify.PrivateKey
 
-    init(x5c path: String?, key filePath: String?) throws {
-        guard let path, let filePath else {
-            throw NSError(domain: "Invalid file paths", code: 0, userInfo: nil)
-        }
+    init(x5c path: String, key filePath: String) throws {
         x5c = try X509(der: path.readFileContents())
         key = try BrainpoolP256r1.Verify.PrivateKey(raw: filePath.readFileContents())
     }

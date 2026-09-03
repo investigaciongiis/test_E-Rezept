@@ -25,7 +25,7 @@ import Nimble
 import XCTest
 
 @MainActor
-class PrescriptionTypesUITests: XCTestCase {
+class PrescriptionTypesUITests: XCTestCase, Sendable {
     var app: XCUIApplication!
 
     override func setUp() async throws {
@@ -46,8 +46,7 @@ class PrescriptionTypesUITests: XCTestCase {
         _ = app.wait(for: .runningForeground, timeout: 10.0)
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-        // swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 
@@ -62,13 +61,13 @@ class PrescriptionTypesUITests: XCTestCase {
 
         expect(details1.autIdemHeadlineButton().exists).to(beTrue())
         expect(details1.autIdemInfoButton().label as String?)
-            .to(equal("Ersatzpräparat (Aut idem), Kein Ersatzpräparat möglich"))
+            .to(equal("Kein Ersatzpräparat möglich, Ersatzpräparat (Aut idem)"))
         let autIdemDrawer1 = details1.tapAutIdemHeadlineButton()
         expect(autIdemDrawer1.title()).to(equal("Kein Ersatzpräparat möglich"))
         expect(autIdemDrawer1.description()?.lengthOfBytes(using: .utf8)).to(beGreaterThan(50))
         autIdemDrawer1.close()
 
-        expect(details1.emergencyFeeButton().label as String?).to(equal("Notdienstgebühr, Gebührenpflichtig"))
+        expect(details1.emergencyFeeButton().label as String?).to(equal("Gebührenpflichtig, Notdienstgebühr"))
         let emergencyFeeDrawer1 = details1.tapEmergencyFeeButton()
         expect(emergencyFeeDrawer1.title()).to(equal("Notdienstgebühr"))
         expect(emergencyFeeDrawer1.description()?.lengthOfBytes(using: .utf8)).to(beGreaterThan(50))
@@ -80,13 +79,13 @@ class PrescriptionTypesUITests: XCTestCase {
         let details2 = mainView.tapDetailsForPrescriptionNamed("Substitution|No Emergency Fee")
         expect(details2.autIdemHeadlineButton().exists).to(beFalse())
         expect(details2.autIdemInfoButton().label as String?)
-            .to(equal("Ersatzpräparat (Aut idem), Ersatzpräparat möglich"))
+            .to(equal("Ersatzpräparat möglich, Ersatzpräparat (Aut idem)"))
         let autIdemDrawer2 = details1.tapAutIdemInfoButton()
         expect(autIdemDrawer2.title()).to(equal("Ersatzpräparat möglich"))
         expect(autIdemDrawer2.description()?.lengthOfBytes(using: .utf8)).to(beGreaterThan(50))
         autIdemDrawer2.close()
 
-        expect(details2.emergencyFeeButton().label as String?).to(equal("Notdienstgebühr, Gebührenpflichtig"))
+        expect(details2.emergencyFeeButton().label as String?).to(equal("Gebührenpflichtig, Notdienstgebühr"))
         let emergencyFeeDrawer2 = details2.tapEmergencyFeeButton()
         expect(emergencyFeeDrawer2.title()).to(equal("Notdienstgebühr"))
         expect(emergencyFeeDrawer2.description()?.lengthOfBytes(using: .utf8)).to(beGreaterThan(50))
@@ -99,12 +98,12 @@ class PrescriptionTypesUITests: XCTestCase {
 
         expect(details3.autIdemHeadlineButton().exists).to(beTrue())
         expect(details3.autIdemInfoButton().label as String?)
-            .to(equal("Ersatzpräparat (Aut idem), Kein Ersatzpräparat möglich"))
+            .to(equal("Kein Ersatzpräparat möglich, Ersatzpräparat (Aut idem)"))
         let autIdemDrawer3 = details3.tapAutIdemHeadlineButton()
         expect(autIdemDrawer3.title()).to(equal("Kein Ersatzpräparat möglich"))
         expect(autIdemDrawer3.description()?.lengthOfBytes(using: .utf8)).to(beGreaterThan(50))
         autIdemDrawer3.close()
-        expect(details3.emergencyFeeButton().label as String?).to(equal("Notdienstgebühr, Übernimmt Versicherung"))
+        expect(details3.emergencyFeeButton().label as String?).to(equal("Übernimmt Versicherung, Notdienstgebühr"))
         let emergencyFeeDrawer3 = details1.tapEmergencyFeeButton()
         expect(emergencyFeeDrawer3.title()).to(equal("Notdienstgebühr"))
         expect(emergencyFeeDrawer3.description()?.lengthOfBytes(using: .utf8)).to(beGreaterThan(50))
@@ -115,9 +114,9 @@ class PrescriptionTypesUITests: XCTestCase {
         // [TEST:NOCTU002,AUTIDEM002]
         let details4 = mainView.tapDetailsForPrescriptionNamed("Substitution|Emergency Fee")
         expect(details4.autIdemHeadlineButton().exists).to(beFalse())
-        expect(details4.emergencyFeeButton().label as String?).to(equal("Notdienstgebühr, Übernimmt Versicherung"))
+        expect(details4.emergencyFeeButton().label as String?).to(equal("Übernimmt Versicherung, Notdienstgebühr"))
         expect(details4.autIdemInfoButton().label as String?)
-            .to(equal("Ersatzpräparat (Aut idem), Ersatzpräparat möglich"))
+            .to(equal("Ersatzpräparat möglich, Ersatzpräparat (Aut idem)"))
         let autIdemDrawer4 = details4.tapAutIdemInfoButton()
         expect(autIdemDrawer4.title()).to(equal("Ersatzpräparat möglich"))
         expect(autIdemDrawer4.description()?.lengthOfBytes(using: .utf8)).to(beGreaterThan(50))

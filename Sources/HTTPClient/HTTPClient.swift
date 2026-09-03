@@ -97,23 +97,23 @@ extension HTTPClient {
 /// HTTP Error
 @CodedError("530")
 public enum HTTPClientError: Swift.Error, Equatable, LocalizedError {
-    /// Internal error in the request/chain handling
     @ErrorCode("01")
+    /// Internal error in the request/chain handling
     case internalError(String)
-    /// The server responded with an error
     @ErrorCode("02")
+    /// The server responded with an error
     case httpError(URLError)
-    /// The connection to the server has gone bad
     @ErrorCode("03")
+    /// The connection to the server has gone bad
     case networkError(String)
-    /// Authentication error
     @ErrorCode("04")
+    /// Authentication error
     case authentication(Swift.Error)
-    /// Error emitted by the VAU client
     @ErrorCode("05")
+    /// Error emitted by the VAU client
     case vauError(Swift.Error)
-    /// Unclassified error
     @ErrorCode("06")
+    /// Unclassified error
     case unknown(Swift.Error)
 
     public static func ==(lhs: HTTPClientError, rhs: HTTPClientError) -> Bool {

@@ -48,9 +48,9 @@ struct PharmacyOpenHoursCalculator {
         var foregroundColor: Color {
             switch self {
             case .open:
-                Colors.secondary700
+                Colors.secondary600
             case .closingButOpenLaterToday, .closingSoon, .willOpen:
-                Colors.yellow800
+                Colors.yellow700
             case .unknown, .closed:
                 Colors.systemLabelSecondary
             }
@@ -106,14 +106,7 @@ struct PharmacyOpenHoursCalculator {
                let openingDateTime = date.createSameDay(with: openingTime),
                let closingDateTime = date.createSameDay(with: closingTime) {
                 var nextReopenTime: Date?
-
-                var openInterval: ClosedRange<Date>
-
-                if openingDateTime <= closingDateTime {
-                    openInterval = openingDateTime ... closingDateTime
-                } else {
-                    openInterval = closingDateTime ... openingDateTime
-                }
+                var openInterval = openingDateTime ... closingDateTime
 
                 let todayStart = Calendar.current.startOfDay(for: date)
                 let endOfToday = Calendar.current

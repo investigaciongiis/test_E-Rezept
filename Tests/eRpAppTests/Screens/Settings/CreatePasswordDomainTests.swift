@@ -34,9 +34,9 @@ final class CreatePasswordDomainTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        mockPasswordManager = AppSecurityManagerMock()
-        mockPasswordStrengthTester = PasswordStrengthTesterMock()
-        mockUserDataStore = UserDataStoreMock()
+        mockPasswordManager = MockAppSecurityManager()
+        mockPasswordStrengthTester = MockPasswordStrengthTester()
+        mockUserDataStore = MockUserDataStore()
     }
 
     func testStore(for state: CreatePasswordDomain.State) -> TestStore {
@@ -52,13 +52,13 @@ final class CreatePasswordDomainTests: XCTestCase {
 
     let emptyPasswords = CreatePasswordDomain.State(mode: .create, passwordA: "", passwordB: "")
     let testScheduler = DispatchQueue.test
-    var mockPasswordManager: AppSecurityManagerMock!
-    var mockPasswordStrengthTester: PasswordStrengthTesterMock!
-    var mockUserDataStore: UserDataStoreMock!
+    var mockPasswordManager: MockAppSecurityManager!
+    var mockPasswordStrengthTester: MockPasswordStrengthTester!
+    var mockUserDataStore: MockUserDataStore!
 
     func testSetPasswordAOnly() async {
         let store = testStore(for: emptyPasswords)
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = PasswordStrength.none
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = PasswordStrength.none
 
         await store.send(\.binding.passwordA, "MyPasswordA") { state in
             state.passwordA = "MyPasswordA"
@@ -73,7 +73,7 @@ final class CreatePasswordDomainTests: XCTestCase {
 
     func testSetPasswordBOnly() async {
         let store = testStore(for: emptyPasswords)
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = PasswordStrength.none
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = PasswordStrength.none
 
         await store.send(\.binding.passwordB, "MyPasswordB") { state in
             state.passwordB = "MyPasswordB"
@@ -84,7 +84,7 @@ final class CreatePasswordDomainTests: XCTestCase {
 
     func testComparePasswords() async {
         let store = testStore(for: emptyPasswords)
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = PasswordStrength.none
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = PasswordStrength.none
 
         await store.send(\.binding.passwordA, "MyPassword") { state in
             state.passwordA = "MyPassword"
@@ -96,8 +96,7 @@ final class CreatePasswordDomainTests: XCTestCase {
             let message = state.passwordErrorMessage
             expect(message) == L10n.cpwTxtPasswordStrengthInsufficient.text
         }
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = PasswordStrength
-            .strong
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = PasswordStrength.strong
         await store.send(\.binding.passwordA, "Secure password") { state in
             state.passwordA = "Secure password"
             state.passwordStrength = .strong
@@ -120,7 +119,7 @@ final class CreatePasswordDomainTests: XCTestCase {
     }
 
     func testShowPasswordsNotEqualMessageTiming() async {
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = .excellent
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = .excellent
 
         let store = testStore(for: .init(mode: .create,
                                          passwordA: "ABC",
@@ -147,7 +146,7 @@ final class CreatePasswordDomainTests: XCTestCase {
                 passwordB: "ABCD"
             )
         )
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = PasswordStrength.none
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = PasswordStrength.none
         await store.send(.saveButtonTapped) { state in
             state.showPasswordErrorMessage = true
         }
@@ -182,15 +181,15 @@ final class CreatePasswordDomainTests: XCTestCase {
                 showPasswordErrorMessage: true
             )
         )
-        mockPasswordManager.savePasswordStringBoolReturnValue = true
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled) == false
+        mockPasswordManager.savePasswordReturnValue = true
+        expect(self.mockPasswordManager.savePasswordCalled) == false
 
         await store.send(.saveButtonTapped)
 
         await store.receive(.delegate(.closeAfterPasswordSaved(mode: .create)))
 
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled) == true
-        expect(self.mockPasswordManager.savePasswordStringBoolCallsCount) == 1
+        expect(self.mockPasswordManager.savePasswordCalled) == true
+        expect(self.mockPasswordManager.savePasswordCallsCount) == 1
     }
 
     func testPasswordWasSavedWhenInvalidCreatePasswordAndButtonPressed() async {
@@ -207,7 +206,7 @@ final class CreatePasswordDomainTests: XCTestCase {
             let message = state.passwordErrorMessage
             expect(message) == L10n.cpwTxtPasswordStrengthInsufficient.text
         }
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled) == false
+        expect(self.mockPasswordManager.savePasswordCalled) == false
     }
 
     func testPasswordWasSavedWhenEmptyCreatePasswordAndButtonPressed() async {
@@ -221,7 +220,7 @@ final class CreatePasswordDomainTests: XCTestCase {
         )
 
         await store.send(.saveButtonTapped)
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled) == false
+        expect(self.mockPasswordManager.savePasswordCalled) == false
     }
 
     func testCloseWhenPasswordSavedSuccessfully() async {
@@ -233,7 +232,7 @@ final class CreatePasswordDomainTests: XCTestCase {
                 passwordStrength: .excellent
             )
         )
-        mockPasswordManager.savePasswordStringBoolReturnValue = true
+        mockPasswordManager.savePasswordReturnValue = true
 
         await store.send(.saveButtonTapped)
         await store.receive(.delegate(.closeAfterPasswordSaved(mode: .create)))
@@ -249,15 +248,15 @@ final class CreatePasswordDomainTests: XCTestCase {
                 passwordStrength: .excellent
             )
         )
-        mockPasswordManager.savePasswordStringBoolReturnValue = true
-        mockPasswordManager.matchesPasswordStringBoolReturnValue = true
+        mockPasswordManager.savePasswordReturnValue = true
+        mockPasswordManager.matchesPasswordReturnValue = true
 
-        expect(self.mockPasswordManager.matchesPasswordStringBoolCalled).to(beFalse())
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled).to(beFalse())
+        expect(self.mockPasswordManager.matchesPasswordCalled).to(beFalse())
+        expect(self.mockPasswordManager.savePasswordCalled).to(beFalse())
         await store.send(.saveButtonTapped)
         await store.receive(.delegate(.closeAfterPasswordSaved(mode: .update)))
-        expect(self.mockPasswordManager.matchesPasswordStringBoolCalled).to(beTrue())
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled).to(beTrue())
+        expect(self.mockPasswordManager.matchesPasswordCalled).to(beTrue())
+        expect(self.mockPasswordManager.savePasswordCalled).to(beTrue())
     }
 
     func testUpdatePasswordFailsIfPreviousPasswordIsWrong() async {
@@ -270,16 +269,16 @@ final class CreatePasswordDomainTests: XCTestCase {
                 passwordStrength: .excellent
             )
         )
-        mockPasswordManager.savePasswordStringBoolReturnValue = true
-        mockPasswordManager.matchesPasswordStringBoolReturnValue = false
+        mockPasswordManager.savePasswordReturnValue = true
+        mockPasswordManager.matchesPasswordReturnValue = false
 
-        expect(self.mockPasswordManager.matchesPasswordStringBoolCalled).to(beFalse())
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled).to(beFalse())
+        expect(self.mockPasswordManager.matchesPasswordCalled).to(beFalse())
+        expect(self.mockPasswordManager.savePasswordCalled).to(beFalse())
         await store.send(.saveButtonTapped) { state in
             state.showOriginalPasswordWrong = true
         }
-        expect(self.mockPasswordManager.matchesPasswordStringBoolCalled).to(beTrue())
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled).to(beFalse())
+        expect(self.mockPasswordManager.matchesPasswordCalled).to(beTrue())
+        expect(self.mockPasswordManager.savePasswordCalled).to(beFalse())
     }
 
     func testUpdatePasswordFailsIfPasswordDontMatch() async {
@@ -292,16 +291,16 @@ final class CreatePasswordDomainTests: XCTestCase {
                 passwordStrength: .excellent
             )
         )
-        mockPasswordManager.savePasswordStringBoolReturnValue = true
-        mockPasswordManager.matchesPasswordStringBoolReturnValue = true
+        mockPasswordManager.savePasswordReturnValue = true
+        mockPasswordManager.matchesPasswordReturnValue = true
 
-        expect(self.mockPasswordManager.matchesPasswordStringBoolCalled).to(beFalse())
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled).to(beFalse())
+        expect(self.mockPasswordManager.matchesPasswordCalled).to(beFalse())
+        expect(self.mockPasswordManager.savePasswordCalled).to(beFalse())
         await store.send(.saveButtonTapped) { state in
             state.showPasswordErrorMessage = true
         }
-        expect(self.mockPasswordManager.matchesPasswordStringBoolCalled).to(beFalse())
-        expect(self.mockPasswordManager.savePasswordStringBoolCalled).to(beFalse())
+        expect(self.mockPasswordManager.matchesPasswordCalled).to(beFalse())
+        expect(self.mockPasswordManager.savePasswordCalled).to(beFalse())
     }
 
     func testSaveFailsIfPasswordStrengthLow() async {
@@ -317,13 +316,13 @@ final class CreatePasswordDomainTests: XCTestCase {
             )
         )
 
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = PasswordStrength.none
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = PasswordStrength.none
         await store.send(.saveButtonTapped) { state in
             state.showPasswordErrorMessage = true
             let message = state.passwordErrorMessage
             expect(message) == L10n.cpwTxtPasswordStrengthInsufficient.text
         }
-        expect(self.mockPasswordManager.savePasswordStringBoolCallsCount).to(equal(0))
+        expect(self.mockPasswordManager.savePasswordCallsCount).to(equal(0))
     }
 
     func testSetPasswordTriggersSetPasswordStrength() async {
@@ -336,14 +335,13 @@ final class CreatePasswordDomainTests: XCTestCase {
             )
         )
 
-        mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthReturnValue = PasswordStrength
-            .excellent
+        mockPasswordStrengthTester.passwordStrengthForReturnValue = PasswordStrength.excellent
 
         await store.send(\.binding.passwordA, "abc") { state in
             state.passwordA = "abc"
             state.passwordStrength = .excellent
         }
-        expect(self.mockPasswordStrengthTester.passwordStrengthForPasswordStringPasswordStrengthCallsCount).to(equal(1))
+        expect(self.mockPasswordStrengthTester.passwordStrengthForCallsCount).to(equal(1))
 
         await testScheduler.run()
         await store.receive(.comparePasswords) { state in

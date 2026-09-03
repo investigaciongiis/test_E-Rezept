@@ -37,93 +37,82 @@ extension DiGaDetailView {
 
             SectionContainer(
                 content: {
-                    LabeledContent {
-                        Text(store.diGaTask.appName ?? L10n.digaDtlTxtNa.text)
-                    } label: {
-                        Text(L10n.digaDtlTxtDigaName)
-                    }
+                    SubTitle(
+                        title: store.diGaTask.appName ?? L10n.digaDtlTxtNa.text,
+                        description: L10n.digaDtlTxtDigaName
+                    )
                     .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtAppName)
 
-                    LabeledContent {
-                        Text(store.bfArMDisplayInfo?.languages ?? L10n.digaDtlTxtBfarmNa.text)
-                    } label: {
-                        Text(L10n.digaDtlTxtLanguages)
-                    }
+                    SubTitle(
+                        title: store.bfArMDisplayInfo?.languages ?? L10n.digaDtlTxtBfarmNa.text,
+                        description: L10n.digaDtlTxtLanguages
+                    )
                     .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtLanguages)
 
-                    LabeledContent {
-                        Text(store.bfArMDisplayInfo?.platform ?? L10n.digaDtlTxtBfarmNa.text)
-                    } label: {
-                        Text(L10n.digaDtlTxtPlatform)
-                    }
+                    SubTitle(
+                        title: store.bfArMDisplayInfo?.platform ?? L10n.digaDtlTxtBfarmNa.text,
+                        description: L10n.digaDtlTxtPlatform
+                    )
                     .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtPlatform)
 
-                    LabeledContent {
-                        Text(store.bfArMDisplayInfo?.contractMedicalService ?? L10n.digaDtlTxtBfarmNa.text)
-                    } label: {
-                        Text(L10n.digaDtlTxtMedicalService)
-                    }
+                    SubTitle(
+                        title: store.bfArMDisplayInfo?.contractMedicalService ?? L10n.digaDtlTxtBfarmNa.text,
+                        description: L10n.digaDtlTxtMedicalService
+                    )
                     .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtMedicalService)
 
-                    LabeledContent {
-                        Text(store.bfArMDisplayInfo?.additionalDevices ?? L10n.digaDtlTxtBfarmNa.text)
-                    } label: {
-                        Text(L10n.digaDtlTxtAdditionalDevices)
-                    }
+                    SubTitle(
+                        title: store.bfArMDisplayInfo?.additionalDevices ?? L10n.digaDtlTxtBfarmNa.text,
+                        description: L10n.digaDtlTxtAdditionalDevices
+                    )
                     .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtAdditionalDevices)
 
                     Button(action: { store.send(.setNavigation(tag: .duesInfo)) }, label: {
-                        LabeledContent {
-                            Text(L10n.digaDtlTxtPatientCostZero.text)
-                        } label: {
-                            Text(L10n.digaDtlTxtPatientCost)
-                        }
+                        SubTitle(
+                            title: L10n.digaDtlTxtPatientCostZero.text,
+                            description: L10n.digaDtlTxtPatientCost
+                        ).subTitleStyle(.info)
                     })
-                    .labeledContentStyle(.vertical(icon: SFSymbolName.info))
-                    .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtPatientCost)
+                        .buttonStyle(.navigation)
+                        .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtPatientCost)
 
-                    LabeledContent {
-                        Text(store.bfArMDisplayInfo?.manufacturerCost ?? L10n.digaDtlTxtBfarmNa.text)
-                    } label: {
-                        Text(L10n.digaDtlTxtProducerCost)
-                    }
+                    SubTitle(
+                        title: store.bfArMDisplayInfo?.manufacturerCost ?? L10n.digaDtlTxtBfarmNa.text,
+                        description: L10n.digaDtlTxtProducerCost
+                    )
                     .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtProductionCost)
 
                     Button(action: { store.send(.setNavigation(tag: .patient)) }, label: {
-                        LabeledContent {
-                            Text(store.diGaTask.patientName ?? L10n.digaDtlTxtNa.text)
-                        } label: {
-                            Text(L10n.prscDtlTxtPractitionerPerson)
-                        }
+                        SubTitle(
+                            title: store.diGaTask.patientName ?? L10n.digaDtlTxtNa.text,
+                            details: L10n.prscDtlTxtPractitionerPerson
+                        )
                     })
-                    .buttonStyle(.navigation)
-                    .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPractitioner)
+                        .buttonStyle(.navigation)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPractitioner)
 
                     Button(action: { store.send(.setNavigation(tag: .practitioner)) }, label: {
-                        LabeledContent {
-                            Text(store.diGaTask.practitioner ?? L10n.digaDtlTxtNa.text)
-                        } label: {
-                            Text(L10n.prscDtlTxtPractitionerPerson)
-                        }
+                        SubTitle(
+                            title: store.diGaTask.practitioner ?? L10n.digaDtlTxtNa.text,
+                            details: L10n.prscDtlTxtPractitionerPerson
+                        )
                     })
-                    .buttonStyle(.navigation)
-                    .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPractitioner)
+                        .buttonStyle(.navigation)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPractitioner)
 
                     Button(action: { store.send(.setNavigation(tag: .organization)) }, label: {
-                        LabeledContent {
-                            Text(store.diGaTask.organization ?? L10n.digaDtlTxtNa.text)
-                        } label: {
-                            Text(L10n.prscDtlTxtPractitionerPerson)
-                        }
+                        SubTitle(
+                            title: store.diGaTask.organization ?? L10n.digaDtlTxtNa.text,
+                            details: L10n.prscDtlTxtPractitionerPerson
+                        )
                     })
-                    .buttonStyle(.navigation)
-                    .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPractitioner)
+                        .buttonStyle(.navigation)
+                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlBtnPractitioner)
                 }, moreContent: {
-                    LabeledContent {
-                        Text(store.diGaTask.authoredOnDate ?? L10n.digaDtlTxtNa.text)
-                    } label: {
-                        Text(L10n.digaDtlTxtAuthoredDate)
-                    }
+                    SubTitle(
+                        title: store.diGaTask.authoredOnDate ?? L10n.digaDtlTxtNa.text,
+                        description: L10n.digaDtlTxtAuthoredDate
+                    )
                     .accessibilityIdentifier(A11y.diga.detail.digaDtlTxtAuthoredOn)
 
                     Button(

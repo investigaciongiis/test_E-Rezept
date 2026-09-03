@@ -54,11 +54,11 @@ struct X509VAUCertificate: VAUCertificate {
     }
 
     init(der: Data) throws {
-        try self.init(x509: X509(der: der))
+        self.init(x509: try X509(der: der))
     }
 
     init(pem: Data) throws {
-        try self.init(x509: X509(pem: pem))
+        self.init(x509: try X509(pem: pem))
     }
 
     var brainpoolP256r1KeyExchangePublicKey: BrainpoolP256r1.KeyExchange.PublicKey? {

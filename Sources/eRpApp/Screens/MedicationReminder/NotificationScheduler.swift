@@ -38,12 +38,28 @@ struct NotificationScheduler {
         var date: Date
         var request: UNNotificationRequest
 
+        init(
+            date: Date,
+            request: UNNotificationRequest
+        ) {
+            self.date = date
+            self.request = request
+        }
+
         struct Response: Equatable {
             var notification: Notification
+
+            init(notification: Notification) {
+                self.notification = notification
+            }
         }
 
         struct Settings: Equatable {
             var authorizationStatus: UNAuthorizationStatus
+
+            init(authorizationStatus: UNAuthorizationStatus) {
+                self.authorizationStatus = authorizationStatus
+            }
         }
     }
 }
@@ -117,7 +133,7 @@ extension NotificationScheduler {
         // Create one notification per schedule per schedule's entry
         // If the schedule's end date is `distantFuture` then one (self-repeating) notification is created
         // If the schedule`s `isActive` is false it will be filtered out
-        schedules
+        let oneRequestForEachScheduleEntry = schedules
             .filter(\.isActive)
             .flatMap { schedule in
                 Request.Creator.oneNotificationRequestForEachEntryAccountingForWeekdaySelection(
@@ -143,6 +159,7 @@ extension NotificationScheduler {
 
         // since 64 notifications is the maximum that NotificationCenter accepts,
         // sort them by date (and cut off after 64) before adding
+        return oneRequestForEachScheduleEntry
     }
 
     enum Request {
@@ -161,7 +178,7 @@ extension NotificationScheduler {
                 content.threadIdentifier = "medication_schedule"
 
                 let hasFiniteEndDate = schedule.end != Date.distantFuture
-                return schedule.entries
+                let notificationRequests: [UNNotificationRequest] = schedule.entries
                     .flatMap { entry -> [UNNotificationRequest] in
                         content.userInfo = ["entries": [entry.id.uuidString]]
 
@@ -273,6 +290,7 @@ extension NotificationScheduler {
                         }
                         return requests
                     }
+                return notificationRequests
             }
 
             /// - Note: This function may create NotificationRequests
@@ -292,7 +310,7 @@ extension NotificationScheduler {
                 content.threadIdentifier = "medication_schedule"
 
                 let hasFiniteEndDate = schedule.end != Date.distantFuture
-                return schedule.entries
+                let notificationRequests: [UNNotificationRequest] = schedule.entries
                     .flatMap { entry -> [UNNotificationRequest] in
                         content.userInfo = ["entries": [entry.id.uuidString]]
 
@@ -356,6 +374,7 @@ extension NotificationScheduler {
                         }
                         return requests
                     }
+                return notificationRequests
             }
         }
     }

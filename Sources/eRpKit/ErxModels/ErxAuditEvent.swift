@@ -46,9 +46,7 @@ public struct ErxAuditEvent: Identifiable, Hashable, Codable {
     }
 
     /// Id of the audit event
-    public var id: String {
-        identifier
-    }
+    public var id: String { identifier }
 
     /// Identifier of the audit event
     public let identifier: String

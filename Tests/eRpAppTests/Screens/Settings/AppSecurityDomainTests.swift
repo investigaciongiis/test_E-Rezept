@@ -33,14 +33,14 @@ final class AppSecurityDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.test
 
     typealias TestStore = TestStoreOf<AppSecurityDomain>
-    var mockUserDataStore: UserDataStoreMock!
-    var mockAppSecurityManager: AppSecurityManagerMock!
+    var mockUserDataStore: MockUserDataStore!
+    var mockAppSecurityManager: MockAppSecurityManager!
 
     override func setUp() {
         super.setUp()
 
-        mockUserDataStore = UserDataStoreMock()
-        mockAppSecurityManager = AppSecurityManagerMock()
+        mockUserDataStore = MockUserDataStore()
+        mockAppSecurityManager = MockAppSecurityManager()
     }
 
     private func testStore(for availableSecurityOptions: [AppSecurityOption] = [],

@@ -33,7 +33,7 @@ class DefaultCoreDataCrudable: CoreDataCrudable {
     /// Factory that provides the underlying CoreDataController with a NSPersistentContainer
     let coreDataControllerFactory: CoreDataControllerFactory
 
-    init(
+    internal init(
         foregroundQueue: AnySchedulerOf<DispatchQueue>,
         backgroundQueue: AnySchedulerOf<DispatchQueue>,
         coreDataControllerFactory: CoreDataControllerFactory
@@ -70,12 +70,12 @@ protocol CoreDataCrudable {
     /// Deletes all results of the passed NSFetchRequest on a background context
     /// and returns the success or failure state of the operation in a publisher
     /// - Parameter fetchRequest: NSFetchRequest of the entities that should be deleted
-    func delete(
-        resultsOf fetchRequest: NSFetchRequest<some NSManagedObject>
+    func delete<Entity: NSManagedObject>(
+        resultsOf fetchRequest: NSFetchRequest<Entity>
     ) -> AnyPublisher<Bool, LocalStoreError>
 
-    func delete(
-        with fetchRequest: NSFetchRequest<some NSManagedObject>
+    func delete<Entity: NSManagedObject>(
+        with fetchRequest: NSFetchRequest<Entity>
     ) throws
 
     /// Executes the passed NSFetchRequest on the `viewContext` and returns the results in a publisher
@@ -234,7 +234,7 @@ extension CoreDataCrudable {
         }
     }
 
-    func delete(resultsOf fetchRequest: NSFetchRequest<some NSManagedObject>) -> AnyPublisher<Bool, Error> {
+    func delete<Entity: NSManagedObject>(resultsOf fetchRequest: NSFetchRequest<Entity>) -> AnyPublisher<Bool, Error> {
         let coreData: CoreDataController
         do {
             coreData = try coreDataControllerFactory.loadCoreDataController()
@@ -267,8 +267,8 @@ extension CoreDataCrudable {
         .eraseToAnyPublisher()
     }
 
-    func delete(
-        with fetchRequest: NSFetchRequest<some NSManagedObject>
+    func delete<Entity: NSManagedObject>(
+        with fetchRequest: NSFetchRequest<Entity>
     ) throws {
         let coreData: CoreDataController
         do {

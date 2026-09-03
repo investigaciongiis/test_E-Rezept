@@ -23,10 +23,10 @@
 
 @testable import AVS
 
-// swiftformat:disable emptyExtensions
+// NOTE: Use (and migrate to) `AutoMockable` rather than `ProtocolMock`.
+
 // sourcery:begin: AutoMockable
 extension AVSClient {}
 extension AVSCmsEncrypter {}
 extension AVSMessageConverter {}
 // sourcery:end
-// swiftformat:enable emptyExtensions

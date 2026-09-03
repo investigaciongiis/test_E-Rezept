@@ -109,15 +109,19 @@ final class ErxTaskCoreDataStoreTest: XCTestCase {
 
     // MARK: - ErxTasks
 
-    lazy var task1: ErxTask = .init(identifier: "id_1",
-                                    status: .ready,
-                                    flowType: ErxTask.FlowType.pharmacyOnly,
-                                    lastModified: "2021-07-10T10:55:04+02:00")
+    lazy var task1: ErxTask = {
+        ErxTask(identifier: "id_1",
+                status: .ready,
+                flowType: ErxTask.FlowType.pharmacyOnly,
+                lastModified: "2021-07-10T10:55:04+02:00")
+    }()
 
-    lazy var task2: ErxTask = .init(identifier: "id_2",
-                                    status: .ready,
-                                    flowType: ErxTask.FlowType.pharmacyOnly,
-                                    lastModified: "2021-07-20T10:55:04+02:00")
+    lazy var task2: ErxTask = {
+        ErxTask(identifier: "id_2",
+                status: .ready,
+                flowType: ErxTask.FlowType.pharmacyOnly,
+                lastModified: "2021-07-20T10:55:04+02:00")
+    }()
 
     func testSaveTasks() throws {
         let store = loadErxCoreDataStore()
@@ -268,7 +272,7 @@ final class ErxTaskCoreDataStoreTest: XCTestCase {
         cancellable.cancel()
     }
 
-    func testFetchTaskByIdNoResults() {
+    func testFetchTaskByIdNoResults() throws {
         let store = loadErxCoreDataStore()
         let taskToFetch = ErxTask(identifier: "not_in_store_id", status: .ready, flowType: .pharmacyOnly)
 
@@ -961,8 +965,7 @@ final class ErxTaskCoreDataStoreTest: XCTestCase {
         // there is a newer medicationDispense in store
         expect(receivedValues.count).toEventually(equal(1))
         expect(receivedValues.first) == ErxTask.Fixtures.medicationDispense
-        expect(try XCTUnwrap(medicationDispense.whenHandedOver?.date)) < ErxTask.Fixtures.medicationDispenseWithPZN
-            .whenHandedOver!
+        expect(medicationDispense.whenHandedOver!.date) < ErxTask.Fixtures.medicationDispenseWithPZN.whenHandedOver!
             .date!
     }
 

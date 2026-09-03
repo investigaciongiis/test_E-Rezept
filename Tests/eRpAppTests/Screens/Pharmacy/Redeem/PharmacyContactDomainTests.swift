@@ -32,7 +32,7 @@ import XCTest
 @MainActor
 class PharmacyContactDomainTests: XCTestCase {
     let testScheduler = DispatchQueue.immediate
-    var mockShipmentInfoDataStore: ShipmentInfoDataStoreMock!
+    var mockShipmentInfoDataStore: MockShipmentInfoDataStore!
     var mockInputValidator: MockRedeemInputValidator!
 
     typealias TestStore = TestStoreOf<PharmacyContactDomain>
@@ -49,7 +49,7 @@ class PharmacyContactDomainTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        mockShipmentInfoDataStore = ShipmentInfoDataStoreMock()
+        mockShipmentInfoDataStore = MockShipmentInfoDataStore()
         mockInputValidator = MockRedeemInputValidator()
     }
 
@@ -77,18 +77,16 @@ class PharmacyContactDomainTests: XCTestCase {
             serviceOption: .erxTaskRepository
         ))
         mockInputValidator.returnValue = .valid
-        mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorReturnValue = Just([shipmentInfo])
+        mockShipmentInfoDataStore.saveShipmentInfosReturnValue = Just([shipmentInfo])
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         // when
         await sut.send(.save)
 
         // then
-        expect(self.mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.saveShipmentInfosCallsCount).to(equal(1))
         await sut.receive(.response(.shipmentInfoSaved(.success(shipmentInfo))))
-        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdUUIDVoidCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdCallsCount).to(equal(1))
         await sut.receive(.delegate(.close))
     }
 
@@ -102,7 +100,7 @@ class PharmacyContactDomainTests: XCTestCase {
             )
         )
         mockInputValidator.returnValue = .valid
-        mockShipmentInfoDataStore.saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorReturnValue =
+        mockShipmentInfoDataStore.saveShipmentInfosReturnValue =
             Fail(error: expectedError)
                 .eraseToAnyPublisher()
 
@@ -110,8 +108,7 @@ class PharmacyContactDomainTests: XCTestCase {
         await sut.send(.save)
 
         // then
-        expect(self.mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.saveShipmentInfosCallsCount).to(equal(1))
         await sut.receive(.response(.shipmentInfoSaved(.failure(expectedError)))) {
             $0.alertState = AlertState(
                 title: { TextState("Fehler") },
@@ -123,7 +120,7 @@ class PharmacyContactDomainTests: XCTestCase {
                 message: { TextState(LocalStoreError.write(error: DemoError.demo).localizedDescriptionWithErrorList) }
             )
         }
-        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdUUIDVoidCallsCount).to(equal(0))
+        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdCallsCount).to(equal(0))
     }
 
     func testChangingInputIntoSomethingInvalid() async {
@@ -269,16 +266,14 @@ class PharmacyContactDomainTests: XCTestCase {
             state.contactInfo = PharmacyContactDomain.ContactInfo(finalShipmentInfo)
         }
 
-        mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorReturnValue = Just([finalShipmentInfo])
+        mockShipmentInfoDataStore.saveShipmentInfosReturnValue = Just([finalShipmentInfo])
             .setFailureType(to: LocalStoreError.self).eraseToAnyPublisher()
 
         await sut.send(.save)
 
-        expect(self.mockShipmentInfoDataStore
-            .saveShipmentInfosShipmentInfoAnyPublisherShipmentInfoLocalStoreErrorCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.saveShipmentInfosCallsCount).to(equal(1))
         await sut.receive(.response(.shipmentInfoSaved(.success(finalShipmentInfo))))
-        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdUUIDVoidCallsCount).to(equal(1))
+        expect(self.mockShipmentInfoDataStore.setSelectedShipmentInfoIdCallsCount).to(equal(1))
         await sut.receive(.delegate(.close))
     }
 }

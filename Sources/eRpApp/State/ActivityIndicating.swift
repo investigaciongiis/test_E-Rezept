@@ -29,7 +29,5 @@ protocol ActivityIndicating {
 }
 
 struct DummyActivityIndicating: ActivityIndicating {
-    var isActive: AnyPublisher<Bool, Never> {
-        Just(true).eraseToAnyPublisher()
-    }
+    var isActive: AnyPublisher<Bool, Never> { Just(true).eraseToAnyPublisher() }
 }

@@ -26,7 +26,7 @@ import Nimble
 import XCTest
 
 @MainActor
-final class MedicationReminderUITests: XCTestCase {
+final class MedicationReminderUITests: XCTestCase, Sendable {
     var app: XCUIApplication!
 
     override func tearDown() async throws {
@@ -70,8 +70,7 @@ final class MedicationReminderUITests: XCTestCase {
         }
 
         // Interact somehow with the app, to trigger the registered `addUIInterruptionMonitor`
-        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos
-        // swiftlint:disable:this line_length
+        // see https://stackoverflow.com/questions/39973904/handler-of-adduiinterruptionmonitor-is-not-called-for-alert-related-to-photos swiftlint:disable:this line_length
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01)).tap()
     }
 
@@ -88,7 +87,7 @@ final class MedicationReminderUITests: XCTestCase {
         // Check "Off"
         expect(details.medicationReminderCell().value as? String).to(equal("Aus"))
         // Abgabehinweise korrekt auf 1-1-1-1
-        expect(details.dosageInstructionCell().label).to(beginWith("Einnahmehinweise, 1-1-1-1"))
+        expect(details.dosageInstructionCell().label).to(beginWith("1-1-1-1"))
 
         let reminderSetup = details.tapSetupMedicationReminder()
 
@@ -217,7 +216,7 @@ final class MedicationReminderUITests: XCTestCase {
             .to(equal("Ein"))
     }
 
-    /// Rezept DJ | Begrenzt
+    // Rezept DJ | Begrenzt
     @MainActor
     func testMedicationReminderSetupLimited() {
         // create a Rezept (DJ)->
@@ -299,7 +298,7 @@ final class MedicationReminderUITests: XCTestCase {
         expect(details2.medicationReminderCell().value as? String).to(equal("Ein"))
     }
 
-    /// Rezept Keine Angabe | Begrenzt - start date in future
+    // Rezept Keine Angabe | Begrenzt - start date in future
     @MainActor
     func testMedicationReminderSetupForFuture() {
         // create a Rezept (Keine Angabe)->
@@ -407,7 +406,7 @@ final class MedicationReminderUITests: XCTestCase {
         expect(details.medicationReminderCell().value as? String).to(equal("Ein"))
     }
 
-    /// Multiple Rezepts sorting | Settings screen
+    // Multiple Rezepts sorting | Settings screen
     @MainActor
     func testMedicationReminderSetupSortTest() {
         let medicationName1 = "Ibuprofen"

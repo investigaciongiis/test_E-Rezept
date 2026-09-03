@@ -53,7 +53,7 @@ extension CardWallReadCardDomain.Environment {
 
         return .publisher(
             profilesStore.update(profileId: profileId) { profile in
-                if let insuranceId {
+                if let insuranceId = insuranceId {
                     profile.insuranceId = insuranceId
                 }
                 // This is needed to ensure proper pKV faking.
@@ -61,14 +61,14 @@ extension CardWallReadCardDomain.Environment {
                 if profile.insuranceType == .unknown {
                     profile.insuranceType = .gKV
                 }
-                if let insurance {
+                if let insurance = insurance {
                     profile.insurance = insurance
                 }
-                if let givenName {
+                if let givenName = givenName {
                     profile.givenName = givenName
                     profile.displayName = givenName + " "
                 }
-                if let familyName {
+                if let familyName = familyName {
                     profile.familyName = familyName
                     profile.displayName = ((profile.displayName ?? "") + familyName)
                         .trimmingCharacters(in: .whitespacesAndNewlines)

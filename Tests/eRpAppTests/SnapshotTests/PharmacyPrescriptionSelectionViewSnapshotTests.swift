@@ -23,7 +23,6 @@
 import ComposableArchitecture
 @testable import eRpFeatures
 import eRpKit
-import eRpStyleKit
 import Pharmacy
 import SnapshotTesting
 import SwiftUI
@@ -34,8 +33,7 @@ final class PharmacyPrescriptionSelectionViewSnapshotTests: ERPSnapshotTestCase 
         let initialState = PharmacyPrescriptionSelectionDomain.State(
             prescriptions: Shared(value: Prescription.Fixtures.prescriptions),
             selectedPrescriptions: Shared(value: Prescription.Fixtures.prescriptions),
-            profile: UserProfile.Fixtures.theo.profile,
-            selectedOption: nil
+            profile: UserProfile.Fixtures.theo.profile
         )
         let sut = NavigationStack {
             PharmacyPrescriptionSelectionView(store: StoreOf<PharmacyPrescriptionSelectionDomain>(
@@ -45,7 +43,6 @@ final class PharmacyPrescriptionSelectionViewSnapshotTests: ERPSnapshotTestCase 
                 EmptyReducer()
             })
         }
-        .tint(Colors.primary)
 
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
@@ -56,17 +53,16 @@ final class PharmacyPrescriptionSelectionViewSnapshotTests: ERPSnapshotTestCase 
         let initialState = PharmacyPrescriptionSelectionDomain.State(
             prescriptions: Shared(value: Prescription.Fixtures.prescriptions),
             selectedPrescriptions: Shared(value: []),
-            profile: UserProfile.Fixtures.theo.profile,
-            selectedOption: nil
+            profile: UserProfile.Fixtures.theo.profile
         )
         let sut = NavigationStack {
             PharmacyPrescriptionSelectionView(store: StoreOf<PharmacyPrescriptionSelectionDomain>(
                 initialState: initialState
+
             ) {
                 EmptyReducer()
             })
         }
-        .tint(Colors.primary)
 
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())

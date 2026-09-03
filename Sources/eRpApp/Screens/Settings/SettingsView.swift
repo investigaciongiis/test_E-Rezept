@@ -74,7 +74,7 @@ struct SettingsView: View {
                         state: \.destination?.newProfile,
                         action: \.destination.newProfile
                     )) { store in
-                        CreateProfileView(store: store)
+                        NewProfileView(store: store)
                             .tint(Colors.primary700)
                     }
                     .accessibility(hidden: true)
@@ -147,7 +147,6 @@ extension SettingsView {
                 VStack(alignment: .leading, spacing: 16) {
                     Label(title: { Text(L10n.stgTrkTxtTitle) }, icon: {})
                         .accessibility(identifier: A11y.settings.tracking.stgTrkTxtTitle)
-                        .accessibilityAddTraits(.isHeader)
 
                     // [REQ:gemSpec_eRp_FdV:A_19089-01#4] User info for usage analytics
                     Label(title: { Text(L10n.stgTrkTxtExplanation) }, icon: {})
@@ -169,7 +168,6 @@ extension SettingsView {
                     Text("Debug")
                 }, icon: {})
                     .accessibilityIdentifier("stg_txt_debug_title")
-                    .accessibilityAddTraits(.isHeader)
             }, content: {
                 Button {
                     store.send(.showDebug)
@@ -265,10 +263,7 @@ extension SettingsView {
 
         var body: some View {
             SectionContainer(
-                header: {
-                    Text(L10n.stgTxtHeaderPersonalSettings)
-                        .accessibilityAddTraits(.isHeader)
-                },
+                header: { Text(L10n.stgTxtHeaderPersonalSettings) },
                 content: {
                     Button {
                         store.send(.languageSettingsTapped)
@@ -291,8 +286,8 @@ extension SettingsView {
                     }, label: {
                         Label(L10n.stgBtnDeviceSecurity, systemImage: SFSymbolName.iPhonelocked)
                     })
-                    .accessibility(identifier: A11y.settings.security.stgBtnDeviceSecurity)
-                    .buttonStyle(.navigation)
+                        .accessibility(identifier: A11y.settings.security.stgBtnDeviceSecurity)
+                        .buttonStyle(.navigation)
                 }
             )
         }

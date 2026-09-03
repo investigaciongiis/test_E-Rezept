@@ -29,7 +29,7 @@ import Foundation
 
 @Reducer
 struct PrescriptionArchiveDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = prescriptionDetail
         case prescriptionDetail(PrescriptionDetailDomain)
@@ -97,7 +97,7 @@ struct PrescriptionArchiveDomain {
     @Dependency(\.fhirDateFormatter) var fhirDateFormatter: FHIRDateFormatter
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -175,6 +175,3 @@ extension PrescriptionArchiveDomain {
         }
     }
 }
-
-extension PrescriptionArchiveDomain.Destination.State: Equatable {}
-extension PrescriptionArchiveDomain.Destination.Action: Equatable {}

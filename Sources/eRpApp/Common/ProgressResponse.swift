@@ -22,7 +22,8 @@
 
 import Foundation
 
-enum ProgressResponse<Result: Equatable, Failure: Swift.Error & Equatable, Progress: Equatable>: Equatable {
+enum ProgressResponse<Result: Equatable, Failure: Swift.Error, Progress: Equatable>: Equatable
+    where Failure: Equatable {
     case success(Result)
     case progress(Progress)
     case failure(Failure)

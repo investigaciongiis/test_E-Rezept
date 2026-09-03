@@ -25,7 +25,7 @@ import SwiftUI
 /// `LabelStyle` applying font and color for full width action buttons within `SectionContainer`s. This style is applied
 /// automatically within `SectionContainer`.
 public struct TrailingIconCellLabelStyle: LabelStyle {
-    @Environment(\.sectionContainerElementInformation.isLastElement) var isLastElement
+    @Environment(\.sectionContainerIsLastElement) var isLastElement: Bool
 
     public func makeBody(configuration: Configuration) -> some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -35,7 +35,7 @@ public struct TrailingIconCellLabelStyle: LabelStyle {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 configuration.icon
-                    .foregroundColor(Colors.systemLabelSecondary)
+                    .foregroundColor(Color(.tertiaryLabel))
                     .frame(width: 22, height: 22, alignment: .center)
                     .font(.body.weight(.semibold))
             }
@@ -45,21 +45,20 @@ public struct TrailingIconCellLabelStyle: LabelStyle {
                 Divider()
             }
         }
+
         .subTitleStyle(PlainSectionContainerSubTitleStyle())
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .padding([.leading])
     }
 }
 
-extension LabelStyle where Self == TrailingIconCellLabelStyle {
+extension LabelStyle where Self == SectionContainerLabelStyle {
     /// A label style that applies standard border artwork based on the
     /// button's context.
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View/buttonStyle(_:)`` modifier.
-    public static var trailingIconCell: TrailingIconCellLabelStyle {
-        TrailingIconCellLabelStyle()
-    }
+    public static var trailingIconCell: TrailingIconCellLabelStyle { TrailingIconCellLabelStyle() }
 }
 
 struct TrailingIconCellLabelStyle_Preview: PreviewProvider {

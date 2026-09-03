@@ -71,8 +71,8 @@ class DemoIDPSession: IDPSession {
     func requestChallenge() -> AnyPublisher<IDPChallengeSession, IDPError> {
         Future { promise in
             promise(Result {
-                try IDPChallengeSession(
-                    challenge: IDPChallenge(
+                IDPChallengeSession(
+                    challenge: try IDPChallenge(
                         challenge: JWT(header: JWT.Header(), payload: DemoPayload())
                     ),
                     verifierCode: "code_verifier",
@@ -109,14 +109,11 @@ class DemoIDPSession: IDPSession {
                 redirect: ""
             )
         )
-        return currentValue
+        return currentValue // swiftlint:disable:this trailing_closure
             .compactMap { $0 }
-            .handleEvents(
-                receiveOutput: { token in
-                    self.storage.set(token: token)
-                },
-                receiveRequest: nil
-            )
+            .handleEvents(receiveOutput: { token in
+                self.storage.set(token: token)
+            })
             .eraseToAnyPublisher()
     }
 
@@ -128,9 +125,9 @@ class DemoIDPSession: IDPSession {
             ssoToken: "SSO TOKEN",
             redirect: ""
         ))
-        .setFailureType(to: IDPError.self)
-        .delay(for: 1.5, scheduler: uiScheduler)
-        .eraseToAnyPublisher()
+            .setFailureType(to: IDPError.self)
+            .delay(for: 1.5, scheduler: uiScheduler)
+            .eraseToAnyPublisher()
     }
 
     func pairDevice(with _: RegistrationData, token _: IDPToken) -> AnyPublisher<PairingEntry, IDPError> {

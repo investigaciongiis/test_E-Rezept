@@ -31,18 +31,18 @@ import XCTest
 
 @MainActor
 final class RegisterAuthenticationDomainTests: XCTestCase {
-    var mockAppSecurityManager: AppSecurityManagerMock!
-    var mockPasswordStrengthTester: PasswordStrengthTesterMock!
-    var mockAuthenticationChallengeProvider: AuthenticationChallengeProviderMock!
+    var mockAppSecurityManager: MockAppSecurityManager!
+    var mockPasswordStrengthTester: MockPasswordStrengthTester!
+    var mockAuthenticationChallengeProvider: MockAuthenticationChallengeProvider!
 
     typealias TestStore = TestStoreOf<RegisterAuthenticationDomain>
 
     override func setUp() {
         super.setUp()
 
-        mockAppSecurityManager = AppSecurityManagerMock()
-        mockPasswordStrengthTester = PasswordStrengthTesterMock()
-        mockAuthenticationChallengeProvider = AuthenticationChallengeProviderMock()
+        mockAppSecurityManager = MockAppSecurityManager()
+        mockPasswordStrengthTester = MockPasswordStrengthTester()
+        mockAuthenticationChallengeProvider = MockAuthenticationChallengeProvider()
     }
 
     func testStore(
@@ -53,7 +53,7 @@ final class RegisterAuthenticationDomainTests: XCTestCase {
             RegisterAuthenticationDomain()
         } withDependencies: { dependencies in
             dependencies.appSecurityManager = mockAppSecurityManager
-            dependencies.userDataStore = UserDataStoreMock()
+            dependencies.userDataStore = MockUserDataStore()
             dependencies.schedulers = Schedulers(uiScheduler: testScheduler.eraseToAnyScheduler())
             dependencies.authenticationChallengeProvider = mockAuthenticationChallengeProvider
             dependencies.passwordStrengthTester = passwordStrengthTester
@@ -97,10 +97,8 @@ final class RegisterAuthenticationDomainTests: XCTestCase {
             )
         )
 
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(false))
-                .eraseToAnyPublisher()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(false))
+            .eraseToAnyPublisher()
 
         await store.send(.startBiometry(.biometry(.faceID)))
         await testScheduler.advance()
@@ -123,10 +121,8 @@ final class RegisterAuthenticationDomainTests: XCTestCase {
             )
         )
 
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(expectedResponse)
-                .eraseToAnyPublisher()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(expectedResponse)
+            .eraseToAnyPublisher()
 
         await store.send(.startBiometry(.biometry(.touchID)))
         await testScheduler.advance()
@@ -156,10 +152,8 @@ final class RegisterAuthenticationDomainTests: XCTestCase {
             )
         )
 
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(true))
-                .eraseToAnyPublisher()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(true))
+            .eraseToAnyPublisher()
 
         await store.send(.startBiometry(.biometry(.faceID))) { state in
             state.selectedSecurityOption = .biometry(.faceID)
@@ -178,10 +172,8 @@ final class RegisterAuthenticationDomainTests: XCTestCase {
             )
         )
 
-        mockAuthenticationChallengeProvider
-            .startAuthenticationChallengeAnyPublisherResultBoolAuthenticationChallengeProviderErrorNeverReturnValue =
-            Just(.success(false))
-                .eraseToAnyPublisher()
+        mockAuthenticationChallengeProvider.startAuthenticationChallengeReturnValue = Just(.success(false))
+            .eraseToAnyPublisher()
 
         await store.send(.startBiometry(.biometry(.faceID))) { state in
             state.selectedSecurityOption = .biometry(.faceID)

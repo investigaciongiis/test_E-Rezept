@@ -1,6 +1,6 @@
 disabled_rules: # rule identifiers to exclude from running
   - trailing_comma
-  - function_name_whitespace # previously named operator_whitespace
+  - operator_whitespace
 opt_in_rules:
   - attributes
   - empty_count

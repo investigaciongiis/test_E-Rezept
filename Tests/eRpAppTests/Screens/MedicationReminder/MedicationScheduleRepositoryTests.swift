@@ -29,12 +29,12 @@ import XCTest
 
 @MainActor
 final class MedicationScheduleRepositoryTests: XCTestCase {
-    var mockMedicationScheduleStore: MedicationScheduleStoreMock!
+    var mockMedicationScheduleStore: MockMedicationScheduleStore!
 
     override func setUp() {
         super.setUp()
 
-        mockMedicationScheduleStore = MedicationScheduleStoreMock()
+        mockMedicationScheduleStore = MockMedicationScheduleStore()
     }
 
     func testCreate() async throws {
@@ -57,21 +57,17 @@ final class MedicationScheduleRepositoryTests: XCTestCase {
         }
 
         let schedule1 = Self.Fixtures.medicationScheduleOneEntry
-        mockMedicationScheduleStore.saveMedicationSchedulesMedicationScheduleMedicationScheduleReturnValue = [schedule1]
-        mockMedicationScheduleStore.fetchAllMedicationScheduleReturnValue = [schedule1]
+        mockMedicationScheduleStore.saveMedicationSchedulesReturnValue = [schedule1]
+        mockMedicationScheduleStore.fetchAllReturnValue = [schedule1]
 
         // when
         try await sut.create(schedule1)
 
         // then
-        expect(self.mockMedicationScheduleStore.saveMedicationSchedulesMedicationScheduleMedicationScheduleCalled)
-            .to(beTrue())
-        expect(
-            self.mockMedicationScheduleStore.saveMedicationSchedulesMedicationScheduleMedicationScheduleCallsCount
-        ) ==
-            1
-        expect(self.mockMedicationScheduleStore.fetchAllMedicationScheduleCalled).to(beTrue())
-        expect(self.mockMedicationScheduleStore.fetchAllMedicationScheduleCallsCount) == 1
+        expect(self.mockMedicationScheduleStore.saveMedicationSchedulesCalled).to(beTrue())
+        expect(self.mockMedicationScheduleStore.saveMedicationSchedulesCallsCount) == 1
+        expect(self.mockMedicationScheduleStore.fetchAllCalled).to(beTrue())
+        expect(self.mockMedicationScheduleStore.fetchAllCallsCount) == 1
 
         notificationSchedulerCancelAllPendingRequestsCallsCount.withValue {
             XCTAssertEqual($0, 1)
@@ -86,19 +82,16 @@ final class MedicationScheduleRepositoryTests: XCTestCase {
         // Create (and schedule) a second MedicationSchedule:
         // given
         let schedule2 = Self.Fixtures.medicationScheduleOneEntryEndDistantFuture
-        mockMedicationScheduleStore.saveMedicationSchedulesMedicationScheduleMedicationScheduleReturnValue = [schedule2]
-        mockMedicationScheduleStore.fetchAllMedicationScheduleReturnValue = [schedule1, schedule2]
+        mockMedicationScheduleStore.saveMedicationSchedulesReturnValue = [schedule2]
+        mockMedicationScheduleStore.fetchAllReturnValue = [schedule1, schedule2]
 
         // when
         try await sut.create(schedule2)
 
         // then
-        expect(
-            self.mockMedicationScheduleStore.saveMedicationSchedulesMedicationScheduleMedicationScheduleCallsCount
-        ) ==
-            2
-        expect(self.mockMedicationScheduleStore.fetchAllMedicationScheduleCalled).to(beTrue())
-        expect(self.mockMedicationScheduleStore.fetchAllMedicationScheduleCallsCount) == 2
+        expect(self.mockMedicationScheduleStore.saveMedicationSchedulesCallsCount) == 2
+        expect(self.mockMedicationScheduleStore.fetchAllCalled).to(beTrue())
+        expect(self.mockMedicationScheduleStore.fetchAllCallsCount) == 2
 
         notificationSchedulerCancelAllPendingRequestsCallsCount.withValue {
             XCTAssertEqual($0, 2)
@@ -120,13 +113,13 @@ final class MedicationScheduleRepositoryTests: XCTestCase {
         }
 
         let schedule = Self.Fixtures.medicationScheduleOneEntry
-        mockMedicationScheduleStore.fetchAllMedicationScheduleReturnValue = [schedule]
+        mockMedicationScheduleStore.fetchAllReturnValue = [schedule]
 
         // when
         let result = try await sut.readAll()
 
         // then
-        expect(self.mockMedicationScheduleStore.fetchAllMedicationScheduleCalled).to(beTrue())
+        expect(self.mockMedicationScheduleStore.fetchAllCalled).to(beTrue())
         expect(result) == [schedule]
     }
 
@@ -148,11 +141,11 @@ final class MedicationScheduleRepositoryTests: XCTestCase {
             MedicationScheduleRepository.liveValue
         }
 
-        mockMedicationScheduleStore.fetchAllMedicationScheduleClosure = {
+        mockMedicationScheduleStore.fetchAllClosure = {
             actualCallOrder.append("fetchAllClosure")
             return []
         }
-        mockMedicationScheduleStore.deleteMedicationSchedulesMedicationScheduleVoidClosure = { _ in
+        mockMedicationScheduleStore.deleteMedicationSchedulesClosure = { _ in
             actualCallOrder.append("deleteMedicationSchedulesClosure")
         }
         let schedule = Self.Fixtures.medicationScheduleOneEntry
@@ -171,8 +164,8 @@ final class MedicationScheduleRepositoryTests: XCTestCase {
         try await sut.delete([schedule])
 
         // then
-        expect(self.mockMedicationScheduleStore.deleteMedicationSchedulesMedicationScheduleVoidCalled).to(beTrue())
-        expect(self.mockMedicationScheduleStore.fetchAllMedicationScheduleCalled).to(beTrue())
+        expect(self.mockMedicationScheduleStore.deleteMedicationSchedulesCalled).to(beTrue())
+        expect(self.mockMedicationScheduleStore.fetchAllCalled).to(beTrue())
         let actualAsyncCallOrder = await actor.calledAPIOrder()
         expect(expectedAsyncCallOrder).to(equal(actualAsyncCallOrder))
         expect(expectedSyncCallOrder).to(equal(actualCallOrder))
@@ -196,122 +189,132 @@ extension MedicationScheduleRepositoryTests {
         static let now = Date.now
         static let calendar = Calendar.current
         static let oneHourLater = now.addingTimeInterval(60)
-        static let medicationScheduleOneEntry: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId1",
-            isActive: true,
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-            ]
-        )
+        static let medicationScheduleOneEntry: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId1",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "oneEntryFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourLater),
+                        minuteComponent: calendar.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                ]
+            )
+        }()
 
-        static let medicationScheduleOneEntryEndDistantFuture: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: Date.distantFuture,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId1",
-            isActive: true,
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourLater),
-                    minuteComponent: calendar.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-            ]
-        )
+        static let medicationScheduleOneEntryEndDistantFuture: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: Date.distantFuture,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId1",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "oneEntryFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourLater),
+                        minuteComponent: calendar.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                ]
+            )
+        }()
 
         static let oneHourEarlier = now.addingTimeInterval(-60)
-        static let medicationScheduleOneEntryInThePast: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId1",
-            isActive: true,
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "oneEntryFirstEntry",
-                    hourComponent: calendar.component(.hour, from: oneHourEarlier),
-                    minuteComponent: calendar.component(.minute, from: oneHourEarlier),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-            ]
-        )
+        static let medicationScheduleOneEntryInThePast: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId1",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "oneEntryFirstEntry",
+                        hourComponent: calendar.component(.hour, from: oneHourEarlier),
+                        minuteComponent: calendar.component(.minute, from: oneHourEarlier),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                ]
+            )
+        }()
 
         static let twoHoursLater = now.addingTimeInterval(60 * 2)
-        static let medicationScheduleTwoEntries: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now,
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId2",
-            isActive: true,
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesFirstEntry",
-                    hourComponent: Calendar.current.component(.hour, from: oneHourLater),
-                    minuteComponent: Calendar.current.component(.minute, from: oneHourLater),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesSecondEntry",
-                    hourComponent: Calendar.current.component(.hour, from: twoHoursLater),
-                    minuteComponent: Calendar.current.component(.minute, from: twoHoursLater),
-                    dosageForm: "pill",
-                    amount: "2"
-                ),
-            ]
-        )
+        static let medicationScheduleTwoEntries: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now,
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId2",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesFirstEntry",
+                        hourComponent: Calendar.current.component(.hour, from: oneHourLater),
+                        minuteComponent: Calendar.current.component(.minute, from: oneHourLater),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesSecondEntry",
+                        hourComponent: Calendar.current.component(.hour, from: twoHoursLater),
+                        minuteComponent: Calendar.current.component(.minute, from: twoHoursLater),
+                        dosageForm: "pill",
+                        amount: "2"
+                    ),
+                ]
+            )
+        }()
 
-        static let medicationScheduleTwoEntriesTwoDays: MedicationSchedule = .init(
-            id: UUID(),
-            start: now,
-            end: now.advanced(by: 60 * 60 * 24),
-            title: "",
-            dosageInstructions: "",
-            taskId: "taskId2",
-            isActive: true,
-            entries: [
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesFirstEntry",
-                    hourComponent: Calendar.current.component(.hour, from: oneHourLater),
-                    minuteComponent: Calendar.current.component(.minute, from: now),
-                    dosageForm: "pill",
-                    amount: "1"
-                ),
-                .init(
-                    id: UUID(),
-                    title: "twoEntriesSecondEntry",
-                    hourComponent: Calendar.current.component(.hour, from: twoHoursLater),
-                    minuteComponent: Calendar.current.component(.minute, from: now),
-                    dosageForm: "pill",
-                    amount: "2"
-                ),
-            ]
-        )
+        static let medicationScheduleTwoEntriesTwoDays: MedicationSchedule = {
+            MedicationSchedule(
+                id: UUID(),
+                start: now,
+                end: now.advanced(by: 60 * 60 * 24),
+                title: "",
+                dosageInstructions: "",
+                taskId: "taskId2",
+                isActive: true,
+                entries: [
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesFirstEntry",
+                        hourComponent: Calendar.current.component(.hour, from: oneHourLater),
+                        minuteComponent: Calendar.current.component(.minute, from: now),
+                        dosageForm: "pill",
+                        amount: "1"
+                    ),
+                    .init(
+                        id: UUID(),
+                        title: "twoEntriesSecondEntry",
+                        hourComponent: Calendar.current.component(.hour, from: twoHoursLater),
+                        minuteComponent: Calendar.current.component(.minute, from: now),
+                        dosageForm: "pill",
+                        amount: "2"
+                    ),
+                ]
+            )
+        }()
     }
 }

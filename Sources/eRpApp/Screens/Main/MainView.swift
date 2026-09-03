@@ -93,6 +93,8 @@ struct MainView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     ScanItem { store.send(.showScannerView) }
+                        .embedToolbarContent()
+                        .tooltip(tooltip: MainViewTooltip.scan)
                 }
             }
             .task {
@@ -130,6 +132,7 @@ struct MainView: View {
         }
         .tint(Colors.primary700)
         .navigationViewStyle(StackNavigationViewStyle())
+        .tooltipContainer(enabled: store.showTooltips)
     }
 }
 

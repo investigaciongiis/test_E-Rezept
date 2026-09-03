@@ -100,7 +100,7 @@ enum ChargeItemListDomainServiceGrantResult: Equatable {
     case success // 201
     case conflict // 409 the user's consent has already been given
 
-    /// login handler
+    // login handler
     case notAuthenticated
 
     case error(Error)
@@ -214,6 +214,7 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
                 return Just(ChargeItemDomainServiceFetchResult.consentNotGranted).eraseToAnyPublisher()
             case .notAuthenticated:
                 return Just(ChargeItemDomainServiceFetchResult.notAuthenticated).eraseToAnyPublisher()
+
             case let .error(error):
                 return Just(.error(.consentService(error))).eraseToAnyPublisher()
             }
@@ -265,7 +266,6 @@ struct DefaultChargeItemListDomainService: ChargeItemListDomainService {
 
                 case LoginResult.success(false):
                     return Just(.notAuthenticated).eraseToAnyPublisher()
-
                 case let LoginResult.failure(error):
                     return Just(.error(.loginHandler(error))).eraseToAnyPublisher()
                 }

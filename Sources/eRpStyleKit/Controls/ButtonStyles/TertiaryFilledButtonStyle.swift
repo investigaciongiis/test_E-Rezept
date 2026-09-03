@@ -45,9 +45,9 @@ public struct TertiaryFilledButtonStyle: ButtonStyle {
         case (false, false):
             return Colors.primary.disabled(for: colorScheme)
         case (true, true):
-            return Colors.red700
+            return Colors.red600
         case (true, false):
-            return Colors.red700.disabled(for: colorScheme)
+            return Colors.red600.disabled(for: colorScheme)
         }
     }
 
@@ -68,9 +68,7 @@ extension ButtonStyle where Self == TertiaryFilledButtonStyle {
     ///
     /// To apply this style to a button, or to a view that contains buttons, use
     /// the ``View.buttonStyle(.tertiaryFilled)`` modifier.
-    public static var tertiaryFilled: TertiaryFilledButtonStyle {
-        TertiaryFilledButtonStyle()
-    }
+    public static var tertiaryFilled: TertiaryFilledButtonStyle { TertiaryFilledButtonStyle() }
 
     /// A button style that applies fg and bg color, as well as border radius.
     ///

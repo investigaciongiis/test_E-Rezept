@@ -32,7 +32,7 @@ struct ReadCardHelpPositionView: View {
             ScrollView {
                 VStack(alignment: .leading) {
                     Text(L10n.cdwTxtRcTipTwo)
-                        .foregroundColor(Colors.systemLabelSecondary)
+                        .foregroundColor(Colors.systemGray)
                         .padding()
                         .overlay(
                             Rectangle()

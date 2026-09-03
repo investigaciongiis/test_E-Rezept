@@ -1,5 +1,4 @@
 //
-//
 //  Copyright (Change Date see Readme), gematik GmbH
 //
 //  Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the
@@ -66,13 +65,13 @@ public struct CardWallReadCardDomain {
     }
 
     /// Destination states for navigation from read card screen
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     public enum Destination {
         // sourcery: AnalyticsScreen = alert
         /// Show alert dialog
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
-        /// Screen tracking handled inside
+        // Screen tracking handled inside
         /// Navigate to help screen
         case help(ReadCardHelpDomain)
 
@@ -127,7 +126,7 @@ public struct CardWallReadCardDomain {
 
     /// The reducer body that handles state transitions and effects
     public var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -218,7 +217,7 @@ public struct CardWallReadCardDomain {
             let environment = environment
             return .run { [profileId = state.profileId] send in
                 let can = try await secureStorage.can(profileId).async()
-                guard let can else {
+                guard let can = can else {
                     await send(.response(.state(State.Output.signingChallenge(.error(.inputError(.missingCAN))))))
                     return
                 }
@@ -244,7 +243,7 @@ public struct CardWallReadCardDomain {
             guard let url = mailState.createEmailUrl() else { return .none }
             return .run { _ in
                 if await openURLHandler.canOpenURL(url) {
-                    _ = await openURLHandler.open(url)
+                    await openURLHandler.open(url)
                 }
             }
         case .openHelpView,
@@ -309,6 +308,3 @@ extension CardWallReadCardDomain {
         }
     }
 }
-
-extension CardWallReadCardDomain.Destination.State: Equatable {}
-extension CardWallReadCardDomain.Destination.Action: Equatable {}

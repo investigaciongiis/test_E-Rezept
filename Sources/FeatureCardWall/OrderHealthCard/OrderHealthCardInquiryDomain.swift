@@ -29,7 +29,7 @@ import SwiftUI
 @Reducer
 public struct OrderHealthCardInquiryDomain {
     /// Destination states for navigation from inquiry screen
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     public enum Destination {
         // sourcery: AnalyticsScreen = contactInsuranceCompany_selectMethod
         /// Navigate to contact methods
@@ -91,6 +91,3 @@ extension OrderHealthCardInquiryDomain {
         }
     }
 }
-
-extension OrderHealthCardInquiryDomain.Destination.State: Equatable {}
-extension OrderHealthCardInquiryDomain.Destination.Action: Equatable {}

@@ -29,43 +29,40 @@ struct DiGaValidView: View {
     @Bindable var store: StoreOf<DiGaDetailDomain>
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack {
             HStack {
                 Spacer()
                 CloseButton {
                     store.send(.setNavigation(tag: .none))
                 }
             }
-            .padding([.top, .horizontal])
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.digaDtlValidTxtHeader)
-                        .font(.headline)
-                        .padding(.bottom, 8)
-                        .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtHeader)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.digaDtlValidTxtHeader)
+                    .font(.headline)
+                    .padding(.bottom, 8)
+                    .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtHeader)
 
-                    HStack {
-                        Text(store.diGaTask.authoredOn ?? L10n.digaDtlTxtNa.text)
-                            .foregroundColor(Colors.systemLabelSecondary)
-                            .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtStartDate)
-
-                        Image(systemName: SFSymbolName.arrowRight)
-                            .foregroundColor(Colors.primary700)
-
-                        Text(store.diGaTask.expiresOnDisplayDate)
-                            .foregroundColor(Colors.systemLabelSecondary)
-                            .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtEndDate)
-                    }
-
-                    Text(L10n.digaDtlValidTxtSubheader)
+                HStack {
+                    Text(store.diGaTask.authoredOn ?? L10n.digaDtlTxtNa.text)
                         .foregroundColor(Colors.systemLabelSecondary)
-                        .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtSubheader)
+                        .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtStartDate)
+
+                    Image(systemName: SFSymbolName.arrowRight)
+                        .foregroundColor(Colors.primary700)
+
+                    Text(store.diGaTask.expiresOnDisplayDate)
+                        .foregroundColor(Colors.systemLabelSecondary)
+                        .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtEndDate)
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
+
+                Text(L10n.digaDtlValidTxtSubheader)
+                    .foregroundColor(Colors.systemLabelSecondary)
+                    .accessibilityIdentifier(A11y.diga.valid.digaDtlValidTxtSubheader)
+                Spacer()
             }
         }
+        .padding()
         .frame(maxWidth: .infinity)
         .background(Colors.systemBackground.ignoresSafeArea())
     }

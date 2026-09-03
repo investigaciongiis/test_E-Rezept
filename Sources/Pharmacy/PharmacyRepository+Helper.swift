@@ -24,7 +24,6 @@ import Combine
 import Dependencies
 import DependenciesMacros
 import eRpKit
-import FHIRClient
 import Foundation
 import OpenSSL
 
@@ -56,8 +55,8 @@ extension PharmacyRepository {
                     updated.types = remotePharmacy.types
                     updated.status = remotePharmacy.status
                     updated.hoursOfOperation = remotePharmacy.hoursOfOperation
-                    updated.physicalFeatures = remotePharmacy.physicalFeatures
-                    updated.specialities = remotePharmacy.specialities
+                    updated.avsEndpoints = remotePharmacy.avsEndpoints
+                    updated.avsCertificates = remotePharmacy.avsCertificates
 
                     return updated
 
@@ -110,10 +109,6 @@ extension PharmacyRepository {
                     throw PharmacyRepositoryError.remote(error)
                 } catch let error as LocalStoreError {
                     throw PharmacyRepositoryError.local(error)
-                } catch let error as FHIRClient.Error {
-                    throw PharmacyRepositoryError.remote(.fhirClient(error))
-                } catch {
-                    throw PharmacyRepositoryError.remote(.fhirClient(.unknown(error)))
                 }
             },
             loadLocalById: { telematikId in
@@ -125,15 +120,7 @@ extension PharmacyRepository {
             },
             loadLocalCount: { count in
                 do {
-                    return try await disk.listPharmacies(count: count)
-                        // For now this method is called by PharmacySearchDomain only for populating the overview
-                        // Here we only want to show pharmacies that
-                        //  - have been "used" at least once before and/or
-                        //  - are currently marked as favourite
-                        .map { (pharmacyLocations: [PharmacyLocation]) -> [PharmacyLocation] in
-                            pharmacyLocations.filter { $0.isFavorite || $0.lastUsed != nil }
-                        }
-                        .async()
+                    return try await disk.listPharmacies(count: count).async()
                 } catch let error as LocalStoreError {
                     throw PharmacyRepositoryError.local(error)
                 }

@@ -23,7 +23,6 @@
 import CombineSchedulers
 import ComposableArchitecture
 @testable import eRpFeatures
-import eRpStyleKit
 import IDP
 import SnapshotTesting
 import SwiftUI
@@ -47,7 +46,6 @@ final class ChargeItemListViewSnapshotTests: ERPSnapshotTestCase {
                 }
             )
         }
-        .tint(Colors.primary)
 
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
@@ -69,7 +67,6 @@ final class ChargeItemListViewSnapshotTests: ERPSnapshotTestCase {
                 }
             )
         }
-        .tint(Colors.primary)
 
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())
@@ -94,7 +91,6 @@ final class ChargeItemListViewSnapshotTests: ERPSnapshotTestCase {
                 }
             )
         }
-        .tint(Colors.primary)
 
         assertSnapshots(of: sut, as: snapshotModiOnDevices())
         assertSnapshots(of: sut, as: snapshotModiOnDevicesWithAccessibility())

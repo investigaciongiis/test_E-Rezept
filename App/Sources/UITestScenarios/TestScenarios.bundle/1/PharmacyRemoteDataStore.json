@@ -43,9 +43,7 @@
                     "types":
                     [],
                     "status": "active",
-                    "name": "ZoTI_02_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_02_TEST-ONLY"
                 },
                 {
                     "id": "6bb03538-5924-4be3-98ff-7475d27aee4f",
@@ -96,9 +94,7 @@
                     "types":
                     [],
                     "status": "active",
-                    "name": "ZoTI_03_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_03_TEST-ONLY"
                 },
                 {
                     "id": "6bb04538-5924-4be3-98ff-7475d27aee4f",
@@ -149,9 +145,7 @@
                     "types":
                     [],
                     "status": "active",
-                    "name": "ZoTI_04_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_04_TEST-ONLY"
                 },
                 {
                     "id": "6bb05538-5924-4be3-98ff-7475d27aee4f",
@@ -194,9 +188,7 @@
                         "outpharm"
                     ],
                     "status": "active",
-                    "name": "ZoTI_05_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_05_TEST-ONLY"
                 },
                 {
                     "id": "6bb06538-5924-4be3-98ff-7475d27aee4f",
@@ -239,9 +231,7 @@
                         "delivery"
                     ],
                     "status": "active",
-                    "name": "ZoTI_06_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_06_TEST-ONLY"
                 },
                 {
                     "id": "6bb07538-5924-4be3-98ff-7475d27aee4f",
@@ -284,9 +274,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_07_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_07_TEST-ONLY"
                 },
                 {
                     "id": "6bb08538-5924-4be3-98ff-7475d27aee4f",
@@ -339,9 +327,7 @@
                     "types":
                     [],
                     "status": "active",
-                    "name": "ZoTI_08_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_08_TEST-ONLY"
                 },
                 {
                     "id": "6bb09538-5924-4be3-98ff-7475d27aee4f",
@@ -396,9 +382,7 @@
                         "outpharm"
                     ],
                     "status": "active",
-                    "name": "ZoTI_09_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_09_TEST-ONLY"
                 },
                 {
                     "id": "6bb10538-5924-4be3-98ff-7475d27aee4f",
@@ -454,9 +438,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_10_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_10_TEST-ONLY"
                 },
                 {
                     "id": "6bb11538-5924-4be3-98ff-7475d27aee4f",
@@ -513,9 +495,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_11_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_11_TEST-ONLY"
                 },
                 {
                     "id": "6bb12538-5924-4be3-98ff-7475d27aee4f",
@@ -560,9 +540,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_12_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_12_TEST-ONLY"
                 },
                 {
                     "id": "6bb13538-5924-4be3-98ff-7475d27aee4f",
@@ -618,9 +596,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_13_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_13_TEST-ONLY"
                 },
                 {
                     "id": "6bb14538-5924-4be3-98ff-7475d27aee4f",
@@ -676,9 +652,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_14_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_14_TEST-ONLY"
                 },
                 {
                     "id": "6bb15538-5924-4be3-98ff-7475d27aee4f",
@@ -730,9 +704,7 @@
                     "types":
                     [],
                     "status": "active",
-                    "name": "ZoTI_15_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_15_TEST-ONLY"
                 },
                 {
                     "id": "6bb16538-5924-4be3-98ff-7475d27aee4f",
@@ -785,9 +757,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_16_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_16_TEST-ONLY"
                 },
                 {
                     "id": "6bb17538-5924-4be3-98ff-7475d27aee4f",
@@ -841,9 +811,7 @@
                         "pharm"
                     ],
                     "status": "active",
-                    "name": "ZoTI_17_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_17_TEST-ONLY"
                 },
                 {
                     "id": "6bb18538-5924-4be3-98ff-7475d27aee4f",
@@ -899,9 +867,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_18_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_18_TEST-ONLY"
                 },
                 {
                     "id": "6bb19538-5924-4be3-98ff-7475d27aee4f",
@@ -956,9 +922,7 @@
                         "outpharm"
                     ],
                     "status": "active",
-                    "name": "ZoTI_19_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_19_TEST-ONLY"
                 },
                 {
                     "id": "6bb20538-5924-4be3-98ff-7475d27aee4f",
@@ -1002,9 +966,7 @@
                         "mobl"
                     ],
                     "status": "active",
-                    "name": "ZoTI_20_TEST-ONLY",
-                    "physicalFeatures": [],
-                    "specialities": []
+                    "name": "ZoTI_20_TEST-ONLY"
                 }
             ]
     },

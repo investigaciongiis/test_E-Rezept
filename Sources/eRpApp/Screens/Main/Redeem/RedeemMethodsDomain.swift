@@ -37,9 +37,7 @@ struct RedeemMethodsDomain {
 
         var isEURedeemable: Bool {
             @Shared(.euRedeemPrescriptionsFeature) var euRedeemPrescriptionsFeature: Bool
-            @Shared(.isDemoMode) var isDemoMode: Bool
-            return (isDemoMode || euRedeemPrescriptionsFeature) && // silent preview for demo mode
-                prescriptions.contains(where: \.erxTask.isEURedeemable)
+            return euRedeemPrescriptionsFeature && prescriptions.contains(where: \.erxTask.isEURedeemable)
         }
     }
 
@@ -54,11 +52,11 @@ struct RedeemMethodsDomain {
         enum Delegate: Equatable {
             case close
             case redeemOverview([Prescription])
-            case euRedeemTapped([Prescription])
+            case euRedeemTapped
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = redeem_matrixCode
         case matrixCode(MatrixCodeDomain)
@@ -112,6 +110,3 @@ extension RedeemMethodsDomain {
         }
     }
 }
-
-extension RedeemMethodsDomain.Destination.State: Equatable {}
-extension RedeemMethodsDomain.Destination.Action: Equatable {}

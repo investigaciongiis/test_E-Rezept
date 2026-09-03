@@ -28,7 +28,7 @@ final class SharedTaskTests: XCTestCase {
     func testSingleSerialization() {
         let sut = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz")
 
-        let expected = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz\"".utf8)
+        let expected = "\"1234567890|abcdefghijklmnopqrstuvwxyz\"".data(using: .utf8)
 
         expect({ try JSONEncoder().encode(sut) }).to(equal(expected))
     }
@@ -40,8 +40,8 @@ final class SharedTaskTests: XCTestCase {
 
         let sut = [taskA, taskB, taskC]
 
-        let expected = Data("[\"1234567890|abcdefghijklmnopqrstuvwxyz\",\"0000000000|aaaaa\",\"9999999999|zzzzz\"]"
-            .utf8)
+        let expected = "[\"1234567890|abcdefghijklmnopqrstuvwxyz\",\"0000000000|aaaaa\",\"9999999999|zzzzz\"]"
+            .data(using: .utf8)
 
         expect({ try JSONEncoder().encode(sut) }).to(equal(expected))
     }
@@ -49,14 +49,14 @@ final class SharedTaskTests: XCTestCase {
     func testSingleDeserialization() {
         let expected = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz")
 
-        let sut = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz\"".utf8)
+        let sut = "\"1234567890|abcdefghijklmnopqrstuvwxyz\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) }).to(equal(expected))
     }
 
     func testCollectionDeserialization() {
-        let sut = Data("[\"1234567890|abcdefghijklmnopqrstuvwxyz\",\"0000000000|aaaaa\",\"9999999999|zzzzz\"]"
-            .utf8)
+        let sut = "[\"1234567890|abcdefghijklmnopqrstuvwxyz\",\"0000000000|aaaaa\",\"9999999999|zzzzz\"]"
+            .data(using: .utf8)!
 
         let taskA = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz")
         let taskB = SharedTask(id: "0000000000", accessCode: "aaaaa")
@@ -72,7 +72,7 @@ final class SharedTaskTests: XCTestCase {
     func testSingleSerializationWithName() {
         let sut = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz", name: "Aspirin")
 
-        let expected = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\"".utf8)
+        let expected = "\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\"".data(using: .utf8)
 
         expect({ try JSONEncoder().encode(sut) }).to(equal(expected))
     }
@@ -80,7 +80,7 @@ final class SharedTaskTests: XCTestCase {
     func testSingleSerializationWithoutName() {
         let sut = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz", name: nil)
 
-        let expected = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz\"".utf8)
+        let expected = "\"1234567890|abcdefghijklmnopqrstuvwxyz\"".data(using: .utf8)
 
         expect({ try JSONEncoder().encode(sut) }).to(equal(expected))
     }
@@ -93,11 +93,8 @@ final class SharedTaskTests: XCTestCase {
         let sut = [taskA, taskB, taskC]
 
         let expected =
-            Data(
-                // swiftlint:disable:next line_length
-                "[\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\",\"0000000000|aaaaa\",\"9999999999|zzzzz|Ibuprofen\"]"
-                    .utf8
-            )
+            "[\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\",\"0000000000|aaaaa\",\"9999999999|zzzzz|Ibuprofen\"]"
+                .data(using: .utf8)
 
         expect({ try JSONEncoder().encode(sut) }).to(equal(expected))
     }
@@ -105,7 +102,7 @@ final class SharedTaskTests: XCTestCase {
     func testSingleDeserializationWithName() {
         let expected = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz", name: "Aspirin")
 
-        let sut = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\"".utf8)
+        let sut = "\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) }).to(equal(expected))
     }
@@ -113,7 +110,7 @@ final class SharedTaskTests: XCTestCase {
     func testSingleDeserializationWithEmptyName() {
         let expected = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz", name: nil)
 
-        let sut = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz|\"".utf8)
+        let sut = "\"1234567890|abcdefghijklmnopqrstuvwxyz|\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) }).to(equal(expected))
     }
@@ -121,18 +118,15 @@ final class SharedTaskTests: XCTestCase {
     func testSingleDeserializationWithNameContainingSpaces() {
         let expected = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz", name: "Aspirin Complex")
 
-        let sut = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin Complex\"".utf8)
+        let sut = "\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin Complex\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) }).to(equal(expected))
     }
 
     func testCollectionDeserializationWithMixedNames() {
         let sut =
-            Data(
-                // swiftlint:disable:next line_length
-                "[\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\",\"0000000000|aaaaa\",\"9999999999|zzzzz|Ibuprofen\"]"
-                    .utf8
-            )
+            "[\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin\",\"0000000000|aaaaa\",\"9999999999|zzzzz|Ibuprofen\"]"
+                .data(using: .utf8)!
 
         let taskA = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz", name: "Aspirin")
         let taskB = SharedTask(id: "0000000000", accessCode: "aaaaa", name: nil)
@@ -149,7 +143,7 @@ final class SharedTaskTests: XCTestCase {
         // Test that old format without name still works
         let expected = SharedTask(id: "1234567890", accessCode: "abcdefghijklmnopqrstuvwxyz", name: nil)
 
-        let sut = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz\"".utf8)
+        let sut = "\"1234567890|abcdefghijklmnopqrstuvwxyz\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) }).to(equal(expected))
     }
@@ -157,7 +151,7 @@ final class SharedTaskTests: XCTestCase {
     // MARK: - Error Cases
 
     func testDeserializationWithTooManyComponents() {
-        let sut = Data("\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin|ExtraComponent\"".utf8)
+        let sut = "\"1234567890|abcdefghijklmnopqrstuvwxyz|Aspirin|ExtraComponent\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) })
             .to(throwError(SharedTask.Error
@@ -165,14 +159,14 @@ final class SharedTaskTests: XCTestCase {
     }
 
     func testDeserializationWithMissingSeparator() {
-        let sut = Data("\"1234567890\"".utf8)
+        let sut = "\"1234567890\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) })
             .to(throwError(SharedTask.Error.missingSeparator("1234567890")))
     }
 
     func testDeserializationWithEmptyString() {
-        let sut = Data("\"\"".utf8)
+        let sut = "\"\"".data(using: .utf8)!
 
         expect({ try JSONDecoder().decode(SharedTask.self, from: sut) })
             .to(throwError(SharedTask.Error.failedDecodingEmptyString("")))

@@ -139,6 +139,7 @@ extension DefaultErxTaskCoreDataStore {
                      of profileId: UUID?) -> AnyPublisher<Bool, LocalStoreError> {
         coreDataCrudable.save(mergePolicy: .error) { [weak self] moc in
             _ = communications.map { erxTaskCommunication -> ErxTaskCommunicationEntity in
+
                 let request: NSFetchRequest<ErxTaskCommunicationEntity> = ErxTaskCommunicationEntity
                     .fetchRequest()
                 request.predicate = NSPredicate(

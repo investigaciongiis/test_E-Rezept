@@ -25,12 +25,11 @@ import ComposableArchitecture
 import Dependencies
 import eRpKit
 import eRpResources
-import FeatureHelpers
 import SwiftUI
 
 @Reducer
 struct EpaMedicationDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = prescriptionDetail_epa_medication_codable_ingredient
         case codableIngredient(EpaMedicationCodableIngredientDomain)
@@ -112,7 +111,7 @@ struct EpaMedicationDomain {
 
 extension ErxEpaMedication {
     var displayName: String? {
-        if let name {
+        if let name = name {
             return name
         } else {
             let joinedText = ingredients.compactMap(\.name).joined(separator: ", ")
@@ -194,7 +193,7 @@ extension ErxEpaMedication {
             ingredients: []
         )
 
-        /// Extemporaneous Preparation( Kombipackung)
+        // Extemporaneous Preparation( Kombipackung)
         static let extemporaneousPreparation: ErxEpaMedication = .init(
             epaMedicationType: .extemporaneousPreparation,
             drugCategory: .avm,
@@ -308,7 +307,7 @@ extension ErxEpaMedication {
             ]
         )
 
-        /// Rezeptur
+        // Rezeptur
         static let medicinalProductPackage: ErxEpaMedication = .init(
             epaMedicationType: .medicinalProductPackage,
             drugCategory: .avm,
@@ -427,6 +426,3 @@ extension ErxEpaMedication {
         )
     }
 }
-
-extension EpaMedicationDomain.Destination.State: Equatable {}
-extension EpaMedicationDomain.Destination.Action: Equatable {}

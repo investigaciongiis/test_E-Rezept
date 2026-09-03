@@ -45,7 +45,7 @@ struct DebugQRCodeImporter<ContentType: Codable>: View {
                        let data = input?.data(using: .utf8) {
                         do {
                             let newContent = try JSONDecoder().decode(ContentType.self, from: data)
-                            error = nil
+                            self.error = nil
                             found(newContent)
                             scan = false
                         } catch {
@@ -63,7 +63,7 @@ struct DebugQRCodeImporter<ContentType: Codable>: View {
 
                 Spacer()
 
-                if let error {
+                if let error = error {
                     Text(error.localizedDescription)
                         .padding()
                         .background(RoundedCorner(radius: 16).foregroundColor(.black))

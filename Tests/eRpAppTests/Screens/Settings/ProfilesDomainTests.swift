@@ -45,14 +45,14 @@ final class ProfilesDomainTests: XCTestCase {
 
     let testScheduler = DispatchQueue.test
 
-    var mockAppSecurityManager: AppSecurityManagerMock!
-    var mockUserProfileService: UserProfileServiceMock!
+    var mockAppSecurityManager: MockAppSecurityManager!
+    var mockUserProfileService: MockUserProfileService!
 
     override func setUp() {
         super.setUp()
 
-        mockAppSecurityManager = AppSecurityManagerMock()
-        mockUserProfileService = UserProfileServiceMock()
+        mockAppSecurityManager = MockAppSecurityManager()
+        mockUserProfileService = MockUserProfileService()
     }
 
     func testLoadProfiles() async {
@@ -65,9 +65,7 @@ final class ProfilesDomainTests: XCTestCase {
             .setFailureType(to: UserProfileServiceError.self)
             .eraseToAnyPublisher()
 
-        mockUserProfileService
-            .userProfilesPublisherAnyPublisherUserProfileUserProfileServiceErrorReturnValue = profilesPublisher
-            .eraseToAnyPublisher()
+        mockUserProfileService.userProfilesPublisherReturnValue = profilesPublisher.eraseToAnyPublisher()
         mockUserProfileService.selectedProfileId = Just(Fixtures.profileA.id).eraseToAnyPublisher()
 
         let sut = testStore(for: .init(profiles: [],

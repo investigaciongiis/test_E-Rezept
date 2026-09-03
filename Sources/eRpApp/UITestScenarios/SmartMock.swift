@@ -29,15 +29,11 @@ protocol SmartMock {
     func recordedData() throws -> CodableMock
 }
 
-protocol VerifiableMock: Codable {
-    static var expectedKeys: Set<String> { get }
-}
-
 struct CodableMock: Codable {
     let jsonData: Data
     let name: String
 
-    init(_ name: String, _ mock: some Codable) throws {
+    init<T>(_ name: String, _ mock: T) throws where T: Codable {
         self.name = name
         jsonData = try JSONEncoder().encode(mock)
     }

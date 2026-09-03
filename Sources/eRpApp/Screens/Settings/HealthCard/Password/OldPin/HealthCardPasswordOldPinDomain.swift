@@ -54,14 +54,14 @@ struct HealthCardPasswordOldPinDomain {
         }
     }
 
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         // sourcery: AnalyticsScreen = healthCardPassword_pin
         case pin(HealthCardPasswordPinDomain)
     }
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -88,7 +88,6 @@ struct HealthCardPasswordOldPinDomain {
                 // inconsistent
                 return .none
             }
-
         case .destination,
              .delegate:
             return .none
@@ -105,6 +104,3 @@ extension HealthCardPasswordOldPinDomain {
         }
     }
 }
-
-extension HealthCardPasswordOldPinDomain.Destination.State: Equatable {}
-extension HealthCardPasswordOldPinDomain.Destination.Action: Equatable {}

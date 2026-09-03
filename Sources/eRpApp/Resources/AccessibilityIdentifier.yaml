@@ -252,8 +252,6 @@ settings:
     - stg_txt_edit_profile_insurance_id
     - stg_txt_edit_profile_charge_item_list_section_title
     - stg_txt_edit_profile_charge_item_list_section_show_charge_item_list
-    - stg_txt_edit_profile_eu_redeem_list_section_title
-    - stg_btn_edit_profile_eu_redeem_change_consent
     - stg_txt_edit_profile_login_section_title
     - stg_txt_edit_profile_login_section_activate
     - stg_txt_edit_profile_login_section_connected_devices
@@ -262,7 +260,6 @@ settings:
     - stg_btn_edit_profile_security_section_show_tokens
     - stg_btn_edit_profile_security_section_show_audit_events
     - stg_txt_edit_profile_security_show_tokens_hint
-    - stg_txt_edit_profile_my_area_title
   newProfile:
     - stg_txt_new_profile_bg_color_title
     - stg_txt_new_profile_bg_color_picker
@@ -286,8 +283,6 @@ settings:
     - stg_txt_audit_events_no_protocol_description
     - stg_txt_audit_events_bottom_banner_message
     - stg_btn_audit_events_bottom_banner
-  notificationChannels:
-    - stg_txt_notification_channels_description
   legalNotice:
     - stg_lno_txt_header_legal_info
     - stg_lno_txt_legal_notice
@@ -337,68 +332,6 @@ redeem:
     - rdm_btn_delivery_tile
     - rdm_btn_redeem_eu_prsc
     - rdm_btn_close_button
-  eu:
-    consent:
-      - eurdm_btn_consent_grant
-      - eurdm_btn_consent_revoke
-      - eurdm_txt_consent_title
-      - eurdm_txt_consent_description1
-      - eurdm_txt_consent_description2
-      - eurdm_txt_consent_info
-      - eurdm_btn_consent_accept
-      - eurdm_btn_consent_decline
-      - eurdm_btn_consent_abort
-    code:
-      - eurdm_code_toggle_display_mode_button
-      - eurdm_code_close_button
-      - eurdm_code_generate_new_button
-      - eurdm_code_take_receipt_button
-      - eurdm_code_speech_insurance_number_button
-      - eurdm_code_speech_exchange_code_button
-      - eurdm_code_manual_refresh_button
-      - eurdm_code_qr_refresh_button
-      - eurdm_code_txt_step2
-      - eurdm_code_txt_step_description
-      - eurdm_code_txt_insurance_number_label
-      - eurdm_code_txt_insurance_number
-      - eurdm_code_txt_exchange_code_label
-      - eurdm_code_txt_exchange_code
-      - eurdm_code_txt_validity_manual
-      - eurdm_code_txt_qr_expired
-      - eurdm_code_txt_validity_qr
-    selection:
-      - eurdm_txt_selection_title
-      - eurdm_txt_selection_subtitle
-      - eurdm_img_selection_banner
-      - eurdm_btn_selection_redeem
-      - eurdm_btn_selection_close
-      - eurdm_btn_selection_prescriptions
-      - eurdm_txt_selection_prescription_title
-      - eurdm_txt_selection_prescription_caption
-      - eurdm_btn_selection_country
-      - eurdm_txt_selection_country_title
-      - eurdm_txt_selection_country_no_selection
-      - eurdm_txt_selection_country_caption
-    countrySelection:
-      - eurdm_txt_country_title
-      - eurdm_txt_country_subtitle
-      - eurdm_btn_country_location
-      - eurdm_txt_country_empty_title
-      - eurdm_txt_country_empty_subtitle
-      - eurdm_txt_country_location_empty
-    prescriptionSelection:
-      - eurdm_txt_prsc_patient_name
-    instructions:
-      - eurdm_txt_instructions_title
-      - eurdm_txt_instructions_subtitle
-      - eurdm_txt_instructions_step1_title
-      - eurdm_txt_instructions_step2_title
-      - eurdm_txt_instructions_step3_title
-      - eurdm_txt_instructions_step4_title
-      - eurdm_txt_instructions_step5_title
-      - eurdm_txt_instructions_disclaimer
-      - eurdm_btn_instructions_generate_code
-      - eurdm_btn_instructions_close
 orders:
   list:
     - ord_txt_empty_list
@@ -415,9 +348,6 @@ orderDetail:
     - ord_detail_btn_contact_map
     - ord_detail_btn_contact_phone
     - ord_detail_btn_contact_email
-    - ord_detail_btn_refresh_code
-    - ord_detail_btn_revoke_accessCode
-    - ord_detail_btn_accessCode_revoked
   pickupCode:
     - puc_txt_title
     - puc_txt_subtitle
@@ -468,7 +398,6 @@ profileSelection:
   - pro_btn_selection_edit
   - pro_btn_selection_profile_entry
   - pro_btn_selection_profile_row
-  - pro_btn_selection_profile_loading_spinner
   - pro_btn_selection_add_profile
 editProfilePicture:
     - epp_btn_reset_picture
@@ -493,7 +422,6 @@ prescriptionDetails:
   - prsc_dtl_btn_scanned_prescription_info
   - prsc_dtl_btn_direct_assignment_info
   - prsc_dtl_btn_self_payer_info
-  - prsc_dtl_btn_t_prescription_info
   - prsc_dtl_txt_prescription_validity
   - prsc_dtl_btn_prescription_validity_info
   - prsc_dtl_drawer_substitution_info
@@ -512,7 +440,6 @@ prescriptionDetails:
   - prsc_dtl_btn_practitioner
   - prsc_dtl_btn_institution
   - prsc_dtl_btn_work_related_accident
-  - prsc_dtl_btn_teratogenic_info
   - prsc_dtl_btn_technical_informations
   - prsc_dtl_drawer_co_payment_info_title
   - prsc_dtl_drawer_co_payment_info_description
@@ -522,7 +449,6 @@ prescriptionDetails:
   - prsc_dtl_drawer_dosage_instructions_info
   - prsc_dtl_drawer_emergency_service_fee_info
   - prsc_dtl_drawer_self_payer_info
-  - prsc_dtl_drawer_t_prescription_info
   - prsc_dtl_txt_authored_on
   - prsc_dtl_txt_bvg
   - prsc_dtl_txt_multi_prescription
@@ -640,12 +566,6 @@ pharmacySearch:
   - pha_filter_filter_list
   - pha_search_switch_result_map
   - pha_search_hint_eu_redeem
-pharmacySearchFilter:
-  - psf_btn_close
-  - psf_service_section
-  - psf_btn_explain_toggle
-  - psf_service_list
-  - psf_service_footnote
 pharmacySearchStart:
   - pha_search_txt_quick_filter_title
   - pha_search_btn_quick_filter_nearby
@@ -716,6 +636,7 @@ pharmacyRedeem:
   - pha_redeem_txt_edit_prescription
   - pha_redeem_btn_edit_prescription
   - pha_redeem_txt_add_prescription
+  - pha_redeem_btn_add_prescription
   - pha_redeem_txt_edit_pharmacy
   - pha_redeem_txt_edit_pharmacy_name
   - pha_redeem_txt_edit_pharmacy_adress
@@ -754,11 +675,6 @@ matrixCode:
   - dmc_img_matrixcode
   - dmc_btn_share
   - dmc_btn_redeem_eu_prsc
-  - dmc_btn_segmented_control
-  - dmc_btn_segmented_control_grouped
-  - dmc_btn_segmented_control_single
-  - dmc_btn_previous_page
-  - dmc_btn_next_page
 medicationReminder:
   - med_reminder_btn_activation_toggle
   - med_reminder_btn_dosage_instruction

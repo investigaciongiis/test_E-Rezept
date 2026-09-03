@@ -30,15 +30,37 @@ import XCTest
 
 final class PharmacyRepositoryTests: XCTestCase {
     func testLoadRemoteWithLocalPharmacy() async throws {
-        let mockLocalDataStore = PharmacyLocalDataStoreMock()
+        let mockLocalDataStore = MockPharmacyLocalDataStore()
         let sut = PharmacyRepository.createWithMocks(disk: mockLocalDataStore)
 
-        mockLocalDataStore
-            .fetchPharmacyByTelematikIdStringAnyPublisherPharmacyLocationLocalStoreErrorClosure = { telematikId in
+        mockLocalDataStore.fetchPharmacyByClosure = { telematikId in
+            if telematikId == Fixtures.pharmacy1.telematikID,
+               mockLocalDataStore.fetchPharmacyByCallsCount == 1 {
+                return Just(Fixtures.pharmacy1)
+                    .setFailureType(to: LocalStoreError.self)
+                    .eraseToAnyPublisher()
+            } else {
+                return Fail(error: LocalStoreError.notImplemented).eraseToAnyPublisher()
+            }
+        }
+
+        let result = try await sut.loadCached(Fixtures.pharmacy1.telematikID)
+        expect(result).to(equal(Fixtures.pharmacy1))
+
+        expect(mockLocalDataStore.savePharmaciesCallsCount).to(equal(0))
+    }
+
+    func testLoadRemoteWithoutLocalPharmacy() async throws {
+        try await withDependencies {
+            $0.pharmacyRemoteDataStore.fetchPharmacy = { _ in Fixtures.pharmacy1 }
+        } operation: {
+            let mockLocalDataStore = MockPharmacyLocalDataStore()
+            let sut = PharmacyRepository.createWithMocks(disk: mockLocalDataStore)
+
+            mockLocalDataStore.fetchPharmacyByClosure = { telematikId in
                 if telematikId == Fixtures.pharmacy1.telematikID,
-                   mockLocalDataStore
-                   .fetchPharmacyByTelematikIdStringAnyPublisherPharmacyLocationLocalStoreErrorCallsCount == 1 {
-                    return Just(Fixtures.pharmacy1)
+                   mockLocalDataStore.fetchPharmacyByCallsCount == 1 {
+                    return Just(nil)
                         .setFailureType(to: LocalStoreError.self)
                         .eraseToAnyPublisher()
                 } else {
@@ -46,45 +68,17 @@ final class PharmacyRepositoryTests: XCTestCase {
                 }
             }
 
-        let result = try await sut.loadCached(Fixtures.pharmacy1.telematikID)
-        expect(result).to(equal(Fixtures.pharmacy1))
-
-        expect(mockLocalDataStore.savePharmaciesPharmacyLocationAnyPublisherBoolLocalStoreErrorCallsCount).to(equal(0))
-    }
-
-    func testLoadRemoteWithoutLocalPharmacy() async throws {
-        try await withDependencies {
-            $0.pharmacyRemoteDataStore.fetchPharmacy = { _ in Fixtures.pharmacy1 }
-        } operation: {
-            let mockLocalDataStore = PharmacyLocalDataStoreMock()
-            let sut = PharmacyRepository.createWithMocks(disk: mockLocalDataStore)
-
-            mockLocalDataStore
-                .fetchPharmacyByTelematikIdStringAnyPublisherPharmacyLocationLocalStoreErrorClosure = { telematikId in
-                    if telematikId == Fixtures.pharmacy1.telematikID,
-                       mockLocalDataStore
-                       .fetchPharmacyByTelematikIdStringAnyPublisherPharmacyLocationLocalStoreErrorCallsCount == 1 {
-                        return Just(nil)
-                            .setFailureType(to: LocalStoreError.self)
-                            .eraseToAnyPublisher()
-                    } else {
-                        return Fail(error: LocalStoreError.notImplemented).eraseToAnyPublisher()
-                    }
-                }
-
-            mockLocalDataStore.savePharmaciesPharmacyLocationAnyPublisherBoolLocalStoreErrorReturnValue = Just(true)
+            mockLocalDataStore.savePharmaciesReturnValue = Just(true)
                 .setFailureType(to: LocalStoreError.self)
                 .eraseToAnyPublisher()
 
             let result = try await sut.loadCached(Fixtures.pharmacy1.telematikID)
             expect(result).to(equal(Fixtures.pharmacy1))
 
-            expect(mockLocalDataStore.savePharmaciesPharmacyLocationAnyPublisherBoolLocalStoreErrorCallsCount)
-                .to(equal(1))
-            expect(mockLocalDataStore.savePharmaciesPharmacyLocationAnyPublisherBoolLocalStoreErrorReceivedInvocations)
-                .to(equal([
-                    [Fixtures.pharmacy1],
-                ]))
+            expect(mockLocalDataStore.savePharmaciesCallsCount).to(equal(1))
+            expect(mockLocalDataStore.savePharmaciesReceivedInvocations).to(equal([
+                [Fixtures.pharmacy1],
+            ]))
         }
     }
 
@@ -92,27 +86,24 @@ final class PharmacyRepositoryTests: XCTestCase {
         try await withDependencies {
             $0.pharmacyRemoteDataStore.fetchPharmacy = { _ in nil }
         } operation: {
-            let mockLocalDataStore = PharmacyLocalDataStoreMock()
+            let mockLocalDataStore = MockPharmacyLocalDataStore()
             let telematikId = "123"
             let sut = PharmacyRepository.createWithMocks(disk: mockLocalDataStore)
 
-            mockLocalDataStore
-                .fetchPharmacyByTelematikIdStringAnyPublisherPharmacyLocationLocalStoreErrorClosure = { id in
-                    if id == telematikId,
-                       mockLocalDataStore
-                       .fetchPharmacyByTelematikIdStringAnyPublisherPharmacyLocationLocalStoreErrorCallsCount == 1 {
-                        return Just(nil)
-                            .setFailureType(to: LocalStoreError.self)
-                            .eraseToAnyPublisher()
-                    } else {
-                        return Fail(error: LocalStoreError.notImplemented).eraseToAnyPublisher()
-                    }
+            mockLocalDataStore.fetchPharmacyByClosure = { id in
+                if id == telematikId,
+                   mockLocalDataStore.fetchPharmacyByCallsCount == 1 {
+                    return Just(nil)
+                        .setFailureType(to: LocalStoreError.self)
+                        .eraseToAnyPublisher()
+                } else {
+                    return Fail(error: LocalStoreError.notImplemented).eraseToAnyPublisher()
                 }
+            }
 
             let result = try await sut.loadCached(telematikId)
             expect(result).to(beNil())
-            expect(mockLocalDataStore.savePharmaciesPharmacyLocationAnyPublisherBoolLocalStoreErrorCallsCount)
-                .to(equal(0))
+            expect(mockLocalDataStore.savePharmaciesCallsCount).to(equal(0))
         }
     }
 
@@ -122,11 +113,11 @@ final class PharmacyRepositoryTests: XCTestCase {
                 [Fixtures.pharmacy1, Fixtures.pharmacy2]
             }
         } operation: {
-            let mockLocalDataStore = PharmacyLocalDataStoreMock()
-            mockLocalDataStore.listPharmaciesCountIntAnyPublisherPharmacyLocationLocalStoreErrorReturnValue = Just([])
+            let mockLocalDataStore = MockPharmacyLocalDataStore()
+            mockLocalDataStore.listPharmaciesCountReturnValue = Just([])
                 .setFailureType(to: LocalStoreError.self)
                 .eraseToAnyPublisher()
-            mockLocalDataStore.savePharmaciesPharmacyLocationAnyPublisherBoolLocalStoreErrorReturnValue = Just(true)
+            mockLocalDataStore.savePharmaciesReturnValue = Just(true)
                 .setFailureType(to: LocalStoreError.self)
                 .eraseToAnyPublisher()
 
@@ -138,12 +129,11 @@ final class PharmacyRepositoryTests: XCTestCase {
     }
 
     func testSearchRemoteWithPharmacyInLocalStore() async throws {
-        let mockLocalDataStore = PharmacyLocalDataStoreMock()
+        let mockLocalDataStore = MockPharmacyLocalDataStore()
         let createDate = Date()
         var storedPharmacy = Fixtures.storedPharmacy2
         storedPharmacy.created = createDate
-        mockLocalDataStore
-            .listPharmaciesCountIntAnyPublisherPharmacyLocationLocalStoreErrorReturnValue = Just([storedPharmacy])
+        mockLocalDataStore.listPharmaciesCountReturnValue = Just([storedPharmacy])
             .setFailureType(to: LocalStoreError.self)
             .eraseToAnyPublisher()
 
@@ -164,90 +154,6 @@ final class PharmacyRepositoryTests: XCTestCase {
             let pharmacies = try await sut.searchRemote(searchTerm: "", position: nil, filter: [])
             expect(pharmacies).to(equal([Fixtures.pharmacy1, storedPharmacy]))
         }
-    }
-
-    /// Tests that loadLocalCount only returns pharmacies that are favorites OR have been recently used.
-    /// Pharmacies that are neither should be filtered out.
-    func testLoadLocalCount_filtersFavoritesAndRecentlyUsed() async throws {
-        let mockLocalDataStore = PharmacyLocalDataStoreMock()
-
-        // Given: The disk store contains pharmacies with different favorite/lastUsed states
-        let allPharmacies = [
-            Fixtures.pharmacyFavorite, // isFavorite = true -> should be included
-            Fixtures.pharmacyRecentlyUsed, // lastUsed != nil -> should be included
-            Fixtures.pharmacyNeitherFavoriteNorUsed, // neither -> should be excluded
-        ]
-
-        mockLocalDataStore
-            .listPharmaciesCountIntAnyPublisherPharmacyLocationLocalStoreErrorReturnValue = Just(allPharmacies)
-            .setFailureType(to: LocalStoreError.self)
-            .eraseToAnyPublisher()
-
-        let sut = PharmacyRepository.createWithMocks(disk: mockLocalDataStore)
-
-        // When: Loading local pharmacies
-        let result = try await sut.loadLocalCount(nil)
-
-        // Then: Only favorite and recently used pharmacies should be returned
-        expect(result).to(haveCount(2))
-        expect(result.map(\.id)).to(contain("fav-1", "used-1"))
-        expect(result.map(\.id)).notTo(contain("neither-1"))
-    }
-
-    /// Tests that a pharmacy with both isFavorite=true AND lastUsed set is included
-    func testLoadLocalCount_includesPharmacyWithBothFavoriteAndUsed() async throws {
-        let mockLocalDataStore = PharmacyLocalDataStoreMock()
-
-        let pharmacyBoth = PharmacyLocation(
-            id: "both-1",
-            status: .active,
-            telematikID: "S.-BOTH",
-            name: "Both Favorite and Used",
-            types: [],
-            lastUsed: Date(),
-            isFavorite: true,
-            hoursOfOperation: []
-        )
-
-        let allPharmacies = [pharmacyBoth, Fixtures.pharmacyNeitherFavoriteNorUsed]
-
-        mockLocalDataStore
-            .listPharmaciesCountIntAnyPublisherPharmacyLocationLocalStoreErrorReturnValue = Just(allPharmacies)
-            .setFailureType(to: LocalStoreError.self)
-            .eraseToAnyPublisher()
-
-        let sut = PharmacyRepository.createWithMocks(disk: mockLocalDataStore)
-
-        // When: Loading local pharmacies
-        let result = try await sut.loadLocalCount(nil)
-
-        // Then: Only the pharmacy with favorite/used should be returned
-        expect(result).to(haveCount(1))
-        expect(result.first?.id).to(equal("both-1"))
-    }
-
-    /// Tests that when all pharmacies are neither favorites nor recently used,
-    /// the result is empty
-    func testLoadLocalCount_returnsEmptyWhenNoFavoritesOrRecentlyUsed() async throws {
-        let mockLocalDataStore = PharmacyLocalDataStoreMock()
-
-        let allPharmacies = [
-            Fixtures.pharmacy1, // no favorite, no lastUsed
-            Fixtures.pharmacyNeitherFavoriteNorUsed,
-        ]
-
-        mockLocalDataStore
-            .listPharmaciesCountIntAnyPublisherPharmacyLocationLocalStoreErrorReturnValue = Just(allPharmacies)
-            .setFailureType(to: LocalStoreError.self)
-            .eraseToAnyPublisher()
-
-        let sut = PharmacyRepository.createWithMocks(disk: mockLocalDataStore)
-
-        // When: Loading local pharmacies
-        let result = try await sut.loadLocalCount(nil)
-
-        // Then: No pharmacies should be returned
-        expect(result).to(beEmpty())
     }
 }
 
@@ -271,7 +177,7 @@ extension PharmacyRepositoryTests {
             hoursOfOperation: []
         )
 
-        /// equal telematic id
+        // equal telematic id
         static let storedPharmacy2 = PharmacyLocation(
             id: "345",
             status: .active,
@@ -283,40 +189,6 @@ extension PharmacyRepositoryTests {
             telecom: nil,
             lastUsed: Date(),
             isFavorite: true,
-            hoursOfOperation: []
-        )
-
-        /// Pharmacy that is a favorite (should be included in filtered results)
-        static let pharmacyFavorite = PharmacyLocation(
-            id: "fav-1",
-            status: .active,
-            telematikID: "S.-FAV",
-            name: "Favorite Pharmacy",
-            types: [],
-            isFavorite: true,
-            hoursOfOperation: []
-        )
-
-        /// Pharmacy that was recently used (should be included in filtered results)
-        static let pharmacyRecentlyUsed = PharmacyLocation(
-            id: "used-1",
-            status: .active,
-            telematikID: "S.-USED",
-            name: "Recently Used Pharmacy",
-            types: [],
-            lastUsed: Date(),
-            isFavorite: false,
-            hoursOfOperation: []
-        )
-
-        /// Pharmacy that is neither favorite nor recently used (should be filtered out)
-        static let pharmacyNeitherFavoriteNorUsed = PharmacyLocation(
-            id: "neither-1",
-            status: .active,
-            telematikID: "S.-NEITHER",
-            name: "Neither Favorite Nor Used",
-            types: [],
-            isFavorite: false,
             hoursOfOperation: []
         )
     }

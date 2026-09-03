@@ -32,11 +32,10 @@ struct EpaMedicationView: View {
         ScrollView(.vertical) {
             SectionContainer(
                 content: {
-                    LabeledContent {
-                        Text(store.epaMedication?.displayName ?? L10n.prscTxtFallbackName.text)
-                    } label: {
-                        Text(L10n.prscDtlMedTxtName)
-                    }
+                    SubTitle(
+                        title: store.epaMedication?.displayName ?? L10n.prscTxtFallbackName.text,
+                        description: L10n.prscDtlMedTxtName
+                    )
                     .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedName)
 
                     if let ingredients = store.epaMedication?.ingredients {
@@ -44,11 +43,10 @@ struct EpaMedicationView: View {
                             Button(
                                 action: { store.send(.showIngredient(ingredient)) },
                                 label: {
-                                    LabeledContent {
-                                        Text(ingredient.name ?? L10n.prscTxtFallbackName.text)
-                                    } label: {
-                                        Text(L10n.prscDtlMedIngredientName)
-                                    }
+                                    SubTitle(
+                                        title: ingredient.name ?? L10n.prscTxtFallbackName.text,
+                                        details: L10n.prscDtlMedIngredientName
+                                    )
                                 }
                             )
                             .buttonStyle(.navigation)
@@ -58,78 +56,48 @@ struct EpaMedicationView: View {
                     }
 
                     if let amount = store.epaMedication?.amount?.description {
-                        LabeledContent {
-                            Text(amount)
-                        } label: {
-                            Text(L10n.prscDtlMedTxtAmount)
-                        }
-                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedAmount)
+                        SubTitle(title: amount, description: L10n.prscDtlMedTxtAmount)
+                            .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedAmount)
                     }
 
                     if let normSizeCode = store.epaMedication?.normSizeCode {
-                        LabeledContent {
-                            Text(normSizeCode)
-                        } label: {
-                            Text(L10n.prscFdTxtDetailsDose)
-                        }
-                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedNormSizeCode)
+                        SubTitle(title: normSizeCode, description: L10n.prscFdTxtDetailsDose)
+                            .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedNormSizeCode)
                     }
 
                     if let pzn = store.epaMedication?.pzn {
-                        LabeledContent {
-                            Text(pzn)
-                        } label: {
-                            Text(L10n.prscFdTxtDetailsPzn)
-                        }
-                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedPzn)
+                        SubTitle(title: pzn, description: L10n.prscFdTxtDetailsPzn)
+                            .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedPzn)
                     }
 
                     if let dosageForm = store.epaMedication?.localizedDosageForm {
-                        LabeledContent {
-                            Text(dosageForm)
-                        } label: {
-                            Text(L10n.prscFdTxtDetailsDosageForm)
-                        }
-                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedDosageForm)
+                        SubTitle(title: dosageForm, description: L10n.prscFdTxtDetailsDosageForm)
+                            .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedDosageForm)
                     }
 
                     if let drugCategory = store.epaMedication?.drugCategory?.localizedName {
-                        LabeledContent {
-                            Text(drugCategory)
-                        } label: {
-                            Text(L10n.prscDtlMedTxtDrugCategory)
-                        }
-                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedDrugCategory)
+                        SubTitle(title: drugCategory, description: L10n.prscDtlMedTxtDrugCategory)
+                            .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedDrugCategory)
                     }
 
                     if let isVaccine = store.epaMedication?.isVaccine {
-                        LabeledContent {
-                            Text(isVaccine ? L10n.prscDtlTxtYes : L10n.prscDtlTxtNo)
-                        } label: {
-                            Text(L10n.prscDtlMedTxtDrugVaccine)
-                        }
-
+                        SubTitle(
+                            title: isVaccine ? L10n.prscDtlTxtYes : L10n.prscDtlTxtNo,
+                            description: L10n.prscDtlMedTxtDrugVaccine
+                        )
                         .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedVaccine)
                     }
 
                     if let instructions = store.epaMedication?.manufacturingInstructions {
-                        LabeledContent {
-                            Text(instructions)
-                        } label: {
-                            Text(L10n.prscDtlMedManufacturingInstructions)
-                        }
-                        .modifier(SectionContainerCellModifier())
-                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedManufacturingInstructions)
+                        SubTitle(title: instructions, description: L10n.prscDtlMedManufacturingInstructions)
+                            .modifier(SectionContainerCellModifier())
+                            .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedManufacturingInstructions)
                     }
 
                     if let packaging = store.epaMedication?.packaging {
-                        LabeledContent {
-                            Text(packaging)
-                        } label: {
-                            Text(L10n.prscDtlMedTxtPackaging)
-                        }
-                        .modifier(SectionContainerCellModifier())
-                        .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedPackaging)
+                        SubTitle(title: packaging, description: L10n.prscDtlMedTxtPackaging)
+                            .modifier(SectionContainerCellModifier())
+                            .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedPackaging)
                     }
                 },
                 moreContent: {
@@ -158,65 +126,54 @@ struct EpaMedicationView: View {
         let dispenseDetail: EpaMedicationDomain.State.DispenseState
         var body: some View {
             if let expiresOn = dispenseDetail.expiresOn {
-                LabeledContent {
-                    Text(expiresOn)
-                } label: {
-                    Text(L10n.prscDtlMedTxtBatchExpiresOn)
-                }
+                SubTitle(
+                    title: expiresOn,
+                    description: L10n.prscDtlMedTxtBatchExpiresOn
+                )
                 .modifier(SectionContainerCellModifier())
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedBatchExpiresOn)
             }
 
             if let lotNumber = dispenseDetail.lotNumber {
-                LabeledContent {
-                    Text(lotNumber)
-                } label: {
-                    Text(L10n.prscDtlMedTxtBatchLotNumber)
-                }
-                .modifier(SectionContainerCellModifier())
-                .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedBatchLotNumber)
+                SubTitle(
+                    title: lotNumber,
+                    description: L10n.prscDtlMedTxtBatchLotNumber
+                ).modifier(SectionContainerCellModifier())
+                    .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedBatchLotNumber)
             }
 
             if let dosageInstruction = dispenseDetail.dosageInstruction {
-                LabeledContent {
-                    Text(dosageInstruction)
-                } label: {
-                    Text(L10n.prscDtlTxtDosageInstructions)
-                }
-
+                SubTitle(
+                    title: dosageInstruction,
+                    description: L10n.prscDtlTxtDosageInstructions
+                )
                 .modifier(SectionContainerCellModifier())
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedDosageInstructions)
             }
 
             if let noteText = dispenseDetail.noteText {
-                LabeledContent {
-                    Text(noteText)
-                } label: {
-                    Text(L10n.prscDtlMedTxtNote)
-                }
-
+                SubTitle(
+                    title: noteText,
+                    description: L10n.prscDtlMedTxtNote
+                )
                 .modifier(SectionContainerCellModifier())
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedNote)
             }
 
             if let quantity = dispenseDetail.quantity?.description {
-                LabeledContent {
-                    Text(quantity)
-                } label: {
-                    Text(L10n.prscDtlMedTxtAmount)
-                }
-
+                SubTitle(
+                    title: quantity,
+                    description: L10n.prscDtlMedTxtAmount
+                )
                 .modifier(SectionContainerCellModifier())
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedAmount)
             }
 
             if let whenHandedOver = dispenseDetail.whenHandedOver {
-                LabeledContent {
-                    Text(whenHandedOver)
-                } label: {
-                    Text(L10n.prscDtlMedTxtHandedOverDate)
-                }
-
+                SubTitle(
+                    title: whenHandedOver,
+                    description: L10n.prscDtlMedTxtHandedOverDate
+                )
                 .modifier(SectionContainerCellModifier())
                 .accessibilityIdentifier(A11y.prescriptionDetails.prscDtlMedHandedOverDate)
             }

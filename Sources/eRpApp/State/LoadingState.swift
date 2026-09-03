@@ -24,7 +24,7 @@ import Combine
 import ComposableArchitecture
 import Foundation
 
-enum LoadingState<Value: Equatable, Failure: Error & Equatable>: Equatable {
+enum LoadingState<Value, Failure: Error>: Equatable where Failure: Equatable, Value: Equatable {
     case idle
     case loading(Value? = nil)
     case value(Value)

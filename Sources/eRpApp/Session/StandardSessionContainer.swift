@@ -20,6 +20,7 @@
 // For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
 //
 
+import AVS
 import BfArM
 import Combine
 import ComposableArchitecture
@@ -128,15 +129,19 @@ class StandardSessionContainer: UserSession {
         )
     }()
 
-    lazy var extAuthRequestStorage: ExtAuthRequestStorage = PersistentExtAuthRequestStorage()
-    lazy var secureUserStore: SecureUserDataStore = keychainStorage
-    lazy var localUserStore: UserDataStore = UserDefaultsStore()
+    lazy var extAuthRequestStorage: ExtAuthRequestStorage = { PersistentExtAuthRequestStorage() }()
+    lazy var secureUserStore: SecureUserDataStore = { keychainStorage }()
+    lazy var localUserStore: UserDataStore = { UserDefaultsStore() }()
 
-    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = idpSession.isLoggedIn
-        .mapError { UserSessionError.idpError(error: $0) }
-        .eraseToAnyPublisher()
+    lazy var isAuthenticated: AnyPublisher<Bool, UserSessionError> = {
+        idpSession.isLoggedIn
+            .mapError { UserSessionError.idpError(error: $0) }
+            .eraseToAnyPublisher()
+    }()
 
-    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = DefaultNFCResetRetryCounterController()
+    lazy var nfcHealthCardPasswordController: NFCHealthCardPasswordController = {
+        DefaultNFCResetRetryCounterController()
+    }()
 
     // Local VAU storage configuration
     // [REQ:gemSpec_Krypt:A_20175#3|10] Initialization of the VAUStorage at a predefined location in the filesystem
@@ -169,15 +174,20 @@ class StandardSessionContainer: UserSession {
     @Dependency(\.erxTaskRepository) var erxTaskRepository
     @Dependency(\.pharmacyRepository) var pharmacyRepository
 
-    /// Orders are displayed for all profiles, so the local store is returning objects from all profiles
-    lazy var ordersRepository: OrdersRepository = DefaultOrdersRepository()
+    // Orders are displayed for all profiles, so the local store is returning objects from all profiles
+    lazy var ordersRepository: OrdersRepository = {
+        DefaultOrdersRepository()
+    }()
 
-    lazy var appSecurityManager: AppSecurityManager =
+    lazy var appSecurityManager: AppSecurityManager = {
         DefaultAppSecurityManager(keychainAccess: SystemKeychainAccessHelper())
+    }()
 
-    lazy var deviceSecurityManager: DeviceSecurityManager = DefaultDeviceSecurityManager(
-        userDataStore: localUserStore
-    )
+    lazy var deviceSecurityManager: DeviceSecurityManager = {
+        DefaultDeviceSecurityManager(
+            userDataStore: localUserStore
+        )
+    }()
 
     func profile() -> AnyPublisher<Profile, LocalStoreError> {
         profileDataStore.fetchProfile(by: profileId)
@@ -185,9 +195,28 @@ class StandardSessionContainer: UserSession {
             .eraseToAnyPublisher()
     }
 
-    private lazy var prescriptionRepositoryWithActivity: DefaultPrescriptionRepository = .init(
-        loginHandler: idpSessionLoginHandler
-    )
+    lazy var avsSession: AVSSession = {
+        #if ENABLE_DEBUG_VIEW
+        DefaultAVSSession(httpClient: avsHttpClient) { message, endpoint, httpResponse in
+            var urlRequest = URLRequest(url: endpoint.url)
+            endpoint.additionalHeaders.forEach { key, value in
+                urlRequest.addValue(value, forHTTPHeaderField: key)
+            }
+            urlRequest.httpBody = try? JSONEncoder().encode(message)
+            var response = httpResponse
+            response.status = HTTPStatusCode.debug
+            DebugLiveLogger.shared.log(request: urlRequest, sentAt: Date(), response: response, receivedAt: Date())
+        }
+        #else
+        DefaultAVSSession(httpClient: avsHttpClient)
+        #endif
+    }()
+
+    private lazy var prescriptionRepositoryWithActivity: DefaultPrescriptionRepository = {
+        DefaultPrescriptionRepository(
+            loginHandler: idpSessionLoginHandler
+        )
+    }()
 
     var prescriptionRepository: PrescriptionRepository {
         prescriptionRepositoryWithActivity
@@ -198,21 +227,34 @@ class StandardSessionContainer: UserSession {
     }
 
     @Dependency(\.loginHandlerServiceFactory) var loginHandlerServiceFactory: LoginHandlerServiceFactory
-    @Dependency(\.secureEnclaveSignatureProviderFactory) var secureEnclaveSignatureProviderFactory:
-        SecureEnclaveSignatureProviderFactory
 
-    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = secureEnclaveSignatureProviderFactory
-        .construct(profileId)
+    lazy var idpSessionLoginHandler: LoginHandler = {
+        loginHandlerServiceFactory.construct(
+            idpSession,
+            secureEnclaveSignatureProvider
+        )
+    }()
 
-    lazy var idpSessionLoginHandler: LoginHandler = loginHandlerServiceFactory.construct(
-        idpSession,
-        secureEnclaveSignatureProvider
-    )
+    lazy var pairingIdpSessionLoginHandler: LoginHandler = {
+        loginHandlerServiceFactory.construct(
+            pairingIdpSession,
+            secureEnclaveSignatureProvider
+        )
+    }()
 
-    lazy var pairingIdpSessionLoginHandler: LoginHandler = loginHandlerServiceFactory.construct(
-        pairingIdpSession,
-        secureEnclaveSignatureProvider
-    )
+    lazy var secureEnclaveSignatureProvider: SecureEnclaveSignatureProvider = {
+        #if ENABLE_DEBUG_VIEW && targetEnvironment(simulator)
+        // swiftlint:disable:next trailing_closure
+        DefaultSecureEnclaveSignatureProvider(
+            storage: secureUserStore,
+            privateKeyContainerProvider: { try PrivateKeyContainer.createFromKeyChain(with: $0) }
+        )
+        #else
+        DefaultSecureEnclaveSignatureProvider(
+            storage: secureUserStore
+        )
+        #endif
+    }()
 }
 
 extension IDPSession {

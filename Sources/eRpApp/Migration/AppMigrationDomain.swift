@@ -30,7 +30,7 @@ import Foundation
 
 @Reducer
 struct AppMigrationDomain {
-    @Reducer
+    @Reducer(state: .equatable, action: .equatable)
     enum Destination {
         @ReducerCaseEphemeral
         case alert(ErpAlertState<Alert>)
@@ -82,7 +82,7 @@ struct AppMigrationDomain {
     var finishedMigration: () -> Void
 
     var body: some Reducer<State, Action> {
-        Reduce(core)
+        Reduce(self.core)
             .ifLet(\.$destination, action: \.destination)
     }
 
@@ -219,6 +219,3 @@ extension MigrationManager {
         userDataStore: DemoUserDefaultsStore()
     )
 }
-
-extension AppMigrationDomain.Destination.State: Equatable {}
-extension AppMigrationDomain.Destination.Action: Equatable {}

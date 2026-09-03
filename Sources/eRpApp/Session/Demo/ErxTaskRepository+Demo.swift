@@ -89,13 +89,13 @@ extension ErxTaskRepository {
                 for task in erxTasks where await store.contains(task) {
                     await store.update(with: task)
                 }
-            }, markTaskEURedeemable: { taskId, _, mark in
-                guard var task = await store.first(where: { task in
+            }, markTaskEURedeemable: { taskId, mark in
+                var task = await store.first { task in
                     task.id == taskId &&
                         task.isEURedeemable
-                }) else { return }
-                task.isSetEURedeemableByPatient = mark
-                await store.update(with: task)
+                }
+                task?.isSetEURedeemableByPatient = mark
+                return task
             }, redeem: { order in
                 order
             }, loadLocalCommunications: { _ in
@@ -104,17 +104,14 @@ extension ErxTaskRepository {
             }, saveLocalCommunications: { _, _ in
             }, updateLocalDiGaInfo: { _ in
             }, countAllUnreadCommunicationsAndChargeItems: { _, _ in
-                AsyncThrowingStream { continuation in
-                    continuation.yield(0)
-                    continuation.finish()
-                }
+                0
             }, loadRemoteLatestAuditEvents: { _ in
                 PagedContent(content: [], next: nil)
             }, loadRemoteAuditEvents: { _, _ in
                 PagedContent(content: [], next: nil)
             }, loadRemoteChargeItems: { _ in
                 []
-            }, fetchConsents: { _ in
+            }, fetchConsents: {
                 []
             }, loadLocalChargeItem: { _, _ in
                 nil
@@ -123,20 +120,9 @@ extension ErxTaskRepository {
             }, saveChargeItems: { _, _ in
             }, deleteChargeItems: { _, _ in
             }, deleteLocalChargeItems: { _, _ in
-            }, grantConsent: { consent, _ in
+            }, grantConsent: { consent in
                 consent
-            }, revokeConsent: { _, _ in
-            }, loadRemoteEuAccessCode: {
-                nil
-            }, grantEuAccessPermission: { _ in
-                nil
-            }, deleteEuAccessCode: { _ in
-            }, saveEuCommunication: { _, _ in
-            }, deleteEuCommunications: { _, _ in
-            }, loadEuCommunications: { _, _ in
-                []
-            }, loadLatestActiveEuCommunication: { _ in
-                nil
+            }, revokeConsent: { _ in
             }
         )
     }

@@ -25,7 +25,6 @@ import Dependencies
 import eRpKit
 import FeatureHelpers
 import LocalAuthentication
-import Sharing
 
 protocol DeviceSecurityManager {
     /// If true, a dialog should be presented with a system warning
@@ -96,7 +95,7 @@ struct DefaultDeviceSecurityManager: DeviceSecurityManager {
         deviceSecurityManagerSessionStorage
             .ignoreDeviceNotSecuredWarningForSession
             .map { (ignore: Bool?) -> Bool in
-                if let ignore {
+                if let ignore = ignore {
                     return ignore
                 } else {
                     return false
@@ -224,17 +223,9 @@ private let filesToCheck = [
 // MARK: TCA Dependency
 
 struct DeviceSecurityManagerDependency: DependencyKey {
-    static var liveValue: DeviceSecurityManager = {
-        @Shared(.isDemoMode) var isDemoMode: Bool
-
-        if isDemoMode {
-            return DemoDeviceSecurityManager()
-        } else {
-            return DefaultDeviceSecurityManager(
-                userDataStore: UserDataStoreDependency.liveValue
-            )
-        }
-    }()
+    static var liveValue: DeviceSecurityManager = DefaultDeviceSecurityManager(
+        userDataStore: UserDataStoreDependency.liveValue
+    )
 
     static var previewValue: DeviceSecurityManager = DummyDeviceSecurityManager()
 

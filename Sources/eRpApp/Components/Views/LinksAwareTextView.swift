@@ -71,8 +71,6 @@ struct LinksAwareTextView: UIViewRepresentable {
     }
 
     private class NonSelectableTextView: UITextView, UITextViewDelegate {
-        override var canBecomeFirstResponder: Bool {
-            false
-        }
+        override var canBecomeFirstResponder: Bool { false }
     }
 }

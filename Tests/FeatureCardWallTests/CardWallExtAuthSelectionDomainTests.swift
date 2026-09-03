@@ -38,12 +38,14 @@ final class CardWallExtAuthSelectionDomainTests: XCTestCase {
     let networkScheduler = DispatchQueue.test
     let uiScheduler = DispatchQueue.test
 
-    lazy var schedulers: Schedulers = .init(
-        uiScheduler: uiScheduler.eraseToAnyScheduler(),
-        networkScheduler: networkScheduler.eraseToAnyScheduler(),
-        ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
-        computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
-    )
+    lazy var schedulers: Schedulers = {
+        Schedulers(
+            uiScheduler: uiScheduler.eraseToAnyScheduler(),
+            networkScheduler: networkScheduler.eraseToAnyScheduler(),
+            ioScheduler: DispatchQueue.test.eraseToAnyScheduler(),
+            computeScheduler: DispatchQueue.test.eraseToAnyScheduler()
+        )
+    }()
 
     override func setUp() {
         super.setUp()
@@ -65,7 +67,7 @@ final class CardWallExtAuthSelectionDomainTests: XCTestCase {
         }
     }
 
-    func testLoadingTriggerSucceeds_forDefault() async {
+    func testLoadingTriggerSucceeds() async {
         let sut = testStore { dependencies in
             dependencies.profileBasedSessionProvider.idpSession = { _ in self.idpSessionMock }
         }
@@ -74,55 +76,10 @@ final class CardWallExtAuthSelectionDomainTests: XCTestCase {
             .setFailureType(to: IDPError.self)
             .eraseToAnyPublisher()
 
-        // Default insuranceType is .unknown, which means we expect pkv == false and no federalKV filtering
-        let expectedApps = Self.testDirectory.apps.filter { !$0.pkv }
-        let expectedDirectory = KKAppDirectory(apps: expectedApps)
-
         await sut.send(.loadKKList)
         await uiScheduler.run()
         await sut.receive(.response(.loadKKList(.success(Self.testDirectory)))) { state in
-            state.kkList = expectedDirectory
-        }
-    }
-
-    func testLoadingTriggerSucceeds_forPKV() async {
-        let sut = testStore(for: .init(profileId: UUID(), insuranceType: .pKV)) { dependencies in
-            dependencies.profileBasedSessionProvider.idpSession = { _ in self.idpSessionMock }
-        }
-
-        idpSessionMock.loadDirectoryKKApps_Publisher = Just(Self.testDirectory)
-            .setFailureType(to: IDPError.self)
-            .eraseToAnyPublisher()
-
-        // We expect only pkv == true
-        let expectedApps = Self.testDirectory.apps.filter(\.pkv)
-        let expectedDirectory = KKAppDirectory(apps: expectedApps)
-
-        await sut.send(.loadKKList)
-        await uiScheduler.run()
-        await sut.receive(.response(.loadKKList(.success(Self.testDirectory)))) { state in
-            state.kkList = expectedDirectory
-        }
-    }
-
-    func testLoadingTriggerSucceeds_forFederalKV() async {
-        let sut = testStore(for: .init(profileId: UUID(), insuranceType: .federalKV)) { dependencies in
-            dependencies.profileBasedSessionProvider.idpSession = { _ in self.idpSessionMock }
-        }
-
-        idpSessionMock.loadDirectoryKKApps_Publisher = Just(Self.testDirectory)
-            .setFailureType(to: IDPError.self)
-            .eraseToAnyPublisher()
-
-        // We expect pkv == false AND contains "Heilfürsorge"
-        let expectedApps = Self.testDirectory.apps
-            .filter { !$0.pkv && $0.name.localizedCaseInsensitiveContains("Heilfürsorge") }
-        let expectedDirectory = KKAppDirectory(apps: expectedApps)
-
-        await sut.send(.loadKKList)
-        await uiScheduler.run()
-        await sut.receive(.response(.loadKKList(.success(Self.testDirectory)))) { state in
-            state.kkList = expectedDirectory
+            state.kkList = Self.testDirectory
         }
     }
 
@@ -141,73 +98,13 @@ final class CardWallExtAuthSelectionDomainTests: XCTestCase {
         }
     }
 
-    func testSelectingAnEntryStartsExtAuth() async throws {
-        let openedURL: LockIsolated<URL?> = .init(nil)
-
-        let sut = testStore { dependencies in
-            dependencies.openURLHandler.canOpenURL = { _ in true }
-            dependencies.openURLHandler.openWithOptions = { url, _ in
-                openedURL.setValue(url)
-                return true
-            }
-            dependencies.profileBasedSessionProvider.idpSession = { _ in self.idpSessionMock }
-        }
-
-        let urlFixture = try XCTUnwrap(URL(string: "https://dummy.gematik.de"))
-
-        idpSessionMock.startExtAuth_Publisher = Just(urlFixture).setFailureType(to: IDPError.self).eraseToAnyPublisher()
-
-        await sut.send(.selectKK(Self.testEntryA)) { state in
-            state.selectLoading = true
-        }
-        await uiScheduler.run()
-        await sut.receive(.openURL(urlFixture))
-
-        await sut.receive(.response(.openURL(true))) { state in
-            state.selectLoading = false
-        }
-        expect(openedURL.value).to(equal(urlFixture))
-
-        await sut.receive(.delegate(.close))
-    }
-
-    func testSelectKKFailsWithIDPError() async {
+    func testSelectingAnEntrySucceeds() async {
         let sut = testStore { dependencies in
             dependencies.profileBasedSessionProvider.idpSession = { _ in self.idpSessionMock }
         }
 
-        idpSessionMock.startExtAuth_Publisher = Fail(error: Self.testError).eraseToAnyPublisher()
-
         await sut.send(.selectKK(Self.testEntryA)) { state in
-            state.selectLoading = true
-        }
-        await uiScheduler.run()
-        await sut.receive(.selectError(CardWallExtAuthSelectionDomain.Error.idpError(Self.testError))) { state in
-            state.selectLoading = false
-            state.destination = .alert(
-                CardWallExtAuthSelectionDomain.AlertStates.alert(for: .idpError(Self.testError))
-            )
-        }
-    }
-
-    func testSelectKKFailsOpenURLError() async throws {
-        let sut = testStore(for: .init(
-            profileId: UUID(),
-            selectLoading: true
-        )) { dependencies in
-            dependencies.openURLHandler.canOpenURL = { _ in false }
-        }
-
-        let urlFixture = try XCTUnwrap(URL(string: "https://dummy.gematik.de"))
-
-        await sut.send(.openURL(urlFixture))
-        await uiScheduler.run()
-
-        await sut.receive(.response(.openURL(false))) { state in
-            state.selectLoading = false
-            state.destination = .alert(
-                CardWallExtAuthSelectionDomain.AlertStates.alert(for: .universalLinkFailed)
-            )
+            state.destination = .confirmation(.init(profileId: state.profileId, selectedKK: Self.testEntryA))
         }
     }
 
@@ -225,23 +122,17 @@ final class CardWallExtAuthSelectionDomainTests: XCTestCase {
         }
     }
 
+    // TODO: while adding the next screen, test confirmKK to push it swiftlint:disable:this todo
+
     static let testError = IDPError.internal(error: .notImplemented)
 
     static let testEntryA = KKAppDirectory.Entry(name: "Test Entry A", identifier: "identifierA")
     static let testEntryB = KKAppDirectory.Entry(name: "Test Entry B", identifier: "identifierB")
     static let testEntryG = KKAppDirectory.Entry(name: "Generic BKK", identifier: "identifierG")
-    static let testEntryP = KKAppDirectory.Entry(name: "PKV Entry", identifier: "identifierP", pkv: true)
-    static let testEntryFederal = KKAppDirectory.Entry(
-        name: "Heilfürsorge Bundeswehr",
-        identifier: "identifierFederal",
-        pkv: false
-    )
 
     static let testDirectory = KKAppDirectory(apps: [
         testEntryA,
         testEntryB,
         testEntryG,
-        testEntryP,
-        testEntryFederal,
     ])
 }

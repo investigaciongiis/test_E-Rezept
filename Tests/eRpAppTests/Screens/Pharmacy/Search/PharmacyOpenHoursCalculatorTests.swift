@@ -35,7 +35,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         super.setUp()
     }
 
-    func testOpenNow() {
+    func testOpenNow() throws {
         // When current test-time is set to 9:00am on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(9, 00)
 
@@ -56,7 +56,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         ).to(equal(.open(closingDateTime: "10:00 Uhr")))
     }
 
-    func testClosedNow() {
+    func testClosedNow() throws {
         // When current test-time is set to 11:00am on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(11, 00)
 
@@ -77,7 +77,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         ).to(equal(.closed))
     }
 
-    func testPharmacyIsMarkedClosedOnDifferentDays() {
+    func testPharmacyIsMarkedClosedOnDifferentDays() throws {
         // When current test-time is set to 11:00am on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(11, 00)
 
@@ -98,7 +98,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         ).to(equal(.closed))
     }
 
-    func testOpenAfternoon() {
+    func testOpenAfternoon() throws {
         // When current test-time is set to 16:00 on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(16, 00)
 
@@ -124,7 +124,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         ).to(equal(.open(closingDateTime: "18:00 Uhr")))
     }
 
-    func testOpenAfternoonMultipleDays() {
+    func testOpenAfternoonMultipleDays() throws {
         // When current test-time is set to 16:00 on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(16, 00)
 
@@ -151,7 +151,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         ).to(equal(.open(closingDateTime: "18:00 Uhr")))
     }
 
-    func testOpenAfternoonUnequalHoursMultipleDays() {
+    func testOpenAfternoonUnequalHoursMultipleDays() throws {
         // When current test-time is set to 16:00 on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(16, 00)
 
@@ -177,7 +177,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         ).to(equal(.open(closingDateTime: "18:00 Uhr")))
     }
 
-    func testOpenSoon() {
+    func testOpenSoon() throws {
         // When current test-time is set to 14:30 on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(14, 30)
 
@@ -204,7 +204,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         ).to(equal(.willOpen(minutesTilOpen: 30, openingDateTime: "15:00 Uhr")))
     }
 
-    func testOpenUnknownBecausOfEmptyHoursOfOperation() {
+    func testOpenUnknownBecausOfEmptyHoursOfOperation() throws {
         // When current test-time is set to 14:30 on 17th June 2021...
         let currentTestDateTime = Fixtures.testDate(14, 30)
 
@@ -221,7 +221,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
 
     // MARK: EmergencyServiceHours
 
-    func testEmergencyEndsBeforeOpening() {
+    func testEmergencyEndsBeforeOpening() throws {
         // emergency started yesterday and ends before opening
         let testDate = Fixtures.testDate(07, 30)
         withDependencies {
@@ -245,7 +245,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyStartsBeforeOpeningEndsAtRegularOpening() {
+    func testEmergencyStartsBeforeOpeningEndsAtRegularOpening() throws {
         // emergency started already and ends before during regular opening
         let testDate = Fixtures.testDate(07, 00)
         withDependencies {
@@ -269,7 +269,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyStartsBeforeOpening() {
+    func testEmergencyStartsBeforeOpening() throws {
         // emergency started before and ends after regular opening hours
         let testDate = Fixtures.testDate(06, 30)
         withDependencies {
@@ -293,7 +293,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyStartDuringOpeningAlsoEndsDuring() {
+    func testEmergencyStartDuringOpeningAlsoEndsDuring() throws {
         // emergency started yesterday and ends before opening
         let testDate = Fixtures.testDate(10, 00)
         withDependencies {
@@ -317,7 +317,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyStartsDuringOpening() {
+    func testEmergencyStartsDuringOpening() throws {
         // emergency started during opening and ends after regular closing
         let testDate = Fixtures.testDate(20, 00)
         withDependencies {
@@ -341,7 +341,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyStartsDuringOpeningEndDuring() {
+    func testEmergencyStartsDuringOpeningEndDuring() throws {
         // emergency started during opening and ends after regular closing
         let testDate = Fixtures.testDate(17, 00)
         withDependencies {
@@ -365,7 +365,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyStartsAfterClosing() {
+    func testEmergencyStartsAfterClosing() throws {
         // emergency started yesterday and ends before opening
         let testDate = Fixtures.testDate(18, 30)
         withDependencies {
@@ -389,7 +389,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyStartsSameAsRegularClosing() {
+    func testEmergencyStartsSameAsRegularClosing() throws {
         // emergency started when regular closing
         let testDate = Fixtures.testDate(17, 00)
         withDependencies {
@@ -413,7 +413,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencySameAsRegular() {
+    func testEmergencySameAsRegular() throws {
         // emergency starts same times as regular opening
         let testDate = Fixtures.testDate(18, 00)
         withDependencies {
@@ -437,7 +437,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testMultipleEmergency() {
+    func testMultipleEmergency() throws {
         // emergency starts before regular opening
         let testDate = Fixtures.testDate(07, 45)
         withDependencies {
@@ -493,7 +493,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
 
     // MARK: SpecialClosingHours
 
-    func testClosingFullyCovered() {
+    func testClosingFullyCovered() throws {
         let testDate = Fixtures.testDate(10, 00)
         withDependencies {
             $0.date.now = testDate
@@ -516,7 +516,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testClosingEndsBeforeOpening() {
+    func testClosingEndsBeforeOpening() throws {
         // closing started yesterday and ends before opening
         let testDate = Fixtures.testDate(08, 00)
         withDependencies {
@@ -540,7 +540,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testClosingStartDuringOpeningAlsoEndsDuring() {
+    func testClosingStartDuringOpeningAlsoEndsDuring() throws {
         // closing started and end during regular opening
         let testDate = Fixtures.testDate(10, 00)
         withDependencies {
@@ -564,7 +564,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testClosingStartsDuringOpening() {
+    func testClosingStartsDuringOpening() throws {
         // closing started during and ends after regular closing
         let testDate = Fixtures.testDate(10, 00)
         withDependencies {
@@ -587,7 +587,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testClosingStartsAfterClosing() {
+    func testClosingStartsAfterClosing() throws {
         // closing starts after regular closing
         let testDate = Fixtures.testDate(19, 15)
         withDependencies {
@@ -610,7 +610,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testClosingEndsOnClosing() {
+    func testClosingEndsOnClosing() throws {
         // closing ends same when normal opening ends
         let testDate = Fixtures.testDate(18, 45)
         withDependencies {
@@ -633,7 +633,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testClosingSameAsOpening() {
+    func testClosingSameAsOpening() throws {
         // closing has same time as regular opening times
         let testDate = Fixtures.testDate(12, 00)
         withDependencies {
@@ -656,7 +656,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testMultipleClosing() {
+    func testMultipleClosing() throws {
         // emergency starts before regular opening
         let testDate = Fixtures.testDate(11, 45)
         withDependencies {
@@ -712,7 +712,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
 
     // MARK: Special Cases with both SpecialClosing and EmergencyOpeningHours
 
-    func testClosingAndEmergencySameTime() {
+    func testClosingAndEmergencySameTime() throws {
         // closing has same time as regular opening times
         let testDate = Fixtures.testDate(19, 00)
         withDependencies {
@@ -743,7 +743,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testClosingFirstAndEmergencyAfter() {
+    func testClosingFirstAndEmergencyAfter() throws {
         // specialClosing early and then EmergencyService After
         let testDate = Fixtures.testDate(19, 00)
         withDependencies {
@@ -774,7 +774,7 @@ class PharmacyOpenHoursCalculatorTests: XCTestCase {
         }
     }
 
-    func testEmergencyFirstAndClosingAfter() {
+    func testEmergencyFirstAndClosingAfter() throws {
         // emergencyService early and then specialClosing After
         let testDate = Fixtures.testDate(07, 00)
         withDependencies {

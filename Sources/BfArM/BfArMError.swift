@@ -27,17 +27,17 @@ import HTTPClient
 /// The specific error types for the IDP module
 @CodedError("301")
 public enum BfArMError: Swift.Error {
-    /// In case of HTTP/Connection error
     @ErrorCode("01")
+    /// In case of HTTP/Connection error
     case network(error: HTTPClientError)
-    /// Message failed to decode/parse
     @ErrorCode("02")
+    /// Message failed to decode/parse
     case decoding(error: Swift.Error)
-    /// When the asset link from bfarm endpoint is invalid
     @ErrorCode("03")
+    /// When the asset link from bfarm endpoint is invalid
     case invalidAssetLink
-    /// Other error cases
     @ErrorCode("04")
+    /// Other error cases
     case unspecified(error: Swift.Error)
 }
 

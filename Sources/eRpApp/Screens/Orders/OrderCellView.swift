@@ -79,7 +79,7 @@ struct OrderCellView: View {
                     }
 
                     Image(systemName: SFSymbolName.chevronForward)
-                        .foregroundColor(Colors.systemLabelSecondary)
+                        .foregroundColor(Color(.tertiaryLabel))
                         .font(.body.weight(.semibold))
                 }
                 .padding(.horizontal)

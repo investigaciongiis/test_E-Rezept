@@ -118,6 +118,9 @@ signals = {
     "biometric": any(x in lower for x in ("lacontext", "deviceownerauthenticationwithbiometrics")),
     "jailbreak_detection": any(x in lower for x in ("cydia", "canopenurl", "/applications/cydia.app")),
     "hardcoded_secret": bool(re.search(r"(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*[\"'][^\"']{8,}" , joined)),
+    "published_security_contact": source_has(r"security(?: contact)?\s*[:=].{0,120}[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}"),
+    "safe_object_serialization": source_has(r"\b(Codable|Encodable|PropertyListEncoder|JSONEncoder)\b"),
+    "safe_object_deserialization": source_has(r"\b(Decodable|JSONDecoder|PropertyListDecoder)\b.{0,1200}(do\s*\{|catch\s*\{|guard|validate)"),
     "weak_crypto": bool(re.search(r"(?i)\b(md5|sha1|des|rc4)\b", joined)),
     "certificate_pinning": any(x in lower for x in ("servertrust", "secpolicyevaluateservertrust", "pinnedcertificates", "publickeys")),
     "insecure_random": bool(re.search(r"(?i)\b(rand|random|srandom|drand48|arc4random)\s*\(", joined)),
@@ -141,6 +144,7 @@ signals = {
     "keychain_device_only": source_has(r"kSecAttrAccessible\w*ThisDeviceOnly"),
     "secure_enclave": source_has(r"kSecAttrTokenIDSecureEnclave|SecureEnclave"),
     "biometric_keychain_binding": source_has(r"SecAccessControlCreateWithFlags.{0,500}(biometry|userPresence)"),
+    "biometric_enrollment_validation": source_has(r"canEvaluatePolicy|biometryType|evaluatedPolicyDomainState"),
     "app_attest": source_has(r"DCAppAttestService|generateKey|attestKey"),
     "device_check": source_has(r"DCDevice|DeviceCheck"),
     "environment_configuration": source_has(r"\.xcconfig|#if\s+(DEBUG|STAGING)|ProcessInfo\.processInfo\.environment"),
@@ -200,6 +204,8 @@ signals = {
     "race_protection": None,
     "swift_sources": bool(swift_files),
     "ats_secure_configuration": not (bool(plist_value("NSAllowsArbitraryLoads")) or source_has(r"NSAllowsArbitraryLoads.{0,100}<true")),
+    "no_tls_validation_bypass": not source_has(r"URLSession.{0,1200}didReceive.{0,1200}(useCredential|performDefaultHandling).{0,500}serverTrust|SecTrustEvaluate.{0,500}(proceed|unspecified)"),
+    "ios_sandbox_isolation": None,
     "get_task_allow_disabled": not bool(plist_value("get-task-allow")),
     "no_dynamic_code_loading": not source_has(r"\b(dlopen|dlsym|NSBundle\s*\([^)]*path|JavaScriptCore)\b"),
     "no_gitleaks_current": int(gitleaks_summary.get("current") or 0) == 0,
@@ -237,6 +243,7 @@ signals.update({
     "error_disclosure_findings": bool(re.search(r"information exposure|error.{0,30}disclos", sarif_text)),
     "log_injection_findings": bool(re.search(r"log.{0,30}inject", sarif_text)),
     "malware_findings": bool(re.search(r"malware|trojan|spyware|ransomware", json.dumps(mobsf).lower())),
+    "no_command_injection_findings": not bool(re.search(r"command.{0,30}inject|os command|shell inject", sarif_text)),
 })
 
 evidence_by_signal = {}

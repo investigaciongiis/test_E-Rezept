@@ -215,7 +215,17 @@ def _to_declarative(desc: str) -> str:
 
     if t.lower().startswith("application "):
         t = "The " + t
-    elif not t.lower().startswith("the application"):
+    elif t.lower().startswith("app must "):
+        t = "The application must " + t[len("App must "):]
+    elif t.lower().startswith("applications must "):
+        t = "Applications must " + t[len("Applications must "):]
+    elif t.lower().startswith("production builds must "):
+        pass
+    elif t.lower().startswith(("the application", "the mobile application", "the mobile health application", "mobile applications must ", "sensitive data must ")):
+        pass
+    elif t.lower().startswith("ensure "):
+        t = "The application must ensure " + t[len("Ensure "):]
+    else:
         if t:
             t = "The application must " + t[0].lower() + t[1:]
         else:
@@ -322,6 +332,13 @@ def main() -> None:
     ]))
     applicable = int(compliant + non_compliant)
     overall_compliance_pct = float((compliant / applicable * 100.0) if applicable else 0.0)
+    conclusive_determinations = int(compliant + evidenced_non_compliant)
+    conclusive_evidence_coverage_pct = float(
+        (conclusive_determinations / applicable * 100.0) if applicable else 0.0
+    )
+    conservative_determination_pct = float(
+        (evidence_not_found / applicable * 100.0) if applicable else 0.0
+    )
 
     # Category metrics for charts (not for narrative dumps)
     grp = df.groupby(["CategoryCode", "CategoryName", "Status"]).size().reset_index(name="count")
@@ -429,6 +446,10 @@ def main() -> None:
             "not_applicable_manual_review": manual_na,
             "not_applicable_other": other_na,
             "overall_compliance_pct": overall_compliance_pct,
+            "evidence_supported_compliance_pct": overall_compliance_pct,
+            "conclusive_evidential_determinations": conclusive_determinations,
+            "conclusive_evidence_coverage_pct": conclusive_evidence_coverage_pct,
+            "conservative_determination_pct": conservative_determination_pct,
         },
         "category_metrics": cat_stats,
         "prevalence_rubric": PREVALENCE_RUBRIC,

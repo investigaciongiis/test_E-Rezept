@@ -94,6 +94,14 @@ NEGATIVE_RISK_FLAG_IDS = {
     "has_race_condition_vulnerabilities",
     "ios_dynamic_code_loading",
     "ios_file_sharing_enabled",
+    "ios_sensitive_backup_exposure",
+}
+
+# These identifiers describe the verified absence of an adverse condition.
+# Token-based polarity inference must not invert them merely because their
+# names also contain terms such as "bypass".
+POSITIVE_CONTROL_FLAG_IDS = {
+    "has_no_tls_validation_bypass",
 }
 
 CERTIFICATE_PINNING_FLAG_IDS = {
@@ -277,6 +285,9 @@ def classify_flag_for_requirement(flag_id: str, flag_title: str, req_desc: str) 
 
     if fid in NEGATIVE_RISK_FLAG_IDS:
         return "NEGATIVE_RISK"
+
+    if fid in POSITIVE_CONTROL_FLAG_IDS:
+        return "POSITIVE_CONTROL"
 
     # Pinning is assessed as mandatory only when the requirement explicitly
     # requires it. General TLS/ATS requirements must not fail merely because

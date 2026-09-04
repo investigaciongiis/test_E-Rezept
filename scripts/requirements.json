@@ -695,8 +695,7 @@
       "Validation criteria": "Signature: An Application to the External Resources\nEnsure all resources that are to be updated outside of app-store mechanisms are signed using a cryptographically strong signature.\nConfirm that unsigned resources are rejected on the update path.\nSignature Validation Testing:\nValidate the signature of updated resources to check the application.\nAttempt to apply an update with a bad or missing signature [simulate] and verify that the bad update is detected and rejected.\nResistance to Tampering Validation:\nTrigger a tampered update and confirm the detection of changes by the application, ensuring the resource will not be applied.\nWe organized periodic reviews of the Resource Update Workflow:\nImplement an automatic signature verification in the update workflow that cannot be manually overridden before it applies the updates to any resources.",
       "controles": "App must validate those resources outside the app-store mechanisms which will be consumed are signed and get validated before updating and applying.",
       "Flags": [
-        "ios_dynamic_code_loading",
-        "has_webview_remote_content"
+        "has_external_resource_signature_validation"
       ]
     },
     {
@@ -8022,7 +8021,7 @@
       "Validation criteria": "Permission Attribute Verification Test:\nTest: Inspect the app's the app's entitlements and embedded provisioning profile file to confirm that the iOS and iPadOS:protectionLevel attribute for relevant permissions is set to signature.\nExpected Result: The iOS and iPadOS:protectionLevel attribute is correctly configured for all applicable permissions.\nKey Match Test:\nTest: Validate that the applications sharing protected features are signed with the same key.\nExpected Result: The signing keys match for all apps accessing protected features.\nUnauthorized Access Test:\nTest: Attempt to access the protected feature or data from an app not signed with the same key.\nExpected Result: The attempt is blocked, and no unauthorized access is granted.\nUser Interaction Test:\nTest: Confirm that the signature-level permissions do not prompt users for confirmation during runtime.\nExpected Result: Access to protected features is seamless for authorized apps and does not require user intervention.\nStatic Analysis Test:\nTest: Perform static code analysis to verify that the signature-level protection is applied consistently across all defined permissions.\nExpected Result: The analysis confirms the use of signature protection level without misconfigurations.",
       "controles": "The mobile health application must implement signature-level protection for private data, ensuring that only applications signed with the same developer key can access sensitive features or data.",
       "Flags": [
-        "has_secure_ios_ipc"
+        "has_valid_ios_signature"
       ]
     },
     {

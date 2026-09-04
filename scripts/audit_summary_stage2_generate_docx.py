@@ -584,6 +584,8 @@ def main() -> None:
     signed_ipa_na = int(metrics.get("not_applicable_signed_ipa", 0))
     other_na = int(metrics.get("not_applicable_other", max(0, not_applicable - dynamic_na - signed_ipa_na)))
     overall_pct = float(metrics["overall_compliance_pct"])
+    conclusive_coverage_pct = float(metrics.get("conclusive_evidence_coverage_pct", 0.0))
+    conservative_determination_pct = float(metrics.get("conservative_determination_pct", 0.0))
 
     _donut(
         [compliant, non_compliant, not_applicable],
@@ -655,7 +657,15 @@ def main() -> None:
     backend_na = int(metrics.get("not_applicable_backend_evidence", 0))
     organizational_na = int(metrics.get("not_applicable_organizational_evidence", 0))
     manual_na = int(metrics.get("not_applicable_manual_review", 0))
-    doc.add_paragraph(f"Overall, {int(metrics['total_assessed'])} requirements were assessed. {applicable} were applicable controls and {not_applicable} were recorded as not applicable. Of the applicable controls, {compliant} had supporting evidence and {non_compliant} were classified as non-compliant: {evidenced_no} from contradicting evidence and {conservative_no} from insufficient supporting evidence. The resulting {overall_pct:.2f}% is an automated evidence-coverage rate under the conservative policy, not a definitive measure of the application's complete security posture.")
+    doc.add_paragraph(
+        f"Overall, {int(metrics['total_assessed'])} requirements were assessed. {applicable} were applicable controls "
+        f"and {not_applicable} were recorded as not applicable. Of the applicable controls, {compliant} had supporting "
+        f"evidence and {non_compliant} were classified as non-compliant: {evidenced_no} from contradicting evidence and "
+        f"{conservative_no} from insufficient supporting evidence. The evidence-supported compliance rate is "
+        f"{overall_pct:.2f}%. Conclusive positive or negative evidence was available for {conclusive_coverage_pct:.2f}% "
+        f"of applicable controls, while {conservative_determination_pct:.2f}% received a conservative determination. "
+        "These metrics are not definitive measures of the application's complete security posture."
+    )
     doc.add_paragraph(
         "Out-of-scope counts may overlap for compound requirements. "
         f"The not-applicable set includes {backend_na} requirement(s) needing backend evidence, "
@@ -681,7 +691,7 @@ def main() -> None:
         doc.add_paragraph("No compliant controls with supporting evidence/flags were available for verification in the workbook.", style="List Bullet")
 
     add_nav_heading("5.3 Risk scoring approach", 2)
-    doc.add_paragraph("Severity and prevalence ratings in this report follow a qualitative prioritization rubric grounded in the audit workbook:\n- Severity reflects potential impact on confidentiality, integrity, and availability of health information, including regulatory exposure.\n- Workbook prevalence is the count of non-compliant controls mapped to a weakness pattern. It is a prioritization aid and must not be interpreted as exploit likelihood or probability.\nPrevalence bands: High (>=50), Medium-High (20-49), Medium (10-19), Low-Medium (<10).")
+    doc.add_paragraph("Severity and prevalence ratings in this report follow a qualitative prioritization rubric grounded in the audit workbook:\n- Severity reflects potential impact on confidentiality, integrity, and availability of health information, including regulatory exposure.\n- Workbook prevalence is the count of non-compliant requirements mapped to a weakness pattern. Requirements may share the same underlying evidence; these counts therefore do not represent distinct vulnerabilities or independent findings. The measure is a prioritization aid and must not be interpreted as exploit likelihood or probability.\nPrevalence bands: High (>=50), Medium-High (20-49), Medium (10-19), Low-Medium (<10).")
 
     add_nav_heading("5.4 Risk triage (prioritized)", 2)
     rt = doc.add_table(rows=1, cols=5)

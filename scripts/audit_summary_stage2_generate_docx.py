@@ -16,6 +16,8 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.text.paragraph import Paragraph
 
+from prompt_loader import load_prompt, prompt_provenance
+
 LITERALS_PATH = Path(__file__).resolve().parent / "audit_summary_literals.json"
 with open(LITERALS_PATH, "r", encoding="utf-8") as f:
     literals = json.load(f)
@@ -29,6 +31,8 @@ except Exception:
 
 DEFAULT_IN = "/mnt/data/audit_summary_analysis_pack.json"
 DEFAULT_OUT = "/mnt/data/Audit Summary.docx"
+PROMPT_PROVENANCE_OUT = "/mnt/data/audit_summary_prompt_provenance.json"
+PROMPTS_INVOKED: set[str] = set()
 CHART_DIR = "/mnt/data/_audit_summary_charts"
 
 HEADER_TEXT = "i-mSEC-AT Audit Summary - " + literals["header_text"]
@@ -513,37 +517,13 @@ def _call_llm_for_style(patterns: List[Dict[str, Any]], prevalence_rubric: Dict[
             "anchors": (p.get("description_anchors", []) or [])[:2],
         })
 
-    system = (
-        "You are a senior security audit reporting specialist. "
-        "You will improve wording and generate actionable recommendations ONLY at the weakness-pattern level. "
-        "You must NOT invent specific implemented controls. You must NOT invent metrics. "
-        "You must NOT claim facts beyond the provided anchors and counts. "
-        "Return strict JSON only."
-    )
-
-    user_payload = {
-        "task": "Generate paper-quality prose components grounded in workbook-derived prevalence counts.",
-        "constraints": {
-            "no_invented_metrics": True,
-            "no_category_level_bullet_dumps": True,
-            "no_long_id_lists": True,
-            "recommendations_no_time_headings": True,
-            "max_key_takeaways": max_takeaways,
-            "prevalence_rubric": prevalence_rubric,
-        },
-        "input_patterns": inp,
-        "required_output_schema": {
-            "key_takeaways": ["<5-7 bullets; each references prevalence count and pattern name>"],
-            "pattern_writeups": [
-                {
-                    "pattern": "<exact pattern name from input>",
-                    "expected": "<1-2 sentences>",
-                    "impact": "<1-2 sentences; CIA + privacy/regulatory context where relevant>",
-                    "recommendations": ["<6-10 bullets; practical and specific to this pattern; do not recommend authentication controls for unrelated patterns>"]
-                }
-            ]
-        }
-    }
+    prompt = load_prompt("audit_summary_narrative")
+    PROMPTS_INVOKED.add("audit_summary_narrative")
+    system = prompt["system_prompt"]
+    user_payload = prompt["user_prompt"]
+    user_payload["constraints"]["max_key_takeaways"] = max_takeaways
+    user_payload["constraints"]["prevalence_rubric"] = prevalence_rubric
+    user_payload["input_patterns"] = inp
 
     resp = client.responses.create(
         model=model,
@@ -666,13 +646,21 @@ def main() -> None:
     doc.add_paragraph("For applicable controls, absence of supporting evidence is handled conservatively as non-compliant. Such a result means that implementation was not demonstrated by the supplied artifacts; it is not, by itself, proof that the application lacks the control.")
 
     add_nav_heading("4. Evidence criteria", 1)
-    doc.add_paragraph("- Compliant: the workbook provides supporting evidence for every essential obligation that can be assessed in the supplied scope.\n- Non-compliant (evidenced): one or more observed signals contradict the control.\n- Non-compliant (conservative): the control is applicable and assessable in the supplied profile, but the supplied artifacts do not contain sufficient supporting evidence.\n- Not applicable: the control or an essential obligation is outside the supplied scope, including checks that require dynamic iOS execution or a signed production IPA.")
+    doc.add_paragraph("- Compliant: the workbook provides supporting evidence for every essential obligation that can be assessed in the supplied scope.\n- Non-compliant (evidenced): one or more sufficiently covered observed signals contradict the control.\n- Non-compliant (conservative): the control is applicable and assessable in the supplied profile, but the supplied artifacts do not contain sufficient supporting evidence.\n- Not applicable: the functionality is absent, or an essential verification capability is outside the automated profile, including dynamic iOS execution, production-signing evidence, backend evidence, organizational documentation, or manual review.")
 
     add_nav_heading("5. Audit summary", 1)
     doc.add_paragraph("The audit was carried out using the i-mSEC-AT (mobile SECurity Audit Tool).")
     evidenced_no = int(metrics.get("evidenced_non_compliant", 0))
     conservative_no = int(metrics.get("evidence_not_found_non_compliant", max(0, non_compliant - evidenced_no)))
+    backend_na = int(metrics.get("not_applicable_backend_evidence", 0))
+    organizational_na = int(metrics.get("not_applicable_organizational_evidence", 0))
+    manual_na = int(metrics.get("not_applicable_manual_review", 0))
     doc.add_paragraph(f"Overall, {int(metrics['total_assessed'])} requirements were assessed. {applicable} were applicable controls and {not_applicable} were recorded as not applicable. Of the applicable controls, {compliant} had supporting evidence and {non_compliant} were classified as non-compliant: {evidenced_no} from contradicting evidence and {conservative_no} from insufficient supporting evidence. The resulting {overall_pct:.2f}% is an automated evidence-coverage rate under the conservative policy, not a definitive measure of the application's complete security posture.")
+    doc.add_paragraph(
+        "Out-of-scope counts may overlap for compound requirements. "
+        f"The not-applicable set includes {backend_na} requirement(s) needing backend evidence, "
+        f"{organizational_na} needing organizational evidence, and {manual_na} needing manual review."
+    )
     doc.add_paragraph(
         f"Not-applicable scope breakdown: {dynamic_na} requirement(s) depend on unavailable dynamic iOS analysis, "
         f"{signed_ipa_na} depend on production-signed IPA evidence, and {other_na} are not applicable for other "
@@ -835,7 +823,13 @@ def main() -> None:
     _render_clickable_toc(toc_placeholder, toc_entries)
     _enable_update_fields_on_open(doc)
     doc.save(out_path)
+    provenance = prompt_provenance(sorted(PROMPTS_INVOKED))
+    provenance["model"] = os.getenv("LLM_MODEL") or "not configured"
+    Path(PROMPT_PROVENANCE_OUT).write_text(
+        json.dumps(provenance, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(f"[OK] DOCX generated -> {out_path}")
+    print(f"[OK] Prompt provenance generated -> {PROMPT_PROVENANCE_OUT}")
 
 
 if __name__ == "__main__":

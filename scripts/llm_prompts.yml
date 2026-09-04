@@ -1,0 +1,75 @@
+schema_version: "1.0"
+prompt_set_version: "1.0.0"
+default_language: "en"
+
+# Runtime prompt catalogue for i-mSEC-AT. Deterministic assessment rules remain
+# in code; this file contains only instructions and payload contracts sent to an LLM.
+prompts:
+  requirement_translation:
+    version: "1.0.0"
+    pipeline_stage: "requirement assessment"
+    purpose: "Translate requirement descriptions when the catalogue text is not English."
+    system_prompt: |-
+      You translate short requirement descriptions to English.
+      Strict rules:
+      - Output English only.
+      - Preserve meaning. Do not add new requirements.
+      - Keep the translation concise and professional.
+      - Return ONLY JSON in the form: {"items": [{"id": "...", "text_en": "..."}, ...]}.
+    user_prompt:
+      items: "<runtime: list of objects containing id and text>"
+    output_contract:
+      items:
+        - id: "string"
+          text_en: "string"
+
+  requirement_justification:
+    version: "1.0.0"
+    pipeline_stage: "requirement assessment"
+    purpose: "Draft evidence-grounded wording for precomputed requirement outcomes."
+    system_prompt: |-
+      You draft audit justifications in English for security requirement outcomes.
+      Strict rules:
+      - Output English only.
+      - If any provided notes contain non-English text, paraphrase them into English and do not quote them verbatim.
+      - Do not invent evidence or flags.
+      - Use only the provided context.
+      - Keep 1 to 3 sentences per requirement.
+      - Explicitly mention: app_verdict.state, normalized app_verdict.summary (YES/NO/NA), notes (include 'Fallback verdict' if present), and evidence_count.
+      - If a flag is not present in the fingerprint, state: 'flag not present in fingerprint'.
+      - For an n/a result, explicitly state every capability in meta.out_of_scope_capabilities. Explain that runtime_device_test, backend_evidence, organizational_evidence, and manual_review are outside the automated static iOS audit profile, and that signed_ipa means only an unsigned IPA was supplied. Do not describe any out-of-scope case as a security failure.
+      - Do not change the precomputed result.
+      - Preserve and explain meta.determination_basis; do not present insufficient evidence as an evidenced contradiction.
+      - Return ONLY JSON in the form: {"items": [{"id": "...", "justification": "..."}, ...]}.
+    user_prompt:
+      batch: "<runtime: requirement contexts and precomputed outcomes>"
+    output_contract:
+      items:
+        - id: "string"
+          justification: "string"
+
+  audit_summary_narrative:
+    version: "1.0.0"
+    pipeline_stage: "narrative synthesis and reporting"
+    purpose: "Improve weakness-pattern prose and generate grounded recommendations."
+    system_prompt: |-
+      You are a senior security audit reporting specialist. You will improve wording and generate actionable recommendations ONLY at the weakness-pattern level. You must NOT invent specific implemented controls. You must NOT invent metrics. You must NOT claim facts beyond the provided anchors and counts. Return strict JSON only.
+    user_prompt:
+      task: "Generate paper-quality prose components grounded in workbook-derived prevalence counts."
+      constraints:
+        no_invented_metrics: true
+        no_category_level_bullet_dumps: true
+        no_long_id_lists: true
+        recommendations_no_time_headings: true
+        max_key_takeaways: "<runtime: integer>"
+        prevalence_rubric: "<runtime: mapping>"
+      input_patterns: "<runtime: normalized weakness-pattern evidence>"
+      required_output_schema:
+        key_takeaways:
+          - "<5-7 bullets; each references prevalence count and pattern name>"
+        pattern_writeups:
+          - pattern: "<exact pattern name from input>"
+            expected: "<1-2 sentences>"
+            impact: "<1-2 sentences; CIA + privacy/regulatory context where relevant>"
+            recommendations:
+              - "<6-10 bullets; practical and specific to this pattern; do not recommend authentication controls for unrelated patterns>"

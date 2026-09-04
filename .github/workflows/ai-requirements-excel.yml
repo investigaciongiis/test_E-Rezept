@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          pip install --no-cache-dir openpyxl "openai>=1.55.0" pydantic
+          pip install --no-cache-dir openpyxl "openai>=1.55.0" pydantic PyYAML
 
       - name: Run AI audit (creates Excel)
         env:
@@ -86,10 +86,13 @@ jobs:
           set -euo pipefail
           python scripts/ai_security_audit_requirements_excel.py
           test -f /mnt/data/security_audit_requirements.xlsx
+          test -f /mnt/data/requirement_prompt_provenance.json
 
       - name: Upload Excel output
         uses: actions/upload-artifact@v6
         with:
           name: security-audit-excel
           if-no-files-found: error
-          path: /mnt/data/security_audit_requirements.xlsx
+          path: |
+            /mnt/data/security_audit_requirements.xlsx
+            /mnt/data/requirement_prompt_provenance.json

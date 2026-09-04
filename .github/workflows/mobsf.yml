@@ -83,10 +83,3 @@ jobs:
             mobsf_results.json
             mobsf_scan_metadata.json
           if-no-files-found: error
-      - name: Upload optional external iOS dynamic report
-        if: ${{ vars.IOS_DYNAMIC_REPORT_PATH != '' }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: mobsf-dynamic-report
-          path: ${{ vars.IOS_DYNAMIC_REPORT_PATH }}
-          if-no-files-found: ignore

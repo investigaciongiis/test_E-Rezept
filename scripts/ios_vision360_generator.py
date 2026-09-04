@@ -278,8 +278,9 @@ capabilities = {
     "source_code": True,
     "static_analysis": True,
     "runtime_device_test": False,
-    "backend_access": False,
-    "organizational_documents": False,
+    "backend_evidence": False,
+    "organizational_evidence": False,
+    "manual_review": False,
 }
 coverage = {"evaluated": 0, "fallback": 0, "manual": 0, "out_of_scope": 0}
 for fid in flag_ids:

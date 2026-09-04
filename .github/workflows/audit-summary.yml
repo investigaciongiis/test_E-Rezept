@@ -114,7 +114,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          pip install --no-cache-dir pandas openpyxl python-docx matplotlib "openai>=1.55.0"
+          pip install --no-cache-dir pandas openpyxl python-docx matplotlib "openai>=1.55.0" PyYAML
           mkdir -p /tmp/matplotlib
 
       - name: Generate Audit Summary DOCX
@@ -130,6 +130,7 @@ jobs:
           set -euo pipefail
           python scripts/audit_summary_stage2_generate_docx.py
           test -f "/mnt/data/Audit Summary.docx"
+          test -f "/mnt/data/audit_summary_prompt_provenance.json"
 
       - name: Install LibreOffice and zip
         shell: bash
@@ -150,7 +151,7 @@ jobs:
         run: |
           set -euo pipefail
           cd /mnt/data
-          zip -j "audit-summary-bundle.zip" "Audit Summary.docx" "Audit Summary.pdf"
+          zip -j "audit-summary-bundle.zip" "Audit Summary.docx" "Audit Summary.pdf" "audit_summary_prompt_provenance.json"
           test -f "/mnt/data/audit-summary-bundle.zip"
 
       - name: Upload Audit Summary outputs
@@ -161,3 +162,4 @@ jobs:
           path: |
             /mnt/data/Audit Summary.docx
             /mnt/data/Audit Summary.pdf
+            /mnt/data/audit_summary_prompt_provenance.json

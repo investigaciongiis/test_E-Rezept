@@ -35,8 +35,8 @@ EXACT_RULES: Dict[str, Rule] = {
     "has_env_specific_api_credentials_configured": Rule("environment_configuration"),
     "has_separate_environment_credentials": Rule("separate_environment_credentials", False),
     "has_authenticated_scoped_ios_ipc": Rule("authenticated_scoped_ios_ipc", False),
-    "has_unique_api_key_per_app_instance": Rule("unique_api_key_per_app_instance", False),
-    "has_api_key_usage_restrictions": Rule("api_key_usage_restrictions", False),
+    "has_unique_api_key_per_app_instance": Rule("unique_api_key_per_app_instance", False, "backend_evidence"),
+    "has_api_key_usage_restrictions": Rule("api_key_usage_restrictions", False, "backend_evidence"),
     "ios_certificate_pinning": Rule("certificate_pinning"),
     "has_https_with_cert_pinning": Rule("certificate_pinning"),
     "has_ssl_cert_pinning_implemented": Rule("certificate_pinning"),
@@ -93,7 +93,7 @@ EXACT_RULES: Dict[str, Rule] = {
     "has_clears_cookies_on_logout": Rule("cookie_cleanup"),
     "has_clears_local_session_data_on_logout": Rule("logout_cleanup"),
     "has_sensitive_memory_cleanup": Rule("sensitive_memory_cleanup", False),
-    "has_logout_invalidates_server_session": Rule("server_logout", False),
+    "has_logout_invalidates_server_session": Rule("server_logout", False, "backend_evidence"),
     "has_token_based_auth": Rule("token_auth"),
     "has_jwt_tokens": Rule("jwt"),
     "has_oauth2_authentication": Rule("oauth"),
@@ -164,6 +164,22 @@ def manual_category(flag_id: str) -> Tuple[str, str]:
     return "manual", "manual review or evidence not represented by the current static-analysis artifacts"
 
 
+def capability_for_flag(flag_id: str) -> Optional[str]:
+    """Return the essential non-static capability needed to assess a flag."""
+    rule = rule_for(flag_id)
+    if rule and rule.requires:
+        return rule.requires
+    if rule is not None:
+        return None
+    category, _ = manual_category(flag_id)
+    return {
+        "runtime": "runtime_device_test",
+        "backend": "backend_evidence",
+        "organizational": "organizational_evidence",
+        "manual": "manual_review",
+    }[category]
+
+
 def evaluate_flag(
     flag_id: str,
     signals: Mapping[str, Optional[bool]],
@@ -175,17 +191,21 @@ def evaluate_flag(
     capabilities = capabilities or {}
     if rule is None:
         category, required_evidence = manual_category(flag_id)
-        # Runtime-only evidence is deliberately outside the default static iOS
-        # profile.  Do not turn the absence of a MobSF dynamic/device session
-        # into a conservative failure.
-        if category == "runtime" and not capabilities.get("runtime_device_test", False):
+        required_capability = capability_for_flag(flag_id)
+        if required_capability and not capabilities.get(required_capability, False):
+            capability_descriptions = {
+                "runtime_device_test": "dynamic iOS execution on a supported runtime device",
+                "backend_evidence": "backend configuration, server logs, or an authenticated integration test",
+                "organizational_evidence": "organizational policy, process, or documentary evidence",
+                "manual_review": "manual evidence not represented by the automated static-analysis artifacts",
+            }
             return (
                 "out_of_scope",
                 "NA",
-                "Not evaluated: this check requires dynamic iOS execution on a supported runtime device, "
-                "but the audit profile contains MobSF static analysis only.",
+                f"Not evaluated: this check requires {capability_descriptions[required_capability]}, "
+                "which is outside the predefined automated static audit profile.",
                 [],
-                "out_of_scope:runtime_device_test",
+                f"out_of_scope:{required_capability}",
             )
         return (
             "not_detected",

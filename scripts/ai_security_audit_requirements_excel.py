@@ -32,6 +32,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import openpyxl
 
+from prompt_loader import load_prompt, prompt_provenance
+
 try:
     from openai import OpenAI
 except Exception:
@@ -46,6 +48,8 @@ except Exception:
 FINGERPRINT_PATH = Path("/mnt/data/vision360_fingerprint.json")
 REQUISITES_PATH = Path("/mnt/data/requirements.json")
 OUTPUT_XLSX_PATH = Path("/mnt/data/security_audit_requirements.xlsx")
+PROMPT_PROVENANCE_PATH = Path("/mnt/data/requirement_prompt_provenance.json")
+PROMPTS_INVOKED: set[str] = set()
 
 NEGATIVE_RISK_TOKENS = [
     "insecure",
@@ -75,15 +79,35 @@ NEGATIVE_RISK_TOKENS = [
     "http_based",
 ]
 
-APPLICABILITY_TOKENS = [
-    "components",
-    "present",
-    "detected",
-    "uses_",
-    "is_used",
-    "feature",
-    "webview_components",
-]
+# Flags whose identifiers name an adverse condition. Their secure expected
+# value is NO regardless of whether the requirement itself is phrased as a
+# positive or prohibitive statement.
+NEGATIVE_RISK_FLAG_IDS = {
+    "has_buffer_overflow_vulnerabilities",
+    "has_dynamic_code_loading",
+    "has_error_messages_disclose_internal_details",
+    "has_integer_arithmetic_vulnerabilities",
+    "has_log_injection_vulnerabilities",
+    "has_malware_detections",
+    "has_memory_corruption_vulnerabilities",
+    "has_out_of_bounds_vulnerabilities",
+    "has_race_condition_vulnerabilities",
+    "ios_dynamic_code_loading",
+    "ios_file_sharing_enabled",
+}
+
+CERTIFICATE_PINNING_FLAG_IDS = {
+    "ios_certificate_pinning",
+    "has_https_with_cert_pinning",
+    "has_ssl_cert_pinning_implemented",
+    "has_tls_ssl_pinning_implemented",
+}
+
+FEATURE_APPLICABILITY_FLAG_IDS = {
+    "has_saml_based_sso",
+    "has_soap_api_usage",
+    "ios_sensitive_permissions_present",
+}
 
 PASSWORD_HASHING_POSITIVE_IDS = {"has_password_hashing_uses_salts", "has_password_hashing_uses_kdf"}
 
@@ -251,6 +275,15 @@ def classify_flag_for_requirement(flag_id: str, flag_title: str, req_desc: str) 
     fid = (flag_id or "").lower()
     title = (flag_title or "").lower()
 
+    if fid in NEGATIVE_RISK_FLAG_IDS:
+        return "NEGATIVE_RISK"
+
+    # Pinning is assessed as mandatory only when the requirement explicitly
+    # requires it. General TLS/ATS requirements must not fail merely because
+    # pinning is absent.
+    if fid in CERTIFICATE_PINNING_FLAG_IDS:
+        return "POSITIVE_CONTROL" if re.search(r"\b(cert(?:ificate)?|public[- ]key|ssl|tls)?\s*pinning\b", req_desc, re.I) else "APPLICABILITY"
+
     # WKWebView feature flags need requirement-aware semantics. Component and
     # remote-content flags activate the scenario; insecure configuration flags
     # are risks, while explicitly safe configuration flags remain controls.
@@ -275,8 +308,10 @@ def classify_flag_for_requirement(flag_id: str, flag_title: str, req_desc: str) 
     if any(tok in fid or tok in title for tok in NEGATIVE_RISK_TOKENS):
         return "NEGATIVE_RISK"
 
-    # 4) APPLICABILITY tokens
-    if any(tok in fid or tok in title for tok in APPLICABILITY_TOKENS):
+    # 4) Explicit feature-presence gates. Broad lexical rules such as
+    # "uses_" are intentionally avoided because they misclassify controls
+    # such as has_uses_encrypted_filesystem_storage as applicability flags.
+    if fid in FEATURE_APPLICABILITY_FLAG_IDS:
         return "APPLICABILITY"
 
     # 5) Default
@@ -348,6 +383,7 @@ class RequirementAudit:
     flags_used: List[str]
     justification_en: str
     na_reason: str = ""
+    determination_basis: str = ""
 
 
 def build_flag_evidence(
@@ -514,8 +550,31 @@ def audit_requirement(
                 conditional_scenario_activated=False,
                 webview_scoped=True,
                 out_of_scope_capabilities=[],
+                determination_basis="not_applicable_functionality",
             )
             return "n/a", flag_evs, meta
+
+    # Technical assessability precedes evidence interpretation. If any mapped
+    # essential obligation is explicitly outside the automated profile, do not
+    # allow feature overrides or partial static evidence to produce yes/no.
+    preliminary_out_of_scope_capabilities = sorted({
+        fe.evaluation_method.split(":", 1)[1]
+        for fe in flag_evs
+        if fe.outcome == "OUT_OF_SCOPE" and fe.evaluation_method.startswith("out_of_scope:")
+    })
+    if preliminary_out_of_scope_capabilities:
+        meta = dict(
+            prohibitive=prohibitive,
+            conditional=conditional,
+            override_used=False,
+            override_scenario_activated=None,
+            gate_flags=[],
+            conditional_scenario_activated=None,
+            webview_scoped=webview_scoped,
+            out_of_scope_capabilities=preliminary_out_of_scope_capabilities,
+            determination_basis="not_applicable_capability",
+        )
+        return "n/a", flag_evs, meta
 
     override_used = bool(flag_ids) and set(flag_ids).issubset(OVERRIDE_SCOPE_FLAG_IDS)
     override_scenario_activated: Optional[bool] = None
@@ -544,6 +603,11 @@ def audit_requirement(
                 gate_flags=[ge.id for ge in gate_flags],
                 conditional_scenario_activated=None,
                 out_of_scope_capabilities=[],
+                determination_basis=(
+                    "evidenced_noncompliance" if result == "no"
+                    else "supporting_evidence" if result == "yes"
+                    else "not_applicable_functionality"
+                ),
             )
             return result, flag_evs, meta
 
@@ -560,6 +624,12 @@ def audit_requirement(
         if fe.outcome == "OUT_OF_SCOPE" and fe.evaluation_method.startswith("out_of_scope:")
     })
     any_contradict = any(fe.outcome == "CONTRADICT" for fe in assessed)
+    evidenced_contradict = any(
+        fe.outcome == "CONTRADICT"
+        and fe.evidence_count > 0
+        and "conservative fallback:" not in (fe.notes or "").lower()
+        for fe in assessed
+    )
     all_support = bool(assessed) and all(fe.outcome == "SUPPORT" for fe in assessed)
     any_unknown = any(fe.outcome in ("UNKNOWN", "MISSING") for fe in assessed)
 
@@ -587,6 +657,13 @@ def audit_requirement(
         conditional_scenario_activated=conditional_scenario_activated,
         webview_scoped=webview_scoped,
         out_of_scope_capabilities=out_of_scope_capabilities,
+        determination_basis=(
+            "not_applicable_capability" if result == "n/a" and out_of_scope_capabilities
+            else "not_applicable_functionality" if result == "n/a"
+            else "evidenced_noncompliance" if result == "no" and evidenced_contradict
+            else "insufficient_evidence" if result == "no"
+            else "supporting_evidence"
+        ),
     )
     return result, flag_evs, meta
 
@@ -687,15 +764,9 @@ def translate_texts_to_english_via_openai(items: List[Dict[str, str]]) -> Dict[s
     class TranslationBatch(BaseModel):  # type: ignore
         items: List[TranslationItem]
 
-    system = (
-        "You translate short requirement descriptions to English.\n"
-        "Strict rules:\n"
-        "- Output English only.\n"
-        "- Preserve meaning. Do not add new requirements.\n"
-        "- Keep the translation concise and professional.\n"
-        "- Return ONLY JSON in the form: {\"items\": [{\"id\": \"...\", \"text_en\": \"...\"}, ...]}.\n"
-    )
-
+    prompt = load_prompt("requirement_translation")
+    PROMPTS_INVOKED.add("requirement_translation")
+    system = prompt["system_prompt"]
     user_payload = {"items": items}
 
     last_err: Optional[Exception] = None
@@ -766,25 +837,9 @@ def generate_justifications_via_openai(batch_ctx: List[Dict[str, Any]]) -> Dict[
     class JustificationBatch(BaseModel):  # type: ignore
         items: List[JustificationItem]
 
-    system = (
-        "You draft audit justifications in English for security requirement outcomes.\n"
-        "Strict rules:\n"
-        "- Output English only.\n"
-        "- If any provided notes contain non-English text, paraphrase them into English and do not quote them verbatim.\n"
-        "- Do not invent evidence or flags.\n"
-        "- Use only the provided context.\n"
-        "- Keep 1 to 3 sentences per requirement.\n"
-        "- Explicitly mention: app_verdict.state, normalized app_verdict.summary (YES/NO/NA), notes "
-        "(include 'Fallback verdict' if present), and evidence_count.\n"
-        "- If a flag is not present in the fingerprint, state: 'flag not present in fingerprint'.\n"
-        "- For an n/a result, explicitly state every capability in meta.out_of_scope_capabilities. Explain that "
-        "runtime_device_test means MobSF dynamic iOS analysis was unavailable, and signed_ipa means only an unsigned "
-        "IPA was supplied. Do not describe either case as a security failure.\n"
-        "- Do not change the precomputed result.\n"
-        "- Return ONLY JSON in the form: {\"items\": [{\"id\": \"...\", \"justification\": \"...\"}, ...]}.\n"
-    )
-
-
+    prompt = load_prompt("requirement_justification")
+    PROMPTS_INVOKED.add("requirement_justification")
+    system = prompt["system_prompt"]
     user_payload = {"batch": batch_ctx}
 
     last_err: Optional[Exception] = None
@@ -843,6 +898,12 @@ def na_reason_for_result(result: str, meta: Dict[str, Any]) -> str:
         reasons.append("dynamic iOS analysis was not available; the default profile includes MobSF static analysis only")
     if "signed_ipa" in capabilities:
         reasons.append("a signed production IPA was not supplied; the analysed IPA is unsigned")
+    if "backend_evidence" in capabilities:
+        reasons.append("essential backend or server-side evidence is outside the automated static audit profile")
+    if "organizational_evidence" in capabilities:
+        reasons.append("essential organizational policy, process, or documentary evidence is outside the automated static audit profile")
+    if "manual_review" in capabilities:
+        reasons.append("essential manual verification is outside the automated static audit profile")
     if reasons:
         return "; and ".join(reasons)
     return "the requirement or its conditional scenario falls outside the predefined audit profile"
@@ -1070,6 +1131,7 @@ def main() -> None:
                 flags_used=flag_ids,
                 justification_en="",
                 na_reason=na_reason_for_result(result, meta),
+                determination_basis=str(meta.get("determination_basis") or ""),
             )
             batch_results.append((req_audit, flag_evs, meta))
 
@@ -1137,16 +1199,43 @@ def main() -> None:
     ws = wb.active
     ws.title = "audit"
 
-    headers = ["id (PUID)", "Description (EN)", "Result", "Justification (EN)", "Flags used", "N/A reason"]
+    headers = [
+        "id (PUID)",
+        "Description (EN)",
+        "Result",
+        "Determination basis",
+        "Justification (EN)",
+        "Flags used",
+        "N/A reason",
+    ]
     ws.append(headers)
 
     for a in audits:
-        ws.append([a.puid, a.description_en, a.result, a.justification_en, ", ".join(a.flags_used), a.na_reason])
+        ws.append([
+            a.puid,
+            a.description_en,
+            a.result,
+            a.determination_basis,
+            a.justification_en,
+            ", ".join(a.flags_used),
+            a.na_reason,
+        ])
 
     OUTPUT_XLSX_PATH.parent.mkdir(parents=True, exist_ok=True)
     wb.save(OUTPUT_XLSX_PATH)
 
+    provenance = prompt_provenance(sorted(PROMPTS_INVOKED))
+    provenance["model"] = os.getenv("LLM_MODEL") or "not configured"
+    provenance["configuration"] = {
+        "translate_requirement_descriptions": env_bool("TRANSLATE_REQUIREMENT_DESCRIPTIONS", True),
+        "use_openai_justifications": env_bool("USE_OPENAI_JUSTIFICATIONS", False),
+    }
+    PROMPT_PROVENANCE_PATH.write_text(
+        json.dumps(provenance, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
     print(f"[OK] Excel generated: {OUTPUT_XLSX_PATH}")
+    print(f"[OK] Prompt provenance generated: {PROMPT_PROVENANCE_PATH}")
     print(f"[SUMMARY] total={len(audits)} yes={counts['yes']} no={counts['no']} n/a={counts['n/a']}")
 
 

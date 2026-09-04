@@ -16,7 +16,7 @@ jobs:
       IOS_XCODE_CONTAINER: ${{ vars.IOS_XCODE_CONTAINER }}
       IOS_SCHEME: ${{ vars.IOS_SCHEME }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: true
       - name: Set up project Ruby

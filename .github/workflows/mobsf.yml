@@ -76,7 +76,7 @@ jobs:
             open('mobsf_scan_metadata.json','w'), indent=2)
           PY
       - name: Upload MobSF IPA report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: mobsf-report
           path: |

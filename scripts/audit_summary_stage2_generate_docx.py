@@ -600,6 +600,9 @@ def main() -> None:
     compliant = int(metrics["compliant"])
     non_compliant = int(metrics["non_compliant"])
     not_applicable = int(metrics["not_applicable"])
+    dynamic_na = int(metrics.get("not_applicable_dynamic_analysis", 0))
+    signed_ipa_na = int(metrics.get("not_applicable_signed_ipa", 0))
+    other_na = int(metrics.get("not_applicable_other", max(0, not_applicable - dynamic_na - signed_ipa_na)))
     overall_pct = float(metrics["overall_compliance_pct"])
 
     _donut(
@@ -659,17 +662,23 @@ def main() -> None:
     _add_two_col_table(doc, [["Auditor", actors["Auditor"]], ["Requirement Engineering team", "\n".join(actors["Requirement Engineering team"])], ["Engineering Group (EN)", "\n".join(actors["Engineering Group (EN)"])]])
 
     add_nav_heading("3. Scope and limitations", 1)
-    doc.add_paragraph("This Audit Summary consolidates the compliance determinations recorded in the audit workbook. The results reflect the assessed application version and the evidence available to the pipeline. By default, the pipeline analyses source code and an unsigned IPA. Effective production signing, provisioning profiles, certificate properties and final signed-product entitlements therefore remain outside the assessed scope and are reported as not applicable unless a signed IPA is explicitly supplied.")
+    doc.add_paragraph("This Audit Summary consolidates the compliance determinations recorded in the audit workbook. The results reflect the assessed application version and the evidence available to the pipeline. By default, the pipeline analyses source code and an unsigned IPA using static analysis, including MobSF static analysis. Dynamic iOS execution and effective production-signing properties are outside this default profile. Requirements containing an essential obligation that depends on either unavailable capability are therefore reported as not applicable rather than as security failures.")
     doc.add_paragraph("For applicable controls, absence of supporting evidence is handled conservatively as non-compliant. Such a result means that implementation was not demonstrated by the supplied artifacts; it is not, by itself, proof that the application lacks the control.")
 
     add_nav_heading("4. Evidence criteria", 1)
-    doc.add_paragraph("- Compliant: the workbook provides supporting evidence for every essential obligation that can be assessed in the supplied scope.\n- Non-compliant (evidenced): one or more observed signals contradict the control.\n- Non-compliant (conservative): the control is applicable, but the supplied artifacts do not contain sufficient supporting evidence; manual or runtime verification may change this determination.\n- Not applicable: the control or an essential obligation is outside the supplied scope, including checks that require a signed production IPA.")
+    doc.add_paragraph("- Compliant: the workbook provides supporting evidence for every essential obligation that can be assessed in the supplied scope.\n- Non-compliant (evidenced): one or more observed signals contradict the control.\n- Non-compliant (conservative): the control is applicable and assessable in the supplied profile, but the supplied artifacts do not contain sufficient supporting evidence.\n- Not applicable: the control or an essential obligation is outside the supplied scope, including checks that require dynamic iOS execution or a signed production IPA.")
 
     add_nav_heading("5. Audit summary", 1)
     doc.add_paragraph("The audit was carried out using the i-mSEC-AT (mobile SECurity Audit Tool).")
     evidenced_no = int(metrics.get("evidenced_non_compliant", 0))
     conservative_no = int(metrics.get("evidence_not_found_non_compliant", max(0, non_compliant - evidenced_no)))
     doc.add_paragraph(f"Overall, {int(metrics['total_assessed'])} requirements were assessed. {applicable} were applicable controls and {not_applicable} were recorded as not applicable. Of the applicable controls, {compliant} had supporting evidence and {non_compliant} were classified as non-compliant: {evidenced_no} from contradicting evidence and {conservative_no} from insufficient supporting evidence. The resulting {overall_pct:.2f}% is an automated evidence-coverage rate under the conservative policy, not a definitive measure of the application's complete security posture.")
+    doc.add_paragraph(
+        f"Not-applicable scope breakdown: {dynamic_na} requirement(s) depend on unavailable dynamic iOS analysis, "
+        f"{signed_ipa_na} depend on production-signed IPA evidence, and {other_na} are not applicable for other "
+        "functional, conditional, or profile-related reasons. Dynamic-analysis and signed-IPA counts may overlap "
+        "when a compound requirement depends on both capabilities."
+    )
     doc.add_paragraph("This report summarizes recurring control-gap patterns and proposes actionable remediations suitable for mHealth/EMR environments handling sensitive health information. Conservative determinations should be verified before being treated as confirmed defects.")
 
     add_nav_heading("5.1 Key takeaways (Top findings)", 2)

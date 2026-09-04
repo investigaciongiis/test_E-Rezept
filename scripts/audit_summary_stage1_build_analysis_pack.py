@@ -260,6 +260,7 @@ def main() -> None:
     col_result = _find_col(cols, [r"\bresult\b", r"\bstatus\b", r"\bcumple\b"])
     col_flags = _find_col(cols, [r"\bflags\b"])
     col_evid = _find_col(cols, [r"justif", r"evid", r"\bevidence\b"])
+    col_na_reason = _find_col(cols, [r"n/a reason", r"scope reason"])
 
     missing = [("id (PUID)", col_puid), ("Description", col_desc), ("Result/Status", col_result), ("Flags", col_flags)]
     missing = [name for name, col in missing if col is None]
@@ -271,6 +272,7 @@ def main() -> None:
     df["Description"] = df[col_desc].astype(str)
     df["Flags"] = df[col_flags].astype(str).fillna("").str.strip()
     df["Evidence"] = df[col_evid].astype(str).fillna("").str.strip() if col_evid else ""
+    df["NAReason"] = df[col_na_reason].astype(str).fillna("").str.strip() if col_na_reason else ""
 
     df["Status"] = df[col_result].apply(_norm_status)
     df["DeterminationBasis"] = df.apply(
@@ -294,6 +296,12 @@ def main() -> None:
     evidenced_non_compliant = int((df["DeterminationBasis"] == "evidenced_noncompliance").sum())
     evidence_not_found = int((df["DeterminationBasis"] == "evidence_not_found").sum())
     not_applicable = int((df["Status"] == "Not applicable").sum())
+    na_rows = df[df["Status"] == "Not applicable"]
+    dynamic_na = int(na_rows["NAReason"].str.contains("dynamic iOS analysis", case=False, na=False).sum())
+    signed_ipa_na = int(na_rows["NAReason"].str.contains("signed production IPA", case=False, na=False).sum())
+    other_na = int(not_applicable - len(na_rows[
+        na_rows["NAReason"].str.contains("dynamic iOS analysis|signed production IPA", case=False, na=False)
+    ]))
     applicable = int(compliant + non_compliant)
     overall_compliance_pct = float((compliant / applicable * 100.0) if applicable else 0.0)
 
@@ -377,6 +385,7 @@ def main() -> None:
                 "result_status": col_result,
                 "flags": col_flags,
                 "evidence": col_evid,
+                "n_a_reason": col_na_reason,
             },
         },
         "app_metadata": APP_METADATA,
@@ -394,6 +403,9 @@ def main() -> None:
             "evidenced_non_compliant": evidenced_non_compliant,
             "evidence_not_found_non_compliant": evidence_not_found,
             "not_applicable": not_applicable,
+            "not_applicable_dynamic_analysis": dynamic_na,
+            "not_applicable_signed_ipa": signed_ipa_na,
+            "not_applicable_other": other_na,
             "overall_compliance_pct": overall_compliance_pct,
         },
         "category_metrics": cat_stats,

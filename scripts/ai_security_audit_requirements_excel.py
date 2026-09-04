@@ -334,6 +334,7 @@ class FlagEvidence:
     summary_norm: str
     notes: str
     evidence_count: int
+    evaluation_method: str
     classification: str
     expected: Optional[str]  # YES/NO, None for APPLICABILITY
     outcome: str  # SUPPORT/CONTRADICT/UNKNOWN/MISSING/NA_OR_GATE
@@ -346,6 +347,7 @@ class RequirementAudit:
     result: str  # yes/no/n/a
     flags_used: List[str]
     justification_en: str
+    na_reason: str = ""
 
 
 def build_flag_evidence(
@@ -363,6 +365,7 @@ def build_flag_evidence(
             summary_norm="NA",
             notes="flag not present in fingerprint",
             evidence_count=0,
+            evaluation_method="missing",
             classification=classification,
             expected=expected,
             outcome="MISSING",
@@ -374,6 +377,7 @@ def build_flag_evidence(
     state = str(app_verdict.get("state", "") or "")
     notes = str(app_verdict.get("notes", "") or "")
     evidence_count = int(app_verdict.get("evidence_count", 0) or 0)
+    evaluation_method = str(app_verdict.get("evaluation_method", "") or "")
 
     if state == "out_of_scope":
         outcome = "OUT_OF_SCOPE"
@@ -391,6 +395,7 @@ def build_flag_evidence(
         summary_norm=summary_norm,
         notes=notes,
         evidence_count=evidence_count,
+        evaluation_method=evaluation_method,
         classification=classification,
         expected=expected,
         outcome=outcome,
@@ -508,6 +513,7 @@ def audit_requirement(
                 gate_flags=["has_webview_components"],
                 conditional_scenario_activated=False,
                 webview_scoped=True,
+                out_of_scope_capabilities=[],
             )
             return "n/a", flag_evs, meta
 
@@ -537,6 +543,7 @@ def audit_requirement(
                 override_scenario_activated=override_scenario_activated,
                 gate_flags=[ge.id for ge in gate_flags],
                 conditional_scenario_activated=None,
+                out_of_scope_capabilities=[],
             )
             return result, flag_evs, meta
 
@@ -547,17 +554,22 @@ def audit_requirement(
     assessed = [fe for fe in non_app if fe.outcome != "OUT_OF_SCOPE"]
     all_out_of_scope = bool(non_app) and not assessed
     any_out_of_scope = any(fe.outcome == "OUT_OF_SCOPE" for fe in non_app)
+    out_of_scope_capabilities = sorted({
+        fe.evaluation_method.split(":", 1)[1]
+        for fe in non_app
+        if fe.outcome == "OUT_OF_SCOPE" and fe.evaluation_method.startswith("out_of_scope:")
+    })
     any_contradict = any(fe.outcome == "CONTRADICT" for fe in assessed)
     all_support = bool(assessed) and all(fe.outcome == "SUPPORT" for fe in assessed)
     any_unknown = any(fe.outcome in ("UNKNOWN", "MISSING") for fe in assessed)
 
-    if any_contradict:
-        result = "no"
-    elif all_out_of_scope or any_out_of_scope:
+    if all_out_of_scope or any_out_of_scope:
         # A supporting signal for one part of a compound requirement cannot
-        # prove another essential obligation that the supplied artifacts do
-        # not permit us to evaluate (for example, production signing).
+        # prove, or a contradicting signal disprove, the complete compound
+        # requirement when another essential obligation cannot be evaluated.
         result = "n/a"
+    elif any_contradict:
+        result = "no"
     elif all_support and not any_unknown:
         result = "yes"
     else:
@@ -574,6 +586,7 @@ def audit_requirement(
         gate_flags=[ge.id for ge in gate_flags],
         conditional_scenario_activated=conditional_scenario_activated,
         webview_scoped=webview_scoped,
+        out_of_scope_capabilities=out_of_scope_capabilities,
     )
     return result, flag_evs, meta
 
@@ -764,6 +777,9 @@ def generate_justifications_via_openai(batch_ctx: List[Dict[str, Any]]) -> Dict[
         "- Explicitly mention: app_verdict.state, normalized app_verdict.summary (YES/NO/NA), notes "
         "(include 'Fallback verdict' if present), and evidence_count.\n"
         "- If a flag is not present in the fingerprint, state: 'flag not present in fingerprint'.\n"
+        "- For an n/a result, explicitly state every capability in meta.out_of_scope_capabilities. Explain that "
+        "runtime_device_test means MobSF dynamic iOS analysis was unavailable, and signed_ipa means only an unsigned "
+        "IPA was supplied. Do not describe either case as a security failure.\n"
         "- Do not change the precomputed result.\n"
         "- Return ONLY JSON in the form: {\"items\": [{\"id\": \"...\", \"justification\": \"...\"}, ...]}.\n"
     )
@@ -816,6 +832,20 @@ def generate_justifications_via_openai(batch_ctx: List[Dict[str, Any]]) -> Dict[
 
     print(f"[WARN] OpenAI justification generation failed after retries: {last_err}", file=sys.stderr)
     return {}
+
+
+def na_reason_for_result(result: str, meta: Dict[str, Any]) -> str:
+    if result != "n/a":
+        return ""
+    capabilities = set(meta.get("out_of_scope_capabilities", []))
+    reasons = []
+    if "runtime_device_test" in capabilities:
+        reasons.append("dynamic iOS analysis was not available; the default profile includes MobSF static analysis only")
+    if "signed_ipa" in capabilities:
+        reasons.append("a signed production IPA was not supplied; the analysed IPA is unsigned")
+    if reasons:
+        return "; and ".join(reasons)
+    return "the requirement or its conditional scenario falls outside the predefined audit profile"
 
 
 def deterministic_justification(req: RequirementAudit, flag_evidences: List[FlagEvidence], meta: Dict[str, Any]) -> str:
@@ -871,11 +901,13 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
                 "contain sufficient supporting evidence to confirm the expected secure outcome."
             )
     else:
-        s2 = (
-            "Based on the fingerprint and the flags mapped to this requirement, the result is n/a because the relevant "
-            "feature or conditional scenario was not detected, the check is outside the unsigned-IPA scope, or the "
-            "available evidence is insufficient to issue a yes/no result."
-        )
+        if req.na_reason:
+            s2 = f"The result is n/a because {req.na_reason}."
+        else:
+            s2 = (
+                "The result is n/a because the relevant feature or conditional scenario is not applicable within "
+                "the predefined audit profile."
+            )
 
     # Sentence 3: key signals (prioritize contradictions for 'no', supports for 'yes')
     if result == "no" and evidenced_contradicts:
@@ -886,6 +918,10 @@ def deterministic_justification(req: RequirementAudit, flag_evidences: List[Flag
         top = conservative[:3]
         details = "; ".join(_brief(fe) for fe in top)
         s3 = f"Evidence not found for mapped controls: {details}."
+    elif result == "n/a" and any(fe.outcome == "OUT_OF_SCOPE" for fe in present):
+        top = [fe for fe in present if fe.outcome == "OUT_OF_SCOPE"][:3]
+        details = "; ".join(_brief(fe) for fe in top)
+        s3 = f"Out-of-scope signals: {details}."
     elif supports:
         top = supports[:3]
         details = "; ".join(_brief(fe) for fe in top)
@@ -1033,6 +1069,7 @@ def main() -> None:
                 result=result,
                 flags_used=flag_ids,
                 justification_en="",
+                na_reason=na_reason_for_result(result, meta),
             )
             batch_results.append((req_audit, flag_evs, meta))
 
@@ -1100,11 +1137,11 @@ def main() -> None:
     ws = wb.active
     ws.title = "audit"
 
-    headers = ["id (PUID)", "Description (EN)", "Result", "Justification (EN)", "Flags used"]
+    headers = ["id (PUID)", "Description (EN)", "Result", "Justification (EN)", "Flags used", "N/A reason"]
     ws.append(headers)
 
     for a in audits:
-        ws.append([a.puid, a.description_en, a.result, a.justification_en, ", ".join(a.flags_used)])
+        ws.append([a.puid, a.description_en, a.result, a.justification_en, ", ".join(a.flags_used), a.na_reason])
 
     OUTPUT_XLSX_PATH.parent.mkdir(parents=True, exist_ok=True)
     wb.save(OUTPUT_XLSX_PATH)

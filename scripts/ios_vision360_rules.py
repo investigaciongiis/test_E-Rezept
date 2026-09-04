@@ -172,8 +172,21 @@ def evaluate_flag(
 ) -> Tuple[str, str, str, List[Dict[str, Any]], str]:
     """Return state, summary, notes, evidence and evaluation method."""
     rule = rule_for(flag_id)
+    capabilities = capabilities or {}
     if rule is None:
         category, required_evidence = manual_category(flag_id)
+        # Runtime-only evidence is deliberately outside the default static iOS
+        # profile.  Do not turn the absence of a MobSF dynamic/device session
+        # into a conservative failure.
+        if category == "runtime" and not capabilities.get("runtime_device_test", False):
+            return (
+                "out_of_scope",
+                "NA",
+                "Not evaluated: this check requires dynamic iOS execution on a supported runtime device, "
+                "but the audit profile contains MobSF static analysis only.",
+                [],
+                "out_of_scope:runtime_device_test",
+            )
         return (
             "not_detected",
             "NO",
@@ -182,12 +195,16 @@ def evaluate_flag(
             f"manual:{category}",
         )
 
-    capabilities = capabilities or {}
     if rule.requires and not capabilities.get(rule.requires, False):
+        reason = (
+            "a signed production IPA, but the pipeline intentionally supplies an unsigned IPA"
+            if rule.requires == "signed_ipa"
+            else f"the unavailable {rule.requires} assessment capability"
+        )
         return (
             "out_of_scope",
             "NA",
-            f"Not evaluated: this check requires {rule.requires}, but the pipeline intentionally supplies an unsigned IPA.",
+            f"Not evaluated: this check requires {reason}.",
             [],
             f"out_of_scope:{rule.requires}",
         )

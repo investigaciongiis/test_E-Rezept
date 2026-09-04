@@ -12,14 +12,14 @@
     "Main language": "Swift"
   },
   "actors": {
-    "Auditor": "Juan José López Jiménez",
+    "Auditor": "Juan JosÃ© LÃ³pez JimÃ©nez",
     "Requirement Engineering team": [
-      "Juan José López Jiménez"
+      "Juan JosÃ© LÃ³pez JimÃ©nez"
     ],
     "Engineering Group (EN)": [
-      "Juan José López Jiménez"
+      "Juan JosÃ© LÃ³pez JimÃ©nez"
     ]
   },
-  "header_text": "i-mSEC-AT Audit Summary — E-Rezept App",
-  "cover_page_text": "E-Rezept App — v1.38.0"
+  "header_text": "i-mSEC-AT Audit Summary â€” E-Rezept App",
+  "cover_page_text": "E-Rezept App â€” v1.38.0"
 }

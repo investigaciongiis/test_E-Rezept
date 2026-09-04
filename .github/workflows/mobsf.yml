@@ -13,8 +13,6 @@ jobs:
     env:
       MOBSF_API_KEY: ${{ secrets.MOBSF_API_KEY }}
       MOBSF_BASE_URL: ${{ vars.MOBSF_BASE_URL }}
-      USE_PREBUILT_IPA: ${{ vars.USE_PREBUILT_IPA }}
-      PREBUILT_IPA_PATH: ${{ vars.PREBUILT_IPA_PATH }}
       IOS_XCODE_CONTAINER: ${{ vars.IOS_XCODE_CONTAINER }}
       IOS_SCHEME: ${{ vars.IOS_SCHEME }}
     steps:
@@ -22,36 +20,27 @@ jobs:
         with:
           lfs: true
       - name: Set up project Ruby
-        if: ${{ vars.IOS_RUBY_VERSION != '' && vars.USE_PREBUILT_IPA != '' && vars.USE_PREBUILT_IPA != 'true' }}
+        if: ${{ vars.IOS_RUBY_VERSION != '' }}
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ vars.IOS_RUBY_VERSION }}
           bundler-cache: false
       - name: Prepare iOS project
-        if: ${{ vars.IOS_SETUP_CMD != '' && vars.USE_PREBUILT_IPA != '' && vars.USE_PREBUILT_IPA != 'true' }}
+        if: ${{ vars.IOS_SETUP_CMD != '' }}
         shell: bash
         env:
           IOS_SETUP_CMD: ${{ vars.IOS_SETUP_CMD }}
         run: |
           set -euo pipefail
           bash -c "$IOS_SETUP_CMD"
-      - name: Build or select IPA
+      - name: Build unsigned IPA for static analysis
         id: ipa
         shell: bash
-        env:
-          IOS_BUILD_CMD: ${{ vars.IOS_BUILD_CMD }}
         run: |
           set -euo pipefail
-          if [[ "${USE_PREBUILT_IPA:-true}" != "true" ]]; then
-            if [[ -n "$IOS_BUILD_CMD" ]]; then
-              bash -lc "$IOS_BUILD_CMD"
-            else
-              bash scripts/build_ios_ipa.sh build/mobsf/App.ipa
-            fi
-          fi
-          ipa="${PREBUILT_IPA_PATH:-}"
-          if [[ -z "$ipa" ]]; then ipa="$(find . -type f -name '*.ipa' -print | sort | head -n1)"; fi
-          [[ -n "$ipa" && -f "$ipa" ]] || { echo 'IPA not found. Check PREBUILT_IPA_PATH or the automatic/custom build output.' >&2; exit 1; }
+          ipa="build/mobsf/App.ipa"
+          bash scripts/build_ios_ipa.sh "$ipa"
+          [[ -f "$ipa" ]] || { echo 'Unsigned IPA build completed without producing build/mobsf/App.ipa.' >&2; exit 1; }
           echo "path=$ipa" >> "$GITHUB_OUTPUT"
           echo "sha256=$(shasum -a 256 "$ipa" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
       - name: Upload IPA and request MobSF static report

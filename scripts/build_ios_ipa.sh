@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build an unsigned device IPA suitable for static analysis tools such as MobSF.
-# A distributable App Store/Ad Hoc IPA still requires the project's signing and
-# export configuration and should be produced with IOS_BUILD_CMD instead.
+# Build the unsigned per-commit device IPA used by MobSF static analysis.
+# Distribution signing and dynamic execution are outside this pipeline profile.
 
 output_path="${1:-build/mobsf/App.ipa}"
 container="${IOS_XCODE_CONTAINER:-}"

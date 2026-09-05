@@ -155,6 +155,24 @@ def _set_doc_defaults(doc: Document) -> None:
     section.right_margin = Inches(0.85)
 
 
+def _justify_narrative_paragraphs(doc: Document) -> None:
+    """Justify top-level narrative prose without altering tables or special blocks.
+
+    ``Document.paragraphs`` contains only top-level body paragraphs, so table
+    cells, headers, and footers are intentionally excluded. Headings, lists,
+    captions, cover text, and any paragraph with an explicit alignment retain
+    their existing presentation.
+    """
+    for paragraph in doc.paragraphs:
+        style_name = paragraph.style.name if paragraph.style is not None else ""
+        if (
+            style_name == "Normal"
+            and paragraph.text.strip()
+            and paragraph.alignment is None
+        ):
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+
 def _add_header_footer(section, audit_date_str: str) -> None:
     header = section.header
     header.is_linked_to_previous = False
@@ -832,6 +850,7 @@ def main() -> None:
 
     _render_clickable_toc(toc_placeholder, toc_entries)
     _enable_update_fields_on_open(doc)
+    _justify_narrative_paragraphs(doc)
     doc.save(out_path)
     provenance = prompt_provenance(sorted(PROMPTS_INVOKED))
     provenance["model"] = os.getenv("LLM_MODEL") or "not configured"

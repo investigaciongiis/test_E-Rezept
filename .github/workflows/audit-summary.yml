@@ -151,7 +151,7 @@ jobs:
         run: |
           set -euo pipefail
           cd /mnt/data
-          zip -j "audit-summary-bundle.zip" "Audit Summary.docx" "Audit Summary.pdf" "audit_summary_prompt_provenance.json"
+          zip -j "audit-summary-bundle.zip" "Audit Summary.docx" "Audit Summary.pdf"
           test -f "/mnt/data/audit-summary-bundle.zip"
 
       - name: Upload Audit Summary outputs
@@ -162,4 +162,3 @@ jobs:
           path: |
             /mnt/data/Audit Summary.docx
             /mnt/data/Audit Summary.pdf
-            /mnt/data/audit_summary_prompt_provenance.json

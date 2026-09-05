@@ -1,5 +1,6 @@
 <img alt="gematik logo" align="right" width="250" height="47" src="doc/resources/gematik_logo_flag_with_background.png"/> <br/>
 
+
 # E-Rezept App (iOS)
 
 ## Table Of Contents
